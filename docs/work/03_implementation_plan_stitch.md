@@ -1,8 +1,8 @@
 # JOSOOR /main Implementation Plan - STITCH APPROACH
 
-**Version:** 0.1 (DRAFT - ITERATING)
+**Version:** 0.4 (TRACEABILITY COMPLETE)
 **Date:** January 12, 2026
-**Status:** IN PROGRESS - Requires review and completion
+**Status:** READY FOR EXECUTION
 
 ---
 
@@ -11,6 +11,124 @@
 This plan describes how to STITCH existing components from `/chat` and `/josoor-sandbox` into a unified `/main` page system. 
 
 **Core Principle:** Reuse existing code, do NOT recreate from scratch.
+
+---
+
+## TRACEABILITY MATRIX
+
+### Matrix Structure: Requirement → Design Element → Implementation Task(s)
+
+Each row shows: `[Req ID] Requirement Description → [Design Ref] Design Element → [Task IDs] Implementation Tasks`
+
+**Rule:** Max 3 tasks per design element. If more needed, design element is split.
+
+---
+
+### REQ 2: MAIN PAGE REQUIREMENTS
+
+| Req ID | Requirement | Design Ref | Design Element | Task IDs | Tasks (1-3 max) |
+|--------|-------------|------------|----------------|----------|-----------------|
+| 2.1 | Unified main page structure | §1.1 | MainAppPage layout | Q.2.1, Q.2.2 | Create MainAppPage.tsx, Configure layout (sidebar+header+outlet) |
+| 2.2a | New Chat button | §3.2 | MainSidebar chat block | Q.4.1 | Extract New Chat from chat/Sidebar, add to MainSidebar |
+| 2.2b | Sidebar collapsing | §3.2 | MainSidebar collapse | Q.4.2 | Wire collapse toggle, persist state |
+| 2.2c | Conversation history | §3.2 | MainSidebar conversations | Q.4.3 | Extract ConversationsList, wire to chatService |
+| 2.3 | Profile in header | §3.1 | MainHeader profile | Q.3.1 | Move profile from FrameHeader to header right |
+
+---
+
+### REQ 3: DESK REQUIREMENTS
+
+| Req ID | Requirement | Design Ref | Design Element | Task IDs | Tasks (1-3 max) |
+|--------|-------------|------------|----------------|----------|-----------------|
+| 3.1a | Sector Desk - Map | §1.1 | SectorDesk-Map | W.1.1, W.1.2 | Import SectorOutcomes (SaudiMap), Add id="sector-desk-map" |
+| 3.1b | Sector Desk - KPI Gauges | §1.1 | SectorDesk-KPIs | W.1.3, W.1.4, W.1.5 | Import ControlTower gauges, Wire /api/v1/dashboard/dashboard-data, Add id="sector-desk-gauges" |
+| 3.2a | Controls Desk - Steering Ribbon | §6.1 | Controls-Steering | Q.5.1 | Import RiskSignals for setting_strategic_initiatives |
+| 3.2b | Controls Desk - Risk BUILD Ribbon | §6.1 | Controls-BUILD | Q.5.2 | Wire build_oversight chain API |
+| 3.2c | Controls Desk - Risk OPERATE Ribbon | §6.1 | Controls-OPERATE | Q.5.3 | Wire operate_oversight chain API |
+| 3.2d | Controls Desk - Delivery Ribbon | §6.1 | Controls-Delivery | Q.5.4 | Wire sustainable_operations chain API |
+| 3.3 | Planning Desk | §1.1 | PlanningDesk | Q.12.1, Q.12.2 | Import PlanningDesk, Wire analyzeGaps=true endpoint |
+| 3.4 | Reporting Desk | §1.1 | ReportingDesk | Q.12.3, Q.12.4 | Import ReportingDesk, Wire recommendations + export |
+| 3.5 | Enterprise Desk | §1.1 | EnterpriseDesk | Q.12.5 | Import DependencyDesk |
+
+---
+
+### REQ 4: SECTIONS (OPEN IN MAIN AREA)
+
+| Req ID | Requirement | Design Ref | Design Element | Task IDs | Tasks (1-3 max) |
+|--------|-------------|------------|----------------|----------|-----------------|
+| 4.1 | Knowledge Series | §1.1 | KnowledgeSeries | Q.6.1, Q.6.2 | Import TwinKnowledge, Add id="knowledge-series" |
+| 4.2 | Roadmap | §1.1 | Roadmap | Q.6.3, Q.6.4 | Create RoadmapWrapper (ProductRoadmap + PlanYourJourney) |
+| 4.3 | Graph Explorer | §1.1 | GraphExplorer | Q.6.5, Q.6.6 | Import RiskTopologyMap, Add id="graph-explorer-3d" |
+| 4.4 | Graph Chat | §1.1 | GraphChat | Q.6.7, Q.6.8 | Import ChatContainer, Add id="graph-chat" |
+
+---
+
+### REQ 5: ONBOARDING REQUIREMENTS
+
+| Req ID | Requirement | Design Ref | Design Element | Task IDs | Tasks (1-3 max) |
+|--------|-------------|------------|----------------|----------|-----------------|
+| 5.1a | One-time trigger | §4.1 | Onboarding-Trigger | Q.18.1 | Check localStorage on mount |
+| 5.1b | Locked after completion | §4.1 | Onboarding-Lock | Q.18.2 | Set flag on tour complete |
+| 5.1c | ? button replay | §4.2 | Onboarding-Replay | Q.18.3 | Add ? to header, clear flag |
+| 5.2a | 9 steps with navigation | §4.2 | Onboarding-Steps | Q.18.4, Q.18.5, Q.18.6 | Configure driver.js steps, Wire navigation, Add target IDs |
+
+---
+
+### REQ 6: GOVERNANCE LOG SYSTEM
+
+| Req ID | Requirement | Design Ref | Design Element | Task IDs | Tasks (1-3 max) |
+|--------|-------------|------------|----------------|----------|-----------------|
+| 6.1 | Institutional memory | §9.1 | GovernanceLog-Panel | Q.16.1, Q.16.2 | Create GovernanceLogPanel.tsx, Wire decisions API |
+| 6.2 | Decision/State/Escalation | §9.1 | GovernanceLog-Tabs | Q.16.3, Q.16.4 | Create 3-tab UI, Wire state/escalation APIs |
+| 6.3 | Badge for open escalations | §3.2 | Sidebar-Badge | Q.16.5 | Fetch open-escalations count, show badge |
+
+---
+
+### REQ 7: RISK ENGINE INTEGRATION
+
+| Req ID | Requirement | Design Ref | Design Element | Task IDs | Tasks (1-3 max) |
+|--------|-------------|------------|----------------|----------|-----------------|
+| 7.1a | BUILD mode scoring | §8.1 | RiskViz-BUILD | Q.17.1 | Wire build_exposure_pct, build_band to ribbons |
+| 7.1b | OPERATE mode scoring | §8.1 | RiskViz-OPERATE | Q.17.2, Q.17.3 | Wire operate_exposure_pct, Add trend_flag arrows |
+| 7.2 | Color-coded bands | §8.1 | RiskViz-Colors | Q.17.4 | Apply Green/Amber/Red CSS classes |
+
+---
+
+### REQ 8: INVITE SYSTEM
+
+| Req ID | Requirement | Design Ref | Design Element | Task IDs | Tasks (1-3 max) |
+|--------|-------------|------------|----------------|----------|-----------------|
+| 8.1 | Request Invite functionality | (landing) | InviteSystem | Q.20.1, Q.20.2 | Verify existing, Code if placeholder |
+
+---
+
+### REQ 9: BACKEND REQUIREMENTS
+
+| Req ID | Requirement | Design Ref | Design Element | Task IDs | Tasks (1-3 max) |
+|--------|-------------|------------|----------------|----------|-----------------|
+| 9.1 | Settings migration | §10.1 | Settings-Backend | X.1.1 | (Backend) Migrate to Supabase admin_settings |
+| 9.2 | Governance API | §6.2 | Governance-API | X.1.2, X.1.3 | (Backend) CRUD endpoints, Agent run |
+| 9.3 | Risk Engine API | §6.3 | RiskEngine-API | X.1.4, X.1.5 | (Backend) Execution trigger, Config |
+
+---
+
+### REQ 10: ICONS
+
+| Req ID | Requirement | Design Ref | Design Element | Task IDs | Tasks (1-3 max) |
+|--------|-------------|------------|----------------|----------|-----------------|
+| 10.1 | 14 icons in public/icons | §1.2 | Icons | DONE | Already extracted |
+
+---
+
+### ADMIN REQUIREMENTS (MISSING - NOW ADDED)
+
+| Req ID | Requirement | Design Ref | Design Element | Task IDs | Tasks (1-3 max) |
+|--------|-------------|------------|----------------|----------|-----------------|
+| A.1a | Settings - LLM Provider | §10.1 | Settings-LLM | W.2.1, W.2.2 | Import AdminSettingsPanel, Wire provider config |
+| A.1b | Settings - MCP Tools | §10.1 | Settings-MCP | W.2.3 | Wire MCP tools config |
+| A.2a | Observability - Analytics | (new) | Observability-Analytics | W.3.1, W.3.2, W.3.3 | Import analytics cards, Wire /debug/traces, Show metrics |
+| A.2b | Observability - Traces | (new) | Observability-Traces | W.3.4, W.3.5 | Import trace list, Wire filters |
+| A.3a | Risk Agent Console | (new) | RiskAgent-Console | W.4.1, W.4.2, W.4.3 | Create RiskAgentPanel, Wire run endpoint, Show status/log |
 
 ---
 
@@ -1458,6 +1576,325 @@ DependencyDesk.tsx (Enterprise Desk)
 
 ---
 
+## SECTION W: MISSING SECTIONS (NOW COMPLETE)
+
+### W.1 SECTOR DESK DETAILED DESIGN
+
+#### W.1.1 Component Composition
+
+```
+SectorDesk.tsx
+├── SectorOutcomes (SaudiMap)         # Geographic visualization
+│   └── Path: frontend/src/pages/josoor-sandbox/components/SectorOutcomes.tsx
+├── ControlTower gauges               # KPI visualization
+│   └── Path: frontend/src/pages/josoor-sandbox/components/ControlTower.tsx
+└── StrategicInsights                 # AI-generated insights panel
+    └── Path: frontend/src/pages/josoor-sandbox/components/StrategicInsights.tsx
+```
+
+#### W.1.2 API Endpoints
+
+| Endpoint | Method | Purpose | Response Fields |
+|----------|--------|---------|-----------------|
+| `/api/v1/dashboard/dashboard-data` | GET | KPI data | `overall_score`, `governance_readiness`, `strategic_alignment` |
+| `/api/v1/dashboard/outcomes-data` | GET | Map data | `regions`, `sector_outcomes`, `impact_metrics` |
+
+#### W.1.3 KPI Gauges (from ControlTower)
+
+| Gauge | Data Field | Color Logic |
+|-------|------------|-------------|
+| Overall Score | `overall_score` | Green ≥70, Amber 40-69, Red <40 |
+| Governance Readiness | `governance_readiness` | Same |
+| Strategic Alignment | `strategic_alignment` | Same |
+| Transformation Index | `transformation_index` | Same |
+
+#### W.1.4 Implementation Tasks
+
+| Task ID | Task | Lines Est. |
+|---------|------|-----------|
+| W.1.1 | Create SectorDesk.tsx wrapper | 60 |
+| W.1.2 | Import SectorOutcomes, add id="sector-desk-map" | 10 |
+| W.1.3 | Import ControlTower gauge components | 20 |
+| W.1.4 | Wire /api/v1/dashboard/dashboard-data | 25 |
+| W.1.5 | Add id="sector-desk-gauges" for onboarding | 5 |
+
+#### W.1.5 Wrapper Code
+
+```tsx
+// SectorDesk.tsx
+import { useOutletContext } from 'react-router-dom';
+import { SectorOutcomes } from '../../josoor-sandbox/components/SectorOutcomes';
+import { ControlTower } from '../../josoor-sandbox/components/ControlTower';
+import { StrategicInsights } from '../../josoor-sandbox/components/StrategicInsights';
+
+interface JosoorContext { year: string; quarter: string; }
+
+export const SectorDesk: React.FC = () => {
+  const { year, quarter } = useOutletContext<JosoorContext>();
+  
+  return (
+    <div className="sector-desk">
+      <div id="sector-desk-map">
+        <SectorOutcomes year={year} quarter={quarter} />
+      </div>
+      <div id="sector-desk-gauges">
+        <ControlTower year={year} quarter={quarter} />
+      </div>
+      <StrategicInsights year={year} quarter={quarter} />
+    </div>
+  );
+};
+```
+
+---
+
+### W.2 SETTINGS PAGE DETAILED DESIGN
+
+#### W.2.1 Source Component
+
+```
+Path: frontend/src/pages/AdminSettingsPage.tsx
+Lines: 346
+```
+
+#### W.2.2 Settings Panels
+
+| Panel | Config Fields | API |
+|-------|---------------|-----|
+| **LLM Provider** | `base_url`, `model_name`, `api_key_ref`, `temperature`, `max_tokens` | `/api/v1/admin/settings` GET/PUT |
+| **MCP Tools** | `enabled_tools[]`, `tool_configs{}` | Same endpoint |
+| **Feature Flags** | `feature_flags{}` (e.g., `governance_enabled`, `risk_engine_enabled`) | Same endpoint |
+| **System Behavior** | `cache_ttl`, `rate_limits`, `logging_level` | Same endpoint |
+
+#### W.2.3 AdminSettings Interface
+
+```tsx
+interface AdminSettings {
+  provider: {
+    base_url: string;
+    model_name: string;
+    api_key_ref: string;  // Secret reference, not actual key
+    temperature: number;
+    max_tokens: number;
+  };
+  mcp: {
+    enabled_tools: string[];
+    tool_configs: Record<string, any>;
+  };
+  feature_flags: Record<string, boolean>;
+  system: {
+    cache_ttl: number;
+    rate_limits: Record<string, number>;
+    logging_level: 'debug' | 'info' | 'warn' | 'error';
+  };
+}
+```
+
+#### W.2.4 Implementation Tasks
+
+| Task ID | Task | Lines Est. |
+|---------|------|-----------|
+| W.2.1 | Create Settings.tsx wrapper that imports AdminSettingsPanel | 40 |
+| W.2.2 | Wire to /api/v1/admin/settings (already exists in adminSettingsService) | 10 |
+| W.2.3 | Add MCP tools panel if not already present | 50 |
+
+---
+
+### W.3 OBSERVABILITY PAGE DETAILED DESIGN
+
+#### W.3.1 Source Component
+
+```
+Path: frontend/src/pages/ObservabilityDashboardPage.tsx
+Lines: 692
+```
+
+#### W.3.2 Analytics Cards
+
+| Card | Metric | Color Logic |
+|------|--------|-------------|
+| Total Requests | `total_requests` | Neutral |
+| Total Tokens | `total_tokens` | Neutral |
+| Cache Hit Rate | `cache_hit_rate` | Green ≥50%, Amber 20-49%, Red <20% |
+| Avg Latency | `avg_latency_ms` | Green <500, Amber 500-2000, Red >2000 |
+| Error Rate | `error_rate` | Green <1%, Amber 1-5%, Red >5% |
+| P95 Latency | `p95_latency_ms` | Green <1000, Amber 1000-5000, Red >5000 |
+
+#### W.3.3 Trace List Features
+
+| Feature | Fields |
+|---------|--------|
+| Trace Entry | `conversation_id`, `created_at`, `persona`, `provider`, `model_name` |
+| Request Details | `request_temperature`, `request_max_tokens`, `request_messages_count` |
+| Response Details | `response_stop_reason`, `response_choices_count` |
+| Tool Usage | `tool_calls_count`, `tool_names_used` |
+| Token Stats | `total_tokens`, `input_tokens`, `output_tokens`, `cached_tokens` |
+| Performance | `ttft_ms`, `last_latency_ms` |
+| Status | `has_error`, `last_status` |
+
+#### W.3.4 Filter Options
+
+```tsx
+const [filterModel, setFilterModel] = useState('');      // Model name filter
+const [filterPersona, setFilterPersona] = useState('');  // Persona filter
+const [filterHasTools, setFilterHasTools] = useState<string>('all'); // 'all' | 'yes' | 'no'
+const [filterStatus, setFilterStatus] = useState('');    // Status filter
+```
+
+#### W.3.5 Implementation Tasks
+
+| Task ID | Task | Lines Est. |
+|---------|------|-----------|
+| W.3.1 | Create Observability.tsx wrapper | 30 |
+| W.3.2 | Import ObservabilityDashboardPage | 10 |
+| W.3.3 | Ensure analytics cards render correctly | 5 |
+| W.3.4 | Wire trace list with existing /debug/traces | 10 |
+| W.3.5 | Verify filters work | 5 |
+
+---
+
+### W.4 RISK AGENT CONSOLE (NEW - DISTINCT FROM RISK DESK)
+
+#### W.4.1 Purpose
+
+Risk Agent is an **automated governance agent** that:
+1. Runs daily to evaluate risk exposure across all nodes
+2. Generates escalations when thresholds are breached
+3. Updates risk scores (BUILD/OPERATE modes)
+4. Can be triggered manually by admin
+
+**This is DIFFERENT from Risk Desk (Controls Desk):**
+- Controls Desk = View risk data (user-facing visualization)
+- Risk Agent Console = Admin panel to trigger/monitor the agent
+
+#### W.4.2 UI Design
+
+```
+┌────────────────────────────────────────────────────────┐
+│ Risk Agent Console                                      │
+├─────────────────────────────────────────────────────────┤
+│ Status: [🟢 Idle / 🟡 Running / 🔴 Error]              │
+│ Last Run: 2026-01-12 03:00:00 UTC                      │
+│ Next Scheduled: 2026-01-13 03:00:00 UTC                │
+│ ─────────────────────────────────────────────────────── │
+│ [▶ Run Now]  [⏸ Pause Schedule]  [⚙ Configure]        │
+├─────────────────────────────────────────────────────────┤
+│ Recent Runs                                             │
+│ ┌─────────────────────────────────────────────────────┐ │
+│ │ 2026-01-12 03:00  ✓ Success  45 nodes  3 escalations│ │
+│ │ 2026-01-11 03:00  ✓ Success  45 nodes  1 escalation │ │
+│ │ 2026-01-10 03:00  ✗ Error    Connection timeout     │ │
+│ └─────────────────────────────────────────────────────┘ │
+├─────────────────────────────────────────────────────────┤
+│ Configuration                                           │
+│ ┌─────────────────────────────────────────────────────┐ │
+│ │ Red Threshold: [30] days delay                       │ │
+│ │ Link Threshold: [50]% dependency                     │ │
+│ │ Green Band Max: [35]%                               │ │
+│ │ Amber Band Max: [65]%                               │ │
+│ │ Schedule: [03:00 UTC daily]                         │ │
+│ └─────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────┘
+```
+
+#### W.4.3 API Endpoints
+
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/api/v1/risk-engine/status` | GET | Get agent status, last run, next scheduled |
+| `/api/v1/risk-engine/run` | POST | Trigger manual run |
+| `/api/v1/risk-engine/config` | GET | Get current config |
+| `/api/v1/risk-engine/config` | PUT | Update config |
+| `/api/v1/risk-engine/history` | GET | Get run history |
+
+#### W.4.4 Component Code
+
+```tsx
+// RiskAgentConsole.tsx
+import { useState, useEffect } from 'react';
+import { Play, Pause, Settings, RefreshCw, CheckCircle, XCircle, Clock } from 'lucide-react';
+
+interface AgentStatus {
+  status: 'idle' | 'running' | 'error';
+  last_run: string | null;
+  next_scheduled: string | null;
+  last_error: string | null;
+}
+
+interface AgentConfig {
+  red_delay_days: number;
+  link_threshold_pct: number;
+  band_green_max_pct: number;
+  band_amber_max_pct: number;
+  schedule_cron: string;
+}
+
+interface RunHistory {
+  id: string;
+  timestamp: string;
+  status: 'success' | 'error';
+  nodes_processed: number;
+  escalations_created: number;
+  error_message?: string;
+}
+
+export const RiskAgentConsole: React.FC = () => {
+  const [status, setStatus] = useState<AgentStatus | null>(null);
+  const [config, setConfig] = useState<AgentConfig | null>(null);
+  const [history, setHistory] = useState<RunHistory[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    fetchStatus();
+    fetchConfig();
+    fetchHistory();
+  }, []);
+
+  const fetchStatus = async () => {
+    const res = await fetch('/api/v1/risk-engine/status');
+    setStatus(await res.json());
+  };
+
+  const fetchConfig = async () => {
+    const res = await fetch('/api/v1/risk-engine/config');
+    setConfig(await res.json());
+  };
+
+  const fetchHistory = async () => {
+    const res = await fetch('/api/v1/risk-engine/history?limit=10');
+    setHistory((await res.json()).runs || []);
+  };
+
+  const handleRunNow = async () => {
+    setLoading(true);
+    await fetch('/api/v1/risk-engine/run', { method: 'POST' });
+    await fetchStatus();
+    await fetchHistory();
+    setLoading(false);
+  };
+
+  const handleSaveConfig = async () => {
+    await fetch('/api/v1/risk-engine/config', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(config)
+    });
+  };
+
+  // ... render UI
+};
+```
+
+#### W.4.5 Implementation Tasks
+
+| Task ID | Task | Lines Est. |
+|---------|------|-----------|
+| W.4.1 | Create RiskAgentConsole.tsx | 150 |
+| W.4.2 | Wire status/run/config APIs | 40 |
+| W.4.3 | Add run history list with status indicators | 50 |
+
+---
+
 ## TODO: REMAINING INCOMPLETE ITEMS
 
 - [ ] Arabic translations for onboarding steps (Section C.4)
@@ -1465,4 +1902,5 @@ DependencyDesk.tsx (Enterprise Desk)
 - [ ] Document error handling patterns for API failures
 - [ ] Add loading states for all async operations
 - [ ] Define mobile responsive breakpoints
+- [ ] Backend: Implement Risk Agent APIs (W.4.3)
 
