@@ -3,9 +3,17 @@
 ## Overview
 JOSOOR is an Agentic Enterprise Platform - a Cognitive Twin designed for national scale transformation. The frontend is built with React 18, TypeScript, and Vite.
 
-## CURRENT PROJECT: Frontend Re-Wiring - READY FOR EXECUTION
+## CURRENT PROJECT: Frontend Re-Wiring - PHASE 2 COMPLETE
 
-**Status:** Implementation plan COMPLETE (1,906 lines) with full traceability matrix. Ready to execute.
+**Status:** Phase 2 (Core Layout & Chat Integration) COMPLETE. Moving to Phase 3 (Desk Components & API wiring).
+
+### Phase 2 Completed (Jan 12, 2026)
+- [x] T00: Stashed existing /main to /main_stash
+- [x] T01-T02: Created MainAppPage.tsx with unified layout (JosoorFrame + ChatAppPage patterns)
+- [x] T03-T04: Integrated New Chat button and sidebar collapse toggle
+- [x] T05-T06: Extracted ConversationsList with chatService wiring and auth change listener
+- [x] T07: MainHeader with profile section, year/quarter filters, theme/language toggles
+- [x] Onboarding tour with driver.js (9 steps with navigation guards)
 
 **CRITICAL: Read these documents in order:**
 1. `docs/work/01_user_requirements_120126_0909.md` - Requirements (186 lines)
