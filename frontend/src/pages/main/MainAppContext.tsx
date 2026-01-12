@@ -155,6 +155,18 @@ export function MainAppProvider({ children }: { children: ReactNode }) {
   }, [loadConversations]);
 
   useEffect(() => {
+    const handleAuthChange = () => {
+      loadConversations();
+    };
+    window.addEventListener('josoor_auth_change', handleAuthChange);
+    window.addEventListener('storage', handleAuthChange);
+    return () => {
+      window.removeEventListener('josoor_auth_change', handleAuthChange);
+      window.removeEventListener('storage', handleAuthChange);
+    };
+  }, [loadConversations]);
+
+  useEffect(() => {
     fetch('/api/v1/governance/open-escalations')
       .then(res => res.json())
       .then(data => setOpenEscalationsCount(data.count || 0))
@@ -197,9 +209,17 @@ export function MainAppProvider({ children }: { children: ReactNode }) {
     try {
       if (authService.isGuestMode()) {
         const guestConvos = authService.getGuestConversations();
-        const updated = guestConvos.filter((c: any) => c.id !== id);
-        authService.saveGuestConversations(updated);
-        setConversations(updated);
+        const updatedRaw = guestConvos.filter((c: any) => c.id !== id);
+        authService.saveGuestConversations(updatedRaw);
+        const normalizedConversations = updatedRaw.map((c: any) => ({
+          id: c.id,
+          title: c.title || 'New Chat',
+          message_count: (c.messages || []).length,
+          created_at: c.created_at || new Date().toISOString(),
+          updated_at: c.updated_at || new Date().toISOString(),
+          _isGuest: true,
+        }));
+        setConversations(normalizedConversations as ConversationSummary[]);
       } else {
         await chatService.deleteConversation(id);
         setConversations(prev => prev.filter(c => c.id !== id));

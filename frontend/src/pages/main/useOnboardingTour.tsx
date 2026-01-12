@@ -1,7 +1,32 @@
-import { useCallback } from 'react';
+import { useCallback, useRef } from 'react';
 import { driver, DriveStep } from 'driver.js';
 import { useNavigate } from 'react-router-dom';
 import { useMainApp } from './MainAppContext';
+
+const waitForElement = (selector: string, timeout = 2000): Promise<Element | null> => {
+  return new Promise((resolve) => {
+    const element = document.querySelector(selector);
+    if (element) {
+      resolve(element);
+      return;
+    }
+
+    const observer = new MutationObserver(() => {
+      const el = document.querySelector(selector);
+      if (el) {
+        observer.disconnect();
+        resolve(el);
+      }
+    });
+
+    observer.observe(document.body, { childList: true, subtree: true });
+    
+    setTimeout(() => {
+      observer.disconnect();
+      resolve(document.querySelector(selector));
+    }, timeout);
+  });
+};
 
 const ONBOARDING_STEPS: DriveStep[] = [
   {
@@ -90,6 +115,7 @@ const ONBOARDING_STEPS: DriveStep[] = [
 export function useOnboardingTour() {
   const navigate = useNavigate();
   const { completeOnboarding } = useMainApp();
+  const isNavigatingRef = useRef(false);
 
   const startTour = useCallback(() => {
     const driverObj = driver({
@@ -100,7 +126,7 @@ export function useOnboardingTour() {
       doneBtnText: 'Done',
       overlayColor: 'rgba(0, 0, 0, 0.8)',
       popoverClass: 'josoor-popover',
-      onHighlightStarted: (element, step, options) => {
+      onHighlightStarted: async (element, step, options) => {
         const stepIndex = ONBOARDING_STEPS.findIndex(s => s.element === step.element);
         const navMap: Record<number, string> = {
           3: '/main/sector',
@@ -109,8 +135,16 @@ export function useOnboardingTour() {
           6: '/main/knowledge',
           7: '/main/chat',
         };
-        if (navMap[stepIndex]) {
+        
+        if (navMap[stepIndex] && !isNavigatingRef.current) {
+          isNavigatingRef.current = true;
           navigate(navMap[stepIndex]);
+          
+          const selector = step.element as string;
+          if (selector) {
+            await waitForElement(selector);
+          }
+          isNavigatingRef.current = false;
         }
       },
       onDestroyStarted: () => {
