@@ -18,6 +18,7 @@ interface FrameHeaderProps {
     onQuarterChange: (q: string) => void;
     title?: string;
     subtitle?: string;
+    onOnboardingReplay?: () => void;
 }
 
 export const FrameHeader: React.FC<FrameHeaderProps> = ({ 
@@ -26,7 +27,8 @@ export const FrameHeader: React.FC<FrameHeaderProps> = ({
     onYearChange, 
     onQuarterChange,
     title = "Transformation Control Tower",
-    subtitle = "Executive Overview & Decision Support"
+    subtitle = "Executive Overview & Decision Support",
+    onOnboardingReplay
 }) => {
     const navigate = useNavigate();
     const { language, setLanguage, isRTL } = useLanguage();
@@ -89,7 +91,7 @@ export const FrameHeader: React.FC<FrameHeaderProps> = ({
     const isGuest = currentUser ? false : true; // Simplified for this context, but we use authService for actions
 
     return (
-        <div style={{
+        <div id="main-header" style={{
             height: '70px',
             backgroundColor: '#0B0F19', // Deep Navy
             borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
@@ -223,10 +225,35 @@ export const FrameHeader: React.FC<FrameHeaderProps> = ({
                         <Globe size={14} />
                         {language === 'ar' ? 'EN' : 'عربي'}
                     </button>
+
+                    {onOnboardingReplay && (
+                        <button 
+                            id="header-help-button"
+                            onClick={onOnboardingReplay}
+                            title={language === 'ar' ? 'إعادة الجولة التعريفية' : 'Replay Tour'}
+                            style={{ 
+                                background: 'rgba(255,255,255,0.1)', 
+                                border: 'none', 
+                                cursor: 'pointer', 
+                                padding: '0.3rem 0.6rem', 
+                                borderRadius: '4px',
+                                color: '#FFD700',
+                                fontSize: '1rem',
+                                fontWeight: 700,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                width: '28px',
+                                height: '28px'
+                            }}
+                        >
+                            ?
+                        </button>
+                    )}
                 </div>
 
                 {/* 4. User Profile / Guest Mode (Strict Logic) */}
-                <div style={{ paddingLeft: '0.5rem' }}>
+                <div id="header-profile" style={{ paddingLeft: '0.5rem' }}>
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <div style={{ 

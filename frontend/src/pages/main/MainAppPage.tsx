@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { MainAppProvider, useMainApp } from './MainAppContext';
-import { MainHeader } from './MainHeader';
+import { FrameHeader } from '../josoor-sandbox/layout/FrameHeader';
 import { MainSidebar } from './MainSidebar';
 import { useOnboardingTour } from './useOnboardingTour';
 import '../../styles/theme.css';
@@ -9,11 +9,21 @@ import '../../styles/onboarding.css';
 import 'driver.js/dist/driver.css';
 
 const MainAppLayout: React.FC = () => {
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-  const { year, quarter, isRTL, onboardingComplete, resetOnboarding } = useMainApp();
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
+    try {
+      return localStorage.getItem('josoor_sidebar_collapsed') === 'true';
+    } catch { return false; }
+  });
+  const { year, setYear, quarter, setQuarter, isRTL, onboardingComplete, resetOnboarding } = useMainApp();
   const location = useLocation();
   
   const { startTour } = useOnboardingTour();
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('josoor_sidebar_collapsed', String(isSidebarCollapsed));
+    } catch {}
+  }, [isSidebarCollapsed]);
 
   useEffect(() => {
     if (!onboardingComplete) {
@@ -48,15 +58,15 @@ const MainAppLayout: React.FC = () => {
         display: 'flex',
         height: '100vh',
         width: '100vw',
-        backgroundColor: 'var(--component-bg-primary)',
+        backgroundColor: '#050912',
         overflow: 'hidden',
-        fontFamily: 'var(--component-font-family)',
+        fontFamily: '"Inter", sans-serif',
         direction: isRTL ? 'rtl' : 'ltr'
       }}
     >
       <MainSidebar 
         isCollapsed={isSidebarCollapsed} 
-        onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)} 
+        onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
       />
 
       <div style={{ 
@@ -66,17 +76,24 @@ const MainAppLayout: React.FC = () => {
         height: '100%',
         overflow: 'hidden'
       }}>
-        <MainHeader 
+        <FrameHeader 
+          year={year}
+          quarter={quarter}
+          onYearChange={setYear}
+          onQuarterChange={setQuarter}
           title={title}
           subtitle={subtitle}
+          onOnboardingReplay={() => {
+            resetOnboarding();
+            setTimeout(() => startTour(), 100);
+          }}
         />
 
         <div style={{ 
           flex: 1, 
           overflowY: 'auto', 
           padding: '1.5rem',
-          position: 'relative',
-          backgroundColor: 'var(--component-bg-primary)'
+          position: 'relative'
         }}>
           <Outlet context={{ year, quarter }} />
         </div>
