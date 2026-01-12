@@ -79,20 +79,22 @@ function AppRoutes() {
   };
 
   return (
-    <div className={isWelcomePage ? "" : "min-h-screen bg-slate-100"}>
+    <div className="min-h-screen bg-slate-100">
       <ScrollToTop />
 
       <Routes>
         <Route
           path="/"
-          element={<WelcomeEntry/>}
+          element={
+            <ProtectedRoute allowGuest={true}>
+              <LandingPage />
+            </ProtectedRoute>
+          }
         />
 
-        <Route path="/landing" element={
-          <ProtectedRoute allowGuest={true}>
-            <LandingPage />
-          </ProtectedRoute>
-        } />
+        <Route path="/welcome" element={<WelcomeEntry/>} />
+
+        <Route path="/landing" element={<Navigate to="/" replace />} />
 
         <Route path="/chat" element={
           <ProtectedRoute allowGuest={true}>
