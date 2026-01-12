@@ -3,96 +3,104 @@
 ## Overview
 JOSOOR is an Agentic Enterprise Platform - a Cognitive Twin designed for national scale transformation. The frontend is built with React 18, TypeScript, and Vite.
 
-## CURRENT PROJECT: Frontend Re-Wiring
+## CURRENT PROJECT: Frontend Re-Wiring - READY FOR EXECUTION
 
-**Goal:** Integrate `/chat`, `/josoor-sandbox`, and new design components into a unified main page system.
+**Status:** Implementation plan COMPLETE (1,906 lines) with full traceability matrix. Ready to execute.
 
-**Design Documents (READ THESE FIRST):**
-- `docs/work/01_user_requirements_120126_0909.md` - All requirements
-- `docs/work/02_design_document_120126_0909.md` - Full architecture, components, API wiring
+**CRITICAL: Read these documents in order:**
+1. `docs/work/01_user_requirements_120126_0909.md` - Requirements (186 lines)
+2. `docs/work/02_design_document_120126_0909.md` - Design (419 lines)
+3. `docs/work/03_implementation_plan_stitch.md` - **IMPLEMENTATION PLAN (1,906 lines)** ← START HERE
 
-**Key Principles:**
-1. `/chat` CSS is master authority - all code adopts `theme.css` and `sidebar.css`
-2. Backend at `https://betaBE.aitwintech.com`
-3. Multi-language (EN/AR with RTL) and light/dark themes
-4. Knowledge Series, Roadmap, Graph Explorer open in main content area (not canvas)
+## Implementation Plan Summary
 
-## What's Done
-- [x] Icons extracted to `frontend/public/icons/` (14 files)
-- [x] Requirements document created
-- [x] Design document created with:
-  - Page structure and routing
-  - MainHeader (from FrameHeader.tsx)
-  - MainSidebar with menu + chat elements
-  - 9-step onboarding flow with exact text
-  - Trace feature specification
-  - API wiring for all desks
-  - Governance Log UI (embedded in Graph Explorer)
-  - Risk Engine visualization
+**Core Principle:** STITCH existing components - do NOT recreate from scratch.
 
-## What Has Been Built (Completed Jan 12, 2026)
-1. `MainAppContext.tsx` - State management with sessionStorage (year/quarter) and localStorage (theme/language/onboarding)
-2. `MainAppPage.tsx` - Layout with header, sidebar, outlet and RTL support
-3. `MainHeader.tsx` - Year/Quarter dropdowns, Export/Share/Profile, Theme/Lang toggles, Onboarding replay (?)
-4. `MainSidebar.tsx` - Menu + chat elements with collapsible sections
-5. Section components (SectorDesk, EnterpriseDesk, ControlsDesk, PlanningDesk, ReportingDesk)
-6. Tools sections (KnowledgeSeries, Roadmap, GraphExplorer with governance log panel, GraphChat)
-7. Admin sections (Settings, Observability)
-8. Onboarding tour (driver.js, 9 steps with navigation)
-9. Trace component (refactored from AIExplainButton)
-10. Routing configuration at /main/*
-11. CSS authority applied (theme.css variables throughout)
+### Traceability Matrix (in plan)
+Every requirement is linked to design elements and implementation tasks (max 3 tasks per element).
+
+### Plan Sections (A-W)
+| Section | Content |
+|---------|---------|
+| STEP 0 | Stash existing /main to /main_stash |
+| A | Component Inventory (verified paths) |
+| B | Governance Log System |
+| C | Onboarding Tour (9 steps, driver.js) |
+| D | Trace Feature |
+| E | MainSidebar Combined Structure |
+| F | State Management |
+| G | CSS Authority |
+| H | Route Configuration |
+| I-J | New files + Changes to existing |
+| K | Implementation Order |
+| L | Reference Patterns (ChatAppPage, JosoorFrame) |
+| M | Complete File Paths |
+| N | MainAppPage Detailed Design |
+| O | MainSidebar Detailed Design |
+| P | Graph Explorer + Governance Log |
+| Q | Implementation Checklist (27 tasks) |
+| R | CSS Imports by Component |
+| S | Trace Refactor |
+| T | Driver.js Config |
+| U | Conversation Management |
+| V | Component Dependencies |
+| W | Missing Sections (Sector, Settings, Observability, Risk Agent) |
+
+## Key Source Files to STITCH
+
+| Target | Source File | Path |
+|--------|-------------|------|
+| MainHeader | FrameHeader.tsx | `frontend/src/pages/josoor-sandbox/layout/FrameHeader.tsx` |
+| MainSidebar (nav) | FrameSidebar.tsx | `frontend/src/pages/josoor-sandbox/layout/FrameSidebar.tsx` |
+| MainSidebar (chat) | Sidebar.tsx | `frontend/src/components/chat/Sidebar.tsx` |
+| Layout Pattern | JosoorFrame.tsx | `frontend/src/pages/josoor-sandbox/layout/JosoorFrame.tsx` |
+| Conversation Mgmt | ChatAppPage.tsx | `frontend/src/pages/ChatAppPage.tsx` |
+| Sector Desk | ControlTower.tsx | `frontend/src/pages/josoor-sandbox/components/ControlTower.tsx` |
+| Enterprise Desk | DependencyDesk.tsx | `frontend/src/pages/josoor-sandbox/components/DependencyDesk.tsx` |
+| Controls Desk | RiskDesk.tsx | `frontend/src/pages/josoor-sandbox/components/RiskDesk.tsx` |
+| Settings | AdminSettingsPage.tsx | `frontend/src/pages/AdminSettingsPage.tsx` |
+| Observability | ObservabilityDashboardPage.tsx | `frontend/src/pages/ObservabilityDashboardPage.tsx` |
+| Trace | AIExplainButton.tsx | `frontend/src/pages/josoor-sandbox/components/AIExplainButton.tsx` |
+
+## 4 Chain APIs (Controls Desk)
+```
+setting_strategic_initiatives  → Steering ribbon
+build_oversight               → Risk BUILD ribbon
+operate_oversight             → Risk OPERATE ribbon
+sustainable_operations        → Delivery ribbon
+```
+
+## Risk Agent vs Risk Desk
+- **Risk Desk (Controls Desk)** = User-facing visualization of risk data
+- **Risk Agent Console** = Admin panel to trigger/monitor automated governance agent
+
+## Execution Steps (from Plan Section K)
+1. Stash `/main` to `/main_stash`
+2. Create `MainAppContext.tsx`
+3. Create `MainAppPage.tsx` (follow JosoorFrame + ChatAppPage patterns)
+4. Create `MainSidebar.tsx` (combine FrameSidebar nav + chat elements)
+5. Update `FrameHeader.tsx` (add ? button, IDs)
+6. Update paths in navigation to `/main/*`
+7. Create wrapper components
+8. Configure routes in `App.tsx`
+9. Create onboarding tour hook
+10. Refactor AIExplainButton → Trace
+11. Add all onboarding target IDs
+12. Test all functionality
 
 ## Project Structure
 ```
 frontend/
 ├── src/
-│   ├── components/       # UI components
-│   │   ├── chat/         # Chat interface (Sidebar.css is CSS authority)
-│   │   ├── dashboards/   # Dashboard components
-│   │   ├── ui/           # Radix UI primitives
-│   │   └── content/      # Content components
+│   ├── components/chat/      # Chat UI (Sidebar.css = CSS authority)
 │   ├── pages/
-│   │   ├── josoor-sandbox/  # Source: FrameHeader, RiskDesk, etc.
-│   │   ├── chat/            # ChatAppPage
-│   │   └── main/            # NEW: MainAppPage + sections
-│   ├── services/         # chatService, authService
-│   ├── contexts/         # Auth, Language contexts
-│   ├── styles/           # theme.css (CSS authority)
-│   └── types/            # TypeScript definitions
-├── public/
-│   ├── icons/            # 14 app icons (josoor, menu, new, etc.)
-│   ├── knowledge/        # Twin Knowledge content
-│   └── att/              # Cube animation
-└── vite.config.ts
-```
-
-## Key Source Files for Re-wiring
-- `frontend/src/pages/josoor-sandbox/layout/FrameHeader.tsx` - Header template
-- `frontend/src/components/chat/Sidebar.tsx` - Chat sidebar (preserve elements)
-- `frontend/src/styles/theme.css` - CSS authority
-- `frontend/src/pages/josoor-sandbox/components/AIExplainButton.tsx` - Trace source
-- `attached_assets/GOVERNANCE_LOG_DESIGN_*.md` - Governance spec
-- `attached_assets/Enterprise_Ontology_SST_*.md` - Risk Engine spec
-
-## Sidebar Menu Structure
-```
-ENTERPRISE MANAGEMENT
-  ▸ Sector Desk
-  ▸ Enterprise Desk
-  ▸ Controls Desk
-  ▸ Planning Desk
-  ▸ Reporting Desk
-TOOLS
-  ▸ Knowledge Series
-  ▸ Roadmap
-  ▸ Graph Explorer (has embedded Governance Log)
-  ▸ Graph Chat
-ADMIN
-  ▸ Settings
-  ▸ Observability
-CONVERSATIONS (collapsible)
-  ▸ Today / Yesterday / Previous 7 days
+│   │   ├── josoor-sandbox/   # SOURCE components to stitch
+│   │   └── main/             # TARGET (currently has stash-able implementation)
+│   ├── services/             # chatService, chainsService, authService
+│   ├── contexts/             # Auth, Language
+│   └── styles/theme.css      # CSS authority
+├── public/icons/             # 14 app icons
+└── docs/work/                # Requirements, Design, Implementation Plan
 ```
 
 ## Running the App
@@ -101,21 +109,15 @@ cd frontend && npm run dev
 ```
 Dev server on port 5000.
 
-## Backend Connection
+## Backend
 - Main API: https://betaBE.aitwintech.com/api/v1
 - Graph Server: https://betaBE.aitwintech.com/api/graph
 
-## Styling
-CSS variables in theme.css - NOT Tailwind CSS.
+## CSS Authority
+Use `theme.css` CSS variables throughout. NOT Tailwind.
 
-## Recent Changes
-- January 12, 2026: COMPLETED frontend re-wiring implementation
-  - Created MainAppContext with full state management + persistence
-  - Built MainAppPage layout with MainHeader, MainSidebar, Outlet
-  - Implemented all 11 section components (5 desks + 6 tools/admin)
-  - Configured /main routing in App.tsx with nested routes
-  - Implemented 9-step onboarding tour with driver.js
-  - Created Trace component (refactored from AIExplainButton)
-  - Applied CSS authority (theme.css variables throughout)
-- Governance Log embedded in Graph Explorer (not separate route)
-- Founders Letter stays on landing page only
+## Recent Changes (Jan 12, 2026)
+- Created comprehensive implementation plan (1,906 lines)
+- Added traceability matrix (requirements → design → tasks)
+- Added detailed sections for Sector Desk, Settings, Observability, Risk Agent
+- Plan version 0.4 - READY FOR EXECUTION
