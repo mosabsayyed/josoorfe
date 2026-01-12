@@ -117,7 +117,9 @@ Dev server on port 5000.
 Use `theme.css` CSS variables throughout. NOT Tailwind.
 
 ## Recent Changes (Jan 12, 2026)
-- Created comprehensive implementation plan (1,906 lines)
-- Added traceability matrix (requirements → design → tasks)
-- Added detailed sections for Sector Desk, Settings, Observability, Risk Agent
-- Plan version 0.4 - READY FOR EXECUTION
+- **FIXED traceability matrix** - rebuilt using two-step approach
+- Plan version 0.5 - READY FOR EXECUTION
+- 42 design elements (D00-D41)
+- 74 total tasks (T00-T68 frontend + B01-B05 backend)
+- All tasks now have valid links to design elements
+- Cross-reference table added for quick lookups

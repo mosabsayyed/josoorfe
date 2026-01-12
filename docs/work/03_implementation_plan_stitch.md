@@ -190,11 +190,25 @@ Every design element mapped to 1-3 implementation tasks. Task IDs use format: T#
 | D31 | Governance-API | B02, B03 | (Backend) CRUD endpoints; Agent run endpoint |
 | D32 | RiskEngine-API | B04, B05 | (Backend) Execution trigger; Config endpoint |
 
+### SETUP (D00)
+
+| Design ID | Design Element | Task IDs | Tasks (1-3 max) |
+|-----------|----------------|----------|-----------------|
+| D00 | Stash existing /main | T00 | Stash /main → /main_stash |
+
 ### ICONS (D33)
 
 | Design ID | Design Element | Task IDs | Tasks (1-3 max) |
 |-----------|----------------|----------|-----------------|
-| D33 | Icons | DONE | Already extracted to public/icons/ |
+| D33 | Icons | T68 | Verify 14 icons in public/icons/ (already extracted) |
+
+### ROUTING & TESTING (D39)
+
+| Design ID | Design Element | Task IDs | Tasks (1-3 max) |
+|-----------|----------------|----------|-----------------|
+| D39 | Routing-Config | T59, T60, T61 | Add /main/* routes; Configure default redirect; Test route loading |
+| D40 | Testing-Functional | T62, T63, T64 | Test navigation; Test conversation mgmt; Test filtering |
+| D41 | Testing-UI | T65, T66, T67 | Test theme/lang/RTL; Test onboarding flow; Test sidebar collapse |
 
 ### ADMIN PAGES (D34-D38)
 
@@ -222,26 +236,28 @@ Every design element mapped to 1-3 implementation tasks. Task IDs use format: T#
 | Invite System | T46-T47 | 2 |
 | Admin Pages | T48-T58 | 11 |
 | Routing & Testing | T59-T67 | 9 |
-| **Frontend Total** | T00-T67 | **68** |
+| Icons | T68 | 1 |
+| **Frontend Total** | T00-T68 | **69** |
 | Backend | B01-B05 | 5 |
-| **Grand Total** | | **73** |
+| **Grand Total** | | **74** |
 
 ### CROSS-REFERENCE: Task ID ↔ Design Element
 
 | Task | Design Element | Task | Design Element |
 |------|---------------|------|---------------|
-| T01-T02 | D01 | T37-T38 | D23 |
-| T03 | D02 | T39-T40 | D24 |
-| T04 | D03 | T41 | D25 |
-| T05-T06 | D04 | T42 | D26 |
-| T07 | D05 | T43-T44 | D27 |
-| T08-T09 | D06 | T45 | D28 |
-| T10-T12 | D07 | T46-T47 | D29 |
-| T13 | D08 | T48-T49 | D34 |
-| T14 | D09 | T50 | D35 |
-| T15 | D10 | T51-T53 | D36 |
-| T16 | D11 | T54-T55 | D37 |
-| T17-T18 | D12 | T56-T58 | D38 |
+| T00 | D00 | T42 | D26 |
+| T01-T02 | D01 | T43-T44 | D27 |
+| T03 | D02 | T45 | D28 |
+| T04 | D03 | T46-T47 | D29 |
+| T05-T06 | D04 | T48-T49 | D34 |
+| T07 | D05 | T50 | D35 |
+| T08-T09 | D06 | T51-T53 | D36 |
+| T10-T12 | D07 | T54-T55 | D37 |
+| T13 | D08 | T56-T58 | D38 |
+| T14 | D09 | T59-T61 | D39 |
+| T15 | D10 | T62-T64 | D40 |
+| T16 | D11 | T65-T67 | D41 |
+| T17-T18 | D12 | T68 | D33 |
 | T19-T20 | D13 | B01 | D30 |
 | T21 | D14 | B02-B03 | D31 |
 | T22-T23 | D15 | B04-B05 | D32 |
@@ -252,6 +268,9 @@ Every design element mapped to 1-3 implementation tasks. Task IDs use format: T#
 | T32 | D20 | | |
 | T33 | D21 | | |
 | T34-T36 | D22 | | |
+| T37-T38 | D23 | | |
+| T39-T40 | D24 | | |
+| T41 | D25 | | |
 
 ---
 
@@ -1389,6 +1408,9 @@ All tasks use IDs from the Traceability Matrix (T01-T58 for frontend, B01-B05 fo
 - [ ] T66 Test onboarding flow
 - [ ] T67 Test sidebar collapse
 
+### PHASE 11: Icons Verification
+- [ ] T68 Verify 14 icons exist in public/icons/
+
 ### BACKEND TASKS (Separate Ownership)
 - [ ] B01 Migrate admin_settings.json to Supabase
 - [ ] B02 Governance CRUD endpoints
@@ -1406,7 +1428,7 @@ All tasks use IDs from the Traceability Matrix (T01-T58 for frontend, B01-B05 fo
 | 2026-01-12 | 0.2 | Added Sections L-Q: Reference patterns, complete paths, detailed designs, implementation checklist |
 | 2026-01-12 | 0.3 | Added Section R (CSS imports), Section S (AIExplainButton/Trace), Section T (Driver.js config) |
 | 2026-01-12 | 0.4 | Added Section W (Sector, Settings, Observability, Risk Agent) |
-| 2026-01-12 | 0.5 | **FIXED TRACEABILITY** - Rebuilt in 2 steps: (1) Req→Design with D01-D38 IDs, (2) Design→Tasks with T00-T67 + B01-B05 IDs. Added cross-reference table. All 73 tasks now have valid links. |
+| 2026-01-12 | 0.5 | **FIXED TRACEABILITY** - Rebuilt in 2 steps: (1) Req→Design with D00-D41 IDs, (2) Design→Tasks with T00-T68 + B01-B05 IDs. Added cross-reference table. All 74 tasks now have valid links. Added D00 (Setup), D39-D41 (Routing/Testing), T68 (Icons verify). |
 
 ---
 
