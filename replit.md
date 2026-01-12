@@ -30,16 +30,18 @@ JOSOOR is an Agentic Enterprise Platform - a Cognitive Twin designed for nationa
   - Governance Log UI (embedded in Graph Explorer)
   - Risk Engine visualization
 
-## What Needs to Be Built
-1. `MainAppContext.tsx` - State management
-2. `MainAppPage.tsx` - Layout with header, sidebar, outlet
-3. `MainHeader.tsx` - Year/Quarter/Export/Share/Theme/Lang/Profile
-4. `MainSidebar.tsx` - Menu + chat elements
-5. Section components (SectorDesk, EnterpriseDesk, ControlsDesk, etc.)
-6. Onboarding tour (driver.js, 9 steps)
-7. Trace feature (refactor AIExplainButton)
-8. Routing configuration
-9. CSS authority application
+## What Has Been Built (Completed Jan 12, 2026)
+1. `MainAppContext.tsx` - State management with sessionStorage (year/quarter) and localStorage (theme/language/onboarding)
+2. `MainAppPage.tsx` - Layout with header, sidebar, outlet and RTL support
+3. `MainHeader.tsx` - Year/Quarter dropdowns, Export/Share/Profile, Theme/Lang toggles, Onboarding replay (?)
+4. `MainSidebar.tsx` - Menu + chat elements with collapsible sections
+5. Section components (SectorDesk, EnterpriseDesk, ControlsDesk, PlanningDesk, ReportingDesk)
+6. Tools sections (KnowledgeSeries, Roadmap, GraphExplorer with governance log panel, GraphChat)
+7. Admin sections (Settings, Observability)
+8. Onboarding tour (driver.js, 9 steps with navigation)
+9. Trace component (refactored from AIExplainButton)
+10. Routing configuration at /main/*
+11. CSS authority applied (theme.css variables throughout)
 
 ## Project Structure
 ```
@@ -107,8 +109,13 @@ Dev server on port 5000.
 CSS variables in theme.css - NOT Tailwind CSS.
 
 ## Recent Changes
-- January 12, 2026: Created design documents and extracted icons
-- Trace feature specified (refactor AIExplainButton)
-- Onboarding flow defined (9 steps with Noor welcome)
+- January 12, 2026: COMPLETED frontend re-wiring implementation
+  - Created MainAppContext with full state management + persistence
+  - Built MainAppPage layout with MainHeader, MainSidebar, Outlet
+  - Implemented all 11 section components (5 desks + 6 tools/admin)
+  - Configured /main routing in App.tsx with nested routes
+  - Implemented 9-step onboarding tour with driver.js
+  - Created Trace component (refactored from AIExplainButton)
+  - Applied CSS authority (theme.css variables throughout)
 - Governance Log embedded in Graph Explorer (not separate route)
 - Founders Letter stays on landing page only
