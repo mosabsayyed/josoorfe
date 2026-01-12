@@ -8,7 +8,7 @@ import { LandingPageRenderer } from './renderers/LandingPageRenderer';
 import { ArtifactRenderer } from './ArtifactRenderer';
 import type { Artifact } from '../../types/api';
 
-import { GraphDashboard } from '../graphv001/GraphDashboard';
+import { GraphDashboard } from '../dashboards/GraphDashboard';
 
 interface UniversalCanvasProps {
   content?: any;

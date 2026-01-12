@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import InternalOutputs from '../../../components/graphv001/components/InternalOutputs';
-import TransformationHealth from '../../../components/graphv001/components/TransformationHealth';
-import SectorOutcomes from '../../../components/graphv001/components/SectorOutcomes';
-import StrategicInsights from '../../../components/graphv001/components/StrategicInsights';
+import InternalOutputs from '../../../components/dashboards/InternalOutputs';
+import TransformationHealth from '../../../components/dashboards/TransformationHealth';
+import SectorOutcomes from '../../../components/dashboards/SectorOutcomes';
+import StrategicInsights from '../../../components/dashboards/StrategicInsights';
 import LoadingSpinner from '../../../components/common/LoadingSpinner';
 import { useLanguage } from '../../../contexts/LanguageContext';
-import type { DashboardData } from '../../../components/graphv001/types';
+import type { DashboardData } from '../../../types/dashboard';
 
 const ControlTower: React.FC = () => {
     const { language, isRTL } = useLanguage();

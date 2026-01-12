@@ -1,32 +1,34 @@
 import { createClient } from '@supabase/supabase-js';
 
-// Use build-time injected REACT_APP_* variables first (CRA/craco). Fall back to window.__env__ at runtime.
 export const supabase = (() => {
-  // Use direct process.env.* references so CRA/craco's DefinePlugin replaces them at build time.
-  // These will be compiled to string literals by the bundler.
-  // @ts-ignore
-  const BUILD_REACT_APP_SUPABASE_URL = process.env.REACT_APP_SUPABASE_URL;
-  // @ts-ignore
-  const BUILD_REACT_APP_SUPABASE_ANON = process.env.REACT_APP_SUPABASE_ANON_KEY;
-
   const winEnv = (typeof window !== 'undefined' && (window as any).__env__) ? (window as any).__env__ : {};
 
-  const SUPABASE_URL = BUILD_REACT_APP_SUPABASE_URL || winEnv.REACT_APP_SUPABASE_URL || winEnv.SUPABASE_URL || '';
-  const SUPABASE_ANON = BUILD_REACT_APP_SUPABASE_ANON || winEnv.REACT_APP_SUPABASE_ANON_KEY || winEnv.SUPABASE_ANON_KEY || '';
+  const SUPABASE_URL = 
+    (import.meta as any).env?.VITE_SUPABASE_URL ||
+    (import.meta as any).env?.REACT_APP_SUPABASE_URL ||
+    winEnv.REACT_APP_SUPABASE_URL || 
+    winEnv.SUPABASE_URL || 
+    'https://ojlfhkrobyqmifqbgcyw.supabase.co';
+    
+  const SUPABASE_ANON = 
+    (import.meta as any).env?.VITE_SUPABASE_ANON_KEY ||
+    (import.meta as any).env?.REACT_APP_SUPABASE_ANON_KEY ||
+    winEnv.REACT_APP_SUPABASE_ANON_KEY || 
+    winEnv.SUPABASE_ANON_KEY || 
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9qbGZoa3JvYnlxbWlmcWJnY3l3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk1NTYwNTYsImV4cCI6MjA2NTEzMjA1Nn0.Y6swVK-tGI0lqpFJ4pgUGD6NaEj-sQIizTvYL2Cf4nY';
 
   if (!SUPABASE_URL || !SUPABASE_ANON) {
-    // eslint-disable-next-line no-console
-    console.error('Supabase not configured for frontend. Set REACT_APP_SUPABASE_URL and REACT_APP_SUPABASE_ANON_KEY');
+    console.error('Supabase not configured for frontend.');
     const stub = {
       auth: {
-        signInWithPassword: async () => ({ error: new Error('Supabase not configured: set REACT_APP_SUPABASE_URL and REACT_APP_SUPABASE_ANON_KEY') }),
-        signUp: async () => ({ error: new Error('Supabase not configured: set REACT_APP_SUPABASE_URL and REACT_APP_SUPABASE_ANON_KEY') }),
-        signInWithOAuth: async () => ({ error: new Error('Supabase not configured: set REACT_APP_SUPABASE_URL and REACT_APP_SUPABASE_ANON_KEY') }),
-        signOut: async () => ({ error: new Error('Supabase not configured: set REACT_APP_SUPABASE_URL and REACT_APP_SUPABASE_ANON_KEY') }),
+        signInWithPassword: async () => ({ error: new Error('Supabase not configured') }),
+        signUp: async () => ({ error: new Error('Supabase not configured') }),
+        signInWithOAuth: async () => ({ error: new Error('Supabase not configured') }),
+        signOut: async () => ({ error: new Error('Supabase not configured') }),
         getSession: async () => ({ data: { session: null } }),
         onAuthStateChange: () => ({ subscription: { unsubscribe: () => {} } }),
       },
-      from: () => ({ select: async () => ({ data: null }) }),
+      from: () => ({ select: async () => ({ data: null }), insert: async () => ({ data: null, error: null }) }),
     } as any;
     return stub;
   }

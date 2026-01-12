@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import DimensionModule from '../../../components/graphv001/components/DimensionModule';
-import type { Dimension } from '../../../components/graphv001/types';
-import '../../../components/graphv001/GraphDashboard.css';
+import DimensionModule from '../../../components/dashboards/DimensionModule';
+import type { Dimension } from '../../../types/dashboard';
+import '../../../styles/GraphDashboard.css';
 import './InternalOutputs.css';
 
 interface InternalOutputsProps {

@@ -6,13 +6,12 @@ import { TrendsChart, transformToTrend } from './TrendsChart';
 import { CombinedScore } from './CombinedScore';
 import { InternalOutputs } from './InternalOutputs';
 import { CardActionIcons } from './CardActionIcons';
-// Rich chart-based components from graphv001
-import StrategicInsights from '../../../components/graphv001/components/StrategicInsights';
-import SectorOutcomes from '../../../components/graphv001/components/SectorOutcomes';
-import type { DashboardData, OutcomesData } from '../../../components/graphv001/types';
+import StrategicInsights from '../../../components/dashboards/StrategicInsights';
+import SectorOutcomes from '../../../components/dashboards/SectorOutcomes';
+import type { DashboardData, OutcomesData } from '../../../types/dashboard';
 
-import './ControlTower.css'; // Keep existing styles for now, but will override with simpler grid
-import '../../../components/graphv001/GraphDashboard.css'; // Import for CSS variables (--component-panel-bg, etc.)
+import './ControlTower.css';
+import '../../../styles/GraphDashboard.css';
 
 interface JosoorContext {
     year: string;

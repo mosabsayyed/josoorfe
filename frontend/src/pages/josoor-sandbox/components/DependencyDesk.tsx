@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { NeoGraph } from '../../../components/graphv001/components/NeoGraph';
+import { NeoGraph } from '../../../components/dashboards/NeoGraph';
 import { DependencyKnots } from './DependencyKnots';
 import { MetricDetailsPanel } from './MetricDetailsPanel';
 import { GapRecommendationsPanel } from './GapRecommendationsPanel';

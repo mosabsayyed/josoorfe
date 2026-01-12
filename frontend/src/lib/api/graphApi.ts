@@ -4,7 +4,7 @@
  * Calls backend graph-server on port 3001
  */
 
-const GRAPH_SERVER_URL = process.env.REACT_APP_GRAPH_SERVER_URL || '';
+const GRAPH_SERVER_URL = (import.meta as any).env?.VITE_GRAPH_SERVER_URL || (import.meta as any).env?.REACT_APP_GRAPH_SERVER_URL || '';
 
 export interface GraphData {
   nodes: any[];
