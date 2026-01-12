@@ -149,6 +149,7 @@ export function useOnboardingTour() {
       },
       onDestroyStarted: () => {
         completeOnboarding();
+        driverObj.destroy();
       },
       onDestroyed: () => {
         completeOnboarding();
