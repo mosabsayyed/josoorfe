@@ -206,9 +206,53 @@ if (localStorage.getItem('josoor_onboarding_complete') !== 'true') {
 
 ---
 
-## 5. API WIRING
+## 5. TRACE FEATURE
 
-### 5.1 Desk Endpoints
+### 5.1 Overview
+
+Trace is a contextual AI analysis feature that allows users to get instant explanations of any data element, then continue the conversation in Graph Chat.
+
+### 5.2 Source Component
+
+Refactor existing `AIExplainButton.tsx` from `/josoor-sandbox/components/`:
+- Rename "Explain with AI" → "Trace"
+- Icon: 💡 (keep or change to 🔍)
+- Available on: Cards, Nodes, KPI panels, Ribbon items
+
+### 5.3 Behavior
+
+1. User clicks Trace button on any element
+2. Modal popup appears with loading spinner
+3. Context data sent to `/api/v1/chat/message` via chatService
+4. AI response displayed in popup
+5. "Continue Discussion in Chat →" button navigates to Graph Chat with conversation_id
+6. Conversation becomes a persistent thread for follow-up
+
+### 5.4 Integration Points
+
+| Location | Context Data |
+|----------|--------------|
+| Sector Desk KPI cards | KPI name, value, trend, target |
+| Controls Desk ribbon nodes | Node data, chain position, risk score |
+| Graph Explorer nodes | Node properties, governance log |
+| Enterprise Desk capabilities | Capability details, health metrics |
+
+### 5.5 Implementation
+
+```tsx
+// Rename in AIExplainButton.tsx
+label = 'Trace'  // was 'Explain with AI'
+title = 'Trace'  // was 'Explain with AI'
+
+// Modal title
+<h3>Trace: {contextTitle}</h3>  // was 'AI Analyst: {contextTitle}'
+```
+
+---
+
+## 6. API WIRING
+
+### 6.1 Desk Endpoints
 
 | Desk | Endpoint | Method | Parameters |
 |------|----------|--------|------------|
@@ -224,7 +268,7 @@ if (localStorage.getItem('josoor_onboarding_complete') !== 'true') {
 | **Enterprise** | `/api/business-chain/sector_value_chain` | GET | year |
 | **Graph Explorer** | `/api/v1/graph/explorer` | GET | year |
 
-### 5.2 Governance Endpoints (NEW - Backend Required)
+### 6.2 Governance Endpoints (NEW - Backend Required)
 
 | Endpoint | Method | Purpose |
 |----------|--------|---------|
@@ -234,7 +278,7 @@ if (localStorage.getItem('josoor_onboarding_complete') !== 'true') {
 | `/api/v1/governance/open-escalations` | GET | Count for badge |
 | `/api/v1/governance/agent/run` | POST | Trigger daily agent |
 
-### 5.3 Risk Engine Endpoints (NEW - Backend Required)
+### 6.3 Risk Engine Endpoints (NEW - Backend Required)
 
 | Endpoint | Method | Purpose |
 |----------|--------|---------|
@@ -243,14 +287,14 @@ if (localStorage.getItem('josoor_onboarding_complete') !== 'true') {
 
 ---
 
-## 6. CSS STRATEGY
+## 7. CSS STRATEGY
 
-### 6.1 Authority
+### 7.1 Authority
 
 - **Master:** `/chat` CSS files
 - **Files:** `theme.css`, `sidebar.css`, `Sidebar.css`
 
-### 6.2 Variable Mapping
+### 7.2 Variable Mapping
 
 ```css
 /* When importing new design components, map: */
@@ -261,23 +305,23 @@ if (localStorage.getItem('josoor_onboarding_complete') !== 'true') {
 --accent-gold      /* #FFD700 highlights */
 ```
 
-### 6.3 RTL Support
+### 7.3 RTL Support
 
 - Use `direction: isRTL ? 'rtl' : 'ltr'`
 - Use logical properties: `margin-inline-start`, `padding-inline-end`
 
 ---
 
-## 7. RISK ENGINE VISUALIZATION
+## 8. RISK ENGINE VISUALIZATION
 
-### 7.1 Controls Desk Ribbons
+### 8.1 Controls Desk Ribbons
 
 | Ribbon | Risk Data | Color Coding |
 |--------|-----------|--------------|
 | Risk BUILD | `build_exposure_pct`, `build_band` | Green < 35%, Amber 35-65%, Red > 65% |
 | Risk OPERATE | `operate_exposure_pct`, `operate_band`, `trend_flag` | Same + arrow for trend |
 
-### 7.2 Node Tooltips
+### 8.2 Node Tooltips
 
 ```
 Capability: Investor Relations
@@ -289,9 +333,9 @@ Trend: Declining (2 consecutive drops)
 
 ---
 
-## 8. GOVERNANCE LOG UI
+## 9. GOVERNANCE LOG UI
 
-### 8.1 Panel Design
+### 9.1 Panel Design
 
 ```
 ┌────────────────────────────────────────┐
@@ -311,9 +355,9 @@ Trend: Declining (2 consecutive drops)
 
 ---
 
-## 9. BACKEND REQUESTS
+## 10. BACKEND REQUESTS
 
-### 9.1 Settings Migration (Supabase)
+### 10.1 Settings Migration (Supabase)
 
 ```sql
 CREATE TABLE admin_settings (
@@ -326,11 +370,11 @@ CREATE TABLE admin_settings (
 -- Seed from current admin_settings.json
 ```
 
-### 9.2 Governance API
+### 10.2 Governance API
 
-API endpoints as defined in Section 5.2. Backend implementation required at `betaBE.aitwintech.com`.
+API endpoints as defined in Section 6.2. Backend implementation required at `betaBE.aitwintech.com`.
 
-### 9.3 Risk Engine Config
+### 10.3 Risk Engine Config
 
 ```sql
 CREATE TABLE risk_config (
@@ -344,7 +388,7 @@ CREATE TABLE risk_config (
 
 ---
 
-## 10. IMPLEMENTATION TASKS
+## 11. IMPLEMENTATION TASKS
 
 1. Extract and place icons in `frontend/public/icons/` ✓ DONE
 2. Create `MainAppContext.tsx`
@@ -367,7 +411,7 @@ CREATE TABLE risk_config (
 
 ---
 
-## 11. REFERENCED DOCUMENTS
+## 12. REFERENCED DOCUMENTS
 
 - `01_user_requirements_120126_0909.md`
 - `GOVERNANCE_LOG_DESIGN_1768206485031.md`
