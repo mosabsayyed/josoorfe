@@ -111,15 +111,15 @@ interface MainAppActions {
 
 ### 3.1 MainHeader
 
-**Elements (left to right):**
+**Elements (left to right) - from FrameHeader.tsx:**
 1. Page title + subtitle
 2. Year dropdown (2025-2030)
 3. Quarter dropdown (Q1-Q4, All)
-4. Search icon (future)
-5. Notifications bell (with badge)
-6. Language toggle (EN/عربي)
-7. Theme toggle (sun/moon)
-8. `?` Onboarding replay button
+4. Export button (📥)
+5. Share button (🔗)
+6. Theme toggle (☀️/🌙)
+7. Language toggle (Globe + EN/عربي)
+8. `?` Onboarding replay button (NEW)
 9. Profile avatar + dropdown
 
 **Profile moved from sidebar** → Now in header right side
