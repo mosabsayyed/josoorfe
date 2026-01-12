@@ -1,0 +1,108 @@
+.sidebar-newchat-icon {
+  display: inline;
+  font-weight: 600;
+  width: 14px;
+  height: 14px;
+  margin-right: 8px;
+}
+
+.sidebar-quickaction-icon {
+  display: block;
+  border-radius: 4px;
+  font-weight: 600;
+  height: 35px;
+  object-fit: cover;
+  vertical-align: middle;
+  width: 35px;
+}
+
+.sidebar-quickactions-card {
+  /* default kept in inline styles; this class enables responsive override */
+}
+
+.sidebar-hamburger-third {
+  display: block;
+}
+
+@media (max-width: 991px) {
+  .sidebar-newchat-icon {
+    width: 20px;
+    height: 20px;
+  }
+
+  .sidebar-quickaction-icon {
+    width: 35px;
+    height: 35px;
+  }
+
+
+  .sidebar-hamburger-third:last-child {
+    /* The hamburger icon is rendered as <img src="/icons/menu.svg"> in the JSX; avoid background-image
+       in CSS to prevent build-time resolution issues with css-loader. */
+    background-image: none;
+  }
+}
+
+/* Scoped font rules: headings use Tajawal (applied in JSX via .tajawal classes)
+   while sub-items and interactive labels use Cairo. These rules are scoped
+   under .sidebar.cairo-body so they don't affect global styles. */
+.sidebar.cairo-body .quickaction-title,
+.sidebar.cairo-body .quickaction-meta,
+.sidebar.cairo-body .sidebar-newchat-text,
+.sidebar.cairo-body .guest-mode,
+.sidebar.cairo-body .login-to-save,
+.sidebar.cairo-body .account-name,
+.sidebar.cairo-body .account-email,
+.sidebar.cairo-body .conversations-title,
+.sidebar.cairo-body .conversation-item,
+.sidebar.cairo-body .conversation-item p,
+.sidebar.cairo-body .collapsed-login-button,
+.sidebar.cairo-body .guest-text,
+.sidebar.cairo-body .sidebar-quickaction-icon + .quickaction-meta,
+.sidebar.cairo-body .sidebar-language-toggle,
+.sidebar.cairo-body button,
+.sidebar.cairo-body span,
+.sidebar.cairo-body p {
+  font-family: 'Cairo', 'Segoe UI', Roboto, Arial, sans-serif;
+  font-weight: 400;
+}
+
+/* Color rules using theme variables so text remains readable in dark mode */
+.sidebar.cairo-body .guest-mode {
+  color: var(--component-text-primary, rgba(26,36,53,1));
+  font-weight: 600;
+}
+.sidebar.cairo-body .login-to-save {
+  color: var(--component-text-muted, rgba(107,114,128,1));
+  font-size: 12px;
+}
+.sidebar.cairo-body .account-name {
+  color: var(--component-text-primary, rgba(26,36,53,1));
+  font-weight: 600;
+}
+.sidebar.cairo-body .account-email {
+  color: var(--component-text-muted, rgba(107,114,128,1));
+  font-size: 12px;
+}
+.sidebar.cairo-body .collapsed-login-button {
+  color: var(--component-text-primary, rgba(26,36,53,1));
+}
+
+
+/* Ensure Tajawal headings have a heavier weight and are used for titles */
+.sidebar.tajawal-headings .tajawal,
+.sidebar.tajawal-headings h1,
+.sidebar.tajawal-headings h2,
+.sidebar.tajawal-headings h3,
+.sidebar.tajawal-headings .brand-title,
+.sidebar.tajawal-headings .explore-title {
+  font-family: 'Tajawal', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-weight: 700;
+}
+
+/* RTL alignment tweak for Arabic headings */
+.sidebar[dir='rtl'] .tajawal {
+  direction: rtl;
+  text-align: right;
+}
+
