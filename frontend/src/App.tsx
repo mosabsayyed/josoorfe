@@ -38,6 +38,19 @@ import AdminSettingsPage from './pages/AdminSettingsPage';
 import SystemObservabilityPage from './pages/SystemObservabilityPage';
 import ObservabilityDashboardPage from './pages/ObservabilityDashboardPage';
 
+import { MainAppPage } from './pages/main/MainAppPage';
+import { SectorDesk } from './pages/main/sections/SectorDesk';
+import { EnterpriseDesk } from './pages/main/sections/EnterpriseDesk';
+import { ControlsDesk } from './pages/main/sections/ControlsDesk';
+import { PlanningDesk as MainPlanningDesk } from './pages/main/sections/PlanningDesk';
+import { ReportingDesk as MainReportingDesk } from './pages/main/sections/ReportingDesk';
+import { KnowledgeSeries } from './pages/main/sections/KnowledgeSeries';
+import { Roadmap } from './pages/main/sections/Roadmap';
+import { GraphExplorer } from './pages/main/sections/GraphExplorer';
+import { GraphChat } from './pages/main/sections/GraphChat';
+import { Settings as MainSettings } from './pages/main/sections/Settings';
+import { Observability as MainObservability } from './pages/main/sections/Observability';
+
 function ScrollToTop() {
   const location = useLocation();
 
@@ -125,6 +138,26 @@ function AppRoutes() {
             <Route path="knowledge/journey" element={<PlanYourJourney />} />
             <Route path="admin/settings" element={<AdminSettingsPage />} />
             <Route path="admin/observability" element={<ObservabilityDashboardPage />} />
+        </Route>
+
+        {/* NEW: Main App Page with unified layout */}
+        <Route path="/main" element={
+          <ProtectedRoute allowGuest={true}>
+            <MainAppPage />
+          </ProtectedRoute>
+        }>
+          <Route index element={<Navigate to="sector" replace />} />
+          <Route path="sector" element={<SectorDesk />} />
+          <Route path="enterprise" element={<EnterpriseDesk />} />
+          <Route path="controls" element={<ControlsDesk />} />
+          <Route path="planning" element={<MainPlanningDesk />} />
+          <Route path="reporting" element={<MainReportingDesk />} />
+          <Route path="knowledge" element={<KnowledgeSeries />} />
+          <Route path="roadmap" element={<Roadmap />} />
+          <Route path="graph" element={<GraphExplorer />} />
+          <Route path="chat" element={<GraphChat />} />
+          <Route path="settings" element={<MainSettings />} />
+          <Route path="observability" element={<MainObservability />} />
         </Route>
 
         <Route path="/founder-letter" element={<FounderLetterPage />} />
