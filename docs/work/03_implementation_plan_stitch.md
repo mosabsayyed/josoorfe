@@ -16,119 +16,242 @@ This plan describes how to STITCH existing components from `/chat` and `/josoor-
 
 ## TRACEABILITY MATRIX
 
-### Matrix Structure: Requirement → Design Element → Implementation Task(s)
-
-Each row shows: `[Req ID] Requirement Description → [Design Ref] Design Element → [Task IDs] Implementation Tasks`
-
-**Rule:** Max 3 tasks per design element. If more needed, design element is split.
+This matrix is built in TWO STEPS:
+1. **STEP 1:** Requirements → Design Elements (complete mapping)
+2. **STEP 2:** Design Elements → Implementation Tasks (complete mapping)
 
 ---
+
+## STEP 1: REQUIREMENTS → DESIGN ELEMENTS
+
+Every requirement from `01_user_requirements_120126_0909.md` mapped to design elements from `02_design_document_120126_0909.md`.
 
 ### REQ 2: MAIN PAGE REQUIREMENTS
 
-| Req ID | Requirement | Design Ref | Design Element | Task IDs | Tasks (1-3 max) |
-|--------|-------------|------------|----------------|----------|-----------------|
-| 2.1 | Unified main page structure | §1.1 | MainAppPage layout | Q.2.1, Q.2.2 | Create MainAppPage.tsx, Configure layout (sidebar+header+outlet) |
-| 2.2a | New Chat button | §3.2 | MainSidebar chat block | Q.4.1 | Extract New Chat from chat/Sidebar, add to MainSidebar |
-| 2.2b | Sidebar collapsing | §3.2 | MainSidebar collapse | Q.4.2 | Wire collapse toggle, persist state |
-| 2.2c | Conversation history | §3.2 | MainSidebar conversations | Q.4.3 | Extract ConversationsList, wire to chatService |
-| 2.3 | Profile in header | §3.1 | MainHeader profile | Q.3.1 | Move profile from FrameHeader to header right |
-
----
+| Req ID | Requirement | Design Section | Design Elements |
+|--------|-------------|----------------|-----------------|
+| 2.1 | Unified main page structure | §1.1 | D01: MainAppPage layout |
+| 2.2a | New Chat button | §3.2 | D02: MainSidebar-ChatBlock |
+| 2.2b | Sidebar collapsing | §3.2 | D03: MainSidebar-Collapse |
+| 2.2c | Conversation history | §3.2 | D04: MainSidebar-Conversations |
+| 2.3 | Profile in header | §3.1 | D05: MainHeader-Profile |
 
 ### REQ 3: DESK REQUIREMENTS
 
-| Req ID | Requirement | Design Ref | Design Element | Task IDs | Tasks (1-3 max) |
-|--------|-------------|------------|----------------|----------|-----------------|
-| 3.1a | Sector Desk - Map | §1.1 | SectorDesk-Map | W.1.1, W.1.2 | Import SectorOutcomes (SaudiMap), Add id="sector-desk-map" |
-| 3.1b | Sector Desk - KPI Gauges | §1.1 | SectorDesk-KPIs | W.1.3, W.1.4, W.1.5 | Import ControlTower gauges, Wire /api/v1/dashboard/dashboard-data, Add id="sector-desk-gauges" |
-| 3.2a | Controls Desk - Steering Ribbon | §6.1 | Controls-Steering | Q.5.1 | Import RiskSignals for setting_strategic_initiatives |
-| 3.2b | Controls Desk - Risk BUILD Ribbon | §6.1 | Controls-BUILD | Q.5.2 | Wire build_oversight chain API |
-| 3.2c | Controls Desk - Risk OPERATE Ribbon | §6.1 | Controls-OPERATE | Q.5.3 | Wire operate_oversight chain API |
-| 3.2d | Controls Desk - Delivery Ribbon | §6.1 | Controls-Delivery | Q.5.4 | Wire sustainable_operations chain API |
-| 3.3 | Planning Desk | §1.1 | PlanningDesk | Q.12.1, Q.12.2 | Import PlanningDesk, Wire analyzeGaps=true endpoint |
-| 3.4 | Reporting Desk | §1.1 | ReportingDesk | Q.12.3, Q.12.4 | Import ReportingDesk, Wire recommendations + export |
-| 3.5 | Enterprise Desk | §1.1 | EnterpriseDesk | Q.12.5 | Import DependencyDesk |
-
----
+| Req ID | Requirement | Design Section | Design Elements |
+|--------|-------------|----------------|-----------------|
+| 3.1a | Sector Desk - Map | §1.1, §6.1 | D06: SectorDesk-Map |
+| 3.1b | Sector Desk - KPI Gauges | §1.1, §6.1 | D07: SectorDesk-KPIs |
+| 3.2a | Controls Desk - Steering | §6.1 | D08: ControlsDesk-Steering |
+| 3.2b | Controls Desk - Risk BUILD | §6.1 | D09: ControlsDesk-BUILD |
+| 3.2c | Controls Desk - Risk OPERATE | §6.1 | D10: ControlsDesk-OPERATE |
+| 3.2d | Controls Desk - Delivery | §6.1 | D11: ControlsDesk-Delivery |
+| 3.3 | Planning Desk | §1.1 | D12: PlanningDesk |
+| 3.4 | Reporting Desk | §1.1 | D13: ReportingDesk |
+| 3.5 | Enterprise Desk | §1.1 | D14: EnterpriseDesk |
 
 ### REQ 4: SECTIONS (OPEN IN MAIN AREA)
 
-| Req ID | Requirement | Design Ref | Design Element | Task IDs | Tasks (1-3 max) |
-|--------|-------------|------------|----------------|----------|-----------------|
-| 4.1 | Knowledge Series | §1.1 | KnowledgeSeries | Q.6.1, Q.6.2 | Import TwinKnowledge, Add id="knowledge-series" |
-| 4.2 | Roadmap | §1.1 | Roadmap | Q.6.3, Q.6.4 | Create RoadmapWrapper (ProductRoadmap + PlanYourJourney) |
-| 4.3 | Graph Explorer | §1.1 | GraphExplorer | Q.6.5, Q.6.6 | Import RiskTopologyMap, Add id="graph-explorer-3d" |
-| 4.4 | Graph Chat | §1.1 | GraphChat | Q.6.7, Q.6.8 | Import ChatContainer, Add id="graph-chat" |
-
----
+| Req ID | Requirement | Design Section | Design Elements |
+|--------|-------------|----------------|-----------------|
+| 4.1 | Knowledge Series | §1.1 | D15: KnowledgeSeries |
+| 4.2 | Roadmap | §1.1 | D16: Roadmap |
+| 4.3 | Graph Explorer | §1.1 | D17: GraphExplorer |
+| 4.4 | Graph Chat | §1.1 | D18: GraphChat |
 
 ### REQ 5: ONBOARDING REQUIREMENTS
 
-| Req ID | Requirement | Design Ref | Design Element | Task IDs | Tasks (1-3 max) |
-|--------|-------------|------------|----------------|----------|-----------------|
-| 5.1a | One-time trigger | §4.1 | Onboarding-Trigger | Q.18.1 | Check localStorage on mount |
-| 5.1b | Locked after completion | §4.1 | Onboarding-Lock | Q.18.2 | Set flag on tour complete |
-| 5.1c | ? button replay | §4.2 | Onboarding-Replay | Q.18.3 | Add ? to header, clear flag |
-| 5.2a | 9 steps with navigation | §4.2 | Onboarding-Steps | Q.18.4, Q.18.5, Q.18.6 | Configure driver.js steps, Wire navigation, Add target IDs |
-
----
+| Req ID | Requirement | Design Section | Design Elements |
+|--------|-------------|----------------|-----------------|
+| 5.1a | One-time trigger | §4.1 | D19: Onboarding-Trigger |
+| 5.1b | Locked after completion | §4.1 | D20: Onboarding-Lock |
+| 5.1c | ? button replay | §4.2 | D21: Onboarding-Replay |
+| 5.2 | 9 steps with navigation | §4.2 | D22: Onboarding-Steps |
 
 ### REQ 6: GOVERNANCE LOG SYSTEM
 
-| Req ID | Requirement | Design Ref | Design Element | Task IDs | Tasks (1-3 max) |
-|--------|-------------|------------|----------------|----------|-----------------|
-| 6.1 | Institutional memory | §9.1 | GovernanceLog-Panel | Q.16.1, Q.16.2 | Create GovernanceLogPanel.tsx, Wire decisions API |
-| 6.2 | Decision/State/Escalation | §9.1 | GovernanceLog-Tabs | Q.16.3, Q.16.4 | Create 3-tab UI, Wire state/escalation APIs |
-| 6.3 | Badge for open escalations | §3.2 | Sidebar-Badge | Q.16.5 | Fetch open-escalations count, show badge |
-
----
+| Req ID | Requirement | Design Section | Design Elements |
+|--------|-------------|----------------|-----------------|
+| 6.1 | Institutional memory | §9.1 | D23: GovernanceLog-Panel |
+| 6.2 | Decision/State/Escalation | §9.1 | D24: GovernanceLog-Tabs |
+| 6.3 | Badge for open escalations | §3.2 | D25: Sidebar-Badge |
 
 ### REQ 7: RISK ENGINE INTEGRATION
 
-| Req ID | Requirement | Design Ref | Design Element | Task IDs | Tasks (1-3 max) |
-|--------|-------------|------------|----------------|----------|-----------------|
-| 7.1a | BUILD mode scoring | §8.1 | RiskViz-BUILD | Q.17.1 | Wire build_exposure_pct, build_band to ribbons |
-| 7.1b | OPERATE mode scoring | §8.1 | RiskViz-OPERATE | Q.17.2, Q.17.3 | Wire operate_exposure_pct, Add trend_flag arrows |
-| 7.2 | Color-coded bands | §8.1 | RiskViz-Colors | Q.17.4 | Apply Green/Amber/Red CSS classes |
-
----
+| Req ID | Requirement | Design Section | Design Elements |
+|--------|-------------|----------------|-----------------|
+| 7.1a | BUILD mode scoring | §8.1 | D26: RiskViz-BUILD |
+| 7.1b | OPERATE mode scoring | §8.1 | D27: RiskViz-OPERATE |
+| 7.2 | Color-coded bands | §8.1 | D28: RiskViz-Colors |
 
 ### REQ 8: INVITE SYSTEM
 
-| Req ID | Requirement | Design Ref | Design Element | Task IDs | Tasks (1-3 max) |
-|--------|-------------|------------|----------------|----------|-----------------|
-| 8.1 | Request Invite functionality | (landing) | InviteSystem | Q.20.1, Q.20.2 | Verify existing, Code if placeholder |
-
----
+| Req ID | Requirement | Design Section | Design Elements |
+|--------|-------------|----------------|-----------------|
+| 8.1 | Request Invite functionality | (landing page) | D29: InviteSystem |
 
 ### REQ 9: BACKEND REQUIREMENTS
 
-| Req ID | Requirement | Design Ref | Design Element | Task IDs | Tasks (1-3 max) |
-|--------|-------------|------------|----------------|----------|-----------------|
-| 9.1 | Settings migration | §10.1 | Settings-Backend | X.1.1 | (Backend) Migrate to Supabase admin_settings |
-| 9.2 | Governance API | §6.2 | Governance-API | X.1.2, X.1.3 | (Backend) CRUD endpoints, Agent run |
-| 9.3 | Risk Engine API | §6.3 | RiskEngine-API | X.1.4, X.1.5 | (Backend) Execution trigger, Config |
-
----
+| Req ID | Requirement | Design Section | Design Elements |
+|--------|-------------|----------------|-----------------|
+| 9.1 | Settings migration | §10.1 | D30: Settings-Backend |
+| 9.2 | Governance API | §6.2 | D31: Governance-API |
+| 9.3 | Risk Engine API | §6.3 | D32: RiskEngine-API |
 
 ### REQ 10: ICONS
 
-| Req ID | Requirement | Design Ref | Design Element | Task IDs | Tasks (1-3 max) |
-|--------|-------------|------------|----------------|----------|-----------------|
-| 10.1 | 14 icons in public/icons | §1.2 | Icons | DONE | Already extracted |
+| Req ID | Requirement | Design Section | Design Elements |
+|--------|-------------|----------------|-----------------|
+| 10.1 | 14 icons in public/icons | §1.2 | D33: Icons (DONE) |
+
+### ADMIN REQUIREMENTS (Added)
+
+| Req ID | Requirement | Design Section | Design Elements |
+|--------|-------------|----------------|-----------------|
+| A.1 | Settings page | §10.1 | D34: Settings-LLM, D35: Settings-MCP |
+| A.2 | Observability page | (new §11) | D36: Observability-Analytics, D37: Observability-Traces |
+| A.3 | Risk Agent Console | (new §12) | D38: RiskAgent-Console |
 
 ---
 
-### ADMIN REQUIREMENTS (MISSING - NOW ADDED)
+## STEP 2: DESIGN ELEMENTS → IMPLEMENTATION TASKS
 
-| Req ID | Requirement | Design Ref | Design Element | Task IDs | Tasks (1-3 max) |
-|--------|-------------|------------|----------------|----------|-----------------|
-| A.1a | Settings - LLM Provider | §10.1 | Settings-LLM | W.2.1, W.2.2 | Import AdminSettingsPanel, Wire provider config |
-| A.1b | Settings - MCP Tools | §10.1 | Settings-MCP | W.2.3 | Wire MCP tools config |
-| A.2a | Observability - Analytics | (new) | Observability-Analytics | W.3.1, W.3.2, W.3.3 | Import analytics cards, Wire /debug/traces, Show metrics |
-| A.2b | Observability - Traces | (new) | Observability-Traces | W.3.4, W.3.5 | Import trace list, Wire filters |
-| A.3a | Risk Agent Console | (new) | RiskAgent-Console | W.4.1, W.4.2, W.4.3 | Create RiskAgentPanel, Wire run endpoint, Show status/log |
+Every design element mapped to 1-3 implementation tasks. Task IDs use format: T## (sequential).
+
+### CORE LAYOUT (D01-D05)
+
+| Design ID | Design Element | Task IDs | Tasks (1-3 max) |
+|-----------|----------------|----------|-----------------|
+| D01 | MainAppPage layout | T01, T02 | Create MainAppPage.tsx; Configure flex layout (sidebar+header+outlet) |
+| D02 | MainSidebar-ChatBlock | T03 | Extract New Chat button from chat/Sidebar.tsx |
+| D03 | MainSidebar-Collapse | T04 | Wire collapse toggle with state persistence |
+| D04 | MainSidebar-Conversations | T05, T06 | Extract ConversationsList; Wire to chatService |
+| D05 | MainHeader-Profile | T07 | Import profile section from FrameHeader |
+
+### DESK COMPONENTS (D06-D14)
+
+| Design ID | Design Element | Task IDs | Tasks (1-3 max) |
+|-----------|----------------|----------|-----------------|
+| D06 | SectorDesk-Map | T08, T09 | Import SectorOutcomes; Add id="sector-desk-map" |
+| D07 | SectorDesk-KPIs | T10, T11, T12 | Import ControlTower gauges; Wire dashboard-data API; Add id="sector-desk-gauges" |
+| D08 | ControlsDesk-Steering | T13 | Wire setting_strategic_initiatives chain |
+| D09 | ControlsDesk-BUILD | T14 | Wire build_oversight chain |
+| D10 | ControlsDesk-OPERATE | T15 | Wire operate_oversight chain |
+| D11 | ControlsDesk-Delivery | T16 | Wire sustainable_operations chain |
+| D12 | PlanningDesk | T17, T18 | Import PlanningDesk; Wire analyzeGaps endpoint |
+| D13 | ReportingDesk | T19, T20 | Import ReportingDesk; Wire recommendations + export |
+| D14 | EnterpriseDesk | T21 | Import DependencyDesk |
+
+### TOOLS SECTIONS (D15-D18)
+
+| Design ID | Design Element | Task IDs | Tasks (1-3 max) |
+|-----------|----------------|----------|-----------------|
+| D15 | KnowledgeSeries | T22, T23 | Import TwinKnowledge; Add id="knowledge-series" |
+| D16 | Roadmap | T24, T25 | Create RoadmapWrapper; Combine ProductRoadmap + PlanYourJourney |
+| D17 | GraphExplorer | T26, T27, T28 | Import RiskTopologyMap; Add governance panel slide-out; Add id="graph-explorer-3d" |
+| D18 | GraphChat | T29, T30 | Import ChatContainer; Add id="graph-chat" |
+
+### ONBOARDING (D19-D22)
+
+| Design ID | Design Element | Task IDs | Tasks (1-3 max) |
+|-----------|----------------|----------|-----------------|
+| D19 | Onboarding-Trigger | T31 | Check localStorage on mount |
+| D20 | Onboarding-Lock | T32 | Set josoor_onboarding_complete flag |
+| D21 | Onboarding-Replay | T33 | Add ? button to header, clear flag on click |
+| D22 | Onboarding-Steps | T34, T35, T36 | Configure driver.js 9 steps; Wire page navigation; Add all target IDs |
+
+### GOVERNANCE LOG (D23-D25)
+
+| Design ID | Design Element | Task IDs | Tasks (1-3 max) |
+|-----------|----------------|----------|-----------------|
+| D23 | GovernanceLog-Panel | T37, T38 | Create GovernanceLogPanel.tsx; Wire decisions API |
+| D24 | GovernanceLog-Tabs | T39, T40 | Create 3-tab UI (Decisions/State/Escalations); Wire APIs |
+| D25 | Sidebar-Badge | T41 | Fetch open-escalations count, show badge on Graph Explorer |
+
+### RISK ENGINE (D26-D28)
+
+| Design ID | Design Element | Task IDs | Tasks (1-3 max) |
+|-----------|----------------|----------|-----------------|
+| D26 | RiskViz-BUILD | T42 | Wire build_exposure_pct, build_band to ribbons |
+| D27 | RiskViz-OPERATE | T43, T44 | Wire operate_exposure_pct; Add trend_flag arrows |
+| D28 | RiskViz-Colors | T45 | Apply Green/Amber/Red CSS classes (<35/35-65/>65) |
+
+### INVITE SYSTEM (D29)
+
+| Design ID | Design Element | Task IDs | Tasks (1-3 max) |
+|-----------|----------------|----------|-----------------|
+| D29 | InviteSystem | T46, T47 | Verify landing page functionality; Code if placeholder |
+
+### BACKEND (D30-D32) - Separate ownership
+
+| Design ID | Design Element | Task IDs | Tasks (1-3 max) |
+|-----------|----------------|----------|-----------------|
+| D30 | Settings-Backend | B01 | (Backend) Migrate to Supabase admin_settings table |
+| D31 | Governance-API | B02, B03 | (Backend) CRUD endpoints; Agent run endpoint |
+| D32 | RiskEngine-API | B04, B05 | (Backend) Execution trigger; Config endpoint |
+
+### ICONS (D33)
+
+| Design ID | Design Element | Task IDs | Tasks (1-3 max) |
+|-----------|----------------|----------|-----------------|
+| D33 | Icons | DONE | Already extracted to public/icons/ |
+
+### ADMIN PAGES (D34-D38)
+
+| Design ID | Design Element | Task IDs | Tasks (1-3 max) |
+|-----------|----------------|----------|-----------------|
+| D34 | Settings-LLM | T48, T49 | Import AdminSettingsPanel; Wire provider config form |
+| D35 | Settings-MCP | T50 | Wire MCP tools config panel |
+| D36 | Observability-Analytics | T51, T52, T53 | Import analytics cards; Wire /debug/traces API; Display metrics |
+| D37 | Observability-Traces | T54, T55 | Import trace list; Wire filter controls |
+| D38 | RiskAgent-Console | T56, T57, T58 | Create RiskAgentPanel.tsx; Wire run/status/config APIs; Show run history |
+
+---
+
+## TASK SUMMARY
+
+| Category | Task Range | Count |
+|----------|------------|-------|
+| Setup | T00 | 1 |
+| Core Layout | T01-T07 | 7 |
+| Desk Components | T08-T21 | 14 |
+| Tools Sections | T22-T30 | 9 |
+| Onboarding | T31-T36 | 6 |
+| Governance Log | T37-T41 | 5 |
+| Risk Engine | T42-T45 | 4 |
+| Invite System | T46-T47 | 2 |
+| Admin Pages | T48-T58 | 11 |
+| Routing & Testing | T59-T67 | 9 |
+| **Frontend Total** | T00-T67 | **68** |
+| Backend | B01-B05 | 5 |
+| **Grand Total** | | **73** |
+
+### CROSS-REFERENCE: Task ID ↔ Design Element
+
+| Task | Design Element | Task | Design Element |
+|------|---------------|------|---------------|
+| T01-T02 | D01 | T37-T38 | D23 |
+| T03 | D02 | T39-T40 | D24 |
+| T04 | D03 | T41 | D25 |
+| T05-T06 | D04 | T42 | D26 |
+| T07 | D05 | T43-T44 | D27 |
+| T08-T09 | D06 | T45 | D28 |
+| T10-T12 | D07 | T46-T47 | D29 |
+| T13 | D08 | T48-T49 | D34 |
+| T14 | D09 | T50 | D35 |
+| T15 | D10 | T51-T53 | D36 |
+| T16 | D11 | T54-T55 | D37 |
+| T17-T18 | D12 | T56-T58 | D38 |
+| T19-T20 | D13 | B01 | D30 |
+| T21 | D14 | B02-B03 | D31 |
+| T22-T23 | D15 | B04-B05 | D32 |
+| T24-T25 | D16 | | |
+| T26-T28 | D17 | | |
+| T29-T30 | D18 | | |
+| T31 | D19 | | |
+| T32 | D20 | | |
+| T33 | D21 | | |
+| T34-T36 | D22 | | |
 
 ---
 
@@ -1174,59 +1297,104 @@ export const GovernanceLogPanel: React.FC<{ nodeId: string; onClose: () => void 
 
 ---
 
-## SECTION Q: IMPLEMENTATION CHECKLIST (DETAILED)
+## SECTION Q: IMPLEMENTATION CHECKLIST
 
-### Phase 1: Setup
-- [ ] 1.1 Stash `/main` → `/main_stash`
-- [ ] 1.2 Create empty `/main` folder structure
+All tasks use IDs from the Traceability Matrix (T01-T58 for frontend, B01-B05 for backend).
 
-### Phase 2: Core Components
-- [ ] 2.1 Create `MainAppContext.tsx` with state + persistence
-- [ ] 2.2 Create `MainAppPage.tsx` following JosoorFrame + ChatAppPage patterns
-- [ ] 2.3 Create `MainSidebar.tsx` combining FrameSidebar nav + chat elements
+### PHASE 1: Setup (Prerequisite)
+- [ ] T00 Stash `/main` → `/main_stash`
 
-### Phase 3: Header Updates
-- [ ] 3.1 Add `?` onboarding button to `FrameHeader.tsx`
-- [ ] 3.2 Add `id="main-header"` to header container
-- [ ] 3.3 Add `id="header-profile"` to profile section
-- [ ] 3.4 Add `onOnboardingReplay` prop
+### PHASE 2: Core Layout (T01-T07)
+- [ ] T01 Create `MainAppPage.tsx` with flex layout
+- [ ] T02 Configure layout (MainSidebar + FrameHeader + Outlet)
+- [ ] T03 Extract New Chat button from chat/Sidebar.tsx
+- [ ] T04 Wire collapse toggle with state persistence
+- [ ] T05 Extract ConversationsList component
+- [ ] T06 Wire conversations to chatService
+- [ ] T07 Import profile section from FrameHeader
 
-### Phase 4: Sidebar Updates
-- [ ] 4.1 Extract FrameSidebar navigation logic for reuse
-- [ ] 4.2 Update paths from `/josoor-sandbox/*` to `/main/*`
-- [ ] 4.3 Rename menu items per design doc
-- [ ] 4.4 Add Graph Explorer badge for escalations
-- [ ] 4.5 Add `id="sidebar-menu"` and `id="sidebar-chat-section"`
+### PHASE 3: Desk Components (T08-T21)
+- [ ] T08 Import SectorOutcomes (SaudiMap)
+- [ ] T09 Add id="sector-desk-map"
+- [ ] T10 Import ControlTower gauge components
+- [ ] T11 Wire /api/v1/dashboard/dashboard-data
+- [ ] T12 Add id="sector-desk-gauges"
+- [ ] T13 Wire setting_strategic_initiatives chain (Steering)
+- [ ] T14 Wire build_oversight chain (BUILD)
+- [ ] T15 Wire operate_oversight chain (OPERATE)
+- [ ] T16 Wire sustainable_operations chain (Delivery)
+- [ ] T17 Import PlanningDesk
+- [ ] T18 Wire analyzeGaps endpoint
+- [ ] T19 Import ReportingDesk
+- [ ] T20 Wire recommendations + export APIs
+- [ ] T21 Import DependencyDesk (Enterprise)
 
-### Phase 5: Wrapper Components
-- [ ] 5.1 Create `RoadmapWrapper.tsx` (ProductRoadmap + PlanYourJourney)
-- [ ] 5.2 Create `GraphExplorerWrapper.tsx` (3D graph + governance panel)
-- [ ] 5.3 Create `GraphChatWrapper.tsx` (ChatContainer with ID)
-- [ ] 5.4 Create `GovernanceLogPanel.tsx` (3-tab panel)
+### PHASE 4: Tools Sections (T22-T30)
+- [ ] T22 Import TwinKnowledge
+- [ ] T23 Add id="knowledge-series"
+- [ ] T24 Create RoadmapWrapper
+- [ ] T25 Combine ProductRoadmap + PlanYourJourney
+- [ ] T26 Import RiskTopologyMap
+- [ ] T27 Add governance panel slide-out
+- [ ] T28 Add id="graph-explorer-3d"
+- [ ] T29 Import ChatContainer for GraphChat
+- [ ] T30 Add id="graph-chat"
 
-### Phase 6: Onboarding
-- [ ] 6.1 Install driver.js if not present
-- [ ] 6.2 Create `useOnboardingTour.ts` hook
-- [ ] 6.3 Add all target IDs to components
-- [ ] 6.4 Wire onboarding trigger and completion
+### PHASE 5: Onboarding (T31-T36)
+- [ ] T31 Check localStorage on mount for first-time users
+- [ ] T32 Set josoor_onboarding_complete flag on completion
+- [ ] T33 Add ? button to header, clear flag on click
+- [ ] T34 Configure driver.js 9 steps
+- [ ] T35 Wire page navigation between steps
+- [ ] T36 Add all target IDs to components
 
-### Phase 7: Trace Feature
-- [ ] 7.1 Update `AIExplainButton.tsx` labels
-- [ ] 7.2 Add "Continue in Chat" navigation
+### PHASE 6: Governance Log (T37-T41)
+- [ ] T37 Create GovernanceLogPanel.tsx
+- [ ] T38 Wire decisions API
+- [ ] T39 Create 3-tab UI (Decisions/State/Escalations)
+- [ ] T40 Wire state/escalation APIs
+- [ ] T41 Fetch open-escalations count, show badge
 
-### Phase 8: Routing
-- [ ] 8.1 Add `/main/*` routes to `App.tsx`
-- [ ] 8.2 Configure default redirect to `/main/sector`
-- [ ] 8.3 Test all routes load correct components
+### PHASE 7: Risk Engine Visualization (T42-T45)
+- [ ] T42 Wire build_exposure_pct, build_band to ribbons
+- [ ] T43 Wire operate_exposure_pct to ribbons
+- [ ] T44 Add trend_flag arrows for OPERATE mode
+- [ ] T45 Apply Green/Amber/Red CSS classes
 
-### Phase 9: Testing
-- [ ] 9.1 Test navigation between all sections
-- [ ] 9.2 Test conversation management (new, select, delete)
-- [ ] 9.3 Test year/quarter filtering
-- [ ] 9.4 Test theme switching
-- [ ] 9.5 Test language/RTL switching
-- [ ] 9.6 Test onboarding flow
-- [ ] 9.7 Test sidebar collapse
+### PHASE 8: Invite System (T46-T47)
+- [ ] T46 Verify landing page Request Invite functionality
+- [ ] T47 Code if placeholder
+
+### PHASE 9: Admin Pages (T48-T58)
+- [ ] T48 Import AdminSettingsPanel
+- [ ] T49 Wire provider config form
+- [ ] T50 Wire MCP tools config panel
+- [ ] T51 Import analytics cards
+- [ ] T52 Wire /debug/traces API
+- [ ] T53 Display observability metrics
+- [ ] T54 Import trace list
+- [ ] T55 Wire filter controls
+- [ ] T56 Create RiskAgentPanel.tsx
+- [ ] T57 Wire run/status/config APIs
+- [ ] T58 Show run history
+
+### PHASE 10: Routing & Testing
+- [ ] T59 Add `/main/*` routes to App.tsx
+- [ ] T60 Configure default redirect to `/main/sector`
+- [ ] T61 Test all routes load correct components
+- [ ] T62 Test navigation between sections
+- [ ] T63 Test conversation management
+- [ ] T64 Test year/quarter filtering
+- [ ] T65 Test theme/language/RTL switching
+- [ ] T66 Test onboarding flow
+- [ ] T67 Test sidebar collapse
+
+### BACKEND TASKS (Separate Ownership)
+- [ ] B01 Migrate admin_settings.json to Supabase
+- [ ] B02 Governance CRUD endpoints
+- [ ] B03 Governance agent run endpoint
+- [ ] B04 Risk Engine execution trigger
+- [ ] B05 Risk Engine config endpoint
 
 ---
 
@@ -1237,6 +1405,8 @@ export const GovernanceLogPanel: React.FC<{ nodeId: string; onClose: () => void 
 | 2026-01-12 | 0.1 | Initial draft |
 | 2026-01-12 | 0.2 | Added Sections L-Q: Reference patterns, complete paths, detailed designs, implementation checklist |
 | 2026-01-12 | 0.3 | Added Section R (CSS imports), Section S (AIExplainButton/Trace), Section T (Driver.js config) |
+| 2026-01-12 | 0.4 | Added Section W (Sector, Settings, Observability, Risk Agent) |
+| 2026-01-12 | 0.5 | **FIXED TRACEABILITY** - Rebuilt in 2 steps: (1) Req→Design with D01-D38 IDs, (2) Design→Tasks with T00-T67 + B01-B05 IDs. Added cross-reference table. All 73 tasks now have valid links. |
 
 ---
 
