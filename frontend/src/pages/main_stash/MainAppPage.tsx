@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { MainAppProvider, useMainApp } from './MainAppContext';
 import { MainHeader } from './MainHeader';
@@ -10,19 +10,10 @@ import 'driver.js/dist/driver.css';
 
 const MainAppLayout: React.FC = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-  const { year, quarter, isRTL, onboardingComplete, resetOnboarding } = useMainApp();
+  const { year, quarter, isRTL } = useMainApp();
   const location = useLocation();
   
-  const { startTour } = useOnboardingTour();
-
-  useEffect(() => {
-    if (!onboardingComplete) {
-      const timer = setTimeout(() => {
-        startTour();
-      }, 500);
-      return () => clearTimeout(timer);
-    }
-  }, [onboardingComplete, startTour]);
+  useOnboardingTour();
 
   const getPageInfo = () => {
     if (location.pathname.includes('/sector')) return { title: 'Sector Desk', subtitle: 'Sector Outcomes & Impact Monitoring' };
@@ -42,18 +33,15 @@ const MainAppLayout: React.FC = () => {
   const { title, subtitle } = getPageInfo();
 
   return (
-    <div 
-      id="main-app"
-      style={{
-        display: 'flex',
-        height: '100vh',
-        width: '100vw',
-        backgroundColor: 'var(--component-bg-primary)',
-        overflow: 'hidden',
-        fontFamily: 'var(--component-font-family)',
-        direction: isRTL ? 'rtl' : 'ltr'
-      }}
-    >
+    <div style={{
+      display: 'flex',
+      height: '100vh',
+      width: '100vw',
+      backgroundColor: 'var(--component-bg-primary)',
+      overflow: 'hidden',
+      fontFamily: 'var(--component-font-family)',
+      direction: isRTL ? 'rtl' : 'ltr'
+    }}>
       <MainSidebar 
         isCollapsed={isSidebarCollapsed} 
         onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)} 

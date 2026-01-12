@@ -1,8 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useMainApp } from './MainAppContext';
 import { Button } from '../../components/ui/button';
-import { ConversationsList } from './components/ConversationsList';
 import '../../styles/sidebar.css';
 import '../../components/chat/Sidebar.css';
 
@@ -41,16 +40,7 @@ interface MainSidebarProps {
 export const MainSidebar: React.FC<MainSidebarProps> = ({ isCollapsed, onToggleCollapse }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { 
-    language, 
-    isRTL, 
-    openEscalationsCount,
-    conversations,
-    activeConversationId,
-    handleNewChat,
-    handleSelectConversation,
-    handleDeleteConversation
-  } = useMainApp();
+  const { language, isRTL, openEscalationsCount } = useMainApp();
   const [showConversations, setShowConversations] = useState(true);
 
   const translations = {
@@ -60,11 +50,13 @@ export const MainSidebar: React.FC<MainSidebarProps> = ({ isCollapsed, onToggleC
     tools: language === 'ar' ? 'الأدوات' : 'TOOLS',
     admin: language === 'ar' ? 'الإدارة' : 'ADMIN',
     conversations: language === 'ar' ? 'المحادثات' : 'CONVERSATIONS',
+    today: language === 'ar' ? 'اليوم' : 'Today',
+    yesterday: language === 'ar' ? 'أمس' : 'Yesterday',
+    previous7Days: language === 'ar' ? 'آخر 7 أيام' : 'Previous 7 days',
     toggleSidebar: language === 'ar' ? 'تبديل الشريط الجانبي' : 'Toggle sidebar',
   };
 
-  const onNewChatClick = () => {
-    handleNewChat();
+  const handleNewChat = () => {
     navigate('/main/chat');
   };
 
@@ -121,7 +113,7 @@ export const MainSidebar: React.FC<MainSidebarProps> = ({ isCollapsed, onToggleC
             <img src="/icons/menu.png" alt={translations.toggleSidebar} className="sidebar-quickaction-icon sidebar-quickaction-small" />
           </button>
           <button
-            onClick={onNewChatClick}
+            onClick={handleNewChat}
             title={translations.newChat}
             className="sidebar-icon-button clickable"
           >
@@ -150,7 +142,7 @@ export const MainSidebar: React.FC<MainSidebarProps> = ({ isCollapsed, onToggleC
         </div>
 
         <Button
-          onClick={onNewChatClick}
+          onClick={handleNewChat}
           className="sidebar-newchat-button clickable"
           style={{
             display: 'flex',
@@ -235,16 +227,11 @@ export const MainSidebar: React.FC<MainSidebarProps> = ({ isCollapsed, onToggleC
           </button>
 
           {showConversations && (
-            <ConversationsList
-              conversations={conversations}
-              activeConversationId={activeConversationId}
-              onSelectConversation={(id) => {
-                handleSelectConversation(id);
-                navigate('/main/chat');
-              }}
-              onDeleteConversation={handleDeleteConversation}
-              language={language}
-            />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', paddingLeft: '32px' }}>
+              <div style={{ fontSize: '12px', color: 'var(--text-secondary)', padding: '4px 0' }}>{translations.today}</div>
+              <div style={{ fontSize: '12px', color: 'var(--text-secondary)', padding: '4px 0' }}>{translations.yesterday}</div>
+              <div style={{ fontSize: '12px', color: 'var(--text-secondary)', padding: '4px 0' }}>{translations.previous7Days}</div>
+            </div>
           )}
         </div>
       </div>

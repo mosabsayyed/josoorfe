@@ -1,4 +1,7 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import { chatService } from '../../services/chatService';
+import * as authService from '../../services/authService';
+import type { ConversationSummary } from '../../types/api';
 
 interface MainAppState {
   year: string;
@@ -8,6 +11,8 @@ interface MainAppState {
   isRTL: boolean;
   onboardingComplete: boolean;
   openEscalationsCount: number;
+  conversations: ConversationSummary[];
+  activeConversationId: number | null;
 }
 
 interface MainAppActions {
@@ -18,6 +23,12 @@ interface MainAppActions {
   resetOnboarding: () => void;
   completeOnboarding: () => void;
   setOpenEscalationsCount: (count: number) => void;
+  setConversations: React.Dispatch<React.SetStateAction<ConversationSummary[]>>;
+  setActiveConversationId: (id: number | null) => void;
+  loadConversations: () => Promise<void>;
+  handleNewChat: () => void;
+  handleSelectConversation: (id: number) => void;
+  handleDeleteConversation: (id: number) => Promise<void>;
 }
 
 type MainAppContextType = MainAppState & MainAppActions;
@@ -53,6 +64,8 @@ export function MainAppProvider({ children }: { children: ReactNode }) {
     return localStorage.getItem(STORAGE_KEYS.onboardingComplete) === 'true';
   });
   const [openEscalationsCount, setOpenEscalationsCount] = useState<number>(0);
+  const [conversations, setConversations] = useState<ConversationSummary[]>([]);
+  const [activeConversationId, setActiveConversationId] = useState<number | null>(null);
 
   const isRTL = language === 'ar';
 
@@ -76,6 +89,77 @@ export function MainAppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     sessionStorage.setItem(STORAGE_KEYS.quarter, quarter);
   }, [quarter]);
+
+  const loadConversations = useCallback(async () => {
+    try {
+      if (authService.isGuestMode()) {
+        const guestConvos = authService.getGuestConversations();
+        const adaptedConversations = (guestConvos || []).map((c: any) => ({
+          id: c.id,
+          title: c.title || 'New Chat',
+          message_count: (c.messages || []).length,
+          created_at: c.created_at || new Date().toISOString(),
+          updated_at: c.updated_at || new Date().toISOString(),
+          _isGuest: true,
+        }));
+        setConversations(adaptedConversations as any);
+        return;
+      }
+
+      if (!authService.getToken()) {
+        const guestConvos = authService.getGuestConversations();
+        const adaptedConversations = (guestConvos || []).map((c: any) => ({
+          id: c.id,
+          title: c.title || 'New Chat',
+          message_count: (c.messages || []).length,
+          created_at: c.created_at || new Date().toISOString(),
+          updated_at: c.updated_at || new Date().toISOString(),
+          _isGuest: true,
+        }));
+        setConversations(adaptedConversations as any);
+        return;
+      }
+
+      const data = await chatService.getConversations();
+      const adaptedConversations = (data.conversations || []).map((c: any) => ({
+        ...c,
+        title: c.title || "New Chat",
+        message_count: Array.isArray(c.messages) ? c.messages.length : (typeof c.message_count === 'number' ? c.message_count : 0),
+        created_at: c.created_at || new Date().toISOString(),
+        updated_at: c.updated_at || new Date().toISOString(),
+      }));
+      setConversations(adaptedConversations);
+    } catch (error) {
+      console.error('Failed to load conversations:', error);
+      try {
+        const guestConvos = authService.getGuestConversations();
+        if (guestConvos && guestConvos.length > 0) {
+          const adaptedConversations = (guestConvos || []).map((c: any) => ({
+            id: c.id,
+            title: c.title || 'New Chat',
+            message_count: (c.messages || []).length,
+            created_at: c.created_at || new Date().toISOString(),
+            updated_at: c.updatedAt || new Date().toISOString(),
+            _isGuest: true,
+          }));
+          setConversations(adaptedConversations as any);
+        }
+      } catch (err) {
+        console.error('Failed to load guest conversations:', err);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    loadConversations();
+  }, [loadConversations]);
+
+  useEffect(() => {
+    fetch('/api/v1/governance/open-escalations')
+      .then(res => res.json())
+      .then(data => setOpenEscalationsCount(data.count || 0))
+      .catch(() => setOpenEscalationsCount(0));
+  }, []);
 
   const setYear = (newYear: string) => {
     setYearState(newYear);
@@ -101,6 +185,33 @@ export function MainAppProvider({ children }: { children: ReactNode }) {
     setOnboardingComplete(true);
   };
 
+  const handleNewChat = useCallback(() => {
+    setActiveConversationId(null);
+  }, []);
+
+  const handleSelectConversation = useCallback((id: number) => {
+    setActiveConversationId(id);
+  }, []);
+
+  const handleDeleteConversation = useCallback(async (id: number) => {
+    try {
+      if (authService.isGuestMode()) {
+        const guestConvos = authService.getGuestConversations();
+        const updated = guestConvos.filter((c: any) => c.id !== id);
+        authService.saveGuestConversations(updated);
+        setConversations(updated);
+      } else {
+        await chatService.deleteConversation(id);
+        setConversations(prev => prev.filter(c => c.id !== id));
+      }
+      if (activeConversationId === id) {
+        setActiveConversationId(null);
+      }
+    } catch (error) {
+      console.error('Failed to delete conversation:', error);
+    }
+  }, [activeConversationId]);
+
   const value: MainAppContextType = {
     year,
     quarter,
@@ -109,6 +220,8 @@ export function MainAppProvider({ children }: { children: ReactNode }) {
     isRTL,
     onboardingComplete,
     openEscalationsCount,
+    conversations,
+    activeConversationId,
     setYear,
     setQuarter,
     setTheme,
@@ -116,6 +229,12 @@ export function MainAppProvider({ children }: { children: ReactNode }) {
     resetOnboarding,
     completeOnboarding,
     setOpenEscalationsCount,
+    setConversations,
+    setActiveConversationId,
+    loadConversations,
+    handleNewChat,
+    handleSelectConversation,
+    handleDeleteConversation,
   };
 
   return (
