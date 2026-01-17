@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Command Center - Integrated Control Tower</title>
+    
+    <!-- External CSS -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Local CSS -->
+    <link rel="stylesheet" href="css/theme.css">
+    <link rel="stylesheet" href="css/App.css">
+    <link rel="stylesheet" href="css/ControlTower.css">
+    <link rel="stylesheet" href="css/sidebar.css">
+    <link rel="stylesheet" href="css/style.css">
+    
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--background-primary, #0a0e1a);
+            color: var(--text-primary, #ffffff);
+            margin: 0;
+            padding: 0;
+        }
+
+        .control-tower-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: auto auto;
+            gap: 1.5rem;
+            padding: 2rem;
+            margin-left: 240px;
+            margin-top: 64px;
+        }
+
+        .feature-panel {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 1.5rem;
+        }
+
+        .feature-panel.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .feature-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: var(--accent-primary, #4ade80);
+        }
+
+        /* Feature 1.1: Integration Matrix */
+        .matrix-container {
+            overflow-x: auto;
+        }
+
+        .matrix-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.875rem;
+        }
+
+        .matrix-table th {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 0.75rem 0.5rem;
+            text-align: left;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .matrix-table td {
+            padding: 0.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .matrix-cell {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 40px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .matrix-cell:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+
+        .matrix-cell.strength-high { background: rgba(74, 222, 128, 0.3); }
+        .matrix-cell.strength-medium { background: rgba(251, 191, 36, 0.3); }
+        .matrix-cell.strength-low { background: rgba(239, 68, 68, 0.3); }
+        .matrix-cell.strength-none { background: rgba(100, 100, 100, 0.1); }
+
+        .strength-badge {
+            font-weight: 600;
+            font-size: 0.875rem;
+        }
+
+        .cell-tooltip {
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.95);
+            padding: 0.75rem;
+            border-radius: 8px;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s;
+            z-index: 1000;
+            font-size: 0.75rem;
+        }
+
+        .matrix-cell:hover .cell-tooltip {
+            opacity: 1;
+        }
+
+        /* Feature 1.2: Dual-Layer Health */
+        .health-bars {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        .health-layer {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .health-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 500;
+        }
+
+        .health-percentage {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--accent-primary, #4ade80);
+        }
+
+        .health-bar-container {
+            height: 32px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .health-bar-fill {
+            height: 100%;
+            border-radius: 16px;
+            transition: width 0.6s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .health-bar-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .health-bar-green { background: linear-gradient(90deg, #10b981, #34d399); }
+        .health-bar-amber { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+        .health-bar-red { background: linear-gradient(90deg, #ef4444, #f87171); }
+
+        .health-breakdown {
+            display: flex;
+            gap: 1rem;
+            font-size: 0.875rem;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .integration-anomaly {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            background: rgba(239, 68, 68, 0.1);
+            border-left: 4px solid #ef4444;
+            border-radius: 6px;
+        }
+
+        .anomaly-title {
+            font-weight: 600;
+            color: #ef4444;
+            margin-bottom: 0.5rem;
+        }
+
+        /* Feature 1.3: Sankey Flow */
+        .sankey-container {
+            height: 400px;
+            position: relative;
+        }
+
+        /* Feature 1.4: Jeopardy Alerts */
+        .alerts-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .alert-card {
+            background: rgba(239, 68, 68, 0.1);
+            border-left: 4px solid #ef4444;
+            padding: 1rem;
+            border-radius: 6px;
+            transition: transform 0.2s;
+        }
+
+        .alert-card:hover {
+            transform: translateX(4px);
+            background: rgba(239, 68, 68, 0.15);
+        }
+
+        .alert-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 0.75rem;
+        }
+
+        .alert-severity {
+            background: #ef4444;
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .alert-objective {
+            font-weight: 600;
+            font-size: 1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .alert-chain {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            font-size: 0.875rem;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .alert-chain-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .alert-arrow {
+            color: #ef4444;
+        }
+
+        .alert-recommendation {
+            margin-top: 0.75rem;
+            padding-top: 0.75rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            font-size: 0.875rem;
+            color: var(--accent-primary, #4ade80);
+        }
+
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 200px;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .summary-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.03);
+            padding: 1rem;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--accent-primary, #4ade80);
+        }
+
+        .stat-label {
+            font-size: 0.875rem;
+            color: rgba(255, 255, 255, 0.6);
+            margin-top: 0.25rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar & Header (from layout.js) -->
+    <div id="layout-root"></div>
+
+    <div class="control-tower-container">
+        
+        <!-- Feature 1.1: Cross-Domain Integration Matrix -->
+        <div class="feature-panel full-width">
+            <h2 class="feature-title">
+                <i class="fas fa-th"></i> Feature 1.1: Cross-Domain Integration Matrix
+            </h2>
+            <p style="color: rgba(255,255,255,0.7); font-size: 0.875rem; margin-bottom: 1rem;">
+                Performance L2 × Capability L2 connection strength
+            </p>
+            <div id="integration-matrix" class="loading">
+                <i class="fas fa-spinner fa-spin"></i> Loading matrix...
+            </div>
+        </div>
+
+        <!-- Feature 1.2: Dual-Layer Health Status -->
+        <div class="feature-panel">
+            <h2 class="feature-title">
+                <i class="fas fa-heartbeat"></i> Feature 1.2: Dual-Layer Health
+            </h2>
+            <div id="dual-health" class="loading">
+                <i class="fas fa-spinner fa-spin"></i> Loading health status...
+            </div>
+        </div>
+
+        <!-- Feature 1.4: Critical Jeopardy Alerts -->
+        <div class="feature-panel">
+            <h2 class="feature-title">
+                <i class="fas fa-exclamation-triangle"></i> Feature 1.4: Critical Jeopardy Alerts
+            </h2>
+            <div id="jeopardy-alerts" class="loading">
+                <i class="fas fa-spinner fa-spin"></i> Loading alerts...
+            </div>
+        </div>
+
+        <!-- Feature 1.3: Level Flow Diagram -->
+        <div class="feature-panel full-width">
+            <h2 class="feature-title">
+                <i class="fas fa-project-diagram"></i> Feature 1.3: Level Flow Diagram (Sankey)
+            </h2>
+            <p style="color: rgba(255,255,255,0.7); font-size: 0.875rem; margin-bottom: 1rem;">
+                5 Integration Paths: Objectives → Performance → Capabilities
+            </p>
+            <div id="sankey-flow" class="sankey-container">
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <script src="js/layout.js"></script>
+    <script src="js/csv-parser.js"></script>
+    <script src="js/command-center-analytics.js"></script>
+
+    <script>
+        // Initialize layout
+        LayoutManager.init();
+
+        // Load and render features
+        let analytics;
+
+        async function initializeCommandCenter() {
+            try {
+                // Load CSV data
+                const [capabilities, performance, objectives, policyTools] = await Promise.all([
+                    CSVParser.loadCSV('data/ent_capabilities_rows.csv'),
+                    CSVParser.loadCSV('data/sec_performance_rows.csv'),
+                    CSVParser.loadCSV('data/sec_objectives_rows.csv'),
+                    CSVParser.loadCSV('data/sec_policy_tools_rows.csv')
+                ]);
+
+                console.log('Data loaded:', { 
+                    capabilities: capabilities.length, 
+                    performance: performance.length,
+                    objectives: objectives.length,
+                    policyTools: policyTools.length
+                });
+
+                // Initialize analytics engine
+                analytics = new CommandCenterAnalytics(
+                    null, // waterData (for map features, not needed for analytics)
+                    capabilities,
+                    performance,
+                    objectives,
+                    policyTools
+                );
+
+                // Render all features
+                renderIntegrationMatrix();
+                renderDualLayerHealth();
+                renderJeopardyAlerts();
+                renderSankeyFlow();
+
+            } catch (error) {
+                console.error('Failed to initialize Command Center:', error);
+                document.querySelectorAll('.loading').forEach(el => {
+                    el.innerHTML = '<div style="color: #ef4444;">⚠️ Failed to load data</div>';
+                });
+            }
+        }
+
+        // Feature 1.1: Integration Matrix
+        function renderIntegrationMatrix() {
+            const matrixData = analytics.getIntegrationMatrix();
+            const container = document.getElementById('integration-matrix');
+
+            let html = `
+                <div class="summary-stats">
+                    <div class="stat-card">
+                        <div class="stat-value">${matrixData.summary.totalConnections}</div>
+                        <div class="stat-label">Total Connections</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">${matrixData.summary.strongConnections}</div>
+                        <div class="stat-label">Strong Links</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">${matrixData.summary.weakConnections}</div>
+                        <div class="stat-label">Weak Links</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">${matrixData.summary.health}%</div>
+                        <div class="stat-label">Matrix Health</div>
+                    </div>
+                </div>
+
+                <div class="matrix-container" style="margin-top: 1.5rem;">
+                    <table class="matrix-table">
+                        <thead>
+                            <tr>
+                                <th style="min-width: 200px;">Performance L2</th>
+                                ${matrixData.capL2.map(cap => `
+                                    <th style="min-width: 120px;">${cap.name}</th>
+                                `).join('')}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${matrixData.matrix.map(row => `
+                                <tr>
+                                    <td style="font-weight: 500;">
+                                        ${row.perf.name}
+                                        <div style="font-size: 0.75rem; color: rgba(255,255,255,0.5);">
+                                            ${row.perf.actual}/${row.perf.target} (${row.perf.achievement}%)
+                                        </div>
+                                    </td>
+                                    ${row.cells.map(cell => `
+                                        <td>
+                                            <div class="matrix-cell strength-${cell.color}" 
+                                                 data-strength="${cell.strength}"
+                                                 data-risk="${cell.risk.type}">
+                                                <span class="strength-badge">${cell.strength}%</span>
+                                                <div class="cell-tooltip">
+                                                    <strong>${cell.cap.name}</strong><br>
+                                                    Maturity: ${cell.cap.maturity}/${cell.cap.target}<br>
+                                                    Connection: ${cell.strength}%<br>
+                                                    ${cell.risk.level !== 'low' ? `<span style="color: #ef4444;">⚠️ ${cell.risk.message}</span>` : ''}
+                                                </div>
+                                            </div>
+                                        </td>
+                                    `).join('')}
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+
+            container.innerHTML = html;
+        }
+
+        // Feature 1.2: Dual-Layer Health
+        function renderDualLayerHealth() {
+            const healthData = analytics.getDualLayerHealth();
+            const container = document.getElementById('dual-health');
+
+            const getSectorColor = (pct) => {
+                if (pct >= 75) return 'green';
+                if (pct >= 50) return 'amber';
+                return 'red';
+            };
+
+            let html = `
+                <div class="health-bars">
+                    <!-- Sector Layer -->
+                    <div class="health-layer">
+                        <div class="health-label">
+                            <span><i class="fas fa-bullseye"></i> Sector Layer (Performance L1)</span>
+                            <span class="health-percentage">${healthData.sector.percentage}%</span>
+                        </div>
+                        <div class="health-bar-container">
+                            <div class="health-bar-fill health-bar-${getSectorColor(healthData.sector.percentage)}" 
+                                 style="width: ${healthData.sector.percentage}%">
+                            </div>
+                        </div>
+                        <div class="health-breakdown">
+                            <span><i class="fas fa-circle" style="color: #10b981;"></i> ${healthData.sector.green} Green</span>
+                            <span><i class="fas fa-circle" style="color: #f59e0b;"></i> ${healthData.sector.amber} Amber</span>
+                            <span><i class="fas fa-circle" style="color: #ef4444;"></i> ${healthData.sector.red} Red</span>
+                            <span>Total: ${healthData.sector.total}</span>
+                        </div>
+                    </div>
+
+                    <!-- Entity Layer -->
+                    <div class="health-layer">
+                        <div class="health-label">
+                            <span><i class="fas fa-cogs"></i> Entity Layer (Capability L2)</span>
+                            <span class="health-percentage">${healthData.entity.percentage}%</span>
+                        </div>
+                        <div class="health-bar-container">
+                            <div class="health-bar-fill health-bar-${getSectorColor(healthData.entity.percentage)}" 
+                                 style="width: ${healthData.entity.percentage}%">
+                            </div>
+                        </div>
+                        <div class="health-breakdown">
+                            <span><i class="fas fa-circle" style="color: #10b981;"></i> ${healthData.entity.green} Green</span>
+                            <span><i class="fas fa-circle" style="color: #f59e0b;"></i> ${healthData.entity.amber} Amber</span>
+                            <span><i class="fas fa-circle" style="color: #ef4444;"></i> ${healthData.entity.red} Red</span>
+                            <span>Total: ${healthData.entity.total}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Integration Anomalies -->
+                ${healthData.indicators.map(anomaly => `
+                    <div class="integration-anomaly">
+                        <div class="anomaly-title">
+                            <i class="fas fa-exclamation-triangle"></i> ${anomaly.type === 'hollow_victory' ? 'HOLLOW VICTORY' : 'EXECUTION FAILURE'}
+                        </div>
+                        <div>${anomaly.message}</div>
+                        <div style="margin-top: 0.5rem; font-size: 0.875rem; color: rgba(255,255,255,0.7);">
+                            ${anomaly.detail}
+                        </div>
+                    </div>
+                `).join('')}
+            `;
+
+            container.innerHTML = html;
+        }
+
+        // Feature 1.4: Jeopardy Alerts
+        function renderJeopardyAlerts() {
+            const alerts = analytics.getCriticalJeopardyAlerts();
+            const container = document.getElementById('jeopardy-alerts');
+
+            if (alerts.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 2rem; color: rgba(255,255,255,0.5);">
+                        <i class="fas fa-check-circle" style="font-size: 3rem; color: #10b981; margin-bottom: 1rem;"></i>
+                        <div>No critical jeopardy alerts</div>
+                        <div style="font-size: 0.875rem; margin-top: 0.5rem;">All strategic objectives are on track</div>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '<div class="alerts-list">';
+
+            alerts.forEach(alert => {
+                html += `
+                    <div class="alert-card">
+                        <div class="alert-header">
+                            <div class="alert-objective">${alert.objectiveL1}</div>
+                            <div class="alert-severity">${alert.severity}</div>
+                        </div>
+                        <div class="alert-chain">
+                            <div class="alert-chain-item">
+                                <i class="fas fa-bullseye" style="color: #ef4444;"></i>
+                                <strong>Objective L1:</strong> ${alert.objectiveL1} (${alert.objectiveStatus.toUpperCase()})
+                            </div>
+                            <div class="alert-chain-item">
+                                <span class="alert-arrow">↓</span>
+                                <strong>Performance L2:</strong> ${alert.performanceL2} (${alert.performanceActual}/${alert.performanceTarget})
+                            </div>
+                            <div class="alert-chain-item">
+                                <span class="alert-arrow">↓</span>
+                                <strong>Capability L2:</strong> ${alert.capabilityL2} (Maturity: ${alert.capabilityMaturity}/${alert.capabilityTarget})
+                            </div>
+                        </div>
+                        <div class="alert-recommendation">
+                            <i class="fas fa-lightbulb"></i> <strong>Recommendation:</strong> ${alert.recommendation}
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        // Feature 1.3: Sankey Flow
+        function renderSankeyFlow() {
+            const flowData = analytics.getLevelFlowData();
+            const container = document.getElementById('sankey-flow');
+
+            const chart = echarts.init(container);
+
+            const option = {
+                backgroundColor: 'transparent',
+                tooltip: {
+                    trigger: 'item',
+                    triggerOn: 'mousemove',
+                    backgroundColor: 'rgba(0, 0, 0, 0.9)',
+                    borderColor: 'rgba(255, 255, 255, 0.2)',
+                    textStyle: { color: '#fff' }
+                },
+                series: [{
+                    type: 'sankey',
+                    layout: 'none',
+                    emphasis: {
+                        focus: 'adjacency'
+                    },
+                    data: flowData.nodes.map(node => ({
+                        name: node.name,
+                        itemStyle: {
+                            color: node.layer === 'sector' ? '#4ade80' : '#3b82f6'
+                        }
+                    })),
+                    links: flowData.links.map(link => ({
+                        source: link.source,
+                        target: link.target,
+                        value: link.value,
+                        lineStyle: {
+                            color: 'source',
+                            opacity: 0.3
+                        }
+                    })),
+                    lineStyle: {
+                        curveness: 0.5
+                    },
+                    label: {
+                        color: '#fff',
+                        fontFamily: 'Inter'
+                    }
+                }]
+            };
+
+            chart.setOption(option);
+
+            // Resize handler
+            window.addEventListener('resize', () => chart.resize());
+        }
+
+        // Initialize on load
+        initializeCommandCenter();
+    </script>
+</body>
+</html>

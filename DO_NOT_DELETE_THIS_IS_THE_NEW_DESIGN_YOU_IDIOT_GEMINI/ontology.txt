@@ -1,0 +1,253 @@
+**DIRECT RELATIONSHIPS (Same‑Level Only):**
+These relationships represent the REAL and ONLY DIRECT world relations between nodes. Their absence in the graph (including "Relationship type does not exist" warnings) represents a gap that must always be raised to validate:
+**Sector Operations**
+SectorObjective		-->Realized Via		SectorPolicyTool
+SectorPolicyTool	-->Governed By	SectorObjective
+SectorObjective		-->Cascaded Via	SectorPerformance
+SectorPolicyTool	-->Refers To	SectorAdminRecord
+SectorAdminRecord	-->Applied On	SectorBusiness
+SectorAdminRecord	-->Applied On	SectorGovEntity
+SectorAdminRecord	-->Applied On	SectorCitizen
+SectorBusiness		-->Triggers Event	SectorDataTransaction
+SectorGovEntity		-->Triggers Event	SectorDataTransaction
+SectorCitizen		-->Triggers Event	SectorDataTransaction
+SectorDataTransaction	-->Measured By	SectorPerformance
+SectorPerformance	-->Aggregates To	SectorObjective
+**Strategic Integrated Risk Management**
+EntityRisk		-->Informs	SectorPerformance
+EntityRisk		-->Informs	SectorPolicyTool
+EntityRisk		<--	MONITORED_BY	EntityCapability
+**Sector and Entity Relations**
+SectorPolicyTool	-->Sets Priorities	EntityCapability
+SectorPerformance	-->Sets Targets	EntityCapability
+EntityCapability	-->Executes	SectorPolicyTool
+EntityCapability	-->Reports	SectorPerformance
+**Entity Internal Operations**
+EntityCapability	-->Role Gaps	EntityOrgUnit
+EntityCapability	-->Knowledge Gaps	EntityProcess
+EntityCapability	-->Automation Gaps	EntityITSystem
+EntityOrgUnit		-->Operates	EntityCapability
+EntityProcess		-->Operates	EntityCapability
+EntityITSystem		-->Operates	EntityCapability
+EntityCultureHealth	-->Monitors For	EntityOrgUnit
+EntityOrgUnit		-->Apply	EntityProcess
+EntityProcess		-->Automation	EntityITSystem
+EntityITSystem		-->Depends On	EntityVendor
+**Transforming Entity Capabilities**
+EntityOrgUnit		-->Gaps Scope	EntityProject
+EntityProcess		-->Gaps Scope	EntityProject
+EntityITSystem		-->Gaps Scope	EntityProject
+EntityProject		-->Close Gaps	EntityOrgUnit
+EntityProject		-->Close Gaps	EntityProcess
+EntityProject		-->Close Gaps	EntityITSystem
+**Project to Operation Transfer**
+EntityProject		-->Adoption Risks	EntityChangeAdoption
+EntityChangeAdoption	-->Increase Adoption	EntityProject
+</direct_relationships>
+
+Chains
+1. **SectorOps**
+   Path: SectorObjective → SectorPolicyTool → SectorAdminRecord → (SectorCitizen/SectorGovEntity/SectorBusiness) → SectorDataTransaction → SectorPerformance → SectorObjective
+   Story: Describes how government objectives are executed externally through policy tools, stakeholder interactions, and performance measurement cycles.
+
+2. **Strategy_to_Tactics_Priority_Capabilities**
+   Path: SectorObjective → SectorPolicyTool → EntityCapability → (EntityOrgUnit/EntityProcesses/EntityITSystems) → EntityProject → EntityChangeAdoption
+   Story: Explains how strategic goals cascade through policy tools to shape capability‑building and implementation projects.
+
+3. **Strategy_to_Tactics_Capabilities_Targets**
+   Path: SectorObjective → SectorPerformance → EntityCapability → (EntityOrgUnit/EntityProcesses/EntityITSystems) → EntityProject → EntityChangeAdoption
+   Story: Captures how performance targets flow top‑down from strategy to operational projects via capabilities.
+
+4. **Tactical_to_Strategy**
+   Path: EntityChangeAdoption → EntityProject → (EntityOrgUnit/EntityProcesses/EntityITSystems) → EntityCapability → SectorPerformance|SectorPolicyTool → SectorObjective
+   Story: Describes the feedback loop where project execution informs higher‑level strategy and policy decisions.
+
+5. **Risk_Build_Mode**
+   Path: (EntityOrgUnit/EntityProcesses/EntityITSystems) → EntityCapability → EntityRisk → SectorPolicyTool
+   Story: Illustrates how operational risks influence the design and activation of policy tools.
+
+6. **Risk_Operate_Mode**
+   Path: EntityCapability → EntityRisk → SectorPerformance
+   Story: Explains how capability‑level risks affect performance outcomes and KPI achievement.
+
+7. **Internal_Efficiency**
+   Path: EntityCultureHealth → EntityOrgUnit → EntityProcess → EntityITSystem → EntityVendor
+   Story: Represents how organizational health drives process and IT efficiency through vendor ecosystems.
+
+Level Definitions (feeds into story)
+**SectorObjective:**
+L1 = Strategic Goals
+L2 = Cascaded Departmental Goals
+L3 = Process-Level Performance Parameters
+
+**SectorPolicyTool:**
+L1 = Tool Type (Public Services, Regulations)
+L2 = Individual Tool Name
+L3 = Targeted Impact
+
+**SectorAdminRecord:**
+L1 = Reference Record (Principles)
+L2 = Data Categories (Licenses)
+L3 = Individual Datasets (Tariffs, Fees, Violations)
+
+**SectorBusiness:**
+L1 = Company Size (Strategic, SME)
+L2 = Domain (Sector/Subsector)
+L3 = Specialization
+
+**SectorCitizen:**
+L1 = Type (Beneficiary, Consumer)
+L2 = Region
+L3 = District
+
+**SectorGovEntity:**
+L1 = Type (Central, Policy, Execution)
+L2 = Domain (Economy, Regulation, Operations)
+L3 = Relation Type (Compliance, Data Sharing, Support)
+
+**SectorDataTransaction:**
+L1 = Domain Aggregates (Economic, Compliance)
+L2 = Sub-Domain Aggregates
+L3 = Transactional Aggregates
+
+**SectorPerformance:**
+L1 = Strategic KPIs
+L2 = Operational KPIs
+L3 = Transactional Metrics
+
+**EntityCapability:**
+L1 = Business Domains
+L2 = Functional Knowledge
+L3 = Specific Competencies
+
+**EntityRisk:**
+L1 = Risk Domain
+L2 = Risk Functional Group
+L3 = Specific Risk
+
+**EntityOrgUnit:**
+L1 = Department
+L2 = Sub-Department
+L3 = Team
+
+**EntityProcess:**
+L1 = Process Category
+L2 = Process Group
+L3 = Process Cluster
+
+**EntityITSystem:**
+L1 = Main Platform
+L2 = System Module
+L3 = Feature
+
+**EntityProject:**
+L1 = Portfolio
+L2 = Program
+L3 = Project
+
+**EntityChangeAdoption:**
+L1 = Change Domain
+L2 = Change Area
+L3 = Behavioral Shift
+
+**EntityCultureHealth:**
+L1 = OHI (Department)
+L2 = OHI (Sub-Department)
+L3 = OHI (Team)
+
+**EntityVendor:**
+L1 = Partner
+L2 = Service Domain
+L3 = Individual Service
+
+
+---
+**Hierarchical Relationships**
+	PARENT_OF: L1 → L2 → L3 Self node hierarchy - all nodes
+* Temporal consistency: year must match across relationships
+* Level matching: connect same-level nodes unless PARENT_OF
+
+
+Cross Domain interface constraints
+Sector - L1-L1
+Entity - L3-L3
+Sector - Entity 
+- Capability L3-RiskL3, RiskL3-RiskL2, RiskL2-PerfL2, RiskL2-PolicyToolsL2
+- ObjL1-PerfL1, PerfL1-PerfL2, PerfL2-CapabilityL2
+- CapabilityL2-PerfL2, PerfL2-PerfL1, PerfL1-ObjL1
+- ObjL1-PolicyToolsL1, PolicyToolsL1-PolicyToolsL2, PolicyToolsL2-CapabilityL2
+- CapabilityL2-PolicyToolsL2, PolicyToolsL2-PolicyToolsL1, PolicyToolsL1-ObjL1
+
+
+
+#### Sector Entities (External/Stakeholder Layer)
+
+**SectorObjective (25)**
+Represents strategic objectives and goals.
+Properties: id, name, year, level, status, target, baseline, priority_level, indicator_type, frequency, timeframe, budget_allocated, rationale, expected_outcomes
+
+**SectorPolicyTool (225)**
+Defines policy execution instruments.
+Properties: id, name, year, level, status, quarter, tool_type, delivery_channel, impact_target, cost_of_implementation
+
+**SectorAdminRecord (20)**
+Contains administrative datasets and records.
+Properties: id, year, level, status, quarter, record_type, category, dataset_name, author_issuing_authority, publication_date, version, access_level, data_owner, content, update_frequency
+
+**SectorGovEntity (10)**
+Captures other government entities.
+Properties: id, name, year, level, quarter, linked_policies
+
+**SectorBusiness (12)**
+Represents private sector stakeholders.
+Properties: id, name, year, level, quarter, operating_sector
+
+**SectorCitizen (9)**
+Represents citizen groups.
+Properties: id, year, level, quarter, type, demographic_details
+
+**SectorDataTransaction (14)**
+Stores transactional data events.
+Properties: id, year, level, quarter, parent_id, parent_year, transaction_type, domain, department
+
+**SectorPerformance (225)**
+Captures performance indicators and KPIs.
+Properties: id, name, year, level, quarter, status, target, actual, kpi_type, description, calculation_formula, measurement_frequency, data_source, thresholds, unit, frequency
+
+#### Enterprise Entities (Internal/Operations Layer)
+
+**EntityProject (284)**
+Represents transformation project portfolios.
+Properties: id, name, year, level, quarter, status, progress_percentage, start_date, end_date, parent_id, parent_year
+
+**EntityCapability (391)**
+Defines organizational capabilities.
+Properties: id, name, year, level, quarter, status, description, maturity_level, target_maturity_level, parent_id, parent_year
+
+**EntityRisk (391)**
+Captures risks affecting capabilities.
+Properties: id, name, year, level, quarter, parent_id, parent_year, risk_category, risk_status, risk_score, risk_description, risk_owner, risk_reviewer, likelihood_of_delay, delay_days, mitigation_strategy, identified_date, last_review_date, next_review_date, kpi, threshold_red, threshold_amber, threshold_green, operational_health_score, people_score, process_score, tools_score
+
+**EntityOrgUnit (436)**
+Represents departments or teams.
+Properties: id, name, year, level, quarter, parent_id, parent_year, unit_type, head_of_unit, headcount, location, budget, annual_budget, gap
+
+**EntityProcess (353)**
+Represents business processes.
+Properties: id, name, year, level, quarter, description
+
+**EntityITSystem (930)**
+Defines IT systems and applications.
+Properties: id, name, year, level, quarter, system_type, operational_status, vendor_supplier, technology_stack, deployment_date, owner, criticality, licensing, acquisition_cost, annual_maintenance_costs, number_of_modules
+
+**EntityVendor (7)**
+Captures vendor or supplier relationships.
+Properties: id, name, year, level, quarter, service_domain, service_detail, contract_value, performance_rating, service_level_agreements
+
+**EntityChangeAdoption (284)**
+Tracks change adoption per project.
+Properties: id, name, year, level, quarter, status, parent_year
+
+**EntityCultureHealth (436)**
+Captures organizational health metrics.
+Properties: id, name, year, level, quarter, parent_year, baseline, target, survey_score, trend, historical_trends, participation_rate

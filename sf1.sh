@@ -25,7 +25,7 @@ if [ "${1:-}" = "--fg" ] || [ "${1:-}" = "-f" ]; then
 fi
 
 if [ "$MODE" = "bg" ]; then
-  nohup npm --prefix "$FRONTEND_DIR" start >> "$LOG_DIR/frontend.log" 2>&1 &
+  nohup npm --prefix "$FRONTEND_DIR" run dev >> "$LOG_DIR/frontend.log" 2>&1 &
   FRONTEND_PID=$!
   sleep 2
   if ! kill -0 "$FRONTEND_PID" 2>/dev/null; then
@@ -52,6 +52,6 @@ if [ "$MODE" = "bg" ]; then
   exit 0
 else
   echo "Running frontend on-screen (foreground). Press Ctrl-C to stop. Logs are written to $LOG_DIR/frontend.log"
-  npm --prefix "$FRONTEND_DIR" start 2>&1 | tee "$LOG_DIR/frontend.log"
+  npm --prefix "$FRONTEND_DIR" run dev 2>&1 | tee "$LOG_DIR/frontend.log"
 exit $?
 fi

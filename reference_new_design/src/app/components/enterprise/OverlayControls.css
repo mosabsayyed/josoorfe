@@ -1,0 +1,42 @@
+/* src/app/components/enterprise/OverlayControls.css */
+
+.overlay-controls-container {
+    display: flex;
+    gap: 0.375rem;
+}
+
+.overlay-btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 10px;
+    font-weight: 500;
+    border-width: 1px;
+    border-style: solid;
+    border-radius: 0.25rem;
+    transition: all 0.2s;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+}
+
+.overlay-btn-active {
+    background-color: #3b82f6;
+    color: white;
+    border-color: #3b82f6;
+}
+
+.overlay-btn-inactive {
+    background-color: #1e293b;
+    color: #cbd5e1;
+    border-color: #334155;
+}
+
+.overlay-btn-inactive:hover {
+    background-color: #334155;
+}
+
+.overlay-icon {
+    width: 0.75rem;
+    height: 0.75rem;
+    margin-right: 0.25rem;
+    display: inline-block;
+}

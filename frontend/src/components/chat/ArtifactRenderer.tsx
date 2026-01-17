@@ -961,7 +961,7 @@ function parseMarkdown(markdown: string): string {
     .replace(/^# (.*$)/gim, '<h1>$1</h1>')
     // Bold
     .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-    // Italic
+    // normal
     .replace(/\*(.*?)\*/g, '<em>$1</em>')
     // Lists
     .replace(/^- (.*$)/gim, '<li>$1</li>')

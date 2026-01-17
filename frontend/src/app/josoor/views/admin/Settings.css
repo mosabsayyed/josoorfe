@@ -1,0 +1,236 @@
+/* Settings.css - Admin Settings Styles */
+
+.observability-page {
+    /* Inherit dashboard base, or define basics */
+    min-height: 100vh;
+    background: var(--component-bg-primary);
+    color: var(--component-text-primary);
+    display: flex;
+    flex-direction: column;
+}
+
+.observability-header {
+    background: var(--component-panel-bg);
+    border-bottom: 1px solid var(--component-panel-border);
+    padding: 1.5rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.observability-header-left {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.observability-header-icon {
+    width: 32px;
+    height: 32px;
+    color: var(--component-text-accent);
+}
+
+.observability-header-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0;
+    color: var(--component-text-primary);
+}
+
+.observability-header-subtitle {
+    margin: 0;
+    color: var(--component-text-muted);
+    font-size: 0.875rem;
+}
+
+.admin-settings-container {
+    padding: 24px;
+    max-width: 1400px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+.observability-error {
+    background: rgba(239, 68, 68, 0.1);
+    border-left: 4px solid var(--component-color-danger);
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--component-color-danger);
+    border-radius: 4px;
+}
+
+.admin-settings-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 24px;
+}
+
+.admin-card {
+    background: var(--component-panel-bg);
+    border: 1px solid var(--component-panel-border);
+    border-radius: 8px;
+    padding: 24px;
+}
+
+.admin-card h3 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    margin: 0 0 20px 0;
+    color: var(--component-text-primary);
+    border-bottom: 1px solid var(--component-panel-border);
+    padding-bottom: 12px;
+}
+
+.admin-field {
+    display: block;
+    margin-bottom: 16px;
+}
+
+.admin-field span {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--component-text-secondary);
+}
+
+.admin-field input[type="text"],
+.admin-field input[type="password"],
+.admin-field input[type="number"],
+.admin-field select {
+    width: 100%;
+    padding: 8px 12px;
+    background: var(--component-bg-primary);
+    border: 1px solid var(--component-panel-border);
+    border-radius: 6px;
+    color: var(--component-text-primary);
+    font-size: 0.875rem;
+    transition: all 0.2s ease;
+}
+
+.admin-field input:focus,
+.admin-field select:focus {
+    outline: none;
+    border-color: var(--component-text-accent);
+    box-shadow: 0 0 0 2px rgba(255, 215, 0, 0.1);
+}
+
+.admin-field input[type="checkbox"] {
+    margin-right: 8px;
+    width: 16px;
+    height: 16px;
+    vertical-align: middle;
+}
+
+.admin-mcp-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.admin-mcp-entry {
+    background: var(--component-bg-secondary);
+    border: 1px solid var(--component-panel-border);
+    border-radius: 6px;
+    padding: 12px;
+}
+
+.admin-mcp-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.admin-mcp-row input {
+    padding: 6px 10px;
+    background: var(--component-bg-primary);
+    border: 1px solid var(--component-panel-border);
+    border-radius: 4px;
+    color: var(--component-text-primary);
+    font-size: 0.875rem;
+}
+
+.admin-tools-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.admin-tool-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    background: var(--component-bg-primary);
+    border: 1px solid var(--component-panel-border);
+    border-radius: 12px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    user-select: none;
+}
+
+.admin-tool-chip input {
+    margin: 0;
+}
+
+/* Refresh / Button Styles */
+.trace-list-refresh {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: var(--component-bg-secondary);
+    border: 1px solid var(--component-panel-border);
+    border-radius: 6px;
+    color: var(--component-text-primary);
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.trace-list-refresh:hover:not(:disabled) {
+    background: var(--component-panel-bg);
+    border-color: var(--component-text-accent);
+}
+
+.trace-list-refresh:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.trace-list-refresh .spinning {
+    animation: spin 1s linear infinite;
+}
+
+.icon-sm {
+    width: 16px;
+    height: 16px;
+}
+
+.icon-md {
+    width: 24px;
+    height: 24px;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Loading/Detail Panel */
+.detail-panel {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 400px;
+    background: var(--component-bg-primary);
+    color: var(--component-text-muted);
+}

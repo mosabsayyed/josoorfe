@@ -1,0 +1,45 @@
+/* src/app/App.css */
+.app-container {
+    display: flex;
+    height: 100vh;
+    background-color: #111827;
+    color: #F9FAFB;
+    overflow: hidden;
+}
+
+.content-area-flex {
+    display: flex;
+    flex: 1;
+    height: 100vh;
+}
+
+.content-area {
+    flex: 1;
+    height: 100vh;
+}
+
+.loading-container {
+    flex: 1;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.loading-content {
+    text-align: center;
+}
+
+.loading-title {
+    font-size: 1.5rem;
+    /* text-2xl */
+    font-weight: 700;
+    /* font-bold */
+    color: white;
+    margin-bottom: 0.5rem;
+    /* mb-2 */
+}
+
+.loading-text {
+    color: #64748b;
+}

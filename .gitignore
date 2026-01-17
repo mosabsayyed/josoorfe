@@ -9,6 +9,7 @@ node_modules/
 # Production
 /build
 /dist
+frontend/build/
 
 # Misc
 .DS_Store
@@ -34,3 +35,8 @@ logs/
 # Temporary files
 *.tmp
 .cache/
+
+# Large files and backups
+attached_assets/
+*.zip
+*.m4a

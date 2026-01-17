@@ -1,0 +1,84 @@
+/* Dynamic Insight Panel - Adapted from reference design with CSS variables */
+
+.insights-section {
+    width: 100%;
+}
+
+.insights-section-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.insights-section-title h3 {
+    font-family: 'Inter', sans-serif;
+    font-style: normal;
+    font-weight: 500;
+    font-size: 0.875rem;
+    color: var(--component-text-secondary);
+    margin: 0;
+}
+
+.insight-mode-filter {
+    background: rgba(30, 41, 59, 0.8);
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    border-radius: 0;
+    color: var(--component-text-primary);
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    cursor: pointer;
+}
+
+.insight-mode-filter:hover {
+    border-color: var(--component-text-accent);
+}
+
+.insight-panel {
+    width: 100%;
+    padding: 1rem;
+    border-left: 2px solid var(--component-text-accent);
+    background: var(--component-panel-bg);
+    border-radius: 0;
+}
+
+.insight-description {
+    font-family: 'Inter', sans-serif;
+    font-style: normal;
+    font-weight: 400;
+    font-size: 0.8rem;
+    color: var(--component-text-secondary);
+    margin-bottom: 0.75rem;
+    line-height: 1.4;
+}
+
+.insight-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.insight-stat {
+    font-family: 'Inter', sans-serif;
+    font-style: normal;
+    font-weight: 600;
+    font-size: 1.125rem;
+    color: var(--component-text-accent);
+}
+
+.insight-details {
+    font-family: 'Inter', sans-serif;
+    font-style: normal;
+    font-size: 0.875rem;
+    color: var(--component-text-secondary);
+}
+
+.insight-explanation {
+    font-family: 'Inter', sans-serif;
+    font-style: normal;
+    font-size: 0.75rem;
+    color: var(--component-text-muted);
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--component-panel-border);
+}

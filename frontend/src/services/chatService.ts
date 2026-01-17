@@ -96,7 +96,7 @@ const RAW_API_BASE =
   (PROCESS_ENV?.REACT_APP_API_BASE as string | undefined) ||
   '';
 const API_BASE_URL = RAW_API_BASE ? RAW_API_BASE.replace(/\/+$/g, '') : '';
-const API_PATH_PREFIX = API_BASE_URL ? '' : '/api/v1';
+const API_PATH_PREFIX = (API_BASE_URL && API_BASE_URL.endsWith('/api/v1')) ? '' : '/api/v1';
 
 function buildUrl(endpointPath: string) {
   // endpointPath should start with '/'
@@ -357,6 +357,55 @@ class ChatService {
 
     // Fallback: return the whole response untouched
     return data;
+  }
+
+  async streamMessage(request: ChatRequest, callbacks: { onChunk: (chunk: string) => void, onComplete: (response: ChatResponse) => void, onError: (error: Error) => void }): Promise<void> {
+    try {
+      const response = await fetch(buildUrl('/chat/stream'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('josoor_token') || ''}`
+        },
+        body: JSON.stringify(request)
+      });
+
+      if (!response.ok) {
+        throw new Error(`Streaming failed: ${response.status} ${response.statusText}`);
+      }
+
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      if (reader) {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const chunk = decoder.decode(value, { stream: true });
+          callbacks.onChunk(chunk); // Raw chunk for now, might need parsing if SSE
+          buffer += chunk;
+        }
+      }
+
+      // Try to parse the final buffer as the complete response for onComplete
+      // This is a naive implementation; normally streaming returns chunks of text and maybe a final JSON event.
+      // For now, assuming the stream is text-only or we reconstruct it.
+      // actually, if it's SSE, we need proper parsing. 
+      // Given I don't have the backend stream spec, I'll fallback to a simplified flow: 
+      // Just accumulate text and call onComplete with a synthetic response.
+
+      const finalResponse: ChatResponse = {
+        message: buffer,
+        conversation_id: request.conversation_id || 0, // Mock ID if missing
+        // ... other fields
+      };
+      callbacks.onComplete(finalResponse);
+
+    } catch (err) {
+      callbacks.onError(err as Error);
+    }
   }
 
   // Accept an optional userId for legacy/demo uses, but do NOT default to 1.

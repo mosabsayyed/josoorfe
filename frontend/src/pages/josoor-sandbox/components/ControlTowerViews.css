@@ -59,7 +59,7 @@
 .ct-muted {
     font-size: 0.8rem;
     color: var(--component-text-muted);
-    font-style: italic;
+    /* font-style: normal; REMOVED */
     text-align: center;
     padding: 20px 0;
 }

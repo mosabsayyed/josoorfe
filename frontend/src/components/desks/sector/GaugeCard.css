@@ -1,0 +1,191 @@
+/* src/app/components/GaugeCard.css */
+
+.gauge-card-container {
+    position: relative;
+    width: 100%;
+    transform-origin: center;
+}
+
+/* Background */
+.gauge-card-bg {
+    position: absolute;
+    height: 100%;
+    left: 0;
+    top: 0;
+    width: 100%;
+}
+
+.gauge-card-border {
+    position: absolute;
+    border: 1px solid #95a5a6;
+    inset: -0.5px;
+    pointer-events: none;
+}
+
+/* Typography */
+.gauge-card-label {
+    position: absolute;
+    font-family: 'Inter', sans-serif;
+    font-weight: 400;
+    line-height: 1.1;
+    left: 50%;
+    font-style: normal;
+    text-align: center;
+    color: white;
+    top: 3%;
+    transform: translateX(-50%);
+    width: 95%;
+}
+
+.gauge-card-value {
+    position: absolute;
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    line-height: normal;
+    left: 50%;
+    font-style: normal;
+    text-align: center;
+    color: white;
+    top: 16%;
+    transform: translateX(-50%);
+}
+
+/* Gauge SVG Container */
+.gauge-svg-container {
+    position: absolute;
+    height: 109.5%;
+    left: 0;
+    top: 45%;
+    width: 100%;
+    z-index: 10;
+}
+
+.gauge-svg-wrapper {
+    position: absolute;
+    bottom: 50%;
+    left: 0;
+    right: 0;
+    top: 0;
+}
+
+.gauge-svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+/* Tick Values */
+.tick-value {
+    position: absolute;
+    font-family: 'Inter', sans-serif;
+    font-weight: 400;
+    line-height: normal;
+    font-style: normal;
+    text-align: center;
+    transform: translateX(-50%);
+}
+
+.tick-val-base {
+    left: 6.47%;
+    top: 55%;
+    color: #666;
+}
+
+.tick-val-q-minus {
+    left: 20.1%;
+    top: 33%;
+    color: #95a5a6;
+}
+
+.tick-val-q-plus {
+    left: 80.6%;
+    top: 33%;
+    color: #95a5a6;
+}
+
+.tick-val-end {
+    left: 93.4%;
+    top: 55%;
+    color: #666;
+}
+
+/* Delta Badge */
+.delta-badge {
+    position: absolute;
+    background-color: rgba(212, 175, 55, 0.1);
+    border: 1px solid #ffb400;
+    height: 13.2%;
+    left: 39%;
+    border-radius: 25px;
+    top: 60%;
+    width: 24.5%;
+}
+
+.delta-value {
+    position: absolute;
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    line-height: normal;
+    left: 50%;
+    font-style: normal;
+    text-align: center;
+    top: 62%;
+    transform: translateX(-50%);
+}
+
+/* Bottom Bar */
+.bottom-bar {
+    position: absolute;
+    background-color: #2a3342;
+    height: 13.6%;
+    left: 0;
+    top: 86.4%;
+    width: 100%;
+    z-index: 20;
+}
+
+.bottom-bar-border {
+    position: absolute;
+    border: 1px solid #95a5a6;
+    inset: -0.5px;
+    pointer-events: none;
+}
+
+/* Bottom Labels */
+.bottom-labels-container {
+    position: absolute;
+    font-family: 'Inter', sans-serif;
+    font-weight: 400;
+    line-height: normal;
+    font-style: normal;
+    color: #d4af37;
+    text-align: center;
+    top: 88%;
+    width: 100%;
+    z-index: 30;
+}
+
+.bottom-label {
+    position: absolute;
+    transform: translateX(-50%);
+}
+
+.bl-base {
+    left: 6.47%;
+}
+
+.bl-minus {
+    left: 20.1%;
+}
+
+.bl-actual {
+    left: 51.3%;
+}
+
+.bl-plus {
+    left: 80.6%;
+}
+
+.bl-end {
+    left: 93.5%;
+}

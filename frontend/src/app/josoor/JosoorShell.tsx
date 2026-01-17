@@ -1,0 +1,348 @@
+import React, { useState, useEffect, useCallback, memo, useContext, useRef, Suspense } from "react";
+import { useLocation, useNavigate, UNSAFE_DataRouterContext as DataRouterContext, Outlet } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { graphService } from '../../services/graphService';
+import { Sidebar, ChatContainer } from "../../components/chat";
+import { CanvasManager } from "../../components/chat/CanvasManager";
+import { chatService } from "../../services/chatService";
+import * as authService from '../../services/authService';
+import { useAuth } from '../../contexts/AuthContext';
+import { useLanguage } from '../../contexts/LanguageContext';
+import type {
+    ConversationSummary,
+    Message as APIMessage,
+} from "../../types/api";
+
+const SectorDesk = React.lazy(() => import('../../components/desks/SectorDesk').then(m => ({ default: m.SectorDesk })));
+const ControlsDesk = React.lazy(() => import('../../components/desks/ControlsDesk').then(m => ({ default: m.ControlsDesk })));
+const PlanningDesk = React.lazy(() => import('../../components/desks/PlanningDesk').then(m => ({ default: m.PlanningDesk })));
+const EnterpriseDesk = React.lazy(() => import('../../components/desks/EnterpriseDesk').then(m => ({ default: m.EnterpriseDesk })));
+const ReportingDesk = React.lazy(() => import('../../components/desks/ReportingDesk').then(m => ({ default: m.ReportingDesk })));
+const TutorialsDesk = React.lazy(() => import('../../components/desks/TutorialsDesk').then(m => ({ default: m.TutorialsDesk })));
+const ExplorerDesk = React.lazy(() => import('../../components/desks/ExplorerDesk').then(m => ({ default: m.ExplorerDesk })));
+const SettingsDesk = React.lazy(() => import('./views/admin/Settings'));
+const ObservabilityDesk = React.lazy(() => import('./views/admin/Observability'));
+
+const MemoizedSidebar = memo(Sidebar);
+const MemoizedCanvasManager = memo(CanvasManager);
+
+export type JosoorView =
+    | 'chat'
+    | 'sector-desk'
+    | 'controls-desk'
+    | 'planning-desk'
+    | 'enterprise-desk'
+    | 'reporting-desk'
+    | 'knowledge'
+    | 'roadmap'
+    | 'explorer'
+    | 'settings'
+    | 'observability';
+
+export default function JosoorShell() {
+    const [conversations, setConversations] = useState<ConversationSummary[]>([]);
+    const [activeConversationId, setActiveConversationId] = useState<number | null>(null);
+    const [messages, setMessages] = useState<APIMessage[]>([]);
+    const [isLoading, setIsLoading] = useState(false);
+    const [canvasArtifacts, setCanvasArtifacts] = useState<any[]>([]);
+    const [isCanvasOpen, setIsCanvasOpen] = useState(false);
+    const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+    const [streamingMessage, setStreamingMessage] = useState<APIMessage | null>(null);
+
+    // Active View State
+    const [activeView, setActiveView] = useState<JosoorView>('chat');
+
+    // Desks State
+    const [year, setYear] = useState('2025');
+    const [quarter, setQuarter] = useState('Q4');
+
+    // Fetch dynamic temporal data
+    const { data: temporalData } = useQuery({
+        queryKey: ['neo4j-years'],
+        queryFn: () => graphService.getYears(),
+        staleTime: Infinity
+    });
+
+
+    const auth = useAuth();
+    const { language } = useLanguage();
+    const location = useLocation();
+    const navigate = useNavigate();
+
+    // Load Conversations (Copied from ChatAppPage)
+    const loadConversations = useCallback(async () => {
+        try {
+            if (authService.isGuestMode() || !authService.getToken()) {
+                const guestConvos = authService.getGuestConversations();
+                const adapted = (guestConvos || []).map((c: any) => ({
+                    id: c.id,
+                    title: c.title || 'New Chat',
+                    message_count: (c.messages || []).length,
+                    created_at: c.created_at || new Date().toISOString(),
+                    updated_at: c.updated_at || new Date().toISOString(),
+                    _isGuest: true,
+                }));
+                setConversations(adapted as any);
+                return;
+            }
+
+            const data = await chatService.getConversations();
+            const adapted = (data.conversations || []).map((c: any) => ({
+                ...c,
+                title: c.title || "New Chat",
+                message_count: Array.isArray(c.messages) ? c.messages.length : (c.message_count || 0),
+                created_at: c.created_at || new Date().toISOString(),
+                updated_at: c.updated_at || new Date().toISOString(),
+            }));
+            setConversations(adapted);
+        } catch (err) {
+            console.error(err);
+        }
+    }, []);
+
+    useEffect(() => {
+        loadConversations();
+    }, [loadConversations]);
+
+    // Load Messages (Copied from ChatAppPage)
+    useEffect(() => {
+        const loadMessages = async () => {
+            if (!activeConversationId) {
+                setMessages([]);
+                return;
+            }
+            setIsLoading(true);
+            try {
+                if (authService.isGuestMode() || activeConversationId < 0) {
+                    const guestConvos = authService.getGuestConversations();
+                    const c = guestConvos.find((x: any) => x.id === activeConversationId);
+                    if (c) {
+                        setMessages(c.messages || []);
+                    }
+                } else {
+                    const data = await chatService.getConversationMessages(activeConversationId);
+                    setMessages(data.messages || []);
+                }
+            } catch (err) {
+                console.error(err);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        loadMessages();
+    }, [activeConversationId]);
+
+    // Handle Send Message (Copied from ChatAppPage)
+    const handleSendMessage = useCallback(async (messageText: string, options?: { push_to_graph_server?: boolean; suppress_canvas_auto_open?: boolean }) => {
+        const tempId = `temp-${Date.now()}`;
+        const tempMsg: APIMessage = {
+            id: parseInt(tempId) || Date.now(),
+            role: 'user',
+            content: messageText,
+            created_at: new Date().toISOString(),
+            metadata: {}
+        };
+
+        setMessages(prev => [...prev, tempMsg]);
+        setIsLoading(true);
+
+        try {
+            const basics: any = {
+                query: messageText,
+                conversation_id: activeConversationId && activeConversationId > 0 ? activeConversationId : undefined,
+                push_to_graph_server: options?.push_to_graph_server
+            };
+
+            if (authService.isGuestMode()) {
+                const response = await chatService.sendMessage(basics);
+                let answer = response.message || response.answer || "";
+                const assistantMsg: APIMessage = {
+                    id: Date.now(),
+                    role: 'assistant',
+                    content: answer,
+                    created_at: new Date().toISOString(),
+                    metadata: response
+                };
+                setMessages(prev => [...prev.filter(m => m.id !== tempMsg.id), { ...tempMsg, id: Date.now() - 1 }, assistantMsg]);
+                loadConversations();
+            } else {
+                await chatService.streamMessage(basics, {
+                    onChunk: (chunk) => {
+                        setStreamingMessage(prev => {
+                            if (!prev) return {
+                                id: Date.now() + 1,
+                                role: 'assistant',
+                                content: chunk,
+                                created_at: new Date().toISOString(),
+                                metadata: { isStreaming: true }
+                            };
+                            return { ...prev, content: prev.content + chunk };
+                        });
+                    },
+                    onComplete: (fullResponse) => {
+                        const assistantMsg: APIMessage = {
+                            id: Date.now() + 1,
+                            role: 'assistant',
+                            content: fullResponse.message || fullResponse.answer || "",
+                            created_at: new Date().toISOString(),
+                            metadata: fullResponse
+                        };
+                        setMessages(prev => [...prev.filter(m => m.id !== tempMsg.id), { ...tempMsg, id: Date.now() - 1 }, assistantMsg]);
+                        setStreamingMessage(null);
+                        if (fullResponse.artifacts && fullResponse.artifacts.length > 0) {
+                            setCanvasArtifacts(fullResponse.artifacts);
+                            setIsCanvasOpen(true);
+                        }
+                        if (!activeConversationId && fullResponse.conversation_id) {
+                            setActiveConversationId(fullResponse.conversation_id);
+                            loadConversations();
+                        }
+                    },
+                    onError: (err) => {
+                        setMessages(prev => [...prev, { id: Date.now(), role: 'assistant', content: 'Error getting response', created_at: new Date().toISOString() }]);
+                        setStreamingMessage(null);
+                    }
+                });
+            }
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setIsLoading(false);
+        }
+    }, [activeConversationId, loadConversations]);
+
+    const handleNewChat = useCallback(() => {
+        setActiveConversationId(null);
+        setMessages([]);
+        setCanvasArtifacts([]);
+        setActiveView('chat');
+    }, []);
+
+    const handleSelectConversation = useCallback((id: number) => {
+        setActiveConversationId(id);
+        setActiveView('chat');
+    }, []);
+
+    const handleDeleteConversation = useCallback(async (id: number) => {
+        if (authService.isGuestMode()) {
+            authService.deleteGuestConversation(id);
+        } else {
+            await chatService.deleteConversation(id);
+        }
+        if (activeConversationId === id) handleNewChat();
+        loadConversations();
+    }, [activeConversationId, handleNewChat, loadConversations]);
+
+    const handleOpenArtifact = useCallback((artifact: any) => {
+        setCanvasArtifacts([artifact]);
+        setIsCanvasOpen(true);
+    }, []);
+
+    // Sync title/subtitle based on activeView
+    const getHeaderMeta = () => {
+        switch (activeView) {
+            case 'sector-desk': return { title: 'Sector Desk', subtitle: 'Strategic Impact' };
+            case 'controls-desk': return { title: 'Controls Desk', subtitle: 'Signal Ribbons' };
+            case 'planning-desk': return { title: 'Planning Desk', subtitle: 'Intervention Planning' };
+            case 'enterprise-desk': return { title: 'Enterprise Desk', subtitle: 'Capability Matrix' };
+            case 'reporting-desk': return { title: 'Reporting Desk', subtitle: 'AI Insights' };
+            case 'observability': return { title: 'Observability Control Center', subtitle: '' };
+            default: return { title: 'Graph Chat', subtitle: '' };
+        }
+    };
+
+    const { title, subtitle } = getHeaderMeta();
+
+    return (
+        <div className="josoor-shell" style={{ display: 'flex', width: '100vw', height: '100vh', overflow: 'hidden', backgroundColor: 'var(--bg-primary)' }}>
+            {/* 1. SIDEBAR (Left) - Using original Sidebar component */}
+            <div
+                style={{
+                    width: isSidebarOpen ? '260px' : '60px',
+                    transition: 'width 0.3s ease',
+                    borderRight: '1px solid var(--border-color)',
+                    flexShrink: 0
+                }}
+            >
+                <MemoizedSidebar
+                    conversations={conversations}
+                    activeConversationId={activeConversationId}
+                    onNewChat={handleNewChat}
+                    onSelectConversation={handleSelectConversation}
+                    onDeleteConversation={handleDeleteConversation}
+                    onQuickAction={(action) => {
+                        // Map quick actions to shell views if needed
+                        if (typeof action === 'string') {
+                            setActiveView(action as any);
+                        } else {
+                            setActiveView(action.id as any);
+                        }
+                    }}
+                    isCollapsed={!isSidebarOpen}
+                    onRequestToggleCollapse={() => setIsSidebarOpen(!isSidebarOpen)}
+                />
+            </div>
+
+            {/* 2. MAIN CONTENT (Center) */}
+            <div className="main-content" style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, position: 'relative' }}>
+                <ChatContainer
+                    conversationId={activeConversationId}
+                    messages={activeView === 'chat' ? messages : []}
+                    onSendMessage={handleSendMessage}
+                    isLoading={isLoading}
+                    onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+                    onToggleCanvas={() => setIsCanvasOpen(!isCanvasOpen)}
+                    streamingMessage={streamingMessage}
+                    language={language}
+                    onOpenArtifact={handleOpenArtifact}
+                    year={year}
+                    quarter={quarter}
+                    availableYears={temporalData?.years?.map(String) || ['2025', '2026', '2027', '2028', '2029']}
+                    onYearChange={setYear}
+                    onQuarterChange={setQuarter}
+                    title={title}
+                    subtitle={subtitle}
+                >
+                    {activeView !== 'chat' && (
+                        <div style={{ flex: 1, height: '100%', overflow: ['settings', 'observability'].includes(activeView) ? 'auto' : 'hidden' }}>
+                            <Suspense fallback={<div style={{ padding: '2rem', color: 'white' }}>Loading view...</div>}>
+                                {activeView === 'sector-desk' && <SectorDesk year={year} quarter={quarter} />}
+                                {activeView === 'controls-desk' && <ControlsDesk />}
+                                {activeView === 'planning-desk' && <PlanningDesk />}
+                                {activeView === 'enterprise-desk' && <EnterpriseDesk year={year} quarter={quarter} />}
+                                {activeView === 'reporting-desk' && <ReportingDesk />}
+                                {activeView === 'knowledge' && <TutorialsDesk />}
+                                {activeView === 'roadmap' && <div className="p-10 text-xl" style={{ color: 'white' }}>Roadmap (Coming Soon)</div>}
+                                {activeView === 'explorer' && <ExplorerDesk year={year} quarter={quarter} />}
+                                {activeView === 'settings' && <SettingsDesk />}
+                                {activeView === 'observability' && <ObservabilityDesk />}
+                            </Suspense>
+                        </div>
+                    )}
+                </ChatContainer>
+            </div>
+
+            {/* 3. CANVAS (Right) */}
+            {
+                isCanvasOpen && (
+                    <div
+                        style={{
+                            width: '45%',
+                            transition: 'all 0.3s ease',
+                            borderLeft: '1px solid var(--border-color)',
+                            overflow: 'hidden',
+                            flexShrink: 0,
+                            backgroundColor: 'var(--bg-secondary)'
+                        }}
+                    >
+                        <MemoizedCanvasManager
+                            artifacts={canvasArtifacts}
+                            isOpen={isCanvasOpen}
+                            onClose={() => setIsCanvasOpen(false)}
+                        />
+                    </div>
+                )
+            }
+        </div >
+    );
+}

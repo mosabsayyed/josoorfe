@@ -63,11 +63,11 @@ export function TwinKnowledgeRenderer({ artifact, onBack }: TwinKnowledgeRendere
     return `${basePath}/${filenameId}.html`;
   };
 
-  const getMediaUrls = (episodeId: string) => {
+  const getMediaUrls = (episode: Episode) => {
     const basePath = language === 'ar' ? '/knowledge/ar' : '/knowledge';
-    const filenameId = episodeId.replace('-', '.');
+    const filenameId = episode.id.replace('-', '.');
     return {
-      video: `${basePath}/video/${filenameId}.mp4`,
+      video: episode.videoUrl || `${basePath}/video/${filenameId}.mp4`, // Use YouTube URL if available
       audio: `${basePath}/audio/${filenameId}.m4a`
     };
   };
@@ -75,7 +75,7 @@ export function TwinKnowledgeRenderer({ artifact, onBack }: TwinKnowledgeRendere
   const rawChapters = knowledgeData?.chapters || [];
   // Filter out non-chapter items (like the media config object)
   const chapters = rawChapters.filter(c => c.title && c.episodes);
-  
+
   const activeChapter = chapters.find(c => c.id === activeChapterId) || chapters[0];
   const activeEpisode = activeChapter?.episodes.find(e => e.id === activeEpisodeId) || activeChapter?.episodes[0];
 
@@ -123,7 +123,7 @@ export function TwinKnowledgeRenderer({ artifact, onBack }: TwinKnowledgeRendere
 
         {/* Back Button (if provided) */}
         {onBack && (
-          <button 
+          <button
             onClick={onBack}
             className="twin-knowledge-back-btn clickable"
             style={{
@@ -143,7 +143,7 @@ export function TwinKnowledgeRenderer({ artifact, onBack }: TwinKnowledgeRendere
             {language === 'ar' ? '← العودة' : '← Back'}
           </button>
         )}
-        
+
         {/* Chapter Selector */}
         <select
           value={activeChapterId}
@@ -169,7 +169,7 @@ export function TwinKnowledgeRenderer({ artifact, onBack }: TwinKnowledgeRendere
         >
           {activeChapter.episodes.map(episode => (
             <option key={episode.id} value={episode.id}>
-              {language === 'ar' 
+              {language === 'ar'
                 ? `الحلقة ${episode.id.replace('-', '.')}: ${episode.title[language]}`
                 : `Episode ${episode.id.replace('-', '.')}: ${episode.title[language]}`
               }
@@ -181,7 +181,7 @@ export function TwinKnowledgeRenderer({ artifact, onBack }: TwinKnowledgeRendere
         <div style={{ flex: 1 }} />
 
         {/* Video Icon */}
-        <button 
+        <button
           onClick={handleVideoClick}
           className="twin-knowledge-media-icon-btn clickable"
           title={language === 'ar' ? 'الفيديو التوضيحي' : 'Illustrative Video'}
@@ -193,7 +193,7 @@ export function TwinKnowledgeRenderer({ artifact, onBack }: TwinKnowledgeRendere
         </button>
 
         {/* Audio Icon */}
-        <button 
+        <button
           onClick={handleAudioClick}
           className="twin-knowledge-media-icon-btn clickable"
           title={language === 'ar' ? 'بودكاست في العمق' : 'The Deep Podcast'}
@@ -210,10 +210,10 @@ export function TwinKnowledgeRenderer({ artifact, onBack }: TwinKnowledgeRendere
         {/* Article */}
         <div className="twin-knowledge-article">
           {isLoading && (
-            <div style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'center', 
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
               height: '100%',
               color: 'var(--component-text-secondary)'
             }}>
@@ -221,10 +221,10 @@ export function TwinKnowledgeRenderer({ artifact, onBack }: TwinKnowledgeRendere
             </div>
           )}
           {loadError && (
-            <div style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'center', 
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
               height: '100%',
               color: 'var(--component-text-error)'
             }}>
@@ -238,13 +238,13 @@ export function TwinKnowledgeRenderer({ artifact, onBack }: TwinKnowledgeRendere
             aria-label={`Episode ${activeEpisode.id} content`}
             onLoad={(e) => {
               setIsLoading(false);
-              
+
               // Inject theme CSS variables into iframe immediately
               const iframe = e.currentTarget;
               const iframeDoc = iframe.contentDocument;
               if (iframeDoc) {
                 const styles = getComputedStyle(document.documentElement);
-                
+
                 // Create style element with CSS variables
                 const styleEl = iframeDoc.createElement('style');
                 styleEl.textContent = `
@@ -278,7 +278,7 @@ export function TwinKnowledgeRenderer({ artifact, onBack }: TwinKnowledgeRendere
                     text-align: center;
                   }
                 `;
-                
+
                 // Insert at the beginning of head so external CSS can use them
                 iframeDoc.head.insertBefore(styleEl, iframeDoc.head.firstChild);
               }
@@ -297,7 +297,7 @@ export function TwinKnowledgeRenderer({ artifact, onBack }: TwinKnowledgeRendere
                 <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 600, color: 'var(--component-text-primary)' }}>
                   {language === 'ar' ? 'بودكاست في العمق' : 'The Deep Podcast'}
                 </h4>
-                <button 
+                <button
                   onClick={() => setShowAudioPlayer(false)}
                   style={{
                     background: 'transparent',
@@ -310,12 +310,12 @@ export function TwinKnowledgeRenderer({ artifact, onBack }: TwinKnowledgeRendere
                   <XMarkIcon style={{ width: '20px', height: '20px' }} />
                 </button>
               </div>
-              <audio controls style={{ width: '100%' }} src={getMediaUrls(activeEpisode.id).audio} autoPlay>
+              <audio controls style={{ width: '100%' }} src={getMediaUrls(activeEpisode).audio} autoPlay>
                 Your browser does not support the audio element.
               </audio>
             </div>
           )}
-          
+
           {/* Comments */}
           <TwinKnowledgeCommentsSection articleId={activeEpisode.id} />
         </div>
@@ -325,7 +325,7 @@ export function TwinKnowledgeRenderer({ artifact, onBack }: TwinKnowledgeRendere
       {showVideoModal && (
         <div className="modal-overlay" onClick={() => setShowVideoModal(false)}>
           <div className="twin-knowledge-video-modal" onClick={(e) => e.stopPropagation()}>
-            <button 
+            <button
               onClick={() => setShowVideoModal(false)}
               style={{
                 position: 'absolute',
@@ -346,9 +346,19 @@ export function TwinKnowledgeRenderer({ artifact, onBack }: TwinKnowledgeRendere
             >
               <XMarkIcon style={{ width: '24px', height: '24px', strokeWidth: 3 }} />
             </button>
-            <video controls className="twin-knowledge-video" src={getMediaUrls(activeEpisode.id).video} autoPlay>
-              Your browser does not support the video tag.
-            </video>
+            <iframe
+              className="twin-knowledge-video"
+              src={getMediaUrls(activeEpisode).video}
+              title={`${activeEpisode.title[language]} - Video`}
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              style={{
+                width: '100%',
+                height: '100%',
+                border: 'none',
+                borderRadius: '8px'
+              }}
+            />
           </div>
         </div>
       )}

@@ -3,119 +3,8 @@
  * Enterprise-grade typography and formatting
  */
 .markdown-content {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  font-size: 14px;
-  line-height: 1.6;
-  color: var(--component-text-primary);
-}
-.markdown-content h1,
-  .markdown-content h2,
-  .markdown-content h3,
-  .markdown-content h4,
-  .markdown-content h5,
-  .markdown-content h6 {
-    margin-top: 20px;
-    margin-bottom: 12px;
-    font-weight: 600;
-    line-height: 1.3;
-    color: var(--component-text-primary);
-}
-.markdown-content h1 {
-  font-size: 24px;
-  border-bottom: 1px solid var(--component-panel-border);
-  padding-bottom: 8px;
-}
-.markdown-content h2 {
-  font-size: 20px;
-  border-bottom: 1px solid var(--component-panel-bg);
-  padding-bottom: 6px;
-}
-.markdown-content h3 {
-  font-size: 16px;
-}
-.markdown-content h4 {
-  font-size: 14px;
-}
-.markdown-content p {
-  margin: 0 0 12px 0;
-}
-.markdown-content ul,
-  .markdown-content ol {
-    margin: 0 0 12px 0;
-    padding-left: 24px;
-}
-.markdown-content li {
-  margin-bottom: 4px;
-}
-.markdown-content li > p {
-  margin: 0;
-}
-.markdown-content code {
-  font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
-  font-size: 13px;
-  background: var(--component-panel-bg);
-  padding: 2px 6px;
-  border-radius: 4px;
-  color: var(--component-text-primary);
-}
-.markdown-content pre {
-  background: var(--component-panel-bg);
-  border: 1px solid var(--component-panel-border);
-  border-radius: 4px;
-  padding: 12px;
-  overflow-x: auto;
-  margin: 0 0 12px 0;
-}
-.markdown-content pre code {
-  background: none;
-  padding: 0;
-  border-radius: 4px;
-  font-size: 13px;
-  line-height: 1.5;
-}
-.markdown-content blockquote {
-  margin: 0 0 12px 0;
-  padding: 8px 16px;
-  border-left: 3px solid var(--component-text-accent);
-  background: var(--component-panel-bg);
-  color: var(--component-text-secondary);
-}
-.markdown-content blockquote p {
-  margin: 0;
-}
-.markdown-content a {
-  color: var(--component-text-accent);
-  text-decoration: none;
-  border-bottom: 1px solid transparent;
-  transition: border-color 150ms ease;
-}
-.markdown-content a:hover {
-  border-bottom-color: var(--component-text-accent);
-}
-.markdown-content hr {
-  border: none;
-  border-top: 1px solid var(--component-panel-border);
-  margin: 20px 0;
-}
-.markdown-content img {
-  max-width: 100%;
-  height: auto;
-  border-radius: 4px;
-  margin: 12px 0;
-}
-.markdown-content input[type="checkbox"] {
-  margin-right: 8px;
-}
-.markdown-content del {
-  color: var(--component-text-muted);
-}
-/**
- * Professional Markdown Styles for MessageBubble
- * Enterprise-grade typography and formatting
- */
-
-.markdown-content {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-family: var(--component-font-family);
+  font-style: normal;
   font-size: 14px;
   line-height: 1.6;
   color: var(--component-text-primary);
@@ -168,12 +57,145 @@
   margin-bottom: 4px;
 }
 
-.markdown-content li > p {
+.markdown-content li>p {
   margin: 0;
 }
 
 .markdown-content code {
-  font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+  font-family: var(--component-font-family);
+  font-size: 13px;
+  background: var(--component-panel-bg);
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: var(--component-text-primary);
+}
+
+.markdown-content pre {
+  background: var(--component-panel-bg);
+  border: 1px solid var(--component-panel-border);
+  border-radius: 4px;
+  padding: 12px;
+  overflow-x: auto;
+  margin: 0 0 12px 0;
+}
+
+.markdown-content pre code {
+  background: none;
+  padding: 0;
+  border-radius: 4px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.markdown-content blockquote {
+  margin: 0 0 12px 0;
+  padding: 8px 16px;
+  border-left: 3px solid var(--component-text-accent);
+  background: var(--component-panel-bg);
+  color: var(--component-text-secondary);
+}
+
+.markdown-content blockquote p {
+  margin: 0;
+}
+
+.markdown-content a {
+  color: var(--component-text-accent);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-color 150ms ease;
+}
+
+.markdown-content a:hover {
+  border-bottom-color: var(--component-text-accent);
+}
+
+.markdown-content hr {
+  border: none;
+  border-top: 1px solid var(--component-panel-border);
+  margin: 20px 0;
+}
+
+.markdown-content img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 4px;
+  margin: 12px 0;
+}
+
+.markdown-content input[type="checkbox"] {
+  margin-right: 8px;
+}
+
+.markdown-content del {
+  color: var(--component-text-muted);
+}
+
+/**
+ * Professional Markdown Styles for MessageBubble
+ * Enterprise-grade typography and formatting
+ */
+
+.markdown-content {
+  font-family: var(--component-font-family);
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--component-text-primary);
+}
+
+.markdown-content h1,
+.markdown-content h2,
+.markdown-content h3,
+.markdown-content h4,
+.markdown-content h5,
+.markdown-content h6 {
+  margin-top: 20px;
+  margin-bottom: 12px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--component-text-primary);
+}
+
+.markdown-content h1 {
+  font-size: 24px;
+  border-bottom: 1px solid var(--component-panel-border);
+  padding-bottom: 8px;
+}
+
+.markdown-content h2 {
+  font-size: 20px;
+  border-bottom: 1px solid var(--component-panel-bg);
+  padding-bottom: 6px;
+}
+
+.markdown-content h3 {
+  font-size: 16px;
+}
+
+.markdown-content h4 {
+  font-size: 14px;
+}
+
+.markdown-content p {
+  margin: 0 0 12px 0;
+}
+
+.markdown-content ul,
+.markdown-content ol {
+  margin: 0 0 12px 0;
+  padding-left: 24px;
+}
+
+.markdown-content li {
+  margin-bottom: 4px;
+}
+
+.markdown-content li>p {
+  margin: 0;
+}
+
+.markdown-content code {
+  font-family: var(--component-font-family);
   font-size: 13px;
   background: var(--component-panel-bg);
   padding: 2px 6px;

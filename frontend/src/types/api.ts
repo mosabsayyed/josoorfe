@@ -313,7 +313,7 @@ export interface APIConfig {
 }
 
 export const DEFAULT_API_CONFIG: APIConfig = {
-  baseURL: 'http://localhost:8000/api/v1',
+  baseURL: '/api/v1',
   timeout: 30000,
   headers: {
     'Content-Type': 'application/json',

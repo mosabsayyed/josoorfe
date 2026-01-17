@@ -1,0 +1,28 @@
+we will take the structure of the /chat and refactor the sidebar to be based on the new design menu.
+the new design has multiple sections.
+The 5 desks are to be from the new design and needs wiring to the backend.
+In particular, the Sector desk has two parts 1) the map, this will require a major rehaul to enable it to show 100's of data points, so for now keep as is 2) the two lenses kpis and radards. Those need to be taken from the executive desk in the sandbox but use the kpi guage instead of the card.
+The knowledge series is the same one in the /chat called Twin Knowledge
+the Graph Chat is the chat in the /chat section already
+the roadmap is the combined product roadmap and plan your journey in the /chat but requires revamping the content
+then settings and observability are the ones from the sandbox those are in mostly good shape but settings used to save to a file and the backend reads from , now the front and back ends are on different servers so we need to shift to a db model , observability is already db based but the page itself needs some enhancements. not a priority now.
+= from the sandbox we need to use the same header with all its elements including the year and quarter filters which are universal across all sections so important it works
+One extra section is needed called Graph Explorer. This takes a component from /chat when you click on intelligent dashboards then there is a 3d Graph section. We need to extract and use that block here as a full independent section.
+In that same intelligent dashboard section there is an onboarding guide that introduces the user to the differenet sections. We need to apply the same conept on the main page to explain each of the sidebars.
+The site uses ar/en and light/dark themes. the chat is compliant, the sandobx is in ok shape, the new design is zero compliant.
+CRITICAL, despite attempting my best for the three to have the same theme there are deviations. the theme and styles in /chat are the ones everyone needs to comply to and thats why I want it to be the base foundation and all the pieces come INTO IT. this means when we bring code into it, that codes css stays behind and the /chat css are applied.
+Lastly, the cube animation... this will be in merged with the founders letter
+the /chat has many broken icons, those must be found or i can upload them separately.
+the knowledge series has a large amount of media (videos and audios) I did not upload. I am considering putting them on youtube and embed them instead.
+Task 4.1: Knowledge Series there is change, instead of the content opening in the canvas it should open in the main area. Same with the roadmap and graph explorer.
+Task 4.5 to be clear, this is not a separate section, it is a one time activitiy to onboard a new user than is locked as seen and then we need an icon with a ? in case the user wants to see it again. i would like to see exactly the design for this, what fades out, where the message box appears, how many are there, do we actually change pages, what text is in the popup, the location of the popup cant be random covering important topic being explained... etc...
+
+the icons - are in the folder icons in the zip file with ~ 18MB I can share ofcourse but if you dont have them then I am worried you dont have the rest of the zip folder so let me know to upload the full zip file or not.
+backend - yes i do have access, you will need to provide detailed request and i can pass to the agent there to handle. And no we cannot skip it, the system is not working without the settings. Plus they are a few elements anyway.
+Guage - use the ones from the new design. It should be ready to use (copy/paste blocks based on the data you have, level 1 and level 2 so should not be alot. and then change values only.
+Chat, i did not get u, the main area where all content appears is where the chat appears, I failed to mention this, the sections related to chat and since it is the host welcoming all the new sections, the chat elements remain as is: new chat, the collapsing, the conversation history. only change is the Profile instead of being in the bottom left is now in the header which gives more spacefor the sidebar
+invite - i want a) code verification if it is functional or a placeholder - if functional to test it. if placeholder to code it.
+two more features i forgot please to add them:
+- The governance log design 
+- the risk analyst part of the Ontology SST 
+add one more feature, Trace. I think it was mentioned in the screen mapping where to add it. the code to execute it is from the sandbox/executives u will notice a button called Explain to me , refactor that to trace, it send a query through chateapi and shows the response in the popup but in reality it also becomes a chat thread to follow up on

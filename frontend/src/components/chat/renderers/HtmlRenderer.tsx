@@ -197,7 +197,7 @@ export function HtmlRenderer({ html, artifact, title, embeddedArtifacts: propArt
       margin: 0 0 1em 0;
       padding-left: 1em;
       color: var(--component-text-secondary);
-      font-style: italic;
+      font-style: normal;
     }
     /* Visualization placeholder styles used before hydration */
     .visualization-placeholder {
@@ -209,7 +209,7 @@ export function HtmlRenderer({ html, artifact, title, embeddedArtifacts: propArt
       border-radius: 0.5em;
       color: var(--component-text-secondary);
       font-size: 0.95em;
-      font-style: italic;
+      font-style: normal;
       text-align: center;
     }
     .visualization-table {

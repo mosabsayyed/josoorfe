@@ -230,7 +230,7 @@ chatmodule/
 JOSOOR supports dual-mode LLM connectivity for flexibility in development and deployment.
 
 ### Remote LLM (OpenRouter)
-- Endpoint: https://openrouter.ai/api/v1/responses
+- Endpoint: E.g. https://openrouter.ai/api/v1/responses or Groq 
 - Configure: `OPENROUTER_API_KEY`, `OPENROUTER_MODEL_PRIMARY`, `OPENROUTER_MODEL_FALLBACK`, `OPENROUTER_MODEL_ALT`
 - Use: Default in production; broad model choice (Gemma, Gemini, Mistral, etc.)
 

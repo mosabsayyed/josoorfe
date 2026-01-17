@@ -1,0 +1,159 @@
+/* src/app/components/EnterpriseDesk.css */
+
+.enterprise-desk-container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    background-color: #020617;
+    color: #f9fafb;
+    overflow: hidden;
+}
+
+.enterprise-header-wrapper {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background-color: rgba(15, 23, 42, 0.98);
+    border-bottom: 1px solid rgba(148, 163, 184, 0.3);
+    padding: 1rem;
+    backdrop-filter: blur(12px);
+    flex-shrink: 0;
+}
+
+.enterprise-matrix-wrapper {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-bottom: 2rem;
+}
+
+.overlay-section-title {
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.3);
+}
+
+.overlay-section-title h3 {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--component-text-accent);
+    margin: 0 0 0.25rem 0;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.overlay-section-title .subtitle {
+    font-size: 0.75rem;
+    color: var(--component-text-secondary);
+    margin: 0;
+    font-weight: 400;
+}
+
+.enterprise-title-row {
+    display: grid;
+    grid-template-columns: 368px 1fr;
+    gap: 1.5rem;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.enterprise-main-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--component-text-accent);
+    margin: 0;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.enterprise-insights-title-section {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--component-text-accent);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.insight-mode-filter {
+    background: rgba(30, 41, 59, 0.8);
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    border-radius: 0;
+    color: var(--component-text-primary);
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    cursor: pointer;
+}
+
+.insight-mode-filter:hover {
+    border-color: var(--component-text-accent);
+}
+
+.enterprise-controls-row {
+    display: grid;
+    grid-template-columns: 368px 1fr;
+    gap: 1.5rem;
+    align-items: start;
+}
+
+.insights-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.insights-section-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.insights-section-title h3 {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--component-text-secondary);
+    margin: 0;
+}
+
+.overlay-buttons-block {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: repeat(3, auto);
+    gap: 0.5rem;
+}
+
+.overlay-buttons-block .overlay-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.625rem 0.875rem;
+    border-radius: 0;
+    font-size: 0.875rem;
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 1px solid var(--component-panel-border);
+    background: var(--component-panel-bg);
+    color: var(--component-text-secondary);
+    text-align: left;
+}
+
+.overlay-buttons-block .overlay-btn:hover {
+    background: var(--component-bg-secondary);
+    border-color: var(--component-text-accent);
+}
+
+.overlay-buttons-block .overlay-btn-active {
+    background: var(--component-text-accent);
+    color: var(--component-bg-primary);
+    border-color: var(--component-text-accent);
+}
+
+.overlay-buttons-block .overlay-btn-inactive {
+    background: var(--component-panel-bg);
+    color: var(--component-text-secondary);
+}

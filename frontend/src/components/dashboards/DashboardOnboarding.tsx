@@ -82,9 +82,9 @@ const DashboardOnboarding: React.FC<DashboardOnboardingProps> = ({ isOpen, onClo
       stagePadding: 10,
       stageRadius: 8,
       onDestroyStarted: () => {
-         onViewChange('dashboard'); // Reset to dashboard on close
-         onClose();
-         driverObj.current.destroy();
+        onViewChange('dashboard'); // Reset to dashboard on close
+        onClose();
+        driverObj.current.destroy();
       },
       popoverClass: isDark ? 'driverjs-theme' : '',
       steps: [
@@ -124,7 +124,7 @@ const DashboardOnboarding: React.FC<DashboardOnboardingProps> = ({ isOpen, onClo
                 <p>في <strong>منطقة المحادثة</strong>، يمكنك طرح أسئلة من زوايا وأدوار مختلفة، والتنقل في الأنطولوجيا باستخدام هياكل مألوفة.</p>
                 <div style="background-color: rgba(239, 68, 68, 0.1); padding: 0.75rem; border-radius: 0.375rem; border-right: 4px solid #EF4444; margin-top: 1rem;">
                   <p style="margin: 0; font-size: 0.85rem;"><strong>ملاحظة:</strong> بعض العلاقات مكسورة عمداً لنرى كيف يتعامل معها الذكاء الاصطناعي وينصح بإغلاقها.</p>
-                  <p style="margin: 0.5rem 0 0 0; font-size: 0.85rem; font-style: italic;">هذا السيناريو يحاكي واقع توفر البيانات.</p>
+                  <p style="margin: 0.5rem 0 0 0; font-size: 0.85rem; font-style: normal;">هذا السيناريو يحاكي واقع توفر البيانات.</p>
                 </div>
               </div>
             ` : `
@@ -132,7 +132,7 @@ const DashboardOnboarding: React.FC<DashboardOnboardingProps> = ({ isOpen, onClo
                 <p>In the <strong>Chat Area</strong>, you can ask questions from different angles and roles, navigating the ontology using familiar setups and structures.</p>
                 <div style="background-color: rgba(239, 68, 68, 0.1); padding: 0.75rem; border-radius: 0.375rem; border-left: 4px solid #EF4444; margin-top: 1rem;">
                   <p style="margin: 0; font-size: 0.85rem;"><strong>NOTE:</strong> Some relations are broke intentionally to see how the AI handles them and advises on closing them.</p>
-                  <p style="margin: 0.5rem 0 0 0; font-size: 0.85rem; font-style: italic;">This scenario mimics the realities of data availability.</p>
+                  <p style="margin: 0.5rem 0 0 0; font-size: 0.85rem; font-style: normal;">This scenario mimics the realities of data availability.</p>
                 </div>
               </div>
             `
@@ -142,7 +142,7 @@ const DashboardOnboarding: React.FC<DashboardOnboardingProps> = ({ isOpen, onClo
           element: '#tour-health-panel',
           popover: {
             title: isRTL ? '8 مؤشرات استباقية' : '8 Leading Indicators',
-            description: isRTL 
+            description: isRTL
               ? `<div dir="rtl" style="text-align: right;"><p><strong>هذه ليست لوحة معلومات عادية.</strong> هذه المؤشرات الـ 8 (الثقافة، مشاركة الموظفين، التواصل مع المستثمرين، إلخ) هي <strong>علامات استباقية</strong> تتحول للأحمر قبل فشل المقاييس التشغيلية.</p>
               <p style="margin-top: 0.5rem;">البيانات موجودة في أنظمة الحكومة السعودية. الابتكار؟ <strong>ربطناها بشكل صحيح</strong> من خلال الأنطولوجيا.</p></div>`
               : `<p><strong>This isn't a typical dashboard.</strong> These 8 indicators (Culture, Employee Engagement, Investor Outreach, etc.) are <strong>leading markers</strong> that go red BEFORE operational metrics fail.</p>
@@ -238,7 +238,7 @@ const DashboardOnboarding: React.FC<DashboardOnboardingProps> = ({ isOpen, onClo
   // Render a centered placeholder for intro steps to target (enables overlay)
   // Must be visible (not opacity:0) for driver.js to render overlay
   return (
-    <div 
+    <div
       id="onboarding-intro-target"
       style={{
         position: 'fixed',

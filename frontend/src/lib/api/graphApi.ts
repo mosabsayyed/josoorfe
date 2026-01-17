@@ -21,12 +21,10 @@ export interface OutcomesData {
   quarter: string;
 }
 
-/**
- * Fetch graph data for visualization
- */
 export async function fetchGraphData(params?: Record<string, string>): Promise<GraphData> {
   const queryString = params ? '?' + new URLSearchParams(params).toString() : '';
-  const response = await fetch(`/api/graph${queryString}`);
+  const baseUrl = GRAPH_SERVER_URL || '';
+  const response = await fetch(`${baseUrl}/api/graph${queryString}`);
   if (!response.ok) throw new Error(`Graph API error: ${response.statusText}`);
   return response.json();
 }
@@ -35,7 +33,8 @@ export async function fetchGraphData(params?: Record<string, string>): Promise<G
  * Fetch Neo4j health status
  */
 export async function fetchNeo4jHealth() {
-  const response = await fetch('/api/neo4j/health');
+  const baseUrl = GRAPH_SERVER_URL || '';
+  const response = await fetch(`${baseUrl}/api/neo4j/health`);
   if (!response.ok) throw new Error(`Neo4j health check failed: ${response.statusText}`);
   return response.json();
 }

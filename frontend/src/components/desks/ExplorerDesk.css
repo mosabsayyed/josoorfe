@@ -1,0 +1,548 @@
+.explorer-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    min-height: 100%;
+    /* Force height */
+    overflow: hidden;
+    background: var(--component-bg-primary, #0a0a0a);
+    display: flex;
+    flex-direction: column;
+}
+
+.explorer-content {
+    flex: 1;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    /* Allow flex children to size correctly */
+    overflow-y: auto;
+    gap: 1rem;
+}
+
+.viz-wrapper {
+    position: relative;
+    width: 100%;
+    height: 70vh;
+    min-height: 500px;
+    flex-shrink: 0;
+    display: flex;
+    /* Ensure children can fill */
+    flex-direction: column;
+}
+
+/* --- Filters Panel --- */
+.explorer-filters-overlay {
+    position: absolute;
+    left: 1rem;
+    top: 1rem;
+    z-index: 50;
+    transition: width 0.3s ease;
+}
+
+.explorer-filters-overlay.expanded {
+    width: 20rem;
+}
+
+.explorer-filters-overlay.collapsed {
+    width: 3rem;
+}
+
+.filters-card {
+    border: 1px solid rgba(212, 175, 55, 0.3);
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+    border-radius: 0.5rem;
+}
+
+.filters-header {
+    padding: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.filters-header:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+.filters-header-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #D4AF37;
+}
+
+.filters-body {
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+/* --- Form Elements --- */
+.filter-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.filter-section-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #9ca3af;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.mode-toggle-group {
+    display: flex;
+    gap: 0.5rem;
+    padding: 0.25rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 0.375rem;
+}
+
+.mode-toggle-btn {
+    flex: 1;
+    height: 1.75rem;
+    font-size: 0.75rem;
+    color: #9ca3af;
+    border-radius: 0.25rem;
+    transition: all 0.2s;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+}
+
+.mode-toggle-btn.active {
+    background: rgba(212, 175, 55, 0.2);
+    color: #D4AF37;
+    border: 1px solid rgba(212, 175, 55, 0.3);
+}
+
+.main-action-btn {
+    width: 100%;
+    background: #D4AF37;
+    color: black;
+    font-weight: 700;
+    height: 2.25rem;
+    border-radius: 0.375rem;
+    border: none;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.main-action-btn:hover {
+    background: #FFD700;
+}
+
+.secondary-action-btn {
+    width: 100%;
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    height: 2.25rem;
+    border-radius: 0.375rem;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.secondary-action-btn:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.native-select {
+    width: 100%;
+    height: 2.25rem;
+    padding: 0 0.5rem;
+    font-size: 0.75rem;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(212, 175, 55, 0.3);
+    border-radius: 0.375rem;
+    color: #e2e8f0;
+    cursor: pointer;
+}
+
+.native-select:focus {
+    border-color: #D4AF37;
+    outline: none;
+}
+
+.native-checkbox {
+    width: 0.875rem;
+    height: 0.875rem;
+    accent-color: #D4AF37;
+    cursor: pointer;
+}
+
+/* --- Ontology Lists --- */
+.ontology-group {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.ontology-subgroup-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.25rem;
+}
+
+.ontology-subgroup-title {
+    font-size: 10px;
+    font-weight: 700;
+    color: rgba(212, 175, 55, 0.7);
+    text-transform: uppercase;
+}
+
+.ontology-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.checkbox-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.checkbox-label {
+    font-size: 0.75rem;
+    color: #d1d5db;
+    cursor: pointer;
+}
+
+/* --- Visual Controls (NeoGraph) --- */
+.viz-controls-overlay {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    z-index: 10;
+}
+
+.viz-mode-btn {
+    padding: 0.5rem 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(212, 175, 55, 0.4);
+    border-radius: 4px;
+    color: #D4AF37;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.viz-mode-btn:hover {
+    background: rgba(212, 175, 55, 0.1);
+    border-color: #D4AF37;
+}
+
+.viz-loading-overlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-weight: 500;
+    text-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+}
+
+/* --- Tooltips --- */
+.explorer-container .graph-tooltip {
+    position: absolute;
+    top: 1.5rem;
+    right: 1.5rem;
+    padding: 1rem;
+    width: 18rem;
+    background: rgba(10, 10, 10, 0.95);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(212, 175, 55, 0.5);
+    border-left: 4px solid #D4AF37;
+    border-radius: 0.5rem;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.8), 0 0 10px rgba(212, 175, 55, 0.2);
+    pointer-events: none;
+    z-index: 1000;
+    transition: all 0.2s ease;
+}
+
+/* Aggressive color forcing */
+.explorer-container .graph-tooltip,
+.explorer-container .graph-tooltip p,
+.explorer-container .graph-tooltip span,
+.explorer-container .graph-tooltip div,
+.explorer-container .graph-tooltip strong {
+    color: #ffffff !important;
+}
+
+.explorer-container .graph-tooltip .tooltip-title {
+    margin: 0 0 0.75rem 0;
+    font-size: 1rem;
+    font-weight: 800;
+    color: #D4AF37 !important;
+    /* Force gold title */
+    border-bottom: 1px solid rgba(212, 175, 55, 0.3);
+    padding-bottom: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.explorer-container .graph-tooltip .graph-tooltip-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.explorer-container .graph-tooltip .graph-tooltip-meta p {
+    margin: 0;
+    font-size: 0.8rem;
+    line-height: 1.5;
+}
+
+.explorer-container .graph-tooltip .graph-tooltip-meta strong {
+    color: #D4AF37 !important;
+    /* Force gold labels */
+    font-weight: 700;
+    margin-right: 0.25rem;
+}
+
+/* --- Status Toasts --- */
+.status-overlay-container {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.status-toast {
+    padding: 1rem 1.5rem;
+    border-radius: 0.5rem;
+    pointer-events: auto;
+    text-align: center;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+}
+
+.status-toast-loading {
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(8px);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.status-toast-fallback {
+    background: rgba(245, 158, 11, 0.2);
+    border: 1px solid rgba(245, 158, 11, 0.5);
+    color: #fde68a;
+}
+
+.status-toast-demo {
+    background: rgba(59, 130, 246, 0.2);
+    border: 1px solid rgba(59, 130, 246, 0.5);
+    color: #bfdbfe;
+}
+
+/* --- Badges --- */
+.node-count-badge {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    padding: 0.5rem 1rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    backdrop-filter: blur(8px);
+    border-radius: 6px;
+    z-index: 40;
+    transition: all 0.3s;
+}
+
+/* Theme support via parent data-theme or prefers-color-scheme */
+.explorer-container .node-count-badge {
+    border: 1px solid #D97706;
+    color: #D97706;
+    background: rgba(243, 244, 246, 0.9);
+}
+
+[data-theme='dark'] .explorer-container .node-count-badge {
+    border: 1px solid #FFD700;
+    color: #FFD700;
+    background: rgba(17, 24, 39, 0.9);
+}
+
+.node-count-badge span {
+    margin-left: 0.5rem;
+}
+
+.node-count-badge .fallback-label {
+    opacity: 0.6;
+}
+
+.node-count-badge .demo-label {
+    opacity: 0.6;
+}
+
+.node-count-badge .chain-label {
+    font-weight: 800;
+    color: white;
+}
+
+/* --- Health Overlay --- */
+.health-overlay {
+    position: absolute;
+    bottom: 1.5rem;
+    right: 1.5rem;
+    display: flex;
+    gap: 1rem;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    padding: 0.75rem 1.25rem;
+    border-radius: 0.75rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    z-index: 30;
+    pointer-events: auto;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.health-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 60px;
+}
+
+.stat-label {
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.5);
+    letter-spacing: 0.05em;
+}
+
+.stat-value {
+    font-size: 14px;
+    font-weight: 800;
+    color: #D4AF37;
+}
+
+.health-stat.warning .stat-value {
+    color: #f87171;
+}
+
+/* --- Live Insight Panel --- */
+.live-insight-panel {
+    position: absolute;
+    top: 5rem;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60%;
+    max-width: 600px;
+    background: rgba(10, 10, 10, 0.8);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    padding: 0.75rem 1.5rem;
+    border-radius: 2rem;
+    border: 1px solid rgba(212, 175, 55, 0.3);
+    z-index: 20;
+    pointer-events: auto;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.insight-title {
+    font-size: 10px;
+    font-weight: 800;
+    text-transform: uppercase;
+    color: #D4AF37;
+    margin-bottom: 0.25rem;
+    letter-spacing: 0.1em;
+}
+
+.insight-body {
+    font-size: 13px;
+    color: white;
+    font-style: italic;
+    opacity: 0.9;
+}
+
+/* --- Empty State --- */
+.empty-state-container {
+    text-align: center;
+    color: #9ca3af;
+    opacity: 0.6;
+    pointer-events: auto;
+}
+
+/* --- Utilities --- */
+.btn-reset {
+    background: none;
+    border: none;
+    padding: 0;
+    margin: 0;
+    font: inherit;
+    cursor: pointer;
+    outline: inherit;
+}
+
+.relative {
+    position: relative;
+}
+
+.p-8 {
+    padding: 2rem;
+}
+
+.animate-fadeIn {
+    animation: fadeIn 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+/* Custom Scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+    width: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(212, 175, 55, 0.3);
+    border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(212, 175, 55, 0.5);
+}

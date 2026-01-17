@@ -1,7 +1,8 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 /* THEME MAPPING: Map new `uploads/styles.css` variables into the project's old variables. */
 
 /* Core variables (copied from uploads/styles.css) */
-:root{
+:root {
   --component-bg-primary: #111827;
   --component-panel-bg: #1F2937;
   --component-panel-border: #374151;
@@ -23,16 +24,17 @@
   --chat-bubble-bot-bg: #374151;
   --chat-bubble-bot-text: #F9FAFB;
 
-  --component-font-family: 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif';
-  --component-font-heading: 'Inter', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif';
-  --component-font-mono: 'Inter', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif';
-  
+  --component-font-family: 'Inter', sans-serif;
+  --component-font-heading: 'Inter', sans-serif;
+  --component-font-mono: 'Inter', sans-serif;
+
   /* Fix for white flash on dropdowns and native controls */
   color-scheme: dark;
+  font-style: normal;
 }
 
 /* Map to legacy tokens used by frontend */
-:root{
+:root {
   --canvas-page-bg: var(--component-bg-primary);
   --canvas-card-bg: var(--component-panel-bg);
   --canvas-inverted-bg: var(--component-text-on-accent);
@@ -42,9 +44,9 @@
   --canvas-body-bg: #1F2937;
   /* Glass variables */
   --glass-blur: blur(6px);
-  --glass-tint-dark: rgba(31,41,55,0.06);
-  --glass-tint-light: rgba(255,255,255,0.06);
-  --glass-border: rgba(255,255,255,0.06);
+  --glass-tint-dark: rgba(31, 41, 55, 0.06);
+  --glass-tint-light: rgba(255, 255, 255, 0.06);
+  --glass-border: rgba(255, 255, 255, 0.06);
   --canvas-backdrop-blur: blur(4px);
 
   --text-primary: var(--component-text-primary);
@@ -78,7 +80,7 @@
 }
 
 /* Light theme overrides */
-:root[data-theme="light"]{
+:root[data-theme="light"] {
   --component-bg-primary: #F3F4F6;
   --component-panel-bg: #FFFFFF;
   --component-panel-border: #E5E7EB;
@@ -88,11 +90,13 @@
   --component-text-secondary: #4B5563;
   --component-text-muted: #6B7280;
 
-  --component-text-accent: #D97706;  /* Darker amber for readability */
+  --component-text-accent: #D97706;
+  /* Darker amber for readability */
   --component-text-on-accent: #FFFFFF;
 
   --component-color-success: #059669;
-  --component-color-warning: #D97706;  /* Match accent */
+  --component-color-warning: #D97706;
+  /* Match accent */
   --component-color-danger: #DC2626;
 
   --chat-bubble-user-bg: #059669;
@@ -109,15 +113,34 @@
 
   /* Canvas styling for light theme */
   --canvas-header-bg: #E8D7A3;
+  font-style: normal;
   --canvas-body-bg: #FFFFFF;
-  
+
   /* Fix for light theme controls */
   color-scheme: light;
 }
 
 /* Back-compat styles for the chat classes (minimal) */
-.message-bubble { display:block; }
-.message-row { display:flex; gap: 1rem; width: 100%; }
-.message-row.user { flex-direction: row-reverse; }
-.avatar { background: var(--component-panel-border); color: var(--component-text-accent); }
-.avatar.user { background: var(--component-color-success); color: #fff; }
+.message-bubble {
+  display: block;
+}
+
+.message-row {
+  display: flex;
+  gap: 1rem;
+  width: 100%;
+}
+
+.message-row.user {
+  flex-direction: row-reverse;
+}
+
+.avatar {
+  background: var(--component-panel-border);
+  color: var(--component-text-accent);
+}
+
+.avatar.user {
+  background: var(--component-color-success);
+  color: #fff;
+}

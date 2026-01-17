@@ -2,11 +2,18 @@
 
 ## Overview
 
-The frontend and backend are now in separate repositories:
-- **Backend:** https://github.com/mosabsayyed/josoorbe.git (runs on port 8008)
-- **Frontend:** This repository (runs on port 3000)
+The frontend interacts with the external backend at: **https://betaBE.aitwintech.com**
 
-The frontend uses environment variables to configure the backend API endpoint.
+## API Endpoint Reference (Integration Guide)
+
+| Service | Path Prefix | Description |
+| :--- | :--- | :--- |
+| **Main Backend** | `/api/v1` | FastAPI endpoints (Chat, Auth, Dashboard Data) |
+| **Graph API** | `/api/graph` | Express/Neo4j Graph Data |
+| **Business Chains** | `/api/business-chain` | Specific chain views (e.g., `/api/business-chain/sector_ops`) |
+| **Real-Time** | `/api/summary-stream` | Server-Sent Events (SSE) for summary updates |
+| **MCP Routers** | `/2/mcp`, `/3/mcp` | Noor (Staff) and Maestro (Exec) MCP Routers |
+
 
 ## Local Development (Same Machine)
 

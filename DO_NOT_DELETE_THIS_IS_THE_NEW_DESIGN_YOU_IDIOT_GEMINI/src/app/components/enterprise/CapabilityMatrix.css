@@ -1,0 +1,197 @@
+/* src/app/components/enterprise/CapabilityMatrix.css */
+
+.capability-container {
+    padding: 1rem;
+}
+
+.capability-wrapper {
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    overflow: hidden;
+}
+
+.capability-row-l1 {
+    border-bottom: 1px solid rgba(148, 163, 184, 0.3);
+}
+
+.capability-row-l1:last-child {
+    border-bottom: none;
+}
+
+.capability-grid {
+    display: grid;
+    /* grid-template-columns and rows set inline */
+}
+
+/* L1 Cell */
+.capability-cell-l1 {
+    background-color: white;
+    border-right: 1px solid rgba(148, 163, 184, 0.3);
+    padding: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    position: relative;
+}
+
+.dimmed-overlay {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background-color: rgba(203, 213, 225, 0.5);
+    z-index: 50;
+}
+
+.cell-content-wrapper {
+    position: relative;
+    z-index: 10;
+}
+
+.cell-id {
+    font-size: 9px;
+    color: #64748b;
+    margin-bottom: 0.25rem;
+    font-family: monospace;
+}
+
+.cell-name-l1 {
+    font-weight: 700;
+    color: black;
+    font-size: 10px;
+    margin-bottom: 0.25rem;
+    line-height: normal;
+}
+
+.cell-description {
+    font-size: 8px;
+    color: #94a3b8;
+    margin-bottom: 0.25rem;
+    line-height: normal;
+}
+
+.cell-maturity {
+    font-size: 7px;
+}
+
+.maturity-label {
+    color: #64748b;
+}
+
+.maturity-value {
+    color: black;
+    font-weight: 700;
+}
+
+.maturity-slash {
+    color: #475569;
+}
+
+.maturity-target {
+    color: #94a3b8;
+}
+
+/* L2 Row */
+.l2-row-contents {
+    display: contents;
+}
+
+.capability-cell-l2 {
+    background-color: white;
+    border-right: 1px solid rgba(148, 163, 184, 0.3);
+    border-bottom: 1px solid rgba(148, 163, 184, 0.3);
+    padding: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    position: relative;
+}
+
+.cell-name-l2 {
+    font-weight: 600;
+    color: black;
+    font-size: 10px;
+    margin-bottom: 0.25rem;
+    line-height: normal;
+}
+
+/* L3 Container */
+.l3-container-cell {
+    background-color: white;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.3);
+    display: flex;
+    align-items: center;
+}
+
+.l3-flex-wrapper {
+    display: flex;
+    width: 100%;
+    height: 100%;
+}
+
+.l3-cell {
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    position: relative;
+    /* width, border-left, border-right set inline */
+    flex-shrink: 0;
+}
+
+.l3-cell:hover {
+    transform: scale(1.05);
+    z-index: 10;
+}
+
+.dimmed-overlay-l3 {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background-color: rgba(203, 213, 225, 0.5);
+    z-index: 20;
+}
+
+.heatmap-overlay {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    /* background color set inline */
+    opacity: 0.5;
+}
+
+.l3-cell-content {
+    position: relative;
+    z-index: 10;
+    padding: 0.5rem;
+}
+
+.l3-id {
+    color: #64748b;
+    font-family: monospace;
+    margin-bottom: 0.125rem;
+    font-size: 7px;
+}
+
+.l3-name {
+    color: black;
+    font-weight: 500;
+    line-height: 1.25;
+    font-size: 9px;
+}
+
+.l3-maturity {
+    color: #64748b;
+    margin-top: 0.125rem;
+    font-size: 7px;
+}
+
+.l3-overlay-tag {
+    margin-top: 0.25rem;
+    font-size: 8px;
+    font-weight: 700;
+    color: #3b82f6;
+    background-color: rgba(59, 130, 246, 0.1);
+    padding: 0.125rem 0.25rem;
+    border-radius: 0.25rem;
+    display: inline-block;
+}

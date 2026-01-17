@@ -1,0 +1,52 @@
+/* src/app/components/enterprise/EnterpriseHeader.css */
+
+.enterprise-header-container {
+    margin-bottom: 1rem;
+}
+
+.enterprise-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.75rem;
+}
+
+.enterprise-title-content {
+    flex: 1;
+}
+
+.enterprise-title-header {
+    color: #e2e8f0;
+    font-size: 14px;
+    font-weight: 700;
+    margin-bottom: 0.25rem;
+    margin-top: 0;
+}
+
+.enterprise-title-sub {
+    color: #64748b;
+    font-size: 10px;
+    margin: 0;
+}
+
+.enterprise-filters-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.enterprise-filter-select {
+    padding: 0.25rem 0.5rem;
+    font-size: 10px;
+    font-weight: 500;
+    background-color: #1e293b;
+    color: #cbd5e1;
+    border: 1px solid #334155;
+    border-radius: 0.25rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.enterprise-filter-select:hover {
+    background-color: #334155;
+}

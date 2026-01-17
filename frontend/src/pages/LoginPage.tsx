@@ -91,7 +91,7 @@ export function LoginPage({ language: propLanguage, onLanguageChange, onSkip, on
 
   // Use global LanguageContext so Header toggle syncs with Login page
   const { language: contextLanguage, setLanguage: setContextLanguage } = useLanguage();
-  
+
   // Fallback to prop or context
   const language = (propLanguage as Language) || contextLanguage;
   const t = content[language];
@@ -101,7 +101,7 @@ export function LoginPage({ language: propLanguage, onLanguageChange, onSkip, on
   // Sync local toggle with global context
   const setLanguageState = (newLang: Language) => {
     setContextLanguage(newLang);
-    try { localStorage.setItem('josoor_language', newLang); } catch {}
+    try { localStorage.setItem('josoor_language', newLang); } catch { }
     if (onLanguageChange) onLanguageChange(newLang);
   };
 
@@ -297,12 +297,12 @@ export function LoginPage({ language: propLanguage, onLanguageChange, onSkip, on
         if (onLogin) {
           onLogin();
         } else {
-          try { localStorage.setItem('josoor_authenticated', 'true'); } catch {}
+          try { localStorage.setItem('josoor_authenticated', 'true'); } catch { }
         }
       } catch {
         // ignore localStorage errors
       }
-      if (!onLogin) navigate('/chat', { replace: true });
+      if (!onLogin) navigate('/josoor', { replace: true });
     } catch (err: any) {
       alert(`Authentication error: ${err?.message || String(err)}`);
     }
@@ -311,13 +311,13 @@ export function LoginPage({ language: propLanguage, onLanguageChange, onSkip, on
   return (
     <div dir={language === 'ar' ? 'rtl' : 'ltr'} className="login-container">
       <Header />
-      
+
       {/* Language Toggle - Fixed position top-right */}
       <button
         onClick={() => {
           const newLang = language === 'en' ? 'ar' : 'en';
           setLanguageState(newLang);
-          try { localStorage.setItem('josoor_language', newLang); } catch {}
+          try { localStorage.setItem('josoor_language', newLang); } catch { }
           if (onLanguageChange) onLanguageChange(newLang);
         }}
         style={{
@@ -345,9 +345,9 @@ export function LoginPage({ language: propLanguage, onLanguageChange, onSkip, on
       </button>
 
       {/* LEFT PANEL: BRANDING / HERO */}
-      <motion.div 
-        initial={{ opacity: 0, x: -50 }} 
-        animate={{ opacity: 1, x: 0 }} 
+      <motion.div
+        initial={{ opacity: 0, x: -50 }}
+        animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.8 }}
         className="login-hero"
       >
@@ -376,9 +376,9 @@ export function LoginPage({ language: propLanguage, onLanguageChange, onSkip, on
       </motion.div>
 
       {/* RIGHT PANEL: FORM */}
-      <motion.div 
-        initial={{ opacity: 0, x: 50 }} 
-        animate={{ opacity: 1, x: 0 }} 
+      <motion.div
+        initial={{ opacity: 0, x: 50 }}
+        animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.8, delay: 0.2 }}
         className="login-form-container"
       >
@@ -386,7 +386,7 @@ export function LoginPage({ language: propLanguage, onLanguageChange, onSkip, on
           <div style={{ textAlign: 'center', marginBottom: '32px' }}>
             {/* Mobile Logo */}
             <div style={{ display: 'none' }} className="mobile-logo">
-               <img src={josoorLogo} alt="JOSOOR" style={{ width: '60px', margin: '0 auto 16px' }} />
+              <img src={josoorLogo} alt="JOSOOR" style={{ width: '60px', margin: '0 auto 16px' }} />
             </div>
             <h2 style={{ fontSize: '28px', fontWeight: 700, color: 'var(--component-text-primary)', marginBottom: '8px' }}>
               {isRegistering ? t.register : t.login}
@@ -400,10 +400,10 @@ export function LoginPage({ language: propLanguage, onLanguageChange, onSkip, on
             {isRegistering && (
               <div>
                 <Label htmlFor="name" style={{ display: 'block', marginBottom: '8px', color: 'var(--component-text-primary)' }}>{t.name}</Label>
-                <input 
-                  id="name" 
-                  value={name} 
-                  onChange={(e) => setName(e.target.value)} 
+                <input
+                  id="name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
                   className="form-input"
                 />
               </div>
@@ -411,12 +411,12 @@ export function LoginPage({ language: propLanguage, onLanguageChange, onSkip, on
 
             <div>
               <Label htmlFor="email" style={{ display: 'block', marginBottom: '8px', color: 'var(--component-text-primary)' }}>{t.email}</Label>
-              <input 
-                id="email" 
-                type="email" 
-                value={email} 
-                onChange={(e) => setEmail(e.target.value)} 
-                required 
+              <input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
                 className="form-input"
                 dir="ltr"
               />
@@ -424,12 +424,12 @@ export function LoginPage({ language: propLanguage, onLanguageChange, onSkip, on
 
             <div>
               <Label htmlFor="password" style={{ display: 'block', marginBottom: '8px', color: 'var(--component-text-primary)' }}>{t.password}</Label>
-              <input 
-                id="password" 
-                type="password" 
-                value={password} 
-                onChange={(e) => setPassword(e.target.value)} 
-                required 
+              <input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
                 className="form-input"
                 dir="ltr"
               />
@@ -447,8 +447,8 @@ export function LoginPage({ language: propLanguage, onLanguageChange, onSkip, on
             </div>
 
             <div style={{ marginTop: '24px' }}>
-              <button 
-                type="button" 
+              <button
+                type="button"
                 className="google-btn"
                 onClick={() => signInWithProvider('google').catch((err) => alert(err.message || String(err)))}
               >
@@ -464,9 +464,9 @@ export function LoginPage({ language: propLanguage, onLanguageChange, onSkip, on
             <span style={{ color: '#4B5563' }}>
               {isRegistering ? t.haveAccount : t.noAccount}
             </span>
-            <button 
-              type="button" 
-              onClick={() => setIsRegistering(!isRegistering)} 
+            <button
+              type="button"
+              onClick={() => setIsRegistering(!isRegistering)}
               style={{ background: 'none', border: 'none', color: 'var(--component-text-accent)', fontWeight: 600, cursor: 'pointer', marginLeft: '8px' }}
             >
               {isRegistering ? t.switchToLogin : t.switchToRegister}

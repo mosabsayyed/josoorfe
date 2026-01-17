@@ -1,10 +1,16 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import path from 'path'
 
 export default defineConfig({
   plugins: [react()],
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './src'),
+    },
+  },
   server: {
-    port: 5000,
+    port: 3000,
     host: '0.0.0.0',
     allowedHosts: true,
     proxy: {
@@ -34,6 +40,21 @@ export default defineConfig({
         secure: true,
       },
       '/api/v1': {
+        target: 'https://betaBE.aitwintech.com',
+        changeOrigin: true,
+        secure: true,
+      },
+      '/api/summary-stream': {
+        target: 'https://betaBE.aitwintech.com',
+        changeOrigin: true,
+        secure: true,
+      },
+      '/2': {
+        target: 'https://betaBE.aitwintech.com',
+        changeOrigin: true,
+        secure: true,
+      },
+      '/3': {
         target: 'https://betaBE.aitwintech.com',
         changeOrigin: true,
         secure: true,

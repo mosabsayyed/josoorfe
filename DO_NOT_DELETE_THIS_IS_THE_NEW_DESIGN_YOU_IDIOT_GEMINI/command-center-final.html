@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Command Center - KSA Water Sector</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    
+    <link rel="stylesheet" href="css/theme.css">
+    <link rel="stylesheet" href="css/ControlTower.css">
+    <link rel="stylesheet" href="css/sidebar.css">
+    <link rel="stylesheet" href="css/style.css">
+    
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+            background: #0a0e1a;
+            color: #fff;
+            overflow: hidden;
+        }
+
+        /* FULL SCREEN MAP */
+        #geo-map {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        /* HUD OVERLAYS */
+        .hud-overlay {
+            position: fixed;
+            background: rgba(10, 14, 26, 0.95);
+            border: 1px solid rgba(74, 222, 128, 0.3);
+            border-radius: 8px;
+            padding: 1rem;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+        }
+
+        /* TOP LEFT: L1/L2 Objectives */
+        .objectives-hud {
+            top: 80px;
+            left: 20px;
+            width: 300px;
+            max-height: 40vh;
+            overflow-y: auto;
+        }
+
+        /* TOP RIGHT: Dual-Layer Health (Feature 1.2) */
+        .health-hud {
+            top: 80px;
+            right: 20px;
+            width: 320px;
+        }
+
+        /* BOTTOM LEFT: Integration Matrix Preview (Feature 1.1) */
+        .matrix-hud {
+            bottom: 20px;
+            left: 20px;
+            width: 400px;
+            max-height: 300px;
+            overflow: auto;
+        }
+
+        /* BOTTOM RIGHT: Jeopardy Alerts (Feature 1.4) */
+        .alerts-hud {
+            bottom: 20px;
+            right: 20px;
+            width: 350px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        /* CENTER BOTTOM: Sankey Flow Toggle (Feature 1.3) */
+        .sankey-toggle {
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 0.75rem 1.5rem;
+            background: rgba(74, 222, 128, 0.2);
+            border: 2px solid #4ade80;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .sankey-toggle:hover {
+            background: rgba(74, 222, 128, 0.4);
+            transform: translateX(-50%) scale(1.05);
+        }
+
+        /* Sankey Modal */
+        .sankey-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 200;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .sankey-modal.active {
+            display: flex;
+        }
+
+        .sankey-content {
+            width: 90%;
+            height: 80%;
+            background: rgba(10, 14, 26, 0.98);
+            border: 2px solid #4ade80;
+            border-radius: 12px;
+            padding: 2rem;
+            position: relative;
+        }
+
+        .sankey-close {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: #ef4444;
+            border: none;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        /* HUD Titles */
+        .hud-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #4ade80;
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        /* Health Bars */
+        .health-bar {
+            margin: 0.75rem 0;
+        }
+
+        .health-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .health-bar-container {
+            height: 24px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .health-bar-fill {
+            height: 100%;
+            transition: width 0.6s ease;
+        }
+
+        .health-green { background: linear-gradient(90deg, #10b981, #34d399); }
+        .health-amber { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+        .health-red { background: linear-gradient(90deg, #ef4444, #f87171); }
+
+        .anomaly-alert {
+            margin-top: 1rem;
+            padding: 0.75rem;
+            background: rgba(239, 68, 68, 0.1);
+            border-left: 3px solid #ef4444;
+            border-radius: 4px;
+            font-size: 0.8rem;
+        }
+
+        /* Matrix Preview */
+        .matrix-mini {
+            font-size: 0.75rem;
+        }
+
+        .matrix-cell {
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            margin: 2px;
+            border-radius: 4px;
+            text-align: center;
+            line-height: 30px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .matrix-cell:hover {
+            transform: scale(1.2);
+        }
+
+        .cell-green { background: rgba(16, 185, 129, 0.4); }
+        .cell-amber { background: rgba(245, 158, 11, 0.4); }
+        .cell-red { background: rgba(239, 68, 68, 0.4); }
+        .cell-gray { background: rgba(100, 100, 100, 0.2); }
+
+        /* Alert Cards */
+        .alert-card {
+            background: rgba(239, 68, 68, 0.1);
+            border-left: 3px solid #ef4444;
+            padding: 0.75rem;
+            margin-bottom: 0.75rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+        }
+
+        .alert-severity {
+            display: inline-block;
+            background: #ef4444;
+            color: white;
+            padding: 0.2rem 0.5rem;
+            border-radius: 10px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        /* Objective Cards */
+        .objective-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-left: 3px solid #4ade80;
+            padding: 0.75rem;
+            margin-bottom: 0.75rem;
+            border-radius: 4px;
+            font-size: 0.85rem;
+        }
+
+        .objective-level {
+            font-size: 0.7rem;
+            color: rgba(255, 255, 255, 0.6);
+            margin-bottom: 0.25rem;
+        }
+
+        .objective-name {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .objective-kpi {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75rem;
+        }
+
+        /* Scrollbars */
+        .hud-overlay::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .hud-overlay::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .hud-overlay::-webkit-scrollbar-thumb {
+            background: rgba(74, 222, 128, 0.5);
+            border-radius: 3px;
+        }
+
+        .expand-btn {
+            background: rgba(74, 222, 128, 0.2);
+            border: 1px solid #4ade80;
+            color: #4ade80;
+            padding: 0.25rem 0.75rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            margin-top: 0.5rem;
+        }
+
+        .expand-btn:hover {
+            background: rgba(74, 222, 128, 0.4);
+        }
+    </style>
+</head>
+<body>
+    
+    <!-- FULL SCREEN MAP (CENTER) -->
+    <div id="geo-map"></div>
+
+    <!-- Feature 1.2: Dual-Layer Health HUD (TOP RIGHT) -->
+    <div class="hud-overlay health-hud">
+        <div class="hud-title">
+            <i class="fas fa-heartbeat"></i>
+            Dual-Layer Health
+        </div>
+        <div id="health-content"></div>
+    </div>
+
+    <!-- L1/L2 Objectives HUD (TOP LEFT) -->
+    <div class="hud-overlay objectives-hud">
+        <div class="hud-title">
+            <i class="fas fa-bullseye"></i>
+            Strategic Objectives
+        </div>
+        <div id="objectives-content"></div>
+    </div>
+
+    <!-- Feature 1.1: Integration Matrix Preview (BOTTOM LEFT) -->
+    <div class="hud-overlay matrix-hud">
+        <div class="hud-title">
+            <i class="fas fa-th"></i>
+            Integration Matrix
+        </div>
+        <div id="matrix-content"></div>
+        <button class="expand-btn" onclick="expandMatrix()">
+            <i class="fas fa-expand"></i> View Full Matrix
+        </button>
+    </div>
+
+    <!-- Feature 1.4: Jeopardy Alerts (BOTTOM RIGHT) -->
+    <div class="hud-overlay alerts-hud">
+        <div class="hud-title">
+            <i class="fas fa-exclamation-triangle"></i>
+            Critical Alerts
+        </div>
+        <div id="alerts-content"></div>
+    </div>
+
+    <!-- Feature 1.3: Sankey Flow Toggle (CENTER BOTTOM) -->
+    <div class="hud-overlay sankey-toggle" onclick="toggleSankey()">
+        <i class="fas fa-project-diagram"></i>
+        View Integration Flows
+    </div>
+
+    <!-- Feature 1.3: Sankey Modal -->
+    <div class="sankey-modal" id="sankeyModal">
+        <div class="sankey-content">
+            <button class="sankey-close" onclick="toggleSankey()">
+                <i class="fas fa-times"></i> Close
+            </button>
+            <div class="hud-title" style="font-size: 1.2rem;">
+                <i class="fas fa-project-diagram"></i>
+                Level Flow Diagram - 5 Integration Paths
+            </div>
+            <div id="sankey-chart" style="width: 100%; height: calc(100% - 60px);"></div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/saudi-map.js"></script>
+    <script src="js/data.js"></script>
+    <script src="js/csv-parser.js"></script>
+    <script src="js/command-center-analytics.js"></script>
+    
+    <script>
+        let analytics;
+        let mapChart;
+        // Initialize Command Center
+        async function initCommandCenter() {
+            try {
+                // Load CSV data
+                const data = await CSVParser.loadAllData();
+                
+                if (!data) {
+                    throw new Error('Failed to load data');
+                }
+
+                const { capabilities, performance, objectives, policyTools } = data;
+
+                console.log('Data loaded:', { 
+                    capabilities: capabilities.length, 
+                    performance: performance.length,
+                    objectives: objectives.length,
+                    policyTools: policyTools.length
+                });
+
+                // Initialize analytics
+                analytics = new CommandCenterAnalytics(
+                    null, capabilities, performance, objectives, policyTools
+                );
+
+                // Render everything
+                renderMap();
+                renderObjectives();
+                renderHealth();
+                renderMatrixPreview();
+                renderAlerts();
+
+            } catch (error) {
+                console.error('Failed to initialize:', error);
+            }
+        }
+
+        // Render the map
+        function renderMap() {
+            mapChart = echarts.init(document.getElementById('geo-map'));
+
+            const option = {
+                backgroundColor: 'transparent',
+                geo: [{
+                    map: 'KSA',
+                    roam: true,
+                    itemStyle: {
+                        areaColor: 'rgba(30, 50, 80, 0.3)',
+                        borderColor: 'rgba(74, 222, 128, 0.5)',
+                        borderWidth: 2
+                    },
+                    emphasis: {
+                        itemStyle: {
+                            areaColor: 'rgba(74, 222, 128, 0.1)'
+                        }
+                    }
+                }],
+                series: [
+                    // Water plants
+                    {
+                        type: 'scatter',
+                        coordinateSystem: 'geo',
+                        data: ksaData.regions.map(r => ({
+                            name: r.name,
+                            value: [r.long, r.lat, 100],
+                            itemStyle: {
+                                color: r.id === 'R-02' || r.id === 'R-04' ? '#4ade80' : '#3b82f6'
+                            }
+                        })),
+                        symbolSize: 20,
+                        label: {
+                            show: true,
+                            formatter: '{b}',
+                            position: 'right',
+                            color: '#fff',
+                            fontSize: 12
+                        },
+                        emphasis: {
+                            label: { show: true }
+                        }
+                    },
+                    // Pipelines
+                    {
+                        type: 'lines',
+                        coordinateSystem: 'geo',
+                        data: ksaData.flows.map(f => {
+                            const from = ksaData.regions.find(r => r.name === f.source);
+                            const to = ksaData.regions.find(r => r.name === f.target);
+                            return {
+                                coords: [[from.long, from.lat], [to.long, to.lat]],
+                                lineStyle: {
+                                    color: f.status === 'Green' ? '#10b981' : f.status === 'Amber' ? '#f59e0b' : '#ef4444',
+                                    width: f.load === 'High' ? 3 : f.load === 'Medium' ? 2 : 1
+                                }
+                            };
+                        }),
+                        effect: {
+                            show: true,
+                            period: 6,
+                            trailLength: 0.1,
+                            symbolSize: 6
+                        },
+                        lineStyle: {
+                            curveness: 0.2
+                        }
+                    }
+                ]
+            };
+
+            mapChart.setOption(option);
+            window.addEventListener('resize', () => mapChart.resize());
+        }
+
+        // Render objectives
+        function renderObjectives() {
+            const objectives = analytics.objectives.filter(o => 
+                (o.year === '2025' || o.year === 2025) && 
+                ['L1', 'L2'].includes(o.level)
+            );
+            
+            console.log('Filtered objectives:', objectives.length, objectives);
+            
+            let html = '';
+            objectives.forEach(obj => {
+                html += `
+                    <div class="objective-card">
+                        <div class="objective-level">${obj.level} Objective</div>
+                        <div class="objective-name">${obj.name}</div>
+                        <div class="objective-kpi">
+                            <span>Target: ${obj.target || 'N/A'}</span>
+                            <span>Status: <i class="fas fa-circle" style="color: #4ade80;"></i></span>
+                        </div>
+                    </div>
+                `;
+            });
+
+            document.getElementById('objectives-content').innerHTML = html || '<p style="color: rgba(255,255,255,0.5);">No objectives data</p>';
+        }
+
+        // Feature 1.2: Render Health
+        function renderHealth() {
+            const healthData = analytics.getDualLayerHealth();
+            const getColor = (pct) => pct >= 75 ? 'green' : pct >= 50 ? 'amber' : 'red';
+
+            let html = `
+                <div class="health-bar">
+                    <div class="health-label">
+                        <span><i class="fas fa-bullseye"></i> Sector Layer</span>
+                        <span><strong>${healthData.sector.percentage}%</strong></span>
+                    </div>
+                    <div class="health-bar-container">
+                        <div class="health-bar-fill health-${getColor(healthData.sector.percentage)}" 
+                             style="width: ${healthData.sector.percentage}%"></div>
+                    </div>
+                    <div style="font-size: 0.75rem; color: rgba(255,255,255,0.6); margin-top: 0.25rem;">
+                        ${healthData.sector.green}G • ${healthData.sector.amber}A • ${healthData.sector.red}R
+                    </div>
+                </div>
+
+                <div class="health-bar">
+                    <div class="health-label">
+                        <span><i class="fas fa-cogs"></i> Entity Layer</span>
+                        <span><strong>${healthData.entity.percentage}%</strong></span>
+                    </div>
+                    <div class="health-bar-container">
+                        <div class="health-bar-fill health-${getColor(healthData.entity.percentage)}" 
+                             style="width: ${healthData.entity.percentage}%"></div>
+                    </div>
+                    <div style="font-size: 0.75rem; color: rgba(255,255,255,0.6); margin-top: 0.25rem;">
+                        ${healthData.entity.green}G • ${healthData.entity.amber}A • ${healthData.entity.red}R
+                    </div>
+                </div>
+
+                ${healthData.indicators.map(anomaly => `
+                    <div class="anomaly-alert">
+                        <strong>${anomaly.type === 'hollow_victory' ? '⚠️ HOLLOW VICTORY' : '⚠️ EXECUTION FAILURE'}</strong><br>
+                        ${anomaly.message}
+                    </div>
+                `).join('')}
+            `;
+
+            document.getElementById('health-content').innerHTML = html;
+        }
+
+        // Feature 1.1: Render Matrix Preview
+        function renderMatrixPreview() {
+            const matrixData = analytics.getIntegrationMatrix();
+            
+            let html = `
+                <div style="font-size: 0.75rem; margin-bottom: 0.5rem;">
+                    PerfL2 × CapL2: ${matrixData.summary.totalConnections} connections, 
+                    ${matrixData.summary.health}% health
+                </div>
+                <div class="matrix-mini">
+            `;
+
+            matrixData.matrix.slice(0, 5).forEach(row => {
+                row.cells.slice(0, 8).forEach(cell => {
+                    const colorClass = cell.strength >= 75 ? 'cell-green' : 
+                                      cell.strength >= 50 ? 'cell-amber' : 
+                                      cell.strength > 0 ? 'cell-red' : 'cell-gray';
+                    html += `<div class="matrix-cell ${colorClass}" title="${cell.strength}%">${cell.strength}</div>`;
+                });
+                html += '<br>';
+            });
+
+            html += '</div>';
+            document.getElementById('matrix-content').innerHTML = html;
+        }
+
+        // Feature 1.4: Render Alerts
+        function renderAlerts() {
+            const alerts = analytics.getCriticalJeopardyAlerts();
+            
+            if (alerts.length === 0) {
+                document.getElementById('alerts-content').innerHTML = `
+                    <p style="text-align: center; color: rgba(255,255,255,0.5);">
+                        <i class="fas fa-check-circle" style="color: #10b981; font-size: 2rem;"></i><br>
+                        No critical alerts
+                    </p>
+                `;
+                return;
+            }
+
+            let html = '';
+            alerts.forEach(alert => {
+                html += `
+                    <div class="alert-card">
+                        <span class="alert-severity">${alert.severity}</span>
+                        <div style="margin-top: 0.5rem;">
+                            <strong>${alert.objectiveL1}</strong><br>
+                            <span style="font-size: 0.75rem; color: rgba(255,255,255,0.7);">
+                                ${alert.rootCause}
+                            </span>
+                        </div>
+                    </div>
+                `;
+            });
+
+            document.getElementById('alerts-content').innerHTML = html;
+        }
+
+        // Feature 1.3: Toggle Sankey
+        function toggleSankey() {
+            const modal = document.getElementById('sankeyModal');
+            const isActive = modal.classList.toggle('active');
+            
+            if (isActive) {
+                renderSankey();
+            }
+        }
+
+        function renderSankey() {
+            const flowData = analytics.getLevelFlowData();
+            const chart = echarts.init(document.getElementById('sankey-chart'));
+
+            const option = {
+                backgroundColor: 'transparent',
+                tooltip: {
+                    trigger: 'item',
+                    backgroundColor: 'rgba(0, 0, 0, 0.9)',
+                    borderColor: 'rgba(255, 255, 255, 0.2)',
+                    textStyle: { color: '#fff' }
+                },
+                series: [{
+                    type: 'sankey',
+                    layout: 'none',
+                    emphasis: { focus: 'adjacency' },
+                    data: flowData.nodes.map(node => ({
+                        name: node.name,
+                        itemStyle: {
+                            color: node.layer === 'sector' ? '#4ade80' : '#3b82f6'
+                        }
+                    })),
+                    links: flowData.links.map(link => ({
+                        source: link.source,
+                        target: link.target,
+                        value: link.value
+                    })),
+                    lineStyle: { curveness: 0.5 },
+                    label: { color: '#fff', fontFamily: 'Inter' }
+                }]
+            };
+
+            chart.setOption(option);
+        }
+
+        function expandMatrix() {
+            window.open('command-center-v2.html', '_blank');
+        }
+
+        // Initialize
+        initCommandCenter();
+    </script>
+</body>
+</html>

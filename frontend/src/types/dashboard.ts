@@ -11,7 +11,7 @@ export interface DashboardData {
 export interface GraphData {
     nodes: Array<{
         id: string;
-        group: string;
+        group?: string;
         label: string;
         val: number;
         color?: string;
@@ -20,13 +20,18 @@ export interface GraphData {
         y?: number;
         z?: number;
         links?: any[];
+        labels?: string[];
+        properties?: any;
     }>;
     links: Array<{
         source: string | any;
         target: string | any;
         value: number;
         type: string;
+        sourceId?: string;
+        targetId?: string;
     }>;
+    metadata?: any;
 }
 
 // --- ZONE 1 & 3: TRANSFORMATION HEALTH & INTERNAL OUTPUTS ---
@@ -34,7 +39,7 @@ export interface Dimension {
     id: string;
     title: string;
     label: string;
-    
+
     // Formatted strings for main display
     kpi: string; // Formatted quarterlyActual
     lastQuarterKpi: string; // Formatted lastQuarterActual
@@ -52,7 +57,7 @@ export interface Dimension {
     // Raw values for spider chart (normalized to 0-100 scale)
     planned: number;
     actual: number; // Normalized using finalTarget as 100%
-    
+
     // Health and trend indicators
     healthState?: string; // 'Healthy', 'At Risk', 'Distressed'
     healthScore?: number;

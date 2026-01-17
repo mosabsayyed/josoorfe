@@ -33,14 +33,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Check localStorage first (no network call needed)
         const localUser = authService.getUser();
         const localToken = authService.getToken();
-        
+
         if (localToken) {
           // Have token - set from localStorage immediately
           if (mounted) {
             setUser(localUser);
             setToken(localToken);
           }
-          
+
           // Validate via backend (instead of direct Supabase call)
           try {
             const appUser = await authService.fetchAppUser();
@@ -49,7 +49,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
             // If appUser fails (null), keep the local session (don't force logout)
             // This prevents login loops when backend is restarting/unavailable
-          } catch {}
+          } catch { }
         } else {
           // No token in localStorage - fallback to Supabase for OAuth flows
           const sdkSession = await supabase.auth.getSession();
@@ -63,7 +63,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
         }
       } catch (err) {
-        syncFromLocal();
+        console.error("Auth init error, forcing logout:", err);
+        // If initial session load fails, clear local storage to prevent loops
+        authService.logout();
+        setUser(null);
+        setToken(null);
       } finally {
         if (mounted) setLoading(false);
       }

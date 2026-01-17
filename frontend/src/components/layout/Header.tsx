@@ -57,20 +57,20 @@ export default function Header() {
     }}>
       {/* Left: Logo & Beta Text */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
-        <button 
+        <button
           onClick={() => navigate('/')}
           style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
           title={language === 'ar' ? 'الصفحة الرئيسية' : 'Home'}
         >
-          <img 
-            src="/att/cube/logo-aitwintech.svg" 
-            alt="AI Twin Tech" 
-            style={{ height: '32px', width: 'auto' }} 
+          <img
+            src="/att/cube/logo-aitwintech.svg"
+            alt="AI Twin Tech"
+            style={{ height: '32px', width: 'auto' }}
           />
         </button>
-        <span style={{ 
-          fontSize: '14px', 
-          fontWeight: 600, 
+        <span style={{
+          fontSize: '14px',
+          fontWeight: 600,
           color: '#D1D5DB',
           borderLeft: '1px solid #374151',
           paddingLeft: '24px',
@@ -85,7 +85,7 @@ export default function Header() {
       {/* Right: Navigation & Actions */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '32px' }}>
         <nav style={{ display: 'flex', gap: '24px', fontSize: '14px' }}>
-          <button 
+          <button
             onClick={() => navigate('/founder-letter')}
             style={{ background: 'none', border: 'none', color: '#D1D5DB', cursor: 'pointer', padding: 0, font: 'inherit' }}
             onMouseEnter={(e) => e.currentTarget.style.color = '#F9FAFB'}
@@ -93,7 +93,7 @@ export default function Header() {
           >
             {t.founder}
           </button>
-          <button 
+          <button
             onClick={() => navigate('/contact-us')}
             style={{ background: 'none', border: 'none', color: '#D1D5DB', cursor: 'pointer', padding: 0, font: 'inherit' }}
             onMouseEnter={(e) => e.currentTarget.style.color = '#F9FAFB'}
@@ -104,10 +104,10 @@ export default function Header() {
         </nav>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          
+
           {user ? (
             <div style={{ position: 'relative' }} ref={menuRef}>
-              <button 
+              <button
                 onClick={() => setShowUserMenu(!showUserMenu)}
                 style={{
                   display: 'flex',
@@ -168,8 +168,8 @@ export default function Header() {
 
                   {/* Menu Items */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    <button 
-                      onClick={() => { navigate('/chat'); setShowUserMenu(false); }}
+                    <button
+                      onClick={() => { navigate('/josoor'); setShowUserMenu(false); }}
                       style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 12px', borderRadius: '6px', border: 'none', background: 'transparent', color: '#E5E7EB', cursor: 'pointer', textAlign: 'left', fontSize: '14px' }}
                       onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)'}
                       onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
@@ -177,8 +177,8 @@ export default function Header() {
                       <LayoutDashboard size={16} color="#FFD700" />
                       {t.dashboard}
                     </button>
-                    
-                    <button 
+
+                    <button
                       onClick={() => { setShowUserMenu(false); }}
                       style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 12px', borderRadius: '6px', border: 'none', background: 'transparent', color: '#E5E7EB', cursor: 'pointer', textAlign: 'left', fontSize: '14px' }}
                       onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)'}
@@ -190,7 +190,7 @@ export default function Header() {
 
                     <div style={{ height: '1px', background: 'rgba(255, 255, 255, 0.1)', margin: '4px 0' }}></div>
 
-                    <button 
+                    <button
                       onClick={() => { logout(); setShowUserMenu(false); navigate('/'); }}
                       style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 12px', borderRadius: '6px', border: 'none', background: 'rgba(239, 68, 68, 0.1)', color: '#F87171', cursor: 'pointer', textAlign: 'left', fontSize: '14px' }}
                       onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.2)'}
@@ -204,7 +204,7 @@ export default function Header() {
               )}
             </div>
           ) : (
-            <button 
+            <button
               onClick={() => navigate('/login')}
               style={{
                 background: 'transparent',

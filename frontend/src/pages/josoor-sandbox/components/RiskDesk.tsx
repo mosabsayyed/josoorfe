@@ -15,7 +15,7 @@ interface JosoorContext {
 const RiskDesk: React.FC = () => {
     // Get year/quarter from JosoorFrame via Outlet context
     const { year, quarter } = useOutletContext<JosoorContext>();
-    
+
     const { language } = useLanguage();
     const [selectedView, setSelectedView] = useState<'overview' | 'detail'>('overview');
     const [selectedRiskId, setSelectedRiskId] = useState<string | null>(null);
@@ -33,7 +33,7 @@ const RiskDesk: React.FC = () => {
 
     // Derive risks list from graph data
     const risks = riskGraphData?.nodes || [];
-    
+
     // Find active risk from live data
     const activeRisk = risks.find((n: any) => n.id === selectedRiskId || n.props?.id === selectedRiskId);
 
@@ -48,13 +48,13 @@ const RiskDesk: React.FC = () => {
     };
 
     return (
-        <div style={{ 
-            height: '100%', 
-            display: 'flex', 
+        <div style={{
+            height: '100%',
+            display: 'flex',
             flexDirection: 'column',
             direction: language === 'ar' ? 'rtl' : 'ltr'
         }}>
-             {/* 1. TOP STRIP - KPI CARDS (DYNAMIC FROM LIVE DATA) */}
+            {/* 1. TOP STRIP - KPI CARDS (DYNAMIC FROM LIVE DATA) */}
             <div style={{
                 display: 'grid',
                 gridTemplateColumns: 'repeat(4, 1fr)',
@@ -72,8 +72,8 @@ const RiskDesk: React.FC = () => {
                     </div>
                 ) : (
                     risks.slice(0, 4).map((risk: any) => (
-                        <div key={risk.id} 
-                             style={{
+                        <div key={risk.id}
+                            style={{
                                 background: '#111827',
                                 border: '1px solid #374151',
                                 padding: '16px',
@@ -81,8 +81,8 @@ const RiskDesk: React.FC = () => {
                                 position: 'relative',
                                 overflow: 'hidden',
                                 cursor: 'pointer'
-                             }}
-                             onClick={() => handleRiskSelect(risk.id)}>
+                            }}
+                            onClick={() => handleRiskSelect(risk.id)}>
                             <div style={{
                                 position: 'absolute',
                                 top: 0,
@@ -97,10 +97,10 @@ const RiskDesk: React.FC = () => {
                                     {risk.title || risk.name || 'Untitled Risk'}
                                 </div>
                                 <div style={{ display: 'flex', alignItems: 'flex-end', gap: '12px' }}>
-                                    <span style={{ 
+                                    <span style={{
                                         fontSize: '1.5rem', // Slightly smaller to fit long names
-                                        fontWeight: 'bold', 
-                                        color: risk.risk_level === 'High' ? '#EF4444' : risk.risk_level === 'Medium' ? '#F59E0B' : '#fff' 
+                                        fontWeight: 'bold',
+                                        color: risk.risk_level === 'High' ? '#EF4444' : risk.risk_level === 'Medium' ? '#F59E0B' : '#fff'
                                     }}>{risk.risk_level || 'N/A'}</span>
                                     <span style={{
                                         fontSize: '0.75rem',
@@ -120,7 +120,7 @@ const RiskDesk: React.FC = () => {
 
             {/* 2. MAIN SPLIT VIEW */}
             <div style={{ flex: 1, minHeight: 0, position: 'relative', padding: '0 24px 24px', display: 'flex', gap: '24px' }}>
-                
+
                 {/* LEFT: RISK HEATMAP AREA */}
                 <div style={{
                     flex: 1,
@@ -135,32 +135,32 @@ const RiskDesk: React.FC = () => {
                 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexShrink: 0, zIndex: 10 }}>
                         <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#fff', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                             <span style={{ color: '#D4AF37' }}>■</span> {language === 'ar' ? 'مصفوفة المخاطر' : 'Risk & Outcomes Matrix'}
+                            <span style={{ color: '#D4AF37' }}>■</span> {language === 'ar' ? 'مصفوفة المخاطر' : 'Risk & Outcomes Matrix'}
                         </h3>
                     </div>
-                    
+
                     {/* EMBEDDED COMPONENT */}
                     <div style={{ flex: 1, minHeight: 0, position: 'relative', width: '100%' }}>
-                         <div style={{ position: 'absolute', inset: 0, overflow: 'visible' }}>
-                             <RiskTopologyMap quarter={quarter} year={year} />
-                         </div>
+                        <div style={{ position: 'absolute', inset: 0, overflow: 'visible' }}>
+                            <RiskTopologyMap quarter={quarter} year={year} />
+                        </div>
                     </div>
                 </div>
                 {/* RIGHT: DEEP DIVE PANEL (Sliding in) */}
                 {selectedView === 'detail' && activeRisk && (
                     <div style={{ width: '50%', height: '100%' }}>
-                        <div style={{ 
-                            height: '100%', 
-                            background: '#1F2937', 
-                            border: '1px solid rgba(212,175,55,0.5)', 
+                        <div style={{
+                            height: '100%',
+                            background: '#1F2937',
+                            border: '1px solid rgba(212,175,55,0.5)',
                             borderRadius: '8px',
-                            overflow: 'hidden', 
-                            display: 'flex', 
-                            flexDirection: 'column' 
+                            overflow: 'hidden',
+                            display: 'flex',
+                            flexDirection: 'column'
                         }}>
-                            <div style={{ 
-                                background: 'rgba(15,23,42,0.5)', 
-                                borderBottom: '1px solid #374151', 
+                            <div style={{
+                                background: 'rgba(15,23,42,0.5)',
+                                borderBottom: '1px solid #374151',
                                 padding: '16px'
                             }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', color: '#fff' }}>
@@ -182,12 +182,12 @@ const RiskDesk: React.FC = () => {
                                         <h2 style={{ fontSize: '1.5rem', color: '#fff', margin: 0 }}>{activeRisk.title || activeRisk.name}</h2>
                                         <p style={{ color: '#9CA3AF', marginTop: '4px', fontSize: '0.875rem' }}>{activeRisk.description}</p>
                                     </div>
-                                    <button 
-                                        onClick={handleBack} 
-                                        style={{ 
-                                            background: 'transparent', 
-                                            border: 'none', 
-                                            color: '#9CA3AF', 
+                                    <button
+                                        onClick={handleBack}
+                                        style={{
+                                            background: 'transparent',
+                                            border: 'none',
+                                            color: '#9CA3AF',
                                             cursor: 'pointer',
                                             padding: '8px'
                                         }}
@@ -196,15 +196,15 @@ const RiskDesk: React.FC = () => {
                                     </button>
                                 </div>
                             </div>
-                            
+
                             <div style={{ flex: 1, overflowY: 'auto', padding: '24px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
                                 {/* AGENT ANALYSIS SECTION (If Real Data Exists) */}
                                 {(activeRisk.build_exposure_pct || activeRisk.ai_analysis) && (
-                                    <div style={{ 
-                                        background: 'rgba(59,130,246,0.1)', 
-                                        border: '1px solid rgba(59,130,246,0.3)', 
-                                        borderRadius: '6px', 
-                                        padding: '16px' 
+                                    <div style={{
+                                        background: 'rgba(59,130,246,0.1)',
+                                        border: '1px solid rgba(59,130,246,0.3)',
+                                        borderRadius: '6px',
+                                        padding: '16px'
                                     }}>
                                         <h4 style={{ color: '#60A5FA', borderBottom: '1px solid rgba(59,130,246,0.3)', paddingBottom: '8px', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                                             <Activity size={16} /> Risk Agent Analysis
@@ -232,7 +232,7 @@ const RiskDesk: React.FC = () => {
                                             )}
                                         </div>
                                         {activeRisk.ai_analysis && (
-                                            <p style={{ fontSize: '0.875rem', color: '#DBEAFE', fontStyle: 'italic', margin: 0 }}>
+                                            <p style={{ fontSize: '0.875rem', color: '#DBEAFE', fontStyle: 'normal', margin: 0 }}>
                                                 "{activeRisk.ai_analysis}"
                                             </p>
                                         )}
@@ -255,7 +255,7 @@ const RiskDesk: React.FC = () => {
 
                                 {/* AI Action Block */}
                                 <div style={{ marginTop: '12px' }}>
-                                    <AIExplainButton 
+                                    <AIExplainButton
                                         mode="block"
                                         style={{ background: 'rgba(99,102,241,0.15)', border: '1px solid #6366F1' }}
                                         contextId={selectedRiskId || 'risk'}

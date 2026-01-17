@@ -1,0 +1,282 @@
+html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    overflow: hidden;
+}
+
+body {
+    background-color: #0f172a; /* slate-900 */
+    color: #e2e8f0; /* slate-200 */
+    font-family: 'Inter', sans-serif;
+}
+
+/* Chart Container Overrides */
+.chart-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #1e293b; 
+}
+
+::-webkit-scrollbar-thumb {
+    background: #475569; 
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #64748b; 
+}
+
+/* Custom Utilities */
+.text-xxs {
+    font-size: 0.65rem;
+    line-height: 1rem;
+}
+
+.glass-panel {
+    background: rgba(30, 41, 59, 0.7);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+/* Node pulsing animation for critical alerts */
+@keyframes pulse-red {
+    0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+    70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+}
+
+.animate-pulse-red {
+    animation: pulse-red 2s infinite;
+}
+
+/* DETAILS PANEL STYLES - FIXED RIGHT OVERLAY */
+.details-panel {
+    position: absolute; 
+    top: 70px;
+    right: 15px;
+    width: 360px;
+    max-height: calc(100vh - 150px);
+    background: rgba(15, 23, 42, 0.95);
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    backdrop-filter: blur(12px);
+    border-radius: 8px;
+    z-index: 250;
+    display: none; 
+    box-shadow: -5px 0 25px rgba(0, 0, 0, 0.5);
+    overflow-y: auto;
+    animation: slideInFromRight 0.3s ease-out;
+}
+
+.details-panel.active {
+    display: block;
+}
+
+@keyframes slideInFromRight {
+    from { transform: translateX(50px); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+/* Panel Header Styling */
+.panel-header {
+    padding: 1rem;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.panel-title {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #e2e8f0;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.panel-close {
+    cursor: pointer;
+    color: #94a3b8;
+    transition: color 0.2s;
+    padding: 4px;
+}
+
+.panel-close:hover {
+    color: #ef4444;
+}
+
+.panel-content {
+    padding: 1rem;
+}
+
+/* Toggle Button Styling */
+.toggle-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.toggle-btn:active {
+    transform: translateY(0);
+}
+
+/* Tab Button Hover */
+.tab-btn:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+}
+
+/* Dashboard Overlay and Grid System */
+.dashboard-grid {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    z-index: 1; /* Map is at z-level, this is above it but map-panel-container manages z-index */
+    pointer-events: none; /* Let clicks pass through to map where not covered */
+}
+
+/* Map takes full area of right side */
+.map-panel-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+    pointer-events: auto;
+}
+
+#geo-map {
+    width: 100%;
+    height: 100%;
+}
+
+/* Dashboard Rows */
+.dashboard-row {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 10px 20px;
+    pointer-events: none; /* Container passes clicks */
+}
+
+.dashboard-card {
+    background: rgba(15, 23, 42, 0.9);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-radius: 8px;
+    pointer-events: auto; /* Widgets capture clicks */
+    height: 200px; /* Fixed height for radars */
+}
+
+.dashboard-scroll-row {
+    flex: 1;
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    padding-bottom: 5px;
+    pointer-events: auto;
+    white-space: nowrap;
+}
+
+/* Hide scrollbar for cleaner look */
+.dashboard-scroll-row::-webkit-scrollbar {
+    height: 4px;
+}
+.dashboard-scroll-row::-webkit-scrollbar-thumb {
+    background: #475569;
+    border-radius: 2px;
+}
+
+/* Map Toggles Position Update */
+.map-toggles {
+    position: absolute;
+    bottom: 30px;
+    left: 20px;
+    z-index: 50;
+    background: rgba(15, 23, 42, 0.9);
+    padding: 5px;
+    border-radius: 6px;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    display: flex;
+    gap: 10px;
+}
+
+/* Ensure map controls (Back button) are visible */
+.map-control-btn {
+    position: absolute;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+    background: #ef4444;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    display: none;
+    pointer-events: auto;
+}
+
+
+.detail-row {
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+.detail-label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    color: #94a3b8;
+    margin-bottom: 0.25rem;
+    letter-spacing: 0.05em;
+}
+
+.detail-value {
+    font-size: 0.95rem;
+    color: #f1f5f9;
+    font-weight: 500;
+}
+
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.status-operational { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4); }
+.status-planned { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4); }
+.status-at-risk { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4); }
+
+.sector-bar {
+    height: 6px;
+    border-radius: 3px;
+    margin-top: 4px;
+    background: rgba(255, 255, 255, 0.1);
+    overflow: hidden;
+    display: flex;
+}
+
+.sector-segment {
+    height: 100%;
+}

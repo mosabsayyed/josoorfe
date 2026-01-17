@@ -1,0 +1,91 @@
+/* src/app/components/enterprise/CapabilityTooltip.css */
+
+.tooltip-container {
+    position: fixed;
+    z-index: 1000;
+    pointer-events: none;
+    max-width: 280px;
+    background-color: rgba(15, 23, 42, 0.98);
+    border: 1px solid rgba(59, 130, 246, 0.5);
+    border-radius: 0;
+    padding: 12px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.tooltip-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.3);
+}
+
+.tooltip-header-content {
+    flex: 1;
+}
+
+.tooltip-id {
+    color: #64748b;
+    font-size: 8px;
+    margin-bottom: 0.125rem;
+}
+
+.tooltip-name {
+    color: white;
+    font-weight: 600;
+    font-size: 11px;
+    line-height: normal;
+}
+
+.tooltip-status-badge {
+    padding: 0.125rem 0.5rem;
+    border-radius: 0;
+    font-size: 9px;
+    font-weight: 500;
+    /* background, color, border set inline */
+}
+
+.tooltip-core-info {
+    margin-bottom: 0.5rem;
+    font-size: 9px;
+}
+
+.tooltip-row {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 0.25rem;
+}
+
+.tooltip-label {
+    color: #64748b;
+}
+
+.tooltip-value {
+    color: #cbd5e1;
+}
+
+.tooltip-value-highlight-red {
+    color: #ef4444;
+}
+
+.tooltip-value-highlight-green {
+    color: #10b981;
+}
+
+.tooltip-value-highlight-amber {
+    color: #f59e0b;
+}
+
+.tooltip-overlay-section {
+    padding-top: 0.5rem;
+    border-top: 1px solid rgba(148, 163, 184, 0.3);
+    font-size: 9px;
+}
+
+.tooltip-overlay-title {
+    color: #64748b;
+    margin-bottom: 0.25rem;
+    display: block;
+}

@@ -1,0 +1,35 @@
+/* src/app/components/enterprise/DynamicInsightPanel.css */
+
+.insight-panel {
+    margin-left: 1rem;
+    padding-left: 1rem;
+    border-left: 1px solid rgba(148, 163, 184, 0.3);
+    flex-shrink: 0;
+    width: 320px;
+}
+
+.insight-content {
+    font-size: 10px;
+    color: #64748b;
+}
+
+.insight-title {
+    font-weight: 700;
+}
+
+.insight-stat {
+    font-size: 12px;
+    font-weight: 700;
+    color: white;
+    margin-top: 0.25rem;
+}
+
+.insight-details {
+    font-size: 9px;
+    margin-top: 0.25rem;
+}
+
+.insight-explanation {
+    font-size: 8px;
+    margin-top: 0.25rem;
+}

@@ -2,150 +2,117 @@ import React, { useEffect, useRef, useState } from "react";
 import ForceGraph3D from "react-force-graph-3d";
 import ForceGraph2D from "react-force-graph-2d";
 import { GraphData } from "../../types/dashboard";
-import { Card } from "../ui/card";
-import { Button } from "../ui/button";
-import { Maximize2, Minimize2 } from "lucide-react"; // Imported in source [2]
+import { Maximize2, Minimize2 } from "lucide-react";
 
 interface NeoGraphProps {
   // OLD Interface (backward compatible)
   data?: GraphData;
   highlightPath?: string | null;
-  highlightIds?: string[]; // NEW: Explicit ID highlighting per Source [2]
+  highlightIds?: string[];
   showHealth?: boolean;
   isDark?: boolean;
   language?: string;
+  year?: string;
+  quarter?: string;
   onNodeClick?: (node: any) => void;
-  nodeColor?: (node: any) => string; // NEW: Allow custom color function per Source [2]
-  
+  nodeColor?: (node: any) => string;
+
   // NEW Interface (for chain-based fetching)
   chainKey?: string;
-  year?: number;
-  quarter?: string;
   analyzeGaps?: boolean;
   legendConfig?: any;
 }
 
-export function NeoGraph({ 
-  data, 
-  highlightPath: _highlightPath, 
-  highlightIds, 
-  showHealth: _showHealth, 
-  isDark = true, 
-  language = 'en', 
-  onNodeClick, 
+export function NeoGraph({
+  data,
+  highlightPath,
+  highlightIds = [],
+  showHealth = false,
+  isDark = true,
+  language = 'en',
+  year = '2025',
+  quarter = 'All',
+  onNodeClick,
   nodeColor,
   chainKey,
-  year,
-  quarter,
   analyzeGaps = false,
   legendConfig
 }: NeoGraphProps) {
-  
-  // State for fetched data
-  const [internalData, setInternalData] = useState<GraphData>(data || { nodes: [], links: [] });
-  const [loading, setLoading] = useState(false);
-  
-  // Fetch data if chainKey provided (NEW interface)
-  useEffect(() => {
-    if (chainKey) {
-      setLoading(true);
-      const params = new URLSearchParams();
-      if (year) params.append('year', year.toString());
-      if (quarter) params.append('quarter', quarter);
-      if (analyzeGaps) params.append('analyzeGaps', 'true');
-      
-      fetch(`/api/business-chain/${chainKey}?${params}`)
-        .then(r => r.json())
-        .then(result => {
-          setInternalData(result);
-          setLoading(false);
-        })
-        .catch(err => {
-          console.error('Failed to fetch chain data:', err);
-          setLoading(false);
-        });
-    } else if (data) {
-      // Use provided data (OLD interface)
-      setInternalData(data);
-    }
-  }, [chainKey, year, quarter, analyzeGaps, data]);
-
-  // Localization content per Source [3]
-  const content = {
-    switchTo2D: { en: 'Switch to 2D', ar: 'تبديل إلى 2D' },
-    switchTo3D: { en: 'Switch to 3D', ar: 'تبديل إلى 3D' },
-    controls3D: { en: 'Right Click + Drag: Rotate | Scroll: Zoom', ar: 'زر الماوس الأيمن + سحب: تدوير | التمرير: تكبير' },
-    controls2D: { en: 'Click + Drag: Pan | Scroll: Zoom', ar: 'انقر واسحب: تحريك | التمرير: تكبير' }
-  };
-
-  const t = (key: keyof typeof content) => language === 'ar' ? content[key].ar : content[key].en;
 
   const graphRef = useRef<any>(null);
-  const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
   const containerRef = useRef<HTMLDivElement>(null);
+  const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const [hoverNode, setHoverNode] = useState<any>(null);
   const [is3D, setIs3D] = useState(true);
 
-  // Resize handler per Source [4, 5]
+  // Robust Resize handler using ResizeObserver
   useEffect(() => {
-    const updateSize = () => {
-      if (containerRef.current) {
-        setDimensions({
-          width: containerRef.current.clientWidth,
-          height: containerRef.current.clientHeight
-        });
+    if (!containerRef.current) return;
+
+    const resizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        if (entry.contentRect) {
+          const newDimensions = {
+            width: entry.contentRect.width,
+            height: entry.contentRect.height
+          };
+          console.log('[NeoGraph] Dimensions updated:', newDimensions);
+          setDimensions(newDimensions);
+        }
       }
-    };
-    window.addEventListener('resize', updateSize);
-    updateSize();
-    return () => window.removeEventListener('resize', updateSize);
+    });
+
+    resizeObserver.observe(containerRef.current);
+    return () => resizeObserver.disconnect();
   }, []);
 
-  // 3. Coloring Logic (Supports Legend & Highlights)
+  // 1. Coloring Logic
   const resolveNodeColor = (node: any) => {
-    // Explicit Highlight (Gap Analysis focus)
     if (highlightIds && highlightIds.length > 0) {
       return highlightIds.includes(node.id) ? '#EF4444' : (isDark ? 'rgba(75,85,99,0.2)' : 'rgba(200,200,200,0.2)');
     }
-
-    // Custom Override
     if (nodeColor) return nodeColor(node);
-
-    // Legend Config Match (Stakeholder Coloring)
     if (legendConfig && legendConfig.colors) {
-      const type = node.labels?.[0] || node.type; 
+      const type = node.labels?.[0] || node.type;
       if (type && legendConfig.colors[type]) {
         return legendConfig.colors[type];
       }
     }
-
-    return node.color || (isDark ? '#9CA3AF' : '#6B7280');
+    return node.color || (isDark ? '#D4AF37' : '#1a365d'); // Default to gold for nodes in dark mode
   };
 
-  // 4. Broken Link Visualization (Red/Dashed)
+  // 2. Link Visualization
   const resolveLinkColor = (link: any) => {
     if (link.properties?.status === 'critical' || link.properties?.virtual) return '#EF4444';
-    return isDark ? '#00FFFF' : '#0891B2';
+    return isDark ? '#FFFFFF' : '#000000';
   };
 
   const resolveLinkWidth = (link: any) => {
-    return (link.properties?.status === 'critical' || link.properties?.virtual) ? 3 : 1;
+    return (link.properties?.status === 'critical' || link.properties?.virtual) ? 3 : 2;
   };
 
-  // 5. Deep Clone to protect cache
+  // 3. Deep Clone to protect cache and handle graphData format
   const graphData = React.useMemo(() => {
+    if (!data || !data.nodes) return { nodes: [], links: [] };
     return {
-      nodes: internalData.nodes.map(n => ({ ...n })),
-      links: internalData.links.map(l => ({ ...l }))
+      nodes: data.nodes.map(n => ({ ...n })),
+      links: data.links ? data.links.map(l => ({ ...l })) : []
     };
-  }, [internalData]);
+  }, [data]);
+
+  // Handle localization
+  const content = {
+    switchTo2D: { en: 'Switch to 2D', ar: 'تبديل إلى 2D' },
+    switchTo3D: { en: 'Switch to 3D', ar: 'تبديل إلى 3D' },
+  };
+  const t = (key: keyof typeof content) => language === 'ar' ? content[key].ar : content[key].en;
 
   const commonProps = {
     ref: graphRef,
     width: dimensions.width,
     height: dimensions.height,
     graphData: graphData,
-    nodeLabel: "label",
+    nodeLabel: null, // Disable default tooltip to use our custom one
     nodeColor: resolveNodeColor,
     nodeRelSize: 6,
     linkColor: resolveLinkColor,
@@ -153,36 +120,47 @@ export function NeoGraph({
     linkDirectionalArrowLength: 3,
     linkDirectionalArrowRelPos: 1,
     linkCurvature: 0.1,
+    linkOpacity: 1,
     backgroundColor: "rgba(0,0,0,0)",
     onNodeHover: setHoverNode,
     onNodeClick: (node: any) => onNodeClick && onNodeClick(node),
     cooldownTicks: 100,
-    linkLineDash: (link: any) => (link.properties?.status === 'critical' || link.properties?.virtual) ? [5, 5] : null, // NEW: Support dashed lines for virtual/gap edges
+    linkLineDash: (link: any) => (link.properties?.status === 'critical' || link.properties?.virtual) ? [5, 5] : null,
   };
 
   return (
-    <div ref={containerRef} style={{ width: '100%', height: '100%', position: 'relative' }}>
+    <div ref={containerRef} style={{ position: 'relative', width: '100%', height: '100%' }}>
       {/* View Toggle */}
-      <div style={{ position: 'absolute', top: 10, left: 10, zIndex: 10 }}>
-        <Button onClick={() => setIs3D(!is3D)} size="sm" variant="outline">
-          {is3D ? <Minimize2 className="w-4 h-4 mr-2" /> : <Maximize2 className="w-4 h-4 mr-2" />}
+      <div className="viz-controls-overlay">
+        <button
+          onClick={() => setIs3D(!is3D)}
+          className="viz-mode-btn"
+        >
+          {is3D ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
           {is3D ? t('switchTo2D') : t('switchTo3D')}
-        </Button>
+        </button>
       </div>
 
-      {loading && <div style={{position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', color: '#fff'}}>Loading Graph...</div>}
-
-      {is3D ? <ForceGraph3D {...commonProps} /> : <ForceGraph2D {...commonProps} />}
+      {(dimensions.width > 0 && dimensions.height > 0) ? (
+        is3D ? <ForceGraph3D {...commonProps} /> : <ForceGraph2D {...commonProps} />
+      ) : (
+        <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          Preparing Canvas...
+        </div>
+      )}
 
       {/* Tooltip */}
       {hoverNode && (
-        <Card className="absolute top-4 right-4 p-4 w-64 bg-black/80 text-white z-20 border-l-2 border-[#D4AF37]">
-          <h3 className="font-bold">{hoverNode.properties?.name || hoverNode.id}</h3>
-          <div className="text-xs mt-2">
-            <p>Type: {hoverNode.labels?.join(', ')}</p>
-            <p>Year: {hoverNode.properties?.year || year}</p>
+        <div className="graph-tooltip">
+          <h3 className="tooltip-title">{hoverNode.properties?.name || hoverNode.label || hoverNode.id || 'Unnamed Node'}</h3>
+          <div className="graph-tooltip-meta">
+            <p><strong>Type:</strong> {hoverNode.labels?.join(', ') || hoverNode.type || 'Unknown'}</p>
+            <p><strong>Year:</strong> {hoverNode.properties?.year || year}</p>
+            {hoverNode.properties?.risk_score !== undefined && (
+              <p><strong>Risk Score:</strong> {hoverNode.properties.risk_score}</p>
+            )}
           </div>
-        </Card>
+        </div>
       )}
     </div>
   );

@@ -163,6 +163,7 @@ a:hover { text-decoration: underline; }
   flex-direction: column;
   gap: 1.5rem;
   overflow-y: auto;
+  position: relative;
 }
 
 section { display: flex; flex-direction: column; gap: 0.25rem; width: 100%; }

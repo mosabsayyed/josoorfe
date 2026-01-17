@@ -198,7 +198,7 @@ print("Hello, World!")
 | ${language === 'ar' ? 'الجداول' : 'Tables'} | ✅ |
 
 ### ${language === 'ar' ? 'التأكيد' : 'Emphasis'}
-**${language === 'ar' ? 'نص عريض' : 'Bold text'}** ${language === 'ar' ? 'و' : 'and'} *${language === 'ar' ? 'نص مائل' : 'italic text'}*.`,
+**${language === 'ar' ? 'نص عريض' : 'Bold text'}** ${language === 'ar' ? 'و' : 'and'} *${language === 'ar' ? 'نص مائل' : 'normal text'}*.`,
 
     // HTML
     'html': `<!DOCTYPE html>
@@ -229,7 +229,7 @@ print("Hello, World!")
 
     // MEDIA
     'image': 'https://picsum.photos/800/600',
-    
+
     // EXCEL/CSV
     'excel-csv': `Name,Age,City,Salary,Department
 John Doe,30,New York,75000,Engineering
@@ -265,9 +265,9 @@ Diana Prince,29,Philadelphia,68000,Marketing`,
   }, {} as Record<string, typeof testButtons>);
 
   return (
-    <div style={{ 
-      display: 'flex', 
-      height: '100vh', 
+    <div style={{
+      display: 'flex',
+      height: '100vh',
       background: 'var(--bg-primary)',
       fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
       direction: isRTL ? 'rtl' : 'ltr',
@@ -282,9 +282,9 @@ Diana Prince,29,Philadelphia,68000,Marketing`,
         overflowY: 'auto',
       }}>
         <div style={{ marginBottom: 20 }}>
-          <h2 style={{ 
-            fontSize: 18, 
-            fontWeight: 600, 
+          <h2 style={{
+            fontSize: 18,
+            fontWeight: 600,
             marginBottom: 12,
             color: 'var(--component-text-primary)',
           }}>
@@ -293,7 +293,7 @@ Diana Prince,29,Philadelphia,68000,Marketing`,
           <p style={{ fontSize: 13, color: 'var(--component-text-secondary)', marginBottom: 16 }}>
             {translations.subtitle}
           </p>
-          
+
           {/* Language Toggle */}
           <button
             onClick={() => setLanguage(language === 'ar' ? 'en' : 'ar')}
@@ -316,10 +316,10 @@ Diana Prince,29,Philadelphia,68000,Marketing`,
         {/* Test buttons grouped by category */}
         {Object.entries(groupedButtons).map(([category, buttons]) => (
           <div key={category} style={{ marginBottom: 20 }}>
-            <h3 style={{ 
-              fontSize: 12, 
-              fontWeight: 600, 
-              color: 'var(--component-text-muted)', 
+            <h3 style={{
+              fontSize: 12,
+              fontWeight: 600,
+              color: 'var(--component-text-muted)',
               textTransform: 'uppercase',
               marginBottom: 8,
               letterSpacing: '0.05em',
@@ -362,8 +362,8 @@ Diana Prince,29,Philadelphia,68000,Marketing`,
       </div>
 
       {/* Canvas area */}
-      <div style={{ 
-        flex: 1, 
+      <div style={{
+        flex: 1,
         padding: 40,
         overflowY: 'auto',
       }}>
@@ -371,20 +371,20 @@ Diana Prince,29,Philadelphia,68000,Marketing`,
           maxWidth: 1200,
           margin: '0 auto',
         }}>
-          <h1 style={{ 
-            fontSize: 24, 
-            fontWeight: 600, 
+          <h1 style={{
+            fontSize: 24,
+            fontWeight: 600,
             marginBottom: 8,
             color: 'var(--component-text-primary)',
           }}>
             {testButtons.find(b => b.id === selectedTest)?.label}
           </h1>
-          <p style={{ 
-            fontSize: 14, 
-            color: 'var(--component-text-secondary)', 
+          <p style={{
+            fontSize: 14,
+            color: 'var(--component-text-secondary)',
             marginBottom: 24,
           }}>
-            {language === 'ar' 
+            {language === 'ar'
               ? 'اختبار عرض UniversalCanvas لهذا النوع من المحتوى'
               : 'Testing UniversalCanvas rendering for this content type'
             }

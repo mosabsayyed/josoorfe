@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Integrated Risk Management - Blast Radius</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="bg-slate-900 text-slate-200 font-sans overflow-hidden">
+
+    <div id="sidebar"></div>
+    <div id="header"></div>
+
+    <main class="ml-64 mt-16 p-6 h-[calc(100vh-4rem)] overflow-y-auto custom-scrollbar">
+        
+        <!-- Top Metrics / Alerts -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            <div class="glass-panel p-4 rounded-lg border-l-4 border-red-500 flex items-center justify-between">
+                <div>
+                    <p class="text-xs text-slate-400 uppercase font-semibold">Critical Risks</p>
+                    <h3 class="text-2xl font-bold text-red-500">3</h3>
+                    <p class="text-xs text-red-400 mt-1">Requiring immediate mitigation</p>
+                </div>
+                <i class="fas fa-radiation text-3xl text-red-500/20"></i>
+            </div>
+            
+            <div class="glass-panel p-4 rounded-lg flex items-center justify-between">
+                <div>
+                    <p class="text-xs text-slate-400 uppercase font-semibold">Avg Risk Score</p>
+                    <h3 class="text-2xl font-bold text-orange-400">65/100</h3>
+                    <p class="text-xs text-slate-400 mt-1">Weighted by impact</p>
+                </div>
+                <i class="fas fa-chart-line text-3xl text-orange-500/20"></i>
+            </div>
+
+            <div class="glass-panel p-4 rounded-lg flex items-center justify-between">
+                <div>
+                    <p class="text-xs text-slate-400 uppercase font-semibold">Vulnerable Capabilities</p>
+                    <h3 class="text-2xl font-bold text-white" id="vuln-cap-count">--</h3>
+                    <p class="text-xs text-slate-400 mt-1">Low maturity + High risk</p>
+                </div>
+                <i class="fas fa-shield-alt text-3xl text-blue-500/20"></i>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100%-10rem)]">
+            
+            <!-- Bidirectional Tree -->
+            <div class="lg:col-span-2 glass-panel rounded-lg p-4 relative flex flex-col h-full">
+                <div class="mb-2">
+                    <h3 class="font-semibold text-slate-200">Risk-Impact Propagation</h3>
+                    <p class="text-xs text-slate-400">Capability ← Risk → KPI</p>
+                </div>
+                <div id="risk-tree" class="w-full flex-1 rounded-lg bg-slate-900/50"></div>
+            </div>
+
+            <!-- Right Column -->
+            <div class="flex flex-col gap-6 h-full">
+                
+                <!-- Risk Heatmap -->
+                <div class="glass-panel rounded-lg p-4 h-1/2 relative flex flex-col">
+                    <div class="mb-2">
+                        <h3 class="font-semibold text-slate-200">Risk Matrix</h3>
+                        <p class="text-xs text-slate-400">Score vs Maturity</p>
+                    </div>
+                    <div id="risk-heatmap" class="w-full flex-1 rounded-lg"></div>
+                </div>
+
+                <!-- Overload Alert -->
+                <div class="glass-panel rounded-lg p-4 h-1/2 flex flex-col">
+                     <h3 class="font-semibold text-slate-200 mb-2 flex items-center text-orange-400">
+                        <i class="fas fa-bolt mr-2"></i> Overload Alerts
+                    </h3>
+                    <p class="text-xs text-slate-500 mb-3">Capabilities with >3 Incoming Risks</p>
+                    <div class="overflow-y-auto flex-1 custom-scrollbar">
+                         <ul id="overload-list" class="space-y-2">
+                            <!-- Populated by JS -->
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <script src="js/data.js"></script>
+    <script src="js/layout.js"></script>
+    <script src="js/charts-risk.js"></script>
+</body>
+</html>

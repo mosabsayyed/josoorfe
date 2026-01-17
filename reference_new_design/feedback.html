@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tactical Feedback - Transformation Loops</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="bg-slate-900 text-slate-200 font-sans overflow-hidden">
+
+    <div id="sidebar"></div>
+    <div id="header"></div>
+
+    <main class="ml-64 mt-16 p-6 h-[calc(100vh-4rem)] overflow-y-auto custom-scrollbar">
+        
+        <!-- Header / Controls -->
+        <div class="mb-6 flex items-center justify-between">
+            <h2 class="text-xl font-bold text-white">Gap-Closure Loops</h2>
+            <div class="flex space-x-4">
+                 <div class="glass-panel px-4 py-2 rounded flex items-center space-x-2">
+                    <span class="text-xs text-slate-400">Broken Loops</span>
+                    <span class="text-red-500 font-bold" id="broken-loops-count">--</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gap Closure Loop (Circular Graph) -->
+        <div class="glass-panel rounded-lg p-4 h-[450px] mb-6 flex flex-col">
+            <div class="mb-2">
+                <h3 class="font-semibold text-slate-200">Transformation Cycle</h3>
+                <p class="text-xs text-slate-400">Capability → Project → Adoption → Capability</p>
+            </div>
+            <div id="loop-chart" class="w-full flex-1 rounded-lg bg-slate-900/50"></div>
+        </div>
+
+        <!-- Bottom Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            
+            <!-- Adoption Risk Funnel -->
+            <div class="glass-panel rounded-lg p-4 h-[350px]">
+                <h3 class="font-semibold text-slate-200 mb-4">Adoption Risk Analysis</h3>
+                <div id="funnel-chart" class="w-full h-[280px]"></div>
+            </div>
+
+            <!-- Broken Loops Table -->
+            <div class="glass-panel rounded-lg p-4 h-[350px] flex flex-col">
+                <h3 class="font-semibold text-slate-200 mb-4 text-red-400">
+                    <i class="fas fa-unlink mr-2"></i> Ineffective Projects (Open Loops)
+                </h3>
+                <div class="overflow-y-auto flex-1 custom-scrollbar">
+                    <table class="w-full text-left text-sm text-slate-400">
+                        <thead class="bg-slate-800 text-xs uppercase font-medium text-slate-300">
+                            <tr>
+                                <th class="px-4 py-2">Project</th>
+                                <th class="px-4 py-2">Progress</th>
+                                <th class="px-4 py-2">Issue</th>
+                            </tr>
+                        </thead>
+                        <tbody id="loop-table-body" class="divide-y divide-slate-700">
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <script src="js/data.js"></script>
+    <script src="js/layout.js"></script>
+    <script src="js/charts-feedback.js"></script>
+</body>
+</html>

@@ -1,0 +1,273 @@
+[
+    {
+        "name": "Core: Label Only",
+        "url": "https://betaBE.aitwintech.com/api/graph?nodeLabels=SectorObjective",
+        "status": "200",
+        "is_json": true,
+        "nodes": ,
+        "links": 
+    },
+    {
+        "name": "Core: Multi Label",
+        "url": "https://betaBE.aitwintech.com/api/graph?nodeLabels=SectorObjective,EntityCapability",
+        "status": "200",
+        "is_json": true,
+        "nodes": ,
+        "links": 
+    },
+    {
+        "name": "Core: Year Filter",
+        "url": "https://betaBE.aitwintech.com/api/graph?nodeLabels=SectorObjective&years=2025",
+        "status": "200",
+        "is_json": true,
+        "nodes": ,
+        "links": 
+    },
+    {
+        "name": "Core: Analyze Gaps",
+        "url": "https://betaBE.aitwintech.com/api/graph?nodeLabels=SectorObjective&analyzeGaps=true",
+        "status": "200",
+        "is_json": true,
+        "nodes": ,
+        "links": 
+    },
+    {
+        "name": "Chain: sector_value_chain",
+        "url": "https://betaBE.aitwintech.com/api/business-chain/sector_value_chain",
+        "status": "200",
+        "is_json": true,
+        "nodes": 69,
+        "links": 51
+    },
+    {
+        "name": "Chain: sector_value_chain (2025)",
+        "url": "https://betaBE.aitwintech.com/api/business-chain/sector_value_chain?year=2025",
+        "status": "200",
+        "is_json": true,
+        "nodes": 17,
+        "links": 16
+    },
+    {
+        "name": "Chain: sector_value_chain (Diagnostic)",
+        "url": "https://betaBE.aitwintech.com/api/business-chain/sector_value_chain?analyzeGaps=true",
+        "status": "200",
+        "is_json": true,
+        "nodes": 69,
+        "links": 51
+    },
+    {
+        "name": "Chain: setting_strategic_initiatives",
+        "url": "https://betaBE.aitwintech.com/api/business-chain/setting_strategic_initiatives",
+        "status": "200",
+        "is_json": true,
+        "nodes": 404,
+        "links": 464
+    },
+    {
+        "name": "Chain: setting_strategic_initiatives (2025)",
+        "url": "https://betaBE.aitwintech.com/api/business-chain/setting_strategic_initiatives?year=2025",
+        "status": "200",
+        "is_json": true,
+        "nodes": 40,
+        "links": 46
+    },
+    {
+        "name": "Chain: setting_strategic_initiatives (Diagnostic)",
+        "url": "https://betaBE.aitwintech.com/api/business-chain/setting_strategic_initiatives?analyzeGaps=true",
+        "status": "200",
+        "is_json": true,
+        "nodes": 404,
+        "links": 464
+    },
+    {
+        "name": "Chain: setting_strategic_priorities",
+        "url": "https://betaBE.aitwintech.com/api/business-chain/setting_strategic_priorities",
+        "status": "200",
+        "is_json": true,
+        "nodes": 529,
+        "links": 667
+    },
+    {
+        "name": "Chain: setting_strategic_priorities (2025)",
+        "url": "https://betaBE.aitwintech.com/api/business-chain/setting_strategic_priorities?year=2025",
+        "status": "200",
+        "is_json": true,
+        "nodes": 77,
+        "links": 103
+    },
+    {
+        "name": "Chain: setting_strategic_priorities (Diagnostic)",
+        "url": "https://betaBE.aitwintech.com/api/business-chain/setting_strategic_priorities?analyzeGaps=true",
+        "status": "200",
+        "is_json": true,
+        "nodes": 529,
+        "links": 667
+    },
+    {
+        "name": "Chain: build_oversight",
+        "url": "https://betaBE.aitwintech.com/api/business-chain/build_oversight",
+        "status": "200",
+        "is_json": true,
+        "nodes": 441,
+        "links": 50
+    },
+    {
+        "name": "Chain: build_oversight (2025)",
+        "url": "https://betaBE.aitwintech.com/api/business-chain/build_oversight?year=2025",
+        "status": "200",
+        "is_json": true,
+        "nodes": 145,
+        "links": 10
+    },
+    {
+        "name": "Chain: build_oversight (Diagnostic)",
+        "url": "https://betaBE.aitwintech.com/api/business-chain/build_oversight?analyzeGaps=true",
+        "status": "200",
+        "is_json": true,
+        "nodes": 441,
+        "links": 50
+    },
+    {
+        "name": "Chain: operate_oversight",
+        "url": "https://betaBE.aitwintech.com/api/business-chain/operate_oversight",
+        "status": "200",
+        "is_json": true,
+        "nodes": 441,
+        "links": 50
+    },
+    {
+        "name": "Chain: operate_oversight (2025)",
+        "url": "https://betaBE.aitwintech.com/api/business-chain/operate_oversight?year=2025",
+        "status": "200",
+        "is_json": true,
+        "nodes": 145,
+        "links": 10
+    },
+    {
+        "name": "Chain: operate_oversight (Diagnostic)",
+        "url": "https://betaBE.aitwintech.com/api/business-chain/operate_oversight?analyzeGaps=true",
+        "status": "200",
+        "is_json": true,
+        "nodes": 441,
+        "links": 50
+    },
+    {
+        "name": "Chain: sustainable_operations",
+        "url": "https://betaBE.aitwintech.com/api/business-chain/sustainable_operations",
+        "status": "200",
+        "is_json": true,
+        "nodes": 381,
+        "links": 33
+    },
+    {
+        "name": "Chain: sustainable_operations (2025)",
+        "url": "https://betaBE.aitwintech.com/api/business-chain/sustainable_operations?year=2025",
+        "status": "200",
+        "is_json": true,
+        "nodes": 137,
+        "links": 5
+    },
+    {
+        "name": "Chain: sustainable_operations (Diagnostic)",
+        "url": "https://betaBE.aitwintech.com/api/business-chain/sustainable_operations?analyzeGaps=true",
+        "status": "200",
+        "is_json": true,
+        "nodes": 381,
+        "links": 33
+    },
+    {
+        "name": "Chain: integrated_oversight",
+        "url": "https://betaBE.aitwintech.com/api/business-chain/integrated_oversight",
+        "status": "200",
+        "is_json": true,
+        "nodes": 1232,
+        "links": 0
+    },
+    {
+        "name": "Chain: integrated_oversight (2025)",
+        "url": "https://betaBE.aitwintech.com/api/business-chain/integrated_oversight?year=2025",
+        "status": "200",
+        "is_json": true,
+        "nodes": 360,
+        "links": 0
+    },
+    {
+        "name": "Chain: integrated_oversight (Diagnostic)",
+        "url": "https://betaBE.aitwintech.com/api/business-chain/integrated_oversight?analyzeGaps=true",
+        "status": "200",
+        "is_json": true,
+        "nodes": 1232,
+        "links": 0
+    },
+    {
+        "name": "Chain: aggregate",
+        "url": "https://betaBE.aitwintech.com/api/business-chain/aggregate",
+        "status": "500",
+        "is_json": true,
+        "nodes": 0,
+        "links": 0
+    },
+    {
+        "name": "Chain: aggregate (2025)",
+        "url": "https://betaBE.aitwintech.com/api/business-chain/aggregate?year=2025",
+        "status": "500",
+        "is_json": true,
+        "nodes": 0,
+        "links": 0
+    },
+    {
+        "name": "Chain: aggregate (Diagnostic)",
+        "url": "https://betaBE.aitwintech.com/api/business-chain/aggregate?analyzeGaps=true",
+        "status": "500",
+        "is_json": true,
+        "nodes": 0,
+        "links": 0
+    },
+    {
+        "name": "Health",
+        "url": "https://betaBE.aitwintech.com/api/neo4j/health",
+        "status": "200",
+        "is_json": true,
+        "nodes": 0,
+        "links": 0
+    },
+    {
+        "name": "Schema",
+        "url": "https://betaBE.aitwintech.com/api/neo4j/schema",
+        "status": "200",
+        "is_json": true,
+        "nodes": 0,
+        "links": 0
+    },
+    {
+        "name": "Years",
+        "url": "https://betaBE.aitwintech.com/api/neo4j/years",
+        "status": "200",
+        "is_json": true,
+        "nodes": 0,
+        "links": 0
+    },
+    {
+        "name": "Counts",
+        "url": "https://betaBE.aitwintech.com/api/business-chain/counts",
+        "status": "200",
+        "is_json": true,
+        "nodes": 0,
+        "links": 0
+    },
+    {
+        "name": "Integrity",
+        "url": "https://betaBE.aitwintech.com/api/business-chain/integrity",
+        "status": "200",
+        "is_json": true,
+        "nodes": 0,
+        "links": 0
+    },
+    {
+        "name": "Stats",
+        "url": "https://betaBE.aitwintech.com/api/domain-graph/stats",
+        "status": "200",
+        "is_json": true,
+        "nodes": 0,
+        "links": 0
+    },

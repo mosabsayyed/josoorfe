@@ -605,7 +605,7 @@ function AdminSettingsPanel({
   const addEndpoint = () => {
     if (!draft) return;
     const endpoints = [...(draft.mcp.endpoints || [])];
-    endpoints.push({ label: 'new-mcp', url: 'http://localhost:8201', allowed_tools: TOOL_OPTIONS });
+    endpoints.push({ label: 'new-mcp', url: '/mcp/new', allowed_tools: TOOL_OPTIONS });
     setDraft({ ...draft, mcp: { ...draft.mcp, endpoints } });
   };
 
@@ -746,7 +746,7 @@ function AdminSettingsPanel({
                     type="text"
                     value={ep.url}
                     onChange={(e) => updateEndpoint(idx, 'url', e.target.value)}
-                    placeholder="http://localhost:8201"
+                    placeholder="http://backend-host:8201"
                   />
                   <button
                     className="trace-list-refresh"

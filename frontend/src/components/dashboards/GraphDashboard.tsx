@@ -387,7 +387,7 @@ export function GraphDashboard() {
 
           {/* GRAPH VIEW */}
           {currentView === 'graph' && (
-            <div style={{ height: '100%', width: '100%', overflow: 'hidden', position: 'relative', minHeight: '600px', border: isDark ? '1px solid #374151' : '1px solid #D1D5DB', backgroundColor: isDark ? '#111827' : '#F9FAFB' }}>
+            <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', border: isDark ? '1px solid #374151' : '1px solid #D1D5DB', backgroundColor: isDark ? '#111827' : '#F9FAFB' }}>
               {schema && (
                 <GraphFilters
                   schema={schema}
@@ -427,7 +427,7 @@ export function GraphDashboard() {
 
           {/* BUSINESS CHAINS VIEW */}
           {currentView === 'business_chains' && (
-            <div style={{ height: '100%', width: '100%', borderRadius: '0.5rem', overflow: 'hidden', position: 'relative', minHeight: '500px', border: isDark ? '1px solid #374151' : '1px solid #D1D5DB', backgroundColor: isDark ? '#111827' : '#F9FAFB' }}>
+            <div style={{ position: 'absolute', inset: 0, borderRadius: '0.5rem', overflow: 'hidden', border: isDark ? '1px solid #374151' : '1px solid #D1D5DB', backgroundColor: isDark ? '#111827' : '#F9FAFB' }}>
               <BusinessChains selectedYear={dashboardYear} selectedQuarter={searchQuarter === 'all' ? undefined : searchQuarter} isDark={isDark} language={language} />
             </div>
           )}

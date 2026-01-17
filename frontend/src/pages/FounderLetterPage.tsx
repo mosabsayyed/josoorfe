@@ -44,9 +44,9 @@ export default function FounderLetterPage() {
   const isRTL = language === 'ar';
 
   return (
-    <div style={{ 
-      minHeight: '100vh', 
-      background: '#111827', 
+    <div style={{
+      minHeight: '100vh',
+      background: '#111827',
       color: '#F9FAFB',
       fontFamily: isRTL ? '"Cairo", sans-serif' : '"Inter", sans-serif',
       paddingTop: '80px', // Space for fixed header
@@ -54,7 +54,7 @@ export default function FounderLetterPage() {
       height: '100vh'
     }}>
       <Header />
-      
+
       <main style={{ maxWidth: '900px', margin: '0 auto', padding: '40px 20px' }} dir={isRTL ? 'rtl' : 'ltr'}>
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -62,10 +62,10 @@ export default function FounderLetterPage() {
           transition={{ duration: 0.6 }}
         >
           <div style={{ textAlign: 'center', marginBottom: '40px' }}>
-            <div style={{ 
-              display: 'inline-flex', 
-              padding: '16px', 
-              background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)', 
+            <div style={{
+              display: 'inline-flex',
+              padding: '16px',
+              background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)',
               borderRadius: '16px',
               marginBottom: '24px'
             }}>
@@ -74,23 +74,23 @@ export default function FounderLetterPage() {
             <h1 style={{ fontSize: '36px', fontWeight: 700, marginBottom: '16px', fontFamily: isRTL ? '"Tajawal", sans-serif' : 'inherit' }}>{t.title}</h1>
           </div>
 
-          <div style={{ 
-            background: 'rgba(31, 41, 55, 0.6)', 
-            backdropFilter: 'blur(20px)', 
-            borderRadius: '24px', 
-            padding: '40px', 
+          <div style={{
+            background: 'rgba(31, 41, 55, 0.6)',
+            backdropFilter: 'blur(20px)',
+            borderRadius: '24px',
+            padding: '40px',
             border: '1px solid rgba(255, 255, 255, 0.1)',
             marginBottom: '40px'
           }}>
             {t.paragraphs.map((paragraph, index) => {
               const isQuote = paragraph.startsWith('"');
               return (
-                <p key={index} style={{ 
-                  fontSize: isQuote ? '20px' : '16px', 
-                  lineHeight: '1.8', 
+                <p key={index} style={{
+                  fontSize: isQuote ? '20px' : '16px',
+                  lineHeight: '1.8',
                   marginBottom: '24px',
                   color: isQuote ? '#FFD700' : '#D1D5DB',
-                  fontStyle: isQuote ? 'italic' : 'normal',
+                  fontStyle: isQuote ? 'normal' : 'normal',
                   textAlign: isQuote ? 'center' : (isRTL ? 'right' : 'left'),
                   fontWeight: isQuote ? 500 : 400
                 }}>
@@ -99,9 +99,9 @@ export default function FounderLetterPage() {
               );
             })}
 
-            <div style={{ 
-              marginTop: '48px', 
-              paddingTop: '32px', 
+            <div style={{
+              marginTop: '48px',
+              paddingTop: '32px',
               borderTop: '1px solid rgba(255, 255, 255, 0.1)',
               textAlign: isRTL ? 'left' : 'right'
             }}>

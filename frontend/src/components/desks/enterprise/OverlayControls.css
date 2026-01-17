@@ -1,0 +1,46 @@
+/* Overlay Controls - Adapted from reference design with CSS variables */
+
+.overlay-controls-container {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem;
+    width: 100%;
+}
+
+.overlay-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0;
+    font-size: 0.875rem;
+    font-family: 'Inter', sans-serif;
+    font-style: normal;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 1px solid var(--component-panel-border);
+    background: var(--component-panel-bg);
+    color: var(--component-text-secondary);
+}
+
+.overlay-btn:hover {
+    background: var(--component-bg-secondary);
+    border-color: var(--component-text-accent);
+}
+
+.overlay-btn-active {
+    background: var(--component-text-accent);
+    color: var(--component-bg-primary);
+    border-color: var(--component-text-accent);
+}
+
+.overlay-btn-inactive {
+    background: var(--component-panel-bg);
+    color: var(--component-text-secondary);
+}
+
+.overlay-icon {
+    width: 1rem;
+    height: 1rem;
+}

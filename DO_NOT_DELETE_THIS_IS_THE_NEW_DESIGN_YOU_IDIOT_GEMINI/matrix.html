@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Capabilities Matrix - Ontology Operations</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="bg-slate-900 text-slate-200 font-sans overflow-hidden">
+
+    <div id="sidebar"></div>
+    <div id="header"></div>
+
+    <main class="ml-64 mt-16 p-6 h-[calc(100vh-4rem)] overflow-y-auto custom-scrollbar">
+        
+        <!-- Controls -->
+        <div class="mb-6 flex items-center justify-between">
+            <h2 class="text-xl font-bold text-white">Capabilities Matrix</h2>
+            <div class="flex items-center space-x-4">
+                <span class="text-sm text-slate-400">Heatmap Mode:</span>
+                <div class="flex bg-slate-800 rounded p-1 border border-slate-700">
+                    <button id="btn-maturity" onclick="setMatrixMode('maturity')" class="px-3 py-1 rounded text-xs font-medium bg-blue-600 text-white transition-colors">Maturity</button>
+                    <button id="btn-risk" onclick="setMatrixMode('risk')" class="px-3 py-1 rounded text-xs font-medium text-slate-400 hover:text-white transition-colors">Risk Exposure</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Matrix Container -->
+        <div class="glass-panel rounded-lg p-6 overflow-x-auto">
+            <table class="w-full border-collapse">
+                <thead>
+                    <tr>
+                        <th class="p-3 text-left text-xs font-bold text-slate-400 uppercase tracking-wider border-b border-slate-700 bg-slate-800/50 w-1/4">L1 Domain</th>
+                        <th class="p-3 text-left text-xs font-bold text-slate-400 uppercase tracking-wider border-b border-slate-700 bg-slate-800/50 w-1/4">L2 Functional Area</th>
+                        <th class="p-3 text-left text-xs font-bold text-slate-400 uppercase tracking-wider border-b border-slate-700 bg-slate-800/50 w-1/2">L3 Competency</th>
+                    </tr>
+                </thead>
+                <tbody id="matrix-body" class="text-sm">
+                    <!-- Populated by JS -->
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Legend -->
+        <div class="mt-4 flex items-center justify-end space-x-6 text-xs text-slate-400" id="matrix-legend">
+            <!-- Populated by JS based on mode -->
+        </div>
+
+    </main>
+
+    <script src="js/data.js"></script>
+    <script src="js/layout.js"></script>
+    <script src="js/charts-matrix.js"></script>
+</body>
+</html>

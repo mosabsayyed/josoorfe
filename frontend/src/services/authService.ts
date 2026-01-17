@@ -10,7 +10,7 @@ const LS_GUEST_CONVOS = 'josoor_guest_conversations';
 function emitAuthChange() {
   try {
     window.dispatchEvent(new Event('josoor_auth_change'));
-  } catch {}
+  } catch { }
 }
 
 export function persistSession(session: any | null, clearGuest: boolean = false) {
@@ -24,13 +24,13 @@ export function persistSession(session: any | null, clearGuest: boolean = false)
     if (session) {
       localStorage.setItem(LS_AUTH, 'true');
     }
-      if (session && clearGuest) {
-        try {
-          localStorage.removeItem(LS_GUEST_ID);
-          localStorage.removeItem(LS_GUEST_CONVOS);
-        } catch {}
-      }
-  } catch {}
+    if (session && clearGuest) {
+      try {
+        localStorage.removeItem(LS_GUEST_ID);
+        localStorage.removeItem(LS_GUEST_CONVOS);
+      } catch { }
+    }
+  } catch { }
 
   emitAuthChange();
 }
@@ -60,12 +60,12 @@ export async function signInWithProvider(provider: 'google' | 'apple') {
 export async function logout() {
   try {
     await supabase.auth.signOut();
-  } catch {}
+  } catch { }
   try {
     localStorage.removeItem(LS_TOKEN);
     localStorage.removeItem(LS_USER);
     localStorage.setItem(LS_AUTH, 'false');
-  } catch {}
+  } catch { }
   emitAuthChange();
 }
 
@@ -88,10 +88,10 @@ export async function startGuestSession(): Promise<string> {
       gid = 'guest-' + Date.now() + '-' + Math.floor(Math.random() * 10000);
     }
     // Clear any existing token to ensure we truly operate as a guest
-    try { 
-      localStorage.removeItem(LS_TOKEN); 
-      localStorage.removeItem(LS_USER); 
-    } catch {}
+    try {
+      localStorage.removeItem(LS_TOKEN);
+      localStorage.removeItem(LS_USER);
+    } catch { }
     localStorage.setItem(LS_GUEST_ID, gid);
     localStorage.setItem(LS_GUEST_CONVOS, JSON.stringify([]));
     localStorage.setItem(LS_AUTH, 'false');
@@ -115,7 +115,27 @@ export function isGuestMode(): boolean {
 export function saveGuestConversations(convos: any[]) {
   try {
     localStorage.setItem(LS_GUEST_CONVOS, JSON.stringify(convos || []));
-  } catch {}
+  } catch { }
+}
+
+export function saveGuestConversation(convo: any) {
+  try {
+    let convos = getGuestConversations();
+    const existingIndex = convos.findIndex((c: any) => c.id === convo.id);
+    if (existingIndex >= 0) {
+      convos[existingIndex] = convo;
+    } else {
+      convos = [convo, ...convos];
+    }
+    saveGuestConversations(convos);
+  } catch { }
+}
+
+export function deleteGuestConversation(id: number) {
+  try {
+    const convos = getGuestConversations().filter((c: any) => c.id !== id);
+    saveGuestConversations(convos);
+  } catch { }
 }
 
 export function clearGuestConversations() {
@@ -123,8 +143,8 @@ export function clearGuestConversations() {
     localStorage.removeItem(LS_GUEST_ID);
     localStorage.removeItem(LS_GUEST_CONVOS);
     // Also remove backups set during login flow or migrations
-    try { localStorage.removeItem(LS_GUEST_CONVOS + '_backup'); localStorage.removeItem(LS_GUEST_ID + '_backup'); } catch (e) {}
-  } catch {}
+    try { localStorage.removeItem(LS_GUEST_CONVOS + '_backup'); localStorage.removeItem(LS_GUEST_ID + '_backup'); } catch (e) { }
+  } catch { }
   emitAuthChange();
 }
 
