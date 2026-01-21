@@ -35,6 +35,11 @@ export function UnifiedSidebar({
         knowledge: language === 'ar' ? 'المعرفة' : 'Knowledge',
         roadmap: language === 'ar' ? 'الخارطة' : 'Roadmap',
         graph: language === 'ar' ? 'المستكشف' : 'Graph Explorer'
+
+        admin: language === 'ar' ? 'المسؤول' : 'Admin',
+        providers: language === 'ar' ? 'المزودين' : 'Providers',
+        abTesting: language === 'ar' ? 'اختبار A/B' : 'A/B Testing',
+        monitoring: language === 'ar' ? 'المراقبة' : 'Monitoring'
     };
 
     const menuItems = [
@@ -50,6 +55,12 @@ export function UnifiedSidebar({
         { id: 'roadmap', label: translations.roadmap, icon: '/icons/architecture.svg', path: '/desk/roadmap' },
         { id: 'graph', label: translations.graph, icon: '/icons/demo.svg', path: '/desk/explorer' },
     ]
+
+    const adminItems = [
+        { id: 'providers', label: translations.providers, icon: '/icons/architecture.svg', path: '/admin/providers' },
+        { id: 'abTesting', label: translations.abTesting, icon: '/icons/approach.svg', path: '/admin/ab-testing' },
+        { id: 'monitoring', label: translations.monitoring, icon: '/icons/demo.svg', path: '/admin/monitoring' },
+    ];
 
     return (
         <aside className={`sidebar ${isCollapsed ? 'collapsed' : ''} tajawal-headings cairo-body`} dir={isRTL ? 'rtl' : 'ltr'}>
@@ -121,6 +132,34 @@ export function UnifiedSidebar({
                     <div style={{ height: '1px', backgroundColor: 'var(--component-panel-border)', margin: '12px 0' }}></div>
 
                     {contentItems.map(item => (
+                        <button
+                            key={item.id}
+                            onClick={() => onNavigate(item.path)}
+                            className={`quickaction-item clickable ${location.pathname.includes(item.path) ? 'active' : ''}`}
+                            title={item.label}
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '12px',
+                                padding: '10px',
+                                borderRadius: '8px',
+                                width: '100%',
+                                textAlign: isRTL ? 'right' : 'left',
+                                backgroundColor: location.pathname.includes(item.path) ? 'var(--component-bg-disconnected)' : 'transparent',
+                                color: location.pathname.includes(item.path) ? 'var(--component-text-primary)' : 'var(--component-text-secondary)',
+                                border: 'none',
+                                cursor: 'pointer'
+                            }}
+                        >
+                            <img src={item.icon} alt={item.label} style={{ width: '24px', height: '24px', opacity: 0.8 }} />
+                            {!isCollapsed && <span style={{ fontSize: '14px' }}>{item.label}</span>}
+                        </button>
+                    ))}
+
+                    <div style={{ height: '1px', backgroundColor: 'var(--component-panel-border)', margin: '12px 0' }}></div>
+                    {!isCollapsed && <div style={{ fontSize: '12px', color: 'var(--component-text-muted)', marginBottom: '8px', padding: '0 8px' }}>{translations.admin}</div>}
+
+                    {adminItems.map(item => (
                         <button
                             key={item.id}
                             onClick={() => onNavigate(item.path)}

@@ -1,0 +1,168 @@
+.dynamic-field {
+    margin-bottom: 20px;
+}
+
+.dynamic-field.full-width {
+    grid-column: 1 / -1;
+}
+
+.dynamic-label {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.field-name {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--component-text-primary);
+    opacity: 0.9;
+}
+
+/* Input styles */
+.dynamic-input,
+.dynamic-textarea {
+    width: 100%;
+    padding: 8px 12px;
+    background: var(--component-bg-secondary);
+    border: 1px solid var(--component-panel-border);
+    border-radius: 4px;
+    color: var(--component-text-primary);
+    font-size: 13px;
+    font-family: inherit;
+    transition: border-color 0.2s;
+}
+
+.dynamic-input:focus,
+.dynamic-textarea:focus {
+    outline: none;
+    border-color: var(--component-text-accent);
+}
+
+.dynamic-input:disabled,
+.dynamic-textarea:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.dynamic-textarea {
+    resize: vertical;
+    font-family: inherit;
+    min-height: 80px;
+}
+
+/* Checkbox styles */
+.dynamic-checkbox-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+}
+
+.dynamic-checkbox {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+}
+
+.dynamic-checkbox-label {
+    font-size: 13px;
+    color: var(--component-text-secondary);
+}
+
+/* JSON editor styles */
+.json-field-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.json-preview {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    background: var(--component-bg-secondary);
+    border: 1px solid var(--component-panel-border);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.json-preview:hover {
+    background: var(--component-bg-tertiary);
+    border-color: var(--component-text-accent);
+}
+
+.json-preview-icon {
+    font-size: 10px;
+    color: var(--component-text-secondary);
+    transition: transform 0.2s;
+}
+
+.json-preview-text {
+    flex: 1;
+    font-size: 13px;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    color: var(--component-text-secondary);
+}
+
+.json-expand-btn {
+    padding: 4px 10px;
+    font-size: 11px;
+    background: transparent;
+    border: 1px solid var(--component-panel-border);
+    border-radius: 3px;
+    color: var(--component-text-secondary);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.json-expand-btn:hover {
+    background: var(--component-text-accent);
+    color: var(--component-text-on-accent);
+    border-color: var(--component-text-accent);
+}
+
+.json-editor-container {
+    position: relative;
+}
+
+.json-editor {
+    width: 100%;
+    padding: 12px;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 12px;
+    line-height: 1.5;
+    background: #1e1e1e;
+    border: 1px solid var(--component-panel-border);
+    border-radius: 4px;
+    color: #d4d4d4;
+    resize: vertical;
+    min-height: 150px;
+}
+
+.json-editor:focus {
+    outline: none;
+    border-color: var(--component-text-accent);
+}
+
+.json-error {
+    padding: 8px 12px;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 4px;
+    color: #ef4444;
+    font-size: 12px;
+    margin-top: 4px;
+}
+
+.dynamic-readonly {
+    padding: 8px 12px;
+    background: var(--component-bg-secondary);
+    border: 1px solid var(--component-panel-border);
+    border-radius: 4px;
+    color: var(--component-text-secondary);
+    font-size: 13px;
+    display: block;
+}

@@ -1,0 +1,191 @@
+/**
+ * KSA VISION 2030 STRATEGIC DATA LAYER
+ * Contains:
+ * 1. 13 Administrative Regions with specific KPIs.
+ * 2. 50+ Verified Physical Infrastructure Assets (Water, Energy, Logistics, Industry).
+ * 3. Network topology (Pipelines, Railways).
+ */
+
+// --- 1. PILLAR & SECTOR DEFINITIONS ---
+const PILLARS = {
+    'society': { label: 'Vibrant Society', color: '#10b981', sectors: ['health', 'livability', 'water', 'culture'] },
+    'economy': { label: 'Thriving Economy', color: '#3b82f6', sectors: ['energy', 'logistics', 'industry', 'mining'] },
+    'nation':  { label: 'Ambitious Nation', color: '#a855f7', sectors: ['gov'] }
+};
+
+const SECTORS = {
+    'health': { label: 'Health', icon: '🏥' },
+    'livability': { label: 'Urban Quality', icon: '🏡' },
+    'water': { label: 'Water & Env.', icon: '💧' },
+    'culture': { label: 'Culture & Tourism', icon: '🕌' },
+    'energy': { label: 'Energy', icon: '⚡' },
+    'industry': { label: 'Industry', icon: '🏭' },
+    'logistics': { label: 'Logistics', icon: '🚢' },
+    'mining': { label: 'Mining', icon: '⛏️' },
+    'gov': { label: 'Gov Effectiveness', icon: '🏛️' }
+};
+
+// --- 2. REGIONAL METRICS (13 REGIONS) ---
+// Coordinates (x,y) are normalized (0-100) relative to the schematic map container.
+const REGIONS = {
+    'riyadh': { 
+        id: 'riyadh', name: 'Riyadh', x: 55, y: 50, main: true,
+        metrics: {
+            health: { kpi1: '88%', kpi2: '18m', t1: 'Bed Occupancy', t2: 'Avg Travel Time' },
+            water: { kpi1: '99%', kpi2: '18%', t1: 'Coverage', t2: 'Network Loss' },
+            energy: { kpi1: '12 GW', kpi2: '15%', t1: 'Peak Load', t2: 'Ind. Consumption' },
+            logistics: { kpi1: '850k', kpi2: '4h', t1: 'Dry Port TEUs', t2: 'Customs Avg' }
+        }
+    },
+    'makkah': { 
+        id: 'makkah', name: 'Makkah', x: 25, y: 60, main: true,
+        metrics: {
+            health: { kpi1: '92%', kpi2: '25m', t1: 'Bed Occupancy (Season)', t2: 'Travel Time' },
+            water: { kpi1: '96%', kpi2: '22%', t1: 'Coverage', t2: 'Network Loss' },
+            energy: { kpi1: '8 GW', kpi2: '45%', t1: 'Peak Load', t2: 'Seasonal Spike' }
+        }
+    },
+    'eastern': { 
+        id: 'eastern', name: 'Eastern', x: 75, y: 45, main: true,
+        metrics: {
+            health: { kpi1: '78%', kpi2: '15m', t1: 'Bed Occupancy', t2: 'Travel Time' },
+            water: { kpi1: '98%', kpi2: '12%', t1: 'Coverage', t2: 'Network Loss' },
+            energy: { kpi1: '18 GW', kpi2: '70%', t1: 'Peak Load', t2: 'Ind. Consumption' }
+        }
+    },
+    'medina': { 
+        id: 'medina', name: 'Madinah', x: 25, y: 45,
+        metrics: { health: { kpi1: '80%', kpi2: '20m' }, water: { kpi1: '92%', kpi2: '25%' } }
+    },
+    'qassim': { 
+        id: 'qassim', name: 'Qassim', x: 50, y: 35,
+        metrics: { health: { kpi1: '75%', kpi2: '30m' }, water: { kpi1: '88%', kpi2: '28%' } }
+    },
+    'tabuk': { 
+        id: 'tabuk', name: 'Tabuk', x: 15, y: 20,
+        metrics: { health: { kpi1: '70%', kpi2: '35m' }, water: { kpi1: '85%', kpi2: '30%' } }
+    },
+    'hail': { 
+        id: 'hail', name: 'Hail', x: 40, y: 30,
+        metrics: { health: { kpi1: '65%', kpi2: '40m' }, water: { kpi1: '82%', kpi2: '35%' } }
+    },
+    'northern': { 
+        id: 'northern', name: 'Northern', x: 45, y: 15,
+        metrics: { health: { kpi1: '60%', kpi2: '50m' }, water: { kpi1: '75%', kpi2: '40%' } }
+    },
+    'jawf': { 
+        id: 'jawf', name: 'Al Jawf', x: 30, y: 15,
+        metrics: { health: { kpi1: '65%', kpi2: '45m' }, water: { kpi1: '78%', kpi2: '38%' } }
+    },
+    'jazan': { 
+        id: 'jazan', name: 'Jazan', x: 35, y: 85,
+        metrics: { health: { kpi1: '90%', kpi2: '45m' }, water: { kpi1: '65%', kpi2: '45%' } }
+    },
+    'asir': { 
+        id: 'asir', name: 'Asir', x: 32, y: 75,
+        metrics: { health: { kpi1: '85%', kpi2: '55m' }, water: { kpi1: '70%', kpi2: '42%' } }
+    },
+    'baha': { 
+        id: 'baha', name: 'Al Baha', x: 28, y: 68,
+        metrics: { health: { kpi1: '80%', kpi2: '40m' }, water: { kpi1: '72%', kpi2: '35%' } }
+    },
+    'najran': { 
+        id: 'najran', name: 'Najran', x: 50, y: 85,
+        metrics: { health: { kpi1: '75%', kpi2: '35m' }, water: { kpi1: '68%', kpi2: '38%' } }
+    }
+};
+
+// --- 3. INFRASTRUCTURE ASSETS (The Full List) ---
+const ASSETS = [
+    // --- WATER SECTOR (SWCC/SWA Assets) ---
+    // East Coast
+    { id: 'w_jubail', name: 'Jubail Desalination', type: 'water', x: 78, y: 40, sub: 'World Largest Production' },
+    { id: 'w_khobar', name: 'Al Khobar Plant', type: 'water', x: 80, y: 46, sub: 'Khobar/Dammam Supply' },
+    { id: 'w_ras', name: 'Ras Al Khair Power/Water', type: 'water', x: 76, y: 35, sub: 'Hybrid Plant' },
+    { id: 'w_khafji', name: 'Al Khafji Desalination', type: 'water', x: 74, y: 25, sub: 'Solar Powered' },
+    // West Coast
+    { id: 'w_yanbu', name: 'Yanbu Desalination', type: 'water', x: 20, y: 50, sub: 'Medina Supply Hub' },
+    { id: 'w_rabigh', name: 'Rabigh IWSPP', type: 'water', x: 22, y: 55, sub: 'Mecca/Jeddah Supply' },
+    { id: 'w_shuaibah', name: 'Shuaibah Plant', type: 'water', x: 26, y: 65, sub: 'Primary Jeddah Supply' },
+    { id: 'w_shuqaiq', name: 'Shuqaiq Plant', type: 'water', x: 33, y: 82, sub: 'South West Supply' },
+    // Dams
+    { id: 'w_dam_fahd', name: 'King Fahd Dam', type: 'water', x: 38, y: 72, sub: 'Bishah / Strategic' },
+    { id: 'w_dam_najran', name: 'Najran Dam', type: 'water', x: 48, y: 84, sub: 'Flood Control' },
+    { id: 'w_dam_jizan', name: 'Jizan Dam', type: 'water', x: 36, y: 84, sub: 'Irrigation' },
+
+    // --- INDUSTRY & ENERGY SECTOR ---
+    // Royal Commission Cities
+    { id: 'i_jubail', name: 'Jubail Ind. City', type: 'industry', x: 78, y: 40, sub: 'Petrochemical Capital' },
+    { id: 'i_yanbu', name: 'Yanbu Ind. City', type: 'industry', x: 20, y: 50, sub: 'Downstream/Refining' },
+    { id: 'i_ras', name: 'Ras Al Khair Ind. City', type: 'mining', x: 76, y: 35, sub: 'Minerals & Maritime' },
+    { id: 'i_jazan', name: 'JCPDI', type: 'industry', x: 34, y: 86, sub: 'Jazan Primary/Downstream' },
+    // MODON & Specialized
+    { id: 'i_sudair', name: 'Sudair Ind. City', type: 'industry', x: 52, y: 45, sub: 'MODON / Manufacturing' },
+    { id: 'i_kharj', name: 'Al-Kharj Ind. City', type: 'industry', x: 58, y: 55, sub: 'MODON / Military Ind.' },
+    { id: 'i_spark', name: 'SPARK', type: 'energy', x: 79, y: 48, sub: 'King Salman Energy Park' },
+    { id: 'i_waad', name: 'Waad Al Shamal', type: 'mining', x: 42, y: 14, sub: 'Phosphate City' },
+    // Future Energy
+    { id: 'e_neom', name: 'NEOM Helios', type: 'energy', x: 10, y: 15, sub: 'Green Hydrogen' },
+    { id: 'e_layla', name: 'Layla Solar Park', type: 'energy', x: 55, y: 58, sub: 'Renewable' },
+    { id: 'e_sakaka', name: 'Sakaka Solar', type: 'energy', x: 32, y: 16, sub: 'Renewable PV' },
+    { id: 'e_dumat', name: 'Dumat Al Jandal', type: 'energy', x: 28, y: 14, sub: 'Wind Farm' },
+
+    // --- LOGISTICS SECTOR ---
+    // Ports
+    { id: 'l_jed_islamic', name: 'Jeddah Islamic Port', type: 'logistics', x: 22, y: 62, sub: 'Red Sea Gateway' },
+    { id: 'l_dam_aziz', name: 'King Abdulaziz Port', type: 'logistics', x: 80, y: 46, sub: 'Gulf Gateway' },
+    { id: 'l_jubail_comm', name: 'Jubail Commercial', type: 'logistics', x: 78, y: 41, sub: 'Ind. Support' },
+    { id: 'l_yanbu_comm', name: 'Yanbu Commercial', type: 'logistics', x: 20, y: 51, sub: 'Ind. Support' },
+    { id: 'l_kaec', name: 'King Abdullah Port', type: 'logistics', x: 22, y: 52, sub: 'Transshipment Hub' },
+    { id: 'l_jazan_port', name: 'Jazan City Port', type: 'logistics', x: 34, y: 86, sub: 'Export Hub' },
+    // Dry Ports & Rail
+    { id: 'l_dry_riyadh', name: 'Riyadh Dry Port', type: 'logistics', x: 56, y: 51, sub: 'Central Rail Hub' },
+    // Airports (Major Cargo)
+    { id: 'l_air_ruh', name: 'KKIA (Riyadh)', type: 'logistics', x: 55, y: 49, sub: 'Air Cargo Hub' },
+    { id: 'l_air_jed', name: 'KAIA (Jeddah)', type: 'logistics', x: 22, y: 60, sub: 'Air Cargo Hub' },
+    { id: 'l_air_dmm', name: 'KFIA (Dammam)', type: 'logistics', x: 77, y: 46, sub: 'Air Cargo Hub' },
+
+    // --- CULTURE & SOCIETY ---
+    { id: 'c_qiddiya', name: 'Qiddiya', type: 'culture', x: 53, y: 51, sub: 'Entertainment Capital' },
+    { id: 'c_alula', name: 'AlUla', type: 'culture', x: 22, y: 35, sub: 'Living Museum' },
+    { id: 'c_diriyah', name: 'Diriyah Gate', type: 'culture', x: 54, y: 50, sub: 'Heritage' },
+    { id: 'c_redsea', name: 'Red Sea Project', type: 'culture', x: 18, y: 38, sub: 'Luxury Tourism' },
+    { id: 'c_amaala', name: 'Amaala', type: 'culture', x: 14, y: 25, sub: 'Wellness Tourism' }
+];
+
+// --- 4. NETWORK TOPOLOGY (Schematic Connections) ---
+const NETWORKS = [
+    // Water Transmission
+    { from: 'w_jubail', to: 'riyadh', type: 'water', label: 'Twin Pipeline (Jubail-Riyadh)' },
+    { from: 'w_ras', to: 'riyadh', type: 'water', label: 'Ras Al Khair-Riyadh Line' },
+    { from: 'w_ras', to: 'hail', type: 'water', label: 'North Transmission' },
+    { from: 'w_yanbu', to: 'medina', type: 'water', label: 'Yanbu-Madinah Line' },
+    { from: 'w_shuaibah', to: 'makkah', type: 'water', label: 'Shuaibah-Makkah' },
+    { from: 'w_shuaibah', to: 'taif', type: 'water', label: 'Shuaibah-Taif (Tunnel)' }, // Abstracted Taif as near Makkah
+    { from: 'w_shuqaiq', to: 'asir', type: 'water', label: 'Shuqaiq-Abha' },
+
+    // Energy / Industry Pipelines
+    { from: 'i_jubail', to: 'i_yanbu', type: 'energy', label: 'East-West Pipeline (Petroline)' },
+    { from: 'i_jubail', to: 'i_kharj', type: 'energy', label: 'Gas Network' },
+    { from: 'e_neom', to: 'i_yanbu', type: 'energy', label: 'Hydrogen Connector (Planned)' },
+
+    // Logistics (Rail)
+    { from: 'l_dam_aziz', to: 'l_dry_riyadh', type: 'logistics', label: 'Dammam-Riyadh Rail' },
+    { from: 'l_dry_riyadh', to: 'hail', type: 'logistics', label: 'North-South Rail (SAR)' },
+    { from: 'hail', to: 'jawf', type: 'logistics', label: 'North-South Rail (SAR)' },
+    { from: 'jawf', to: 'i_waad', type: 'logistics', label: 'Mining Rail' },
+    { from: 'i_waad', to: 'i_ras', type: 'logistics', label: 'Mineral Line to Port' }, // Abstract Curve
+    { from: 'l_jed_islamic', to: 'makkah', type: 'logistics', label: 'Haramain HSR' },
+    { from: 'makkah', to: 'medina', type: 'logistics', label: 'Haramain HSR' },
+    { from: 'medina', to: 'l_kaec', type: 'logistics', label: 'Haramain HSR' }
+];
+
+// --- 5. EXPORT (For Simulation) ---
+// This object simulates the data ready for the frontend
+const KSA_DATASET = {
+    pillars: PILLARS,
+    sectors: SECTORS,
+    regions: REGIONS,
+    assets: ASSETS,
+    networks: NETWORKS
+};

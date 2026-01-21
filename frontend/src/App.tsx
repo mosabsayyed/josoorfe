@@ -4,6 +4,9 @@ import { Routes, Route, Navigate, useLocation, BrowserRouter } from 'react-route
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { LanguageProvider } from './contexts/LanguageContext';
 import { LoginPage } from './pages/LoginPage';
+import { ProviderManagement } from './pages/admin/ProviderManagement';
+import { ABTesting } from './pages/admin/ABTesting';
+import { MonitoringDashboard } from './pages/admin/MonitoringDashboard';
 import LandingPage from './pages/LandingPage';
 import ChatAppPage from './pages/ChatAppPage';
 import JosoorShell from './app/josoor/JosoorShell';
@@ -81,6 +84,25 @@ function AppContent() {
         <Route path="explorer" element={<ExplorerDesk />} />
         {/* Default redirect inside /desk */}
         <Route index element={<Navigate to="sector" replace />} />
+      </Route>
+
+      {/* ADMIN ROUTES */}
+      <Route path="/admin">
+        <Route path="providers" element={
+          <ProtectedRoute>
+            <ProviderManagement />
+          </ProtectedRoute>
+        } />
+        <Route path="ab-testing" element={
+          <ProtectedRoute>
+            <ABTesting />
+          </ProtectedRoute>
+        } />
+        <Route path="monitoring" element={
+          <ProtectedRoute>
+            <MonitoringDashboard />
+          </ProtectedRoute>
+        } />
       </Route>
 
       {/* Fallback */}

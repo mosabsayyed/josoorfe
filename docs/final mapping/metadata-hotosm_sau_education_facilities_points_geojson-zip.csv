@@ -1,0 +1,14 @@
+Field,Label,Value
+created,Created,2024-01-23T08:07:27.030745
+description,Description,GeoJSON
+format,File Format,GeoJSON
+download_url,Download URL,https://s3.dualstack.us-east-1.amazonaws.com/production-raw-data-api/ISO3/SAU/education_facilities/points/hotosm_sau_education_facilities_points_geojson.zip
+id,Resource ID,bf819985-a1e7-4346-909e-61f945a1e0ea
+last_modified,Updated,2026-01-02T09:29:34.379157
+metadata_modified,Metadata Updated,2026-01-02T10:36:24.132590
+microdata,Microdata,False
+dataset_id,Dataset ID,cb74c066-45a8-4df1-9981-ffe67b86a32b
+resource_type,Resource Type,api
+name,Resource Name,hotosm_sau_education_facilities_points_geojson.zip
+mimetype,MIME Type,
+size,Size,28.3K

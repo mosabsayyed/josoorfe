@@ -1,0 +1,14 @@
+Region,Centroid_Lat,Centroid_Lon,Heatmap1_Healthcare_Hospitals,Heatmap2_Education_StudentPct,Heatmap3_Project_Intensity,Heatmap4_Food_Security_Hub,Heatmap5_Digital_Connectivity
+Riyadh,24.7434,46.3184,109,24.0,12,0,85
+Makkah,21.6944,39.3523,95,23.0,10,100,100
+Eastern Region,26.9314,49.5467,84,14.4,11,100,85
+Aseer,18.55,42.0,41,7.7,1,0,85
+Madinah,24.3593,39.486,32,7.1,6,100,85
+Jazan,17.2586,42.4764,28,5.7,3,0,85
+Qassim,26.1517,44.0268,25,4.7,2,0,85
+Hail,27.5114,41.7208,17,2.6,2,100,85
+Tabuk,28.3835,36.5662,16,3.4,6,0,85
+Najran,17.4917,44.1322,16,2.3,0,0,85
+Al-Jouf,29.9697,40.1996,15,2.4,2,100,100
+Northern Borders,30.9753,41.0381,11,1.4,2,0,100
+Al-Baha,20.0129,41.4677,10,1.3,0,0,85

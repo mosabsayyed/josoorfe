@@ -1,0 +1,73 @@
+Asset Name,Category,Sub-Category,Status,Latitude,Longitude,Region,Description,Capacity/Key Metric,Cleaned_Region
+Jubail Industrial City,Industrial City,Petrochemicals,Existing,27.0112,49.6105,Eastern,World's largest industrial city; SABIC & Aramco hub,>1000 sq km,Eastern Region
+Yanbu Industrial City,Industrial City,Refining & Downstream,Existing,23.9536,38.2267,Madinah,Red Sea energy hub; terminus of East-West pipeline,606 sq km,Madinah
+Ras Al-Khair Industrial City,Industrial City,Mining & Maritime,Existing,27.5367,49.1708,Eastern,Mining capital; Aluminium & Phosphate complex,Integrated Maritime Yard,Eastern Region
+Jazan City (JCPDI),Industrial City,Heavy Industry,Under Construction,17.2586,42.4764,Jazan,Refining and heavy industry gateway to Africa,Port & Refinery,Jazan
+Wa'ad Al-Shamal,Industrial City,Phosphate Mining,Existing,31.6447,38.7617,Northern Borders,Phosphate city; Ma'aden fertilizer complex,440 sq km,Northern Borders
+Sudair City for Industry,Industrial City,Mixed Manufacturing,Existing,25.6593,45.6214,Riyadh,Relief valve for Riyadh; light industry & logistics,265 sq km,Riyadh
+Riyadh 2nd Industrial City,Industrial City,Manufacturing,Existing,24.567,46.852,Riyadh,Major manufacturing hub for Central region,MODON Main Hub,Riyadh
+Dammam 2nd Industrial City,Industrial City,Manufacturing,Existing,26.2361,49.9576,Eastern,Oil & Gas support industries; IKTVA hub,MODON Main Hub,Eastern Region
+Jeddah 1st Industrial City,Industrial City,Light Industry,Existing,21.4367,39.243,Makkah,Consumer goods and food processing,MODON Main Hub,Makkah
+King Abdullah Economic City,Special Zone,Logistics & Light Ind,Existing,22.4107,39.12,Makkah,Port-centric logistics and pharmaceuticals,173 sq km,Makkah
+SPARK (King Salman Energy Park),Special Zone,Energy Services,Under Construction,25.908,49.539,Eastern,Energy supply chain localization (IKTVA),50 sq km,Eastern Region
+Ras Al-Khair Power Plant,Utilities,Desalination/Power,Existing,27.55,49.2,Eastern,World's largest hybrid desalination plant,2.9M m3/day,Eastern Region
+Shoaiba Power Plant,Utilities,Desalination/Power,Existing,20.672,39.525,Makkah,Major supplier to Makkah & Jeddah,Thermal/RO Complex,Makkah
+Jubail Power Plant,Utilities,Desalination/Power,Existing,27.03,49.63,Eastern,Supplies Jubail Industrial City & Riyadh,Integrated Complex,Eastern Region
+Ghazlan Power Plant,Utilities,Power Generation,Existing,26.839,49.923,Eastern,Major gas-fired plant supporting Eastern grid,4000+ MW,Eastern Region
+Qurayyah IPP,Utilities,Power Generation,Existing,25.86,50.11,Eastern,Combined cycle gas turbine plant,3927 MW,Eastern Region
+Rabigh 3 IWP,Utilities,Desalination,Existing,22.68,39.02,Makkah,Major Reverse Osmosis (RO) facility,600k m3/day,Makkah
+Yanbu 4 IWP,Utilities,Desalination,Under Construction,23.85,38.15,Madinah,Supplies Madinah and Yanbu region,450k m3/day,Madinah
+Ras Al Khair 2 IWP,Utilities,Desalination,Tendering (RFP),27.56,49.18,Eastern,New SWRO plant to supply Riyadh (COD 2028),600k m3/day,Eastern Region
+Tabuk 1 IWP,Utilities,Desalination,Tendering,27.3517,35.6901,Tabuk,Supplies NEOM & Madinah region (COD 2028),400k m3/day,Tabuk
+Ras Mohaisen IWP,Utilities,Desalination,Awarded,19.5,40.5,Makkah,Anchor supply for Makkah/Baha; Awarded to ACWA,300k m3/day,Makkah
+Jazan 1 IWP,Utilities,Desalination,Planned,17.26,42.1,Jazan,Replacing dams/groundwater in South (COD 2028),300k m3/day,Jazan
+Riyadh-Qassim IWTP,Utilities,Transmission,Awarded,25.5,45.0,Central,Pipeline connecting Riyadh to Qassim (Vision Invest),685k m3/day,Central
+Jubail-Buraidah IWTP,Utilities,Transmission,Under Construction,26.5,47.0,Eastern/Central,East-to-West water transmission bridge,650k m3/day,Eastern/Central
+Jazan SSTP (Cluster),Utilities,Wastewater,Awarded,16.89,42.55,Jazan,Integrated treatment plants and network (Alkhorayef),75k m3/day,Jazan
+NEOM (The Line),Giga Project,Future City,Under Construction,28.0,35.0,Tabuk,The Linear City & Oxagon Industrial Zone,26500 sq km,Tabuk
+Red Sea Global,Giga Project,Tourism/Utilities,Under Construction,25.63,36.8,Tabuk,Regenerative tourism & renewable utility grid,28000 sq km,Tabuk
+Qiddiya,Giga Project,Entertainment,Under Construction,24.583,46.333,Riyadh,Entertainment & Sports capital; Six Flags,334 sq km,Riyadh
+Oxagon (NEOM),Industrial City,Advanced Mfg,Planned,27.9366,35.1587,Tabuk,Floating industrial city; Hydrogen hub,Clean Industry Hub,Tabuk
+Trojena (NEOM),Giga Project,Tourism,Planned,28.7292,35.3957,Tabuk,Mountain tourism; Asian Winter Games 2029 host,Ski Village,Tabuk
+Diriyah Gate,Giga Project,Culture/Heritage,Under Construction,24.7333,46.575,Riyadh,Historic capital redevelopment; UNESCO site,Cultural District,Riyadh
+Roshn (Sedra),Real Estate,Housing,Under Construction,24.8387,46.746,Riyadh,Integrated community living; PIF backed,30k Homes,Riyadh
+Ceer Motors Factory,Industrial,Automotive,Planned,22.4844,39.1534,Makkah,First Saudi EV brand manufacturing plant (KAEC),EV Production,Makkah
+Lucid Motors Factory,Industrial,Automotive,Under Construction,22.4542,39.1239,Makkah,International EV manufacturing hub (KAEC),155k Vehicles/yr,Makkah
+Al-Khnaiguiyah,Mining,Zinc/Copper,Opportunity,24.25,45.0833,Riyadh,Major exploration license recently auctioned,25M tonnes ore,Riyadh
+Umm Ad Damar,Mining,Copper/Gold,Opportunity,23.65,41.05,Madinah,Mining exploration belt; open for investment,Exploration License,Madinah
+Jabal Sayid,Mining,Copper,Existing,23.8505,40.9411,Madinah,Underground copper mine; Maaden-Barrick JV,Copper Concentrate,Madinah
+Al Jalamid,Mining,Phosphate,Existing,31.2869,39.9572,Northern Borders,Phosphate mine feeding Wa'ad Al Shamal,Phosphate Rock,Northern Borders
+Al Baitha,Mining,Bauxite,Existing,27.4642,43.9167,Qassim,Bauxite mine feeding Ras Al Khair aluminum,Bauxite Ore,Qassim
+Juranah ISWR,Utilities,Water Storage,Planned,21.52,39.8,Makkah,Independent Strategic Water Reservoir; Tender Phase,2.5M m3 Storage,Makkah
+Al-Sadawi Solar PV,Energy,Renewable,Planned,28.52,47.45,Eastern,NREP Round 5 Solar Project,2000 MW,Eastern Region
+Al-Masa'a Solar PV,Energy,Renewable,Planned,27.2,42.4,Hail,NREP Round 5 Solar Project,1000 MW,Hail
+Al-Henakiyah Solar PV,Energy,Renewable,Planned,24.86,40.5,Madinah,NREP Round 4 Solar Project,1100 MW,Madinah
+Tabarjal Solar PV,Energy,Renewable,Planned,30.5,38.2,Al-Jouf,NREP Round 4 Solar Project,400 MW,Al-Jouf
+Riyadh Integrated Logistics Zone,Logistics,Special Zone,Under Construction,24.93,46.73,Riyadh,Special Integrated Logistics Zone at RUH Airport,Tax-Free Zone,Riyadh
+Jeddah Logistics Park,Logistics,Logistics Park,Planned,21.46,39.18,Makkah,New logistics zone at Jeddah Islamic Port (Maersk),Warehousing,Makkah
+King Abdullah Port Logistics,Logistics,Logistics Park,Existing,22.52,39.06,Makkah,Logistics park integrated with port,Petrochem Logistics,Makkah
+Dammam Logistics Park,Logistics,Logistics Park,Planned,26.54,50.18,Eastern,New logistics zone at King Abdulaziz Port,Container Support,Eastern Region
+Khobar 2 Desalination,Utilities,Desalination,Existing,26.18,50.2,Eastern,Supplies Eastern Province,600k m3/day,Eastern Region
+Jubail 3A (Jazlah),Utilities,Desalination,Under Construction,26.96,49.6,Eastern,Independent Water Project (IWP),600k m3/day,Eastern Region
+Jubail 3B,Utilities,Desalination,Under Construction,27.05,49.65,Eastern,Independent Water Project (IWP),570k m3/day,Eastern Region
+Shuqaiq 3 IWP,Utilities,Desalination,Existing,17.66,42.06,Jazan,Major SWRO plant for southern region,450k m3/day,Jazan
+Taiba 1 & 2,Energy,Power Generation,Planned,24.2,38.4,Madinah,CCGT Power Plants with Carbon Capture readiness,3.6 GW,Madinah
+Qassim 1 & 2,Energy,Power Generation,Planned,26.1,44.2,Qassim,CCGT Power Plants with Carbon Capture readiness,3.6 GW,Qassim
+Muhayil Mining License,Mining,Gold/Copper,Opportunity,18.55,42.0,Asir,Exploration license up for auction,Exploration Belt,Aseer
+Bir Umq Mining License,Mining,Copper,Opportunity,23.9,40.7,Madinah,Exploration license up for auction,Exploration Belt,Madinah
+Jabal Idsas,Mining,Iron Ore,Opportunity,24.3,45.2,Riyadh,Iron ore deposit investment opportunity,Iron Ore,Riyadh
+Wadi Sawawin,Mining,Iron Ore,Opportunity,28.1,35.5,Tabuk,Iron ore pellets project opportunity,Iron Ore,Tabuk
+Riyadh Metro Main Station,Infrastructure,Transport,Under Construction,24.64,46.72,Riyadh,KAFD Metro Station (Key Node),Public Transport,Riyadh
+Jeddah Metro (Planned),Infrastructure,Transport,Planned,21.5,39.15,Makkah,Future metro network for Jeddah,Public Transport,Makkah
+Saudi Landbridge,Infrastructure,Transport,Planned,23.5,43.5,Multiple,Rail link connecting Red Sea to Arabian Gulf,Freight/Passenger,Multiple
+Al-Ula (Journey Through Time),Giga Project,Tourism,Existing,26.61,37.92,Madinah,Living museum and heritage tourism,Heritage Site,Madinah
+Amaala,Giga Project,Tourism/Wellness,Under Construction,26.65,36.2,Tabuk,Luxury wellness destination (Red Sea Global),3000 Hotel Keys,Tabuk
+THE RIG.,Giga Project,Tourism/Adventure,Planned,27.19,49.8,Eastern,Offshore oil rig themed adventure park,Tourism,Eastern Region
+New Murabba (The Mukaab),Giga Project,Mixed Use,Planned,24.78,46.6,Riyadh,New downtown Riyadh & world's largest structure,Urban Dev,Riyadh
+Saudi Downtown (12 Cities),Real Estate,Mixed Use,Planned,24.0,45.0,Multiple,Projects in 12 cities (Arar; Dombat; etc.),Urban Regeneration,Multiple
+Konoz (Box of Treasures),Real Estate,Mixed Use,Planned,24.69,46.66,Riyadh,Entertainment & commercial city by Abdullah Al Othaim,Commercial,Riyadh
+Riyadh Air Operations Center,Infrastructure,Aviation,Planned,24.95,46.7,Riyadh,HQ for new national airline (at RUH),Aviation,Riyadh
+CST Coverage Map,Investor Tool,Digital Service,Active,24.71,46.67,National,Source: www.cst.gov.sa (Check 5G/Fiber coverage),Coverage Check,National
+NWC Pumping Map,Investor Tool,Digital Service,Active,24.71,46.67,National,Source: e.nwc.com.sa (Check water schedule/network),Coverage Check,National
+Balady Excavation Map,Investor Tool,Digital Service,Active,24.71,46.67,National,Source: balady.gov.sa (Check infra permits/digging),Coverage Check,National
+SEC Wasalah,Investor Tool,Digital Service,Active,24.71,46.67,National,Source: se.com.sa (Check electrical capacity),Connection Request,National

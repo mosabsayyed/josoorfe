@@ -1,0 +1,14 @@
+Field,Label,Value
+created,Created,2020-05-13T10:47:13.089690
+description,Description,KML
+format,File Format,KML
+download_url,Download URL,https://s3.dualstack.us-east-1.amazonaws.com/production-raw-data-api/ISO3/SAU/education_facilities/points/hotosm_sau_education_facilities_points_kml.zip
+id,Resource ID,863f1556-f56e-4535-b8f3-1ae3340fb7df
+last_modified,Updated,2026-01-02T09:29:34.377133
+metadata_modified,Metadata Updated,2026-01-02T10:36:24.132415
+microdata,Microdata,False
+dataset_id,Dataset ID,cb74c066-45a8-4df1-9981-ffe67b86a32b
+resource_type,Resource Type,api
+name,Resource Name,hotosm_sau_education_facilities_points_kml.zip
+mimetype,MIME Type,
+size,Size,28.6K

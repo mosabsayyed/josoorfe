@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KSA Vision 2030 Command Center</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #0f172a; color: #e2e8f0; overflow: hidden; }
+        
+        /* Map Layer */
+        #map-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: radial-gradient(circle at 60% 50%, #1e293b 0%, #020617 100%);
+            z-index: 1;
+        }
+
+        /* Glass UI Panels */
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.9);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Nav Buttons */
+        .nav-btn {
+            border-left: 3px solid transparent;
+            transition: all 0.2s;
+        }
+        .nav-btn:hover { background: rgba(255,255,255,0.05); }
+        .nav-btn.active { 
+            background: rgba(56, 189, 248, 0.1); 
+            border-left-color: currentColor; 
+            color: #fff;
+            font-weight: 600;
+        }
+
+        /* Scrollbar */
+        .custom-scroll::-webkit-scrollbar { width: 4px; }
+        .custom-scroll::-webkit-scrollbar-track { background: transparent; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #475569; border-radius: 2px; }
+
+        /* Chart Wrapper */
+        .chart-wrapper { position: relative; height: 180px; width: 100%; }
+        
+        /* Pulse Animation */
+        @keyframes pulse-ring {
+            0% { transform: scale(0.8); opacity: 0.5; }
+            100% { transform: scale(2); opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- MAP CONTAINER -->
+    <div id="map-layer">
+        <canvas id="mapCanvas"></canvas>
+    </div>
+
+    <!-- UI: LEFT PANEL (Navigation) -->
+    <div class="absolute top-6 left-6 bottom-6 w-80 glass-panel z-20 rounded-xl flex flex-col overflow-hidden">
+        <!-- Brand Header -->
+        <div class="p-5 border-b border-slate-700 bg-slate-900/50">
+            <h1 class="text-xl font-bold text-white tracking-tight">KSA Command Center</h1>
+            <div class="flex items-center justify-between mt-2">
+                <span class="text-[10px] text-slate-400 font-mono tracking-widest">DATASET: MASTER_V1 (FROZEN)</span>
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+            </div>
+        </div>
+
+        <!-- Pillar Tabs -->
+        <div class="flex text-[10px] font-bold border-b border-slate-700 tracking-wider">
+            <button onclick="setPillar('society')" id="tab-society" class="flex-1 py-4 text-center text-emerald-400 hover:bg-slate-800 transition-colors">SOCIETY</button>
+            <button onclick="setPillar('economy')" id="tab-economy" class="flex-1 py-4 text-center text-blue-400 hover:bg-slate-800 transition-colors">ECONOMY</button>
+            <button onclick="setPillar('nation')" id="tab-nation" class="flex-1 py-4 text-center text-purple-400 hover:bg-slate-800 transition-colors">NATION</button>
+        </div>
+
+        <!-- Sector List -->
+        <div id="sector-list" class="flex-1 overflow-y-auto custom-scroll py-2">
+            <!-- Injected JS -->
+        </div>
+
+        <!-- Map Legend -->
+        <div class="p-4 bg-slate-900/80 border-t border-slate-700 text-[10px] text-slate-400">
+            <div class="uppercase tracking-widest font-bold mb-2 text-slate-500">Atlas Legend</div>
+            <div class="grid grid-cols-2 gap-2">
+                <div class="flex items-center"><span class="w-2 h-2 rounded-full bg-white mr-2"></span> Region Center</div>
+                <div class="flex items-center"><span class="w-2 h-2 rounded-full bg-current text-blue-500 mr-2 shadow-[0_0_8px_currentColor]"></span> Active Asset</div>
+                <div class="flex items-center"><span class="w-2 h-2 rounded-full bg-slate-600 mr-2"></span> Inactive Asset</div>
+                <div class="flex items-center"><span class="w-6 h-0.5 bg-current text-blue-500 mr-2 border-b border-dashed"></span> Network</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- UI: RIGHT PANEL (Data Dashboard) -->
+    <div class="absolute top-6 right-6 bottom-6 w-[450px] glass-panel z-20 rounded-xl flex flex-col overflow-hidden border border-slate-700/50">
+        
+        <!-- Context Header -->
+        <div class="p-6 border-b border-slate-700 bg-slate-900/50">
+            <div class="flex justify-between items-start mb-1">
+                <div id="panel-sector-label" class="text-xs font-bold uppercase tracking-widest text-blue-400">Sector</div>
+                <button onclick="resetRegion()" id="btn-reset" class="hidden text-[10px] bg-slate-700 hover:bg-slate-600 px-2 py-1 rounded text-white uppercase tracking-wide">Back to National</button>
+            </div>
+            <h2 id="panel-title" class="text-2xl font-bold text-white">National View</h2>
+            <p id="panel-desc" class="text-sm text-slate-400 mt-1">Select a region node on the map to access frozen data metrics.</p>
+        </div>
+
+        <!-- Content Scroller -->
+        <div class="flex-1 overflow-y-auto custom-scroll p-6 space-y-6">
+            
+            <!-- KPI Grid -->
+            <div id="kpi-grid" class="grid grid-cols-2 gap-3">
+                <!-- Injected JS -->
+            </div>
+
+            <!-- Charts Area -->
+            <div id="charts-area" class="space-y-6">
+                <!-- Canvases Injected JS -->
+            </div>
+
+            <!-- Asset Context -->
+            <div id="asset-context" class="pt-4 border-t border-slate-700/50">
+                <h4 class="text-xs font-bold text-slate-500 uppercase mb-3 tracking-wider">Infrastructure Assets (Active)</h4>
+                <div id="asset-list" class="space-y-2 text-xs text-slate-300">
+                    <!-- Injected JS -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT DATA & LOGIC -->
+    <script>
+        // --- 1. MASTER DATASET (FULL INTEGRATION) ---
+
+        const PILLARS = {
+            'society': { label: 'Vibrant Society', color: '#10b981', sectors: ['health', 'livability', 'water', 'culture'] },
+            'economy': { label: 'Thriving Economy', color: '#3b82f6', sectors: ['energy', 'industry', 'logistics', 'mining'] },
+            'nation':  { label: 'Ambitious Nation', color: '#a855f7', sectors: ['gov'] }
+        };
+
+        const SECTORS = {
+            'health': { label: 'Health', icon: '🏥' },
+            'livability': { label: 'Urban Quality', icon: '🏡' },
+            'water': { label: 'Water & Env.', icon: '💧' },
+            'culture': { label: 'Culture & Tourism', icon: '🕌' },
+            'energy': { label: 'Energy', icon: '⚡' },
+            'industry': { label: 'Industry', icon: '🏭' },
+            'logistics': { label: 'Logistics', icon: '🚢' },
+            'mining': { label: 'Mining', icon: '⛏️' },
+            'gov': { label: 'Gov Effectiveness', icon: '🏛️' }
+        };
+
+        // REGIONS & METRICS
+        const REGIONS = {
+            'riyadh': { id: 'riyadh', name: 'Riyadh', x: 55, y: 50, main: true,
+                metrics: {
+                    health: { kpi1: '88%', kpi2: '18m', t1: 'Bed Occupancy', t2: 'Avg Travel Time' },
+                    water: { kpi1: '99%', kpi2: '18%', t1: 'Household Coverage', t2: 'Network Loss' },
+                    energy: { kpi1: '12 GW', kpi2: '15%', t1: 'Peak Load Capacity', t2: 'Renewable Mix' },
+                    logistics: { kpi1: '850k', kpi2: '4h', t1: 'Dry Port Volume', t2: 'Avg Clearance' },
+                    industry: { kpi1: '12%', kpi2: '550', t1: 'GDP Contribution', t2: 'Factories' },
+                    mining: { kpi1: '2%', kpi2: '12', t1: 'GDP Contribution', t2: 'Active Licenses' }
+                }
+            },
+            'makkah': { id: 'makkah', name: 'Makkah', x: 25, y: 60, main: true,
+                metrics: {
+                    health: { kpi1: '92%', kpi2: '25m', t1: 'Bed Occ. (Season)', t2: 'Travel Time' },
+                    water: { kpi1: '96%', kpi2: '22%', t1: 'Household Coverage', t2: 'Network Loss' },
+                    energy: { kpi1: '8 GW', kpi2: '45%', t1: 'Peak Load', t2: 'Seasonal Spike' },
+                    logistics: { kpi1: '4.5M', kpi2: '2h', t1: 'Port TEUs', t2: 'Rail Frequency' },
+                    culture: { kpi1: '15M', kpi2: '94%', t1: 'Pilgrims/Yr', t2: 'Satisfaction' }
+                }
+            },
+            'eastern': { id: 'eastern', name: 'Eastern', x: 75, y: 45, main: true,
+                metrics: {
+                    health: { kpi1: '78%', kpi2: '15m', t1: 'Bed Occupancy', t2: 'Travel Time' },
+                    water: { kpi1: '98%', kpi2: '12%', t1: 'Household Coverage', t2: 'Network Loss' },
+                    energy: { kpi1: '18 GW', kpi2: '70%', t1: 'Peak Load', t2: 'Ind. Consumption' },
+                    industry: { kpi1: '45%', kpi2: '1200', t1: 'GDP Contribution', t2: 'Factories' },
+                    mining: { kpi1: '15%', kpi2: '45', t1: 'GDP Contribution', t2: 'Active Licenses' },
+                    logistics: { kpi1: '3.2M', kpi2: '12h', t1: 'Port TEUs', t2: 'Avg Dwell Time' }
+                }
+            },
+            'medina': { id: 'medina', name: 'Madinah', x: 25, y: 45, metrics: { health: { kpi1: '80%', kpi2: '20m' }, water: { kpi1: '92%', kpi2: '25%' } } },
+            'qassim': { id: 'qassim', name: 'Qassim', x: 50, y: 35, metrics: { health: { kpi1: '75%', kpi2: '30m' }, water: { kpi1: '88%', kpi2: '28%' } } },
+            'tabuk': { id: 'tabuk', name: 'Tabuk', x: 15, y: 20, metrics: { health: { kpi1: '70%', kpi2: '35m' }, water: { kpi1: '85%', kpi2: '30%' }, energy: { kpi1: '2 GW', kpi2: '100%', t1: 'Load', t2: 'Future RE Target' } } },
+            'hail': { id: 'hail', name: 'Hail', x: 40, y: 30, metrics: { health: { kpi1: '65%', kpi2: '40m' }, water: { kpi1: '82%', kpi2: '35%' } } },
+            'northern': { id: 'northern', name: 'Northern', x: 45, y: 15, metrics: { mining: { kpi1: '8%', kpi2: '25', t1: 'GDP Contrib', t2: 'Phosphate Mines' } } },
+            'jawf': { id: 'jawf', name: 'Al Jawf', x: 30, y: 15, metrics: { energy: { kpi1: '1.5 GW', kpi2: '60%', t1: 'Load', t2: 'RE Mix (PV/Wind)' } } },
+            'jazan': { id: 'jazan', name: 'Jazan', x: 35, y: 85, metrics: { health: { kpi1: '90%', kpi2: '45m' }, industry: { kpi1: '5%', kpi2: '80', t1: 'GDP', t2: 'Factories' } } },
+            'asir': { id: 'asir', name: 'Asir', x: 32, y: 75, metrics: { health: { kpi1: '85%', kpi2: '55m' }, water: { kpi1: '70%', kpi2: '42%' } } },
+            'baha': { id: 'baha', name: 'Al Baha', x: 28, y: 68, metrics: { health: { kpi1: '80%', kpi2: '40m' } } },
+            'najran': { id: 'najran', name: 'Najran', x: 50, y: 85, metrics: { health: { kpi1: '75%', kpi2: '35m' } } }
+        };
+
+        // ASSETS (40+ Verified Items)
+        const ASSETS = [
+            // Water
+            { id: 'w_jubail', name: 'Jubail Desalination', type: 'water', x: 78, y: 40, sub: 'Global Hub' },
+            { id: 'w_khobar', name: 'Al Khobar Plant', type: 'water', x: 80, y: 46, sub: 'Khobar Supply' },
+            { id: 'w_ras', name: 'Ras Al Khair Plant', type: 'water', x: 76, y: 35, sub: 'Hybrid Plant' },
+            { id: 'w_yanbu', name: 'Yanbu Desalination', type: 'water', x: 20, y: 50, sub: 'Medina Supply' },
+            { id: 'w_shuaibah', name: 'Shuaibah Plant', type: 'water', x: 26, y: 65, sub: 'Jeddah Supply' },
+            { id: 'w_shuqaiq', name: 'Shuqaiq Plant', type: 'water', x: 33, y: 82, sub: 'South West' },
+            { id: 'w_dam_fahd', name: 'King Fahd Dam', type: 'water', x: 38, y: 72, sub: 'Strategic Reserve' },
+            
+            // Industry / Mining / Energy
+            { id: 'i_jubail', name: 'Jubail Ind. City', type: 'industry', x: 78, y: 40, sub: 'Petrochemicals' },
+            { id: 'i_yanbu', name: 'Yanbu Ind. City', type: 'industry', x: 20, y: 50, sub: 'Refining' },
+            { id: 'i_ras', name: 'Ras Al Khair Ind.', type: 'mining', x: 76, y: 35, sub: 'Minerals Port' },
+            { id: 'i_jazan', name: 'JCPDI', type: 'industry', x: 34, y: 86, sub: 'Downstream' },
+            { id: 'i_sudair', name: 'Sudair Ind. City', type: 'industry', x: 52, y: 45, sub: 'Manufacturing' },
+            { id: 'i_waad', name: 'Waad Al Shamal', type: 'mining', x: 42, y: 14, sub: 'Phosphate City' },
+            { id: 'e_neom', name: 'NEOM Hydrogen', type: 'energy', x: 10, y: 15, sub: 'Green H2' },
+            { id: 'e_sakaka', name: 'Sakaka Solar', type: 'energy', x: 32, y: 16, sub: 'PV Plant' },
+            { id: 'e_dumat', name: 'Dumat Al Jandal', type: 'energy', x: 28, y: 14, sub: 'Wind Farm' },
+            
+            // Logistics
+            { id: 'l_jed', name: 'Jeddah Islamic Port', type: 'logistics', x: 22, y: 62, sub: 'Red Sea Gateway' },
+            { id: 'l_dam', name: 'King Abdulaziz Port', type: 'logistics', x: 80, y: 46, sub: 'Gulf Gateway' },
+            { id: 'l_jubail', name: 'Jubail Comm. Port', type: 'logistics', x: 78, y: 41, sub: 'Ind. Support' },
+            { id: 'l_kaec', name: 'King Abdullah Port', type: 'logistics', x: 22, y: 52, sub: 'Transshipment' },
+            { id: 'l_dry', name: 'Riyadh Dry Port', type: 'logistics', x: 56, y: 51, sub: 'Rail Hub' },
+
+            // Culture
+            { id: 'c_qiddiya', name: 'Qiddiya', type: 'culture', x: 53, y: 51, sub: 'Ent. Capital' },
+            { id: 'c_alula', name: 'AlUla', type: 'culture', x: 22, y: 35, sub: 'Living Museum' },
+            { id: 'c_diriyah', name: 'Diriyah', type: 'culture', x: 54, y: 50, sub: 'Heritage' }
+        ];
+
+        // NETWORKS
+        const NETWORKS = [
+            // Water
+            { from: 'w_jubail', to: 'riyadh', type: 'water' }, 
+            { from: 'w_ras', to: 'riyadh', type: 'water' }, 
+            { from: 'w_ras', to: 'hail', type: 'water' }, 
+            { from: 'w_yanbu', to: 'medina', type: 'water' }, 
+            { from: 'w_shuaibah', to: 'makkah', type: 'water' }, 
+            { from: 'w_shuqaiq', to: 'asir', type: 'water' },
+
+            // Energy/Ind
+            { from: 'i_jubail', to: 'i_yanbu', type: 'energy' }, // East-West Pipe
+            { from: 'e_neom', to: 'i_yanbu', type: 'energy' }, // H2 Link (Future)
+
+            // Logistics (Rail)
+            { from: 'l_dam', to: 'l_dry', type: 'logistics' },
+            { from: 'l_dry', to: 'hail', type: 'logistics' },
+            { from: 'hail', to: 'jawf', type: 'logistics' },
+            { from: 'jawf', to: 'i_waad', type: 'logistics' },
+            { from: 'i_waad', to: 'i_ras', type: 'logistics' },
+            { from: 'l_jed', to: 'makkah', type: 'logistics' },
+            { from: 'makkah', to: 'medina', type: 'logistics' },
+            { from: 'medina', to: 'l_kaec', type: 'logistics' }
+        ];
+
+        // --- 2. STATE ---
+        let state = {
+            pillar: 'society',
+            sector: 'health',
+            regionId: null, // National by default
+            hoverId: null
+        };
+        
+        let mapCanvas, ctx;
+        let chartInstances = [];
+
+        // --- 3. INIT ---
+        document.addEventListener('DOMContentLoaded', () => {
+            initUI();
+            resizeMap();
+            window.addEventListener('resize', resizeMap);
+            animate();
+        });
+
+        // --- 4. UI LOGIC ---
+        function initUI() {
+            setPillar('society');
+        }
+
+        function setPillar(pid) {
+            state.pillar = pid;
+            state.sector = PILLARS[pid].sectors[0];
+            state.regionId = null; 
+            
+            ['society', 'economy', 'nation'].forEach(p => {
+                const el = document.getElementById(`tab-${p}`);
+                if (p === pid) {
+                    el.style.borderBottomColor = PILLARS[pid].color;
+                    el.style.color = 'white';
+                } else {
+                    el.style.borderBottomColor = 'transparent';
+                    el.style.color = PILLARS[p].color;
+                }
+            });
+
+            renderSectorList();
+            updateDashboard();
+        }
+
+        function renderSectorList() {
+            const list = document.getElementById('sector-list');
+            list.innerHTML = '';
+            PILLARS[state.pillar].sectors.forEach(sid => {
+                const sec = SECTORS[sid];
+                const btn = document.createElement('button');
+                btn.className = `nav-btn w-full text-left px-5 py-3 text-xs text-slate-400 flex items-center gap-3 ${sid === state.sector ? 'active' : ''}`;
+                btn.style.color = sid === state.sector ? PILLARS[state.pillar].color : '';
+                btn.style.borderLeftColor = sid === state.sector ? PILLARS[state.pillar].color : 'transparent';
+                btn.innerHTML = `<span class="text-lg">${sec.icon}</span> ${sec.label}`;
+                btn.onclick = () => setSector(sid);
+                list.appendChild(btn);
+            });
+        }
+
+        function setSector(sid) {
+            state.sector = sid;
+            state.regionId = null; 
+            renderSectorList();
+            updateDashboard();
+        }
+
+        function resetRegion() {
+            state.regionId = null;
+            updateDashboard();
+        }
+
+        function updateDashboard() {
+            const themeColor = PILLARS[state.pillar].color;
+            document.getElementById('panel-sector-label').style.color = themeColor;
+            document.getElementById('panel-sector-label').innerText = SECTORS[state.sector].label;
+
+            const regionObj = state.regionId ? REGIONS[state.regionId] : null;
+            const isNational = !regionObj;
+            
+            document.getElementById('btn-reset').style.display = isNational ? 'none' : 'block';
+            document.getElementById('panel-title').innerText = isNational ? 'National View' : regionObj.name + ' Region';
+            document.getElementById('panel-desc').innerText = isNational 
+                ? 'Select a region node on the map to access frozen data metrics.' 
+                : `Frozen Data Snapshot: Q4-2025`;
+
+            // METRICS LOGIC
+            let m = { kpi1: '--', kpi2: '--', t1: 'Metric 1', t2: 'Metric 2' };
+            
+            if (isNational) {
+                // Default National Placeholders (could be aggregated if logic allowed)
+                m = { kpi1: 'KSA', kpi2: 'AVG', t1: 'National Status', t2: 'Sector Agg.' };
+                // Specific National Defaults based on sector
+                if(state.sector === 'health') m = { kpi1: '74 yrs', kpi2: '2.4', t1: 'Life Expectancy', t2: 'Beds/1000' };
+                if(state.sector === 'water') m = { kpi1: '82%', kpi2: '35%', t1: 'Nat. Coverage', t2: 'Avg Loss' };
+                if(state.sector === 'energy') m = { kpi1: '90 GW', kpi2: '8%', t1: 'Peak Load', t2: 'RE Mix' };
+                if(state.sector === 'logistics') m = { kpi1: 'Top 20', kpi2: '18h', t1: 'LPI Rank', t2: 'Clearance' };
+            } else if (regionObj.metrics && regionObj.metrics[state.sector]) {
+                m = regionObj.metrics[state.sector];
+            } else {
+                m = { kpi1: 'N/A', kpi2: 'N/A', t1: 'Data Gap', t2: 'Data Gap' };
+            }
+
+            const kpiDiv = document.getElementById('kpi-grid');
+            kpiDiv.innerHTML = `
+                <div class="bg-slate-800/40 border border-slate-700 p-3 rounded-lg">
+                    <div class="text-[9px] uppercase text-slate-400 mb-1 tracking-wider">${m.t1}</div>
+                    <div class="text-2xl font-bold text-white">${m.kpi1}</div>
+                </div>
+                <div class="bg-slate-800/40 border border-slate-700 p-3 rounded-lg">
+                    <div class="text-[9px] uppercase text-slate-400 mb-1 tracking-wider">${m.t2}</div>
+                    <div class="text-2xl font-bold text-white">${m.kpi2}</div>
+                </div>
+            `;
+
+            renderCharts(isNational, regionObj, themeColor);
+
+            // Asset List
+            const assetDiv = document.getElementById('asset-list');
+            const relevantAssets = ASSETS.filter(a => a.type === state.sector);
+            if (relevantAssets.length > 0) {
+                assetDiv.innerHTML = relevantAssets.map(a => `
+                    <div class="flex justify-between items-center py-2 border-b border-slate-800 last:border-0">
+                        <div class="flex items-center gap-2">
+                            <span class="w-1.5 h-1.5 rounded-full" style="background:${themeColor}"></span>
+                            <span>${a.name}</span>
+                        </div>
+                        <span class="text-[10px] text-slate-500">${a.sub}</span>
+                    </div>
+                `).join('');
+            } else {
+                assetDiv.innerHTML = `<div class="italic text-slate-500 text-xs">No major assets mapped for this sector.</div>`;
+            }
+        }
+
+        function renderCharts(isNational, regionObj, color) {
+            const container = document.getElementById('charts-area');
+            container.innerHTML = '';
+            chartInstances.forEach(c => c.destroy());
+            chartInstances = [];
+
+            // Generate Chart Data
+            // If National: Comparative Bar Chart of Top Regions
+            // If Regional: Region vs National Average
+            
+            let c1Config, c2Config;
+
+            if (isNational) {
+                // Comparative
+                c1Config = {
+                    type: 'bar',
+                    title: 'Regional Comparison',
+                    labels: ['Riyadh', 'Makkah', 'Eastern', 'Jazan'],
+                    data: [85, 80, 75, 60] // Placeholder comparatives
+                };
+                c2Config = {
+                    type: 'doughnut',
+                    title: 'Sector Composition',
+                    labels: ['Public', 'Private', 'PPP'],
+                    data: [50, 30, 20]
+                };
+            } else {
+                // Regional specific
+                // Parse KPI string to number for chart
+                let val = 0;
+                if(regionObj.metrics && regionObj.metrics[state.sector]) {
+                     val = parseFloat(regionObj.metrics[state.sector].kpi1) || 50;
+                }
+                
+                c1Config = {
+                    type: 'bar',
+                    title: 'Region vs National Avg',
+                    labels: [regionObj.name, 'National'],
+                    data: [val, 75] 
+                };
+                c2Config = {
+                    type: 'pie',
+                    title: 'Local Asset Mix',
+                    labels: ['Type A', 'Type B'],
+                    data: [60, 40]
+                };
+            }
+
+            [c1Config, c2Config].forEach((cfg, i) => {
+                const wrap = document.createElement('div');
+                wrap.className = "bg-slate-800/40 border border-slate-700 p-4 rounded-lg";
+                wrap.innerHTML = `<h4 class="text-[10px] font-bold text-slate-400 mb-3 uppercase tracking-wider">${cfg.title}</h4>`;
+                
+                const cvsDiv = document.createElement('div');
+                cvsDiv.className = "chart-wrapper";
+                const cvs = document.createElement('canvas');
+                cvsDiv.appendChild(cvs);
+                wrap.appendChild(cvsDiv);
+                container.appendChild(wrap);
+
+                const ctx = cvs.getContext('2d');
+                
+                const newChart = new Chart(ctx, {
+                    type: cfg.type,
+                    data: {
+                        labels: cfg.labels,
+                        datasets: [{
+                            data: cfg.data,
+                            backgroundColor: [color, '#475569', '#64748b'],
+                            borderColor: 'transparent',
+                            barThickness: 20
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: cfg.type === 'doughnut' || cfg.type === 'pie', position: 'right', labels: { color: '#cbd5e1', boxWidth: 8, font: {size: 10} } } },
+                        scales: (cfg.type === 'bar') ? {
+                            y: { grid: { color: '#334155' }, ticks: { color: '#94a3b8', font: { size: 9 } } },
+                            x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 9 } } }
+                        } : {}
+                    }
+                });
+                chartInstances.push(newChart);
+            });
+        }
+
+        // --- 5. MAP ENGINE ---
+        function resizeMap() {
+            mapCanvas = document.getElementById('mapCanvas');
+            mapCanvas.width = window.innerWidth;
+            mapCanvas.height = window.innerHeight;
+        }
+
+        function getCoord(cx, cy) {
+            // SAFE ZONE MAP LOGIC
+            const padLeft = 340; 
+            const padRight = 480;
+            const availW = mapCanvas.width - padLeft - padRight;
+            const availH = mapCanvas.height - 100;
+
+            const safeW = Math.max(availW, 400); 
+            const scale = Math.min(safeW / 100, availH / 100) * 0.85;
+
+            const offX = padLeft + (safeW - (100 * scale)) / 2;
+            const offY = 50 + (availH - (100 * scale)) / 2;
+
+            return { x: offX + (cx * scale), y: offY + (cy * scale) };
+        }
+
+        function animate() {
+            ctx = mapCanvas.getContext('2d');
+            ctx.clearRect(0, 0, mapCanvas.width, mapCanvas.height);
+            const themeColor = PILLARS[state.pillar].color;
+
+            // 1. Networks
+            NETWORKS.forEach(net => {
+                if(net.type === state.sector) {
+                    const start = ASSETS.find(a=>a.id===net.from) || Object.values(REGIONS).find(r=>r.id===net.from);
+                    const end = ASSETS.find(a=>a.id===net.to) || Object.values(REGIONS).find(r=>r.id===net.to);
+                    if(start && end) {
+                        const s = getCoord(start.x, start.y);
+                        const e = getCoord(end.x, end.y);
+                        ctx.beginPath();
+                        ctx.moveTo(s.x, s.y);
+                        ctx.lineTo(e.x, e.y);
+                        ctx.strokeStyle = themeColor;
+                        ctx.lineWidth = 2;
+                        ctx.setLineDash([4, 4]);
+                        ctx.lineDashOffset = -(Date.now() * 0.02);
+                        ctx.stroke();
+                        ctx.setLineDash([]);
+                    }
+                }
+            });
+
+            // 2. Regions
+            Object.values(REGIONS).forEach(r => {
+                const c = getCoord(r.x, r.y);
+                const isSelected = state.regionId === r.id;
+                const isHover = state.hoverId === r.id;
+
+                ctx.beginPath();
+                ctx.arc(c.x, c.y, r.main ? 5 : 3, 0, Math.PI*2);
+                ctx.fillStyle = isSelected ? '#fff' : (isHover ? '#cbd5e1' : '#64748b');
+                ctx.fill();
+
+                if (isSelected || isHover) {
+                    ctx.beginPath();
+                    ctx.arc(c.x, c.y, r.main ? 10 : 8, 0, Math.PI*2);
+                    ctx.strokeStyle = themeColor;
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                }
+
+                ctx.fillStyle = (isSelected || isHover) ? '#fff' : '#475569';
+                ctx.font = (isSelected || isHover) ? 'bold 12px Inter' : '10px Inter';
+                ctx.textAlign = 'center';
+                ctx.fillText(r.name.toUpperCase(), c.x, c.y + 16);
+            });
+
+            // 3. Assets
+            ASSETS.forEach(a => {
+                // Show ALL assets for active sector
+                const isActive = a.type === state.sector;
+                const c = getCoord(a.x, a.y);
+                const color = isActive ? themeColor : '#334155';
+                
+                if(isActive) {
+                    const pulse = Math.sin(Date.now() * 0.005) * 3;
+                    ctx.beginPath();
+                    ctx.arc(c.x, c.y, 6 + pulse, 0, Math.PI*2);
+                    ctx.fillStyle = color;
+                    ctx.globalAlpha = 0.3;
+                    ctx.fill();
+                    ctx.globalAlpha = 1.0;
+                }
+
+                ctx.beginPath();
+                ctx.arc(c.x, c.y, 4, 0, Math.PI*2);
+                ctx.fillStyle = isActive ? '#fff' : '#1e293b';
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                ctx.fill();
+                
+                if (isActive && state.hoverId === a.id) {
+                    ctx.fillStyle = '#fff';
+                    ctx.font = 'bold 11px Inter';
+                    ctx.fillText(a.name, c.x, c.y - 12);
+                }
+            });
+
+            requestAnimationFrame(animate);
+        }
+
+        // --- 6. INTERACTIONS ---
+        document.getElementById('mapCanvas').addEventListener('mousemove', (e) => {
+            const rect = mapCanvas.getBoundingClientRect();
+            const mx = e.clientX - rect.left;
+            const my = e.clientY - rect.top;
+            
+            let found = null;
+            Object.values(REGIONS).forEach(r => {
+                const c = getCoord(r.x, r.y);
+                if (Math.hypot(c.x - mx, c.y - my) < 15) found = r.id;
+            });
+            if(!found) {
+                ASSETS.forEach(a => {
+                    if(a.type === state.sector) {
+                        const c = getCoord(a.x, a.y);
+                        if (Math.hypot(c.x - mx, c.y - my) < 15) found = a.id;
+                    }
+                });
+            }
+
+            state.hoverId = found;
+            mapCanvas.style.cursor = found ? 'pointer' : 'default';
+        });
+
+        document.getElementById('mapCanvas').addEventListener('click', (e) => {
+            if (state.hoverId && REGIONS[state.hoverId]) {
+                state.regionId = state.hoverId;
+                updateDashboard();
+            } else if (!state.hoverId) {
+                state.regionId = null;
+                updateDashboard();
+            }
+        });
+
+    </script>
+</body>
+</html>

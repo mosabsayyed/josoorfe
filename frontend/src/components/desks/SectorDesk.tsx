@@ -1,7 +1,9 @@
 import React from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { SectorSidebar } from './sector/SectorSidebar';
-import { SectorMap } from './sector/SectorMap';
+// import { DeckGLMap } from './sector/DeckGLMap';
+import { SimpleKsaMap } from './sector/SimpleKsaMap';
+import 'mapbox-gl/dist/mapbox-gl.css';
 
 // Import Layout Styles reusing existing ones where applicable
 // Or define inline for now to ensure structure
@@ -51,7 +53,8 @@ export const SectorDesk: React.FC<SectorDeskProps> = ({ year: propYear, quarter:
                 alignItems: 'center',
                 justifyContent: 'center'
             }}>
-                <SectorMap year={year} quarter={quarter} />
+                <SimpleKsaMap />
+                {/* <DeckGLMap year={year} quarter={quarter} /> */}
             </div>
         </div>
     );

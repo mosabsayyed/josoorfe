@@ -63,6 +63,7 @@ const contentItems = [
 
 const adminItems = [
   { id: 'settings', label: { en: 'Settings', ar: 'الإعدادات' }, icon: '/icons/menu.png' },
+  { id: 'monitoring', label: { en: 'Monitoring', ar: 'المراقبة' }, icon: '/icons/demo.png' },
   { id: 'observability', label: { en: 'Observability', ar: 'المراقبة' }, icon: '/icons/architecture.png' },
 ];
 
@@ -196,7 +197,10 @@ export function Sidebar({
         return (
           <button
             key={item.id}
-            onClick={() => onQuickAction(item)}
+            onClick={() => {
+              console.log('Sidebar QuickAction Clicked:', item.id);
+              onQuickAction(item);
+            }}
             className={`quickaction-item clickable ${isActive ? 'active' : ''}`}
             title={overrideLabel}
             style={{

@@ -1,316 +1,504 @@
 import React, { useState, useEffect } from 'react';
 import {
     Settings as SettingsIcon,
-    Plus,
     RefreshCw,
     AlertCircle,
+    Check,
+    Plus,
+    X,
+    ChevronDown,
+    ChevronUp
 } from 'lucide-react';
 import { useAuth } from '../../../../contexts/AuthContext';
 import {
     fetchSettings,
     saveSettings,
-    AdminSettings,
-    MCPEntry,
 } from '../../../../services/adminSettingsService';
+import { adminService } from '../../../../services/adminService';
 import './Settings.css';
 
-const TOOL_OPTIONS = ['recall_memory', 'retrieve_instructions', 'read_neo4j_cypher'];
-
-export default function AdminSetting() {
-    const { user, token } = useAuth();
-    const [settings, setSettings] = useState<AdminSettings | null>(null);
-    const [draftSettings, setDraftSettings] = useState<AdminSettings | null>(null);
+export default function AdminSettings() {
+    const { token } = useAuth();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [saveLoading, setSaveLoading] = useState(false);
 
-    const loadSettings = async () => {
-        setLoading(true);
-        setError(null);
+    // Provider state
+    const [providers, setProviders] = useState<any[]>([]);
+    const [selectedProviderId, setSelectedProviderId] = useState<string>('');
+    const [providerDetail, setProviderDetail] = useState<any>(null);
+    const [providerDraft, setProviderDraft] = useState<any>(null);
+
+    // System settings state
+    const [systemSettings, setSystemSettings] = useState<any>(null);
+    const [systemDraft, setSystemDraft] = useState<any>(null);
+
+    // UI state
+    const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
+        provider_basic: true,
+        provider_advanced: false,
+        mcp: true,
+        graphrag: true
+    });
+
+    // Load providers
+    const loadProviders = async () => {
         try {
-            const cfg = await fetchSettings(token);
-            setSettings(cfg);
-            setDraftSettings(cfg);
+            const data = await adminService.getProviders();
+            setProviders(data);
+            const active = data.find((p: any) => p.active);
+            if (active) {
+                setSelectedProviderId(active.id);
+            } else if (data.length > 0) {
+                setSelectedProviderId(data[0].id);
+            }
         } catch (err: any) {
-            setError(err.message || 'Failed to load settings');
+            console.error('Failed to load providers:', err);
+        }
+    };
+
+    // Load provider details
+    const loadProviderDetail = async (id: string) => {
+        try {
+            setLoading(true);
+            const detail = await adminService.getProvider(id);
+            setProviderDetail(detail);
+            setProviderDraft(JSON.parse(JSON.stringify(detail)));
+        } catch (err: any) {
+            setError(err.message || 'Failed to load provider details');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Load system settings
+    const loadSystemSettings = async () => {
+        try {
+            setLoading(true);
+            const settings = await fetchSettings(token);
+            setSystemSettings(settings);
+            setSystemDraft(JSON.parse(JSON.stringify(settings)));
+        } catch (err: any) {
+            setError(err.message || 'Failed to load system settings');
         } finally {
             setLoading(false);
         }
     };
 
     useEffect(() => {
-        loadSettings();
+        loadProviders();
+        loadSystemSettings();
     }, [token]);
 
-    const onSave = async () => {
-        if (!draftSettings) return;
-        setError(null);
+    useEffect(() => {
+        if (selectedProviderId) {
+            loadProviderDetail(selectedProviderId);
+        }
+    }, [selectedProviderId]);
+
+    const updateProviderField = (key: string, value: any) => {
+        setProviderDraft({ ...providerDraft, [key]: value });
+    };
+
+    const updateSystemField = (key: string, value: any) => {
+        setSystemDraft({ ...systemDraft, [key]: value });
+    };
+
+    const saveProvider = async () => {
+        if (!selectedProviderId || !providerDraft) return;
         setSaveLoading(true);
+        setError(null);
         try {
-            const saved = await saveSettings(draftSettings, token);
-            setSettings(saved);
-            setDraftSettings(saved);
+            const { id, active, ...editableFields } = providerDraft;
+            await adminService.updateProvider(selectedProviderId, editableFields);
+            await loadProviderDetail(selectedProviderId);
+            await loadProviders();
         } catch (err: any) {
-            setError(err.message || 'Failed to save settings');
+            setError(err.message || 'Failed to save provider');
         } finally {
             setSaveLoading(false);
         }
     };
 
-    const updateProvider = (key: keyof AdminSettings['provider'], value: any) => {
-        if (!draftSettings) return;
-        setDraftSettings({
-            ...draftSettings,
-            provider: { ...draftSettings.provider, [key]: value },
+    const activateProvider = async () => {
+        if (!selectedProviderId) return;
+        setSaveLoading(true);
+        setError(null);
+        try {
+            await adminService.activateProvider(selectedProviderId);
+            await loadProviders();
+            await loadProviderDetail(selectedProviderId);
+        } catch (err: any) {
+            setError(err.message || 'Failed to activate provider');
+        } finally {
+            setSaveLoading(false);
+        }
+    };
+
+    // Test provider
+    const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
+    const [testLoading, setTestLoading] = useState(false);
+
+    const testProvider = async () => {
+        if (!selectedProviderId || !providerDraft?.default_model) return;
+        setTestLoading(true);
+        setTestResult(null);
+        try {
+            await adminService.testProvider(selectedProviderId, providerDraft.default_model);
+            setTestResult({ success: true, message: 'Provider test successful' });
+        } catch (err: any) {
+            setTestResult({ success: false, message: err.message || 'Provider test failed' });
+        } finally {
+            setTestLoading(false);
+        }
+    };
+
+    const saveSystemSettings = async () => {
+        if (!systemDraft) return;
+        setSaveLoading(true);
+        setError(null);
+        try {
+            await saveSettings(systemDraft, token);
+            await loadSystemSettings();
+        } catch (err: any) {
+            setError(err.message || 'Failed to save system settings');
+        } finally {
+            setSaveLoading(false);
+        }
+    };
+
+    const toggleSection = (section: string) => {
+        setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }));
+    };
+
+    // MCP endpoint management
+    const addMcpEndpoint = () => {
+        if (!systemDraft?.s_mcp_config) return;
+        const endpoints = [...(systemDraft.s_mcp_config.endpoints || [])];
+        endpoints.push({ label: '', url: '', allowed_tools: [] });
+        updateSystemField('s_mcp_config', {
+            ...systemDraft.s_mcp_config,
+            endpoints
         });
     };
 
-    const updateBinding = (persona: string, label: string) => {
-        if (!draftSettings) return;
-        setDraftSettings({
-            ...draftSettings,
-            mcp: {
-                ...draftSettings.mcp,
-                persona_bindings: { ...draftSettings.mcp.persona_bindings, [persona]: label },
-            },
+    const removeMcpEndpoint = (index: number) => {
+        if (!systemDraft?.s_mcp_config) return;
+        const endpoints = [...systemDraft.s_mcp_config.endpoints];
+        endpoints.splice(index, 1);
+        updateSystemField('s_mcp_config', {
+            ...systemDraft.s_mcp_config,
+            endpoints
         });
     };
 
-    const updateEndpoint = (idx: number, key: keyof MCPEntry, value: any) => {
-        if (!draftSettings) return;
-        const endpoints = [...(draftSettings.mcp.endpoints || [])];
-        endpoints[idx] = { ...endpoints[idx], [key]: value };
-        setDraftSettings({ ...draftSettings, mcp: { ...draftSettings.mcp, endpoints } });
+    const updateMcpEndpoint = (index: number, field: string, value: any) => {
+        if (!systemDraft?.s_mcp_config) return;
+        const endpoints = [...systemDraft.s_mcp_config.endpoints];
+        endpoints[index] = { ...endpoints[index], [field]: value };
+        updateSystemField('s_mcp_config', {
+            ...systemDraft.s_mcp_config,
+            endpoints
+        });
     };
 
-    const toggleTool = (idx: number, tool: string) => {
-        if (!draftSettings) return;
-        const endpoints = [...(draftSettings.mcp.endpoints || [])];
-        const entry = endpoints[idx];
-        const next = entry.allowed_tools.includes(tool)
-            ? entry.allowed_tools.filter((t) => t !== tool)
-            : [...entry.allowed_tools, tool];
-        endpoints[idx] = { ...entry, allowed_tools: next };
-        setDraftSettings({ ...draftSettings, mcp: { ...draftSettings.mcp, endpoints } });
-    };
-
-    const addEndpoint = () => {
-        if (!draftSettings) return;
-        const endpoints = [...(draftSettings.mcp.endpoints || [])];
-        endpoints.push({ label: 'new-mcp', url: '/mcp/new', allowed_tools: TOOL_OPTIONS });
-        setDraftSettings({ ...draftSettings, mcp: { ...draftSettings.mcp, endpoints } });
-    };
-
-    const removeEndpoint = (idx: number) => {
-        if (!draftSettings) return;
-        const endpoints = [...(draftSettings.mcp.endpoints || [])];
-        endpoints.splice(idx, 1);
-        setDraftSettings({ ...draftSettings, mcp: { ...draftSettings.mcp, endpoints } });
-    };
-
-    if (!draftSettings) {
+    if (loading && !providerDetail && !systemSettings) {
         return (
             <div className="detail-panel" style={{ padding: '24px' }}>
-                {error && (
-                    <div className="observability-error" style={{ marginBottom: '12px' }}>
-                        <AlertCircle className="icon-md" />
-                        <p>{error}</p>
-                    </div>
-                )}
-                <button className="trace-list-refresh" onClick={loadSettings} disabled={loading}>
-                    <RefreshCw className="icon-md" />
-                    {loading ? 'Loading...' : 'Load Settings'}
-                </button>
+                <RefreshCw className="spinning icon-md" style={{ margin: '0 auto', display: 'block' }} />
             </div>
         );
     }
 
     return (
-        <div className="observability-page">
+        <div className="detail-panel">
             <div className="observability-header">
-                <div className="observability-header-left">
-                    <SettingsIcon className="observability-header-icon" />
-                    <div>
-                        <h1 className="observability-header-title">Admin Settings</h1>
-                        <p className="observability-header-subtitle">
-                            Configure system behavior, LLM providers, and MCP tool bindings
-                        </p>
-                    </div>
+                <div>
+                    <h1 className="observability-header-title">Admin Settings</h1>
+                    <p className="observability-header-subtitle">
+                        Configure LLM providers and system settings
+                    </p>
                 </div>
-                <button
-                    className="trace-list-refresh"
-                    onClick={onSave}
-                    disabled={saveLoading}
-                    style={{
-                        background: 'var(--component-text-accent)',
-                        color: 'var(--component-text-on-accent)',
-                        padding: '8px 16px'
-                    }}
-                >
-                    {saveLoading ? <RefreshCw className="spinning icon-sm" /> : <SettingsIcon className="icon-sm" />}
-                    Save Changes
-                </button>
             </div>
 
-            <div className="admin-settings-container">
-                {error && (
-                    <div className="observability-error" style={{ marginBottom: '12px' }}>
-                        <AlertCircle className="icon-md" />
-                        <p>{error}</p>
-                    </div>
-                )}
+            {error && (
+                <div className="observability-error" style={{ marginBottom: '16px' }}>
+                    <AlertCircle className="icon-md" />
+                    <p>{error}</p>
+                </div>
+            )}
 
-                <div className="admin-settings-grid">
-                    <div className="admin-card">
-                        <h3>Provider & Models</h3>
-                        <label className="admin-field">
-                            <span>Base URL</span>
-                            <input
-                                type="text"
-                                value={draftSettings.provider.base_url || ''}
-                                onChange={(e) => updateProvider('base_url', e.target.value)}
-                                placeholder="http://127.0.0.1:9090"
-                            />
-                        </label>
-                        <label className="admin-field">
-                            <span>Model</span>
-                            <input
-                                type="text"
-                                value={draftSettings.provider.model || ''}
-                                onChange={(e) => updateProvider('model', e.target.value)}
-                                placeholder="meta-llama-3.1-8b-instruct"
-                            />
-                        </label>
-                        <label className="admin-field">
-                            <span>Timeout (s)</span>
-                            <input
-                                type="number"
-                                value={draftSettings.provider.timeout || 60}
-                                onChange={(e) => updateProvider('timeout', Number(e.target.value))}
-                            />
-                        </label>
-                        <label className="admin-field">
-                            <span>Endpoint Path</span>
-                            <input
-                                type="text"
-                                value={draftSettings.provider.endpoint_path || '/v1/chat/completions'}
-                                onChange={(e) => updateProvider('endpoint_path', e.target.value)}
-                                placeholder="/v1/chat/completions"
-                            />
-                        </label>
-                        <label className="admin-field">
-                            <span>Enable MCP Tools</span>
-                            <input
-                                type="checkbox"
-                                checked={draftSettings.provider.enable_mcp_tools ?? true}
-                                onChange={(e) => updateProvider('enable_mcp_tools', e.target.checked)}
-                            />
-                        </label>
-                        <label className="admin-field">
-                            <span>Enable Response Schema</span>
-                            <input
-                                type="checkbox"
-                                checked={draftSettings.provider.enable_response_schema ?? false}
-                                onChange={(e) => updateProvider('enable_response_schema', e.target.checked)}
-                            />
-                        </label>
-                        <label className="admin-field">
-                            <span>Max Output Tokens</span>
-                            <input
-                                type="number"
-                                value={draftSettings.provider.max_output_tokens || 8000}
-                                onChange={(e) => updateProvider('max_output_tokens', Number(e.target.value))}
-                            />
-                        </label>
-                        <label className="admin-field">
-                            <span>Temperature</span>
-                            <input
-                                type="number"
-                                step="0.1"
-                                value={draftSettings.provider.temperature ?? 0.1}
-                                onChange={(e) => updateProvider('temperature', Number(e.target.value))}
-                            />
-                        </label>
+            <div className="settings-layout">
+                {/* LEFT COLUMN - Provider Configuration */}
+                <div className="settings-column">
+                    <div className="settings-card">
+                        <div className="card-header">
+                            <div>
+                                <h3>LLM Provider Configuration</h3>
+                                <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: 'var(--component-text-secondary)', opacity: 0.8 }}>
+                                    Configure and manage LLM provider connections
+                                </p>
+                            </div>
+                            {providerDraft?.active && (
+                                <span className="status-badge active">
+                                    <Check className="icon-sm" /> Active
+                                </span>
+                            )}
+                        </div>
+
+                        <div className="form-group">
+                            <label>Select Provider</label>
+                            <select
+                                value={selectedProviderId}
+                                onChange={(e) => setSelectedProviderId(e.target.value)}
+                                className="form-select"
+                            >
+                                {providers.map((p: any) => (
+                                    <option key={p.id} value={p.id}>
+                                        {p.display_name || p.name} {p.active ? '●' : ''}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {providerDraft && (
+                            <>
+                                {/* Basic Settings */}
+                                <div className="section-divider">
+                                    <button
+                                        className="section-toggle"
+                                        onClick={() => toggleSection('provider_basic')}
+                                    >
+                                        Basic Settings
+                                        {expandedSections.provider_basic ? <ChevronUp className="icon-sm" /> : <ChevronDown className="icon-sm" />}
+                                    </button>
+                                </div>
+
+                                {expandedSections.provider_basic && (
+                                    <div className="form-grid">
+                                        <div className="form-group">
+                                            <label>Display Name</label>
+                                            <input
+                                                type="text"
+                                                value={providerDraft.display_name || ''}
+                                                onChange={(e) => updateProviderField('display_name', e.target.value)}
+                                                className="form-input"
+                                            />
+                                        </div>
+
+                                        <div className="form-group">
+                                            <label>Base URL</label>
+                                            <input
+                                                type="url"
+                                                value={providerDraft.base_url || ''}
+                                                onChange={(e) => updateProviderField('base_url', e.target.value)}
+                                                className="form-input"
+                                            />
+                                        </div>
+
+                                        <div className="form-group">
+                                            <label>Endpoint Path</label>
+                                            <input
+                                                type="text"
+                                                value={providerDraft.endpoint_path || ''}
+                                                onChange={(e) => updateProviderField('endpoint_path', e.target.value)}
+                                                className="form-input"
+                                            />
+                                        </div>
+
+                                        <div className="form-group">
+                                            <label>Default Model</label>
+                                            <select
+                                                value={providerDraft.default_model || ''}
+                                                onChange={(e) => updateProviderField('default_model', e.target.value)}
+                                                className="form-select"
+                                            >
+                                                {(providerDraft.models || []).map((m: string) => (
+                                                    <option key={m} value={m}>{m}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+
+                                        <div className="form-group">
+                                            <label>Timeout (seconds)</label>
+                                            <input
+                                                type="number"
+                                                value={providerDraft.timeout || 120}
+                                                onChange={(e) => updateProviderField('timeout', Number(e.target.value))}
+                                                className="form-input"
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Capabilities */}
+                                <div className="section-divider">
+                                    <button
+                                        className="section-toggle"
+                                        onClick={() => toggleSection('provider_advanced')}
+                                    >
+                                        Capabilities
+                                        {expandedSections.provider_advanced ? <ChevronUp className="icon-sm" /> : <ChevronDown className="icon-sm" />}
+                                    </button>
+                                </div>
+
+                                {expandedSections.provider_advanced && (
+                                    <div className="capabilities-grid">
+                                        <label className="checkbox-label">
+                                            <input
+                                                type="checkbox"
+                                                checked={providerDraft.supports_streaming || false}
+                                                onChange={(e) => updateProviderField('supports_streaming', e.target.checked)}
+                                            />
+                                            <span>Streaming</span>
+                                        </label>
+                                        <label className="checkbox-label">
+                                            <input
+                                                type="checkbox"
+                                                checked={providerDraft.supports_tool_calling || false}
+                                                onChange={(e) => updateProviderField('supports_tool_calling', e.target.checked)}
+                                            />
+                                            <span>Tool Calling</span>
+                                        </label>
+                                        <label className="checkbox-label">
+                                            <input
+                                                type="checkbox"
+                                                checked={providerDraft.supports_reasoning || false}
+                                                onChange={(e) => updateProviderField('supports_reasoning', e.target.checked)}
+                                            />
+                                            <span>Reasoning</span>
+                                        </label>
+                                    </div>
+                                )}
+
+                                <div className="action-row">
+                                    <button
+                                        className="btn-primary"
+                                        onClick={saveProvider}
+                                        disabled={saveLoading || testLoading}
+                                    >
+                                        {saveLoading ? <RefreshCw className="spinning icon-sm" /> : <Check className="icon-sm" />}
+                                        Save Provider
+                                    </button>
+
+                                    <button
+                                        className="btn-secondary"
+                                        onClick={testProvider}
+                                        disabled={saveLoading || testLoading}
+                                    >
+                                        {testLoading ? <RefreshCw className="spinning icon-sm" /> : <AlertCircle className="icon-sm" />}
+                                        Test Connection
+                                    </button>
+
+                                    {!providerDraft.active && (
+                                        <button
+                                            className="btn-secondary"
+                                            onClick={activateProvider}
+                                            disabled={saveLoading || testLoading}
+                                        >
+                                            Set as Active
+                                        </button>
+                                    )}
+                                </div>
+
+                                {testResult && (
+                                    <div className={`test-result ${testResult.success ? 'success' : 'error'}`}>
+                                        {testResult.success ? <Check className="icon-sm" /> : <AlertCircle className="icon-sm" />}
+                                        {testResult.message}
+                                    </div>
+                                )}
+                            </>
+                        )}
+                    </div>
+                </div>
+
+                {/* RIGHT COLUMN - System Settings */}
+                <div className="settings-column">
+                    {/* GraphRAG */}
+                    <div className="settings-card">
+                        <div className="card-header">
+                            <div>
+                                <h3>GraphRAG Context</h3>
+                                <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: 'var(--component-text-secondary)', opacity: 0.8 }}>
+                                    Semantic graph-based context enhancement
+                                </p>
+                            </div>
+                        </div>
+                        <div className="form-group">
+                            <label className="checkbox-label">
+                                <input
+                                    type="checkbox"
+                                    checked={systemDraft?.s_enable_graphrag_context || false}
+                                    onChange={(e) => updateSystemField('s_enable_graphrag_context', e.target.checked)}
+                                />
+                                <span>Enable GraphRAG Semantic Context</span>
+                            </label>
+                            <p className="help-text">
+                                Inject graph communities into queries (~300ms latency)
+                            </p>
+                        </div>
                     </div>
 
-                    <div className="admin-card">
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--component-panel-border)', paddingBottom: '12px' }}>
-                            <h3 style={{ border: 'none', padding: 0, margin: 0 }}>MCP Endpoints</h3>
-                            <button className="trace-list-refresh" onClick={addEndpoint} type="button">
-                                <Plus className="icon-sm" /> Add
+                    {/* MCP Endpoints */}
+                    <div className="settings-card">
+                        <div className="card-header">
+                            <div style={{ flex: 1 }}>
+                                <h3>MCP Endpoints</h3>
+                                <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: 'var(--component-text-secondary)', opacity: 0.8 }}>
+                                    Model Context Protocol router connections
+                                </p>
+                            </div>
+                            <button className="btn-icon" onClick={addMcpEndpoint}>
+                                <Plus className="icon-sm" />
                             </button>
                         </div>
 
-                        <div className="admin-mcp-list" style={{ marginTop: '12px' }}>
-                            {(draftSettings.mcp.endpoints || []).map((ep, idx) => (
-                                <div key={`${ep.label}-${idx}`} className="admin-mcp-entry">
-                                    <div className="admin-mcp-row">
-                                        <input
-                                            type="text"
-                                            value={ep.label}
-                                            onChange={(e) => updateEndpoint(idx, 'label', e.target.value)}
-                                            placeholder="label"
-                                        />
-                                        <input
-                                            type="text"
-                                            value={ep.url}
-                                            onChange={(e) => updateEndpoint(idx, 'url', e.target.value)}
-                                            placeholder="http://backend-host:8201"
-                                            style={{ flex: 1 }}
-                                        />
+                        <div className="mcp-list">
+                            {(systemDraft?.s_mcp_config?.endpoints || []).map((endpoint: any, idx: number) => (
+                                <div key={idx} className="mcp-endpoint">
+                                    <div className="form-row">
+                                        <div className="form-group flex-1">
+                                            <label>Label</label>
+                                            <input
+                                                type="text"
+                                                value={endpoint.label}
+                                                onChange={(e) => updateMcpEndpoint(idx, 'label', e.target.value)}
+                                                className="form-input"
+                                                placeholder="e.g., noor-router"
+                                            />
+                                        </div>
                                         <button
-                                            className="trace-list-refresh"
-                                            onClick={() => removeEndpoint(idx)}
-                                            type="button"
-                                            style={{ color: 'var(--component-color-danger)' }}
+                                            className="btn-icon-danger"
+                                            onClick={() => removeMcpEndpoint(idx)}
                                         >
-                                            Remove
+                                            <X className="icon-sm" />
                                         </button>
                                     </div>
-                                    <div className="admin-tools-row">
-                                        {TOOL_OPTIONS.map((tool) => (
-                                            <label key={tool} className="admin-tool-chip">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={ep.allowed_tools?.includes(tool)}
-                                                    onChange={() => toggleTool(idx, tool)}
-                                                />
-                                                {tool}
-                                            </label>
-                                        ))}
+                                    <div className="form-group">
+                                        <label>URL</label>
+                                        <input
+                                            type="url"
+                                            value={endpoint.url}
+                                            onChange={(e) => updateMcpEndpoint(idx, 'url', e.target.value)}
+                                            className="form-input"
+                                            placeholder="https://betaBE.aitwintech.com/2/mcp/"
+                                        />
                                     </div>
                                 </div>
                             ))}
                         </div>
-
-                        <div className="admin-card" style={{ marginTop: '24px' }}>
-                            <h3>Persona Bindings</h3>
-                            <div style={{ padding: '0 8px' }}>
-                                {['noor', 'maestro', 'default'].map((persona) => (
-                                    <label key={persona} className="admin-field" style={{ marginBottom: '12px' }}>
-                                        <span style={{ fontWeight: 600 }}>{persona}</span>
-                                        <select
-                                            value={draftSettings.mcp.persona_bindings?.[persona] || ''}
-                                            onChange={(e) => updateBinding(persona, e.target.value)}
-                                        >
-                                            <option value="">Select endpoint</option>
-                                            {(draftSettings.mcp.endpoints || []).map((ep) => (
-                                                <option key={ep.label} value={ep.label}>
-                                                    {ep.label}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </label>
-                                ))}
-                            </div>
-                        </div>
                     </div>
-                </div>
 
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '24px', padding: '12px', background: 'var(--component-bg-secondary)', borderRadius: '6px' }}>
-                    <p style={{ margin: 0, fontSize: '12px', color: '#9ca3af' }}>
-                        Last updated: {settings?.updated_at || 'n/a'} by {settings?.updated_by || 'n/a'}
-                    </p>
+                    <div className="action-row">
+                        <button
+                            className="btn-primary"
+                            onClick={saveSystemSettings}
+                            disabled={saveLoading}
+                        >
+                            {saveLoading ? <RefreshCw className="spinning icon-sm" /> : <SettingsIcon className="icon-sm" />}
+                            Save System Settings
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

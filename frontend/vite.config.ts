@@ -49,6 +49,11 @@ export default defineConfig({
         changeOrigin: true,
         secure: true,
       },
+      '/api': {
+        target: 'https://betaBE.aitwintech.com',
+        changeOrigin: true,
+        secure: true,
+      },
       '/2': {
         target: 'https://betaBE.aitwintech.com',
         changeOrigin: true,
@@ -60,6 +65,9 @@ export default defineConfig({
         secure: true,
       },
     },
+  },
+  optimizeDeps: {
+    include: ['react-map-gl/mapbox', 'mapbox-gl'],
   },
   build: {
     outDir: 'build',

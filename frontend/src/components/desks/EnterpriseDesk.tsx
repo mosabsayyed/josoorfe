@@ -18,16 +18,16 @@ interface TooltipData {
 }
 
 interface EnterpriseDeskProps {
-  year: string;
-  quarter: string;
+  year?: string;
+  quarter?: string;
 }
 
-export function EnterpriseDesk({ year, quarter }: EnterpriseDeskProps) {
+export function EnterpriseDesk({ year = '2025', quarter = 'Q1' }: EnterpriseDeskProps) {
   // Filter state (single source of truth)
   const [selectedOverlay, setSelectedOverlay] = useState<OverlayType>('none');
   const [tooltip, setTooltip] = useState<TooltipData | null>(null);
   const [modeFilter, setModeFilter] = useState<'all' | 'build' | 'execute'>('all');
-  
+
   // Convert global year/quarter to service format
   // Backend expects: year as number, quarter as integer (1, 2, 3, 4)
   const selectedYear: number | 'all' = parseInt(year);
@@ -41,22 +41,22 @@ export function EnterpriseDesk({ year, quarter }: EnterpriseDeskProps) {
   // Fetch capability matrix from Neo4j
   useEffect(() => {
     let isCancelled = false;
-    
+
     async function fetchMatrix() {
       setIsLoading(true);
       setError(null);
-      
+
       console.log('[EnterpriseDesk] 🚀 Fetching matrix at', new Date().toISOString(), { selectedYear, selectedQuarter });
-      
+
       try {
         const data = await getCapabilityMatrix(selectedYear, selectedQuarter);
-        
+
         if (isCancelled) {
           console.log('[EnterpriseDesk] ⚠️ Request cancelled, ignoring results');
           return;
         }
-        
-        console.log('[EnterpriseDesk] ✅ Received data:', { 
+
+        console.log('[EnterpriseDesk] ✅ Received data:', {
           l1Count: data.length,
           totalL3: data.reduce((sum, l1) => sum + l1.l2.reduce((s, l2) => s + l2.l3.length, 0), 0)
         });
@@ -75,7 +75,7 @@ export function EnterpriseDesk({ year, quarter }: EnterpriseDeskProps) {
     }
 
     fetchMatrix();
-    
+
     return () => {
       isCancelled = true;
       console.log('[EnterpriseDesk] 🛑 Cleanup: Cancelling previous request');

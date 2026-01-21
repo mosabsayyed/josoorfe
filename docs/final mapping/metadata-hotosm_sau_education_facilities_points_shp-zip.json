@@ -1,0 +1,15 @@
+{
+    "created": "2020-05-13T10:47:13.089681",
+    "description": "ESRI Shapefile",
+    "format": "SHP",
+    "download_url": "https://s3.dualstack.us-east-1.amazonaws.com/production-raw-data-api/ISO3/SAU/education_facilities/points/hotosm_sau_education_facilities_points_shp.zip",
+    "id": "864964d2-2f83-4e4c-896f-2b426549171c",
+    "last_modified": "2026-01-02T09:29:34.376461",
+    "metadata_modified": "2026-01-02T10:36:24.132166",
+    "microdata": false,
+    "dataset_id": "cb74c066-45a8-4df1-9981-ffe67b86a32b",
+    "resource_type": "api",
+    "name": "hotosm_sau_education_facilities_points_shp.zip",
+    "mimetype": null,
+    "size": "39.3K"
+}

@@ -22,6 +22,9 @@ const TutorialsDesk = React.lazy(() => import('../../components/desks/TutorialsD
 const ExplorerDesk = React.lazy(() => import('../../components/desks/ExplorerDesk').then(m => ({ default: m.ExplorerDesk })));
 const SettingsDesk = React.lazy(() => import('./views/admin/Settings'));
 const ObservabilityDesk = React.lazy(() => import('./views/admin/Observability'));
+const ProviderManagement = React.lazy(() => import('../../pages/admin/ProviderManagement').then(m => ({ default: m.ProviderManagement })));
+const ABTesting = React.lazy(() => import('../../pages/admin/ABTesting').then(m => ({ default: m.ABTesting })));
+const MonitoringDashboard = React.lazy(() => import('../../pages/admin/MonitoringDashboard').then(m => ({ default: m.MonitoringDashboard })));
 
 const MemoizedSidebar = memo(Sidebar);
 const MemoizedCanvasManager = memo(CanvasManager);
@@ -37,6 +40,9 @@ export type JosoorView =
     | 'roadmap'
     | 'explorer'
     | 'settings'
+    | 'providers'
+    | 'ab-testing'
+    | 'monitoring'
     | 'observability';
 
 export default function JosoorShell() {
@@ -51,6 +57,10 @@ export default function JosoorShell() {
 
     // Active View State
     const [activeView, setActiveView] = useState<JosoorView>('chat');
+
+    useEffect(() => {
+        console.log('JosoorShell activeView changed to:', activeView);
+    }, [activeView]);
 
     // Desks State
     const [year, setYear] = useState('2025');
@@ -153,59 +163,23 @@ export default function JosoorShell() {
                 push_to_graph_server: options?.push_to_graph_server
             };
 
-            if (authService.isGuestMode()) {
-                const response = await chatService.sendMessage(basics);
-                let answer = response.message || response.answer || "";
-                const assistantMsg: APIMessage = {
-                    id: Date.now(),
-                    role: 'assistant',
-                    content: answer,
-                    created_at: new Date().toISOString(),
-                    metadata: response
-                };
-                setMessages(prev => [...prev.filter(m => m.id !== tempMsg.id), { ...tempMsg, id: Date.now() - 1 }, assistantMsg]);
-                loadConversations();
-            } else {
-                await chatService.streamMessage(basics, {
-                    onChunk: (chunk) => {
-                        setStreamingMessage(prev => {
-                            if (!prev) return {
-                                id: Date.now() + 1,
-                                role: 'assistant',
-                                content: chunk,
-                                created_at: new Date().toISOString(),
-                                metadata: { isStreaming: true }
-                            };
-                            return { ...prev, content: prev.content + chunk };
-                        });
-                    },
-                    onComplete: (fullResponse) => {
-                        const assistantMsg: APIMessage = {
-                            id: Date.now() + 1,
-                            role: 'assistant',
-                            content: fullResponse.message || fullResponse.answer || "",
-                            created_at: new Date().toISOString(),
-                            metadata: fullResponse
-                        };
-                        setMessages(prev => [...prev.filter(m => m.id !== tempMsg.id), { ...tempMsg, id: Date.now() - 1 }, assistantMsg]);
-                        setStreamingMessage(null);
-                        if (fullResponse.artifacts && fullResponse.artifacts.length > 0) {
-                            setCanvasArtifacts(fullResponse.artifacts);
-                            setIsCanvasOpen(true);
-                        }
-                        if (!activeConversationId && fullResponse.conversation_id) {
-                            setActiveConversationId(fullResponse.conversation_id);
-                            loadConversations();
-                        }
-                    },
-                    onError: (err) => {
-                        setMessages(prev => [...prev, { id: Date.now(), role: 'assistant', content: 'Error getting response', created_at: new Date().toISOString() }]);
-                        setStreamingMessage(null);
-                    }
-                });
+            const response = await chatService.sendMessage(basics);
+            let answer = response.llm_payload?.answer || response.message || response.answer || "";
+            const assistantMsg: APIMessage = {
+                id: Date.now(),
+                role: 'assistant',
+                content: answer,
+                created_at: new Date().toISOString(),
+                metadata: response
+            };
+            setMessages(prev => [...prev.filter(m => m.id !== tempMsg.id), { ...tempMsg, id: Date.now() - 1 }, assistantMsg]);
+            if (response.conversation_id) {
+                setActiveConversationId(response.conversation_id);
             }
+            loadConversations();
         } catch (err) {
             console.error(err);
+            setMessages(prev => [...prev, { id: Date.now(), role: 'assistant', content: 'Error getting response', created_at: new Date().toISOString() }]);
         } finally {
             setIsLoading(false);
         }
@@ -246,6 +220,9 @@ export default function JosoorShell() {
             case 'planning-desk': return { title: 'Planning Desk', subtitle: 'Intervention Planning' };
             case 'enterprise-desk': return { title: 'Enterprise Desk', subtitle: 'Capability Matrix' };
             case 'reporting-desk': return { title: 'Reporting Desk', subtitle: 'AI Insights' };
+            case 'providers': return { title: 'LLM Providers', subtitle: 'Connection & Configuration' };
+            case 'ab-testing': return { title: 'A/B Testing', subtitle: 'Traffic Optimization' };
+            case 'monitoring': return { title: 'System Observability', subtitle: 'Real-time Metrics' };
             case 'observability': return { title: 'Observability Control Center', subtitle: '' };
             default: return { title: 'Graph Chat', subtitle: '' };
         }
@@ -271,6 +248,7 @@ export default function JosoorShell() {
                     onSelectConversation={handleSelectConversation}
                     onDeleteConversation={handleDeleteConversation}
                     onQuickAction={(action) => {
+                        console.log('JosoorShell received QuickAction:', action);
                         // Map quick actions to shell views if needed
                         if (typeof action === 'string') {
                             setActiveView(action as any);
@@ -304,7 +282,7 @@ export default function JosoorShell() {
                     subtitle={subtitle}
                 >
                     {activeView !== 'chat' && (
-                        <div style={{ flex: 1, height: '100%', overflow: ['settings', 'observability'].includes(activeView) ? 'auto' : 'hidden' }}>
+                        <div style={{ flex: 1, height: '100%', overflow: ['settings', 'providers', 'ab-testing', 'monitoring', 'observability'].includes(activeView) ? 'auto' : 'hidden' }}>
                             <Suspense fallback={<div style={{ padding: '2rem', color: 'white' }}>Loading view...</div>}>
                                 {activeView === 'sector-desk' && <SectorDesk year={year} quarter={quarter} />}
                                 {activeView === 'controls-desk' && <ControlsDesk />}
@@ -315,6 +293,9 @@ export default function JosoorShell() {
                                 {activeView === 'roadmap' && <div className="p-10 text-xl" style={{ color: 'white' }}>Roadmap (Coming Soon)</div>}
                                 {activeView === 'explorer' && <ExplorerDesk year={year} quarter={quarter} />}
                                 {activeView === 'settings' && <SettingsDesk />}
+                                {activeView === 'providers' && <ProviderManagement />}
+                                {activeView === 'ab-testing' && <ABTesting />}
+                                {activeView === 'monitoring' && <MonitoringDashboard />}
                                 {activeView === 'observability' && <ObservabilityDesk />}
                             </Suspense>
                         </div>

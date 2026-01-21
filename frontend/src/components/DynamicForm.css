@@ -1,0 +1,38 @@
+.dynamic-form {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.form-section-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--component-text-primary);
+    margin: 0 0 12px 0;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--component-panel-border);
+}
+
+.fields-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px 24px;
+}
+
+.complex-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-top: 8px;
+}
+
+.no-data {
+    color: var(--component-text-secondary);
+    font-style: italic;
+    font-size: 13px;
+    padding: 16px;
+    text-align: center;
+    background: var(--component-bg-secondary);
+    border: 1px dashed var(--component-panel-border);
+    border-radius: 4px;
+}
