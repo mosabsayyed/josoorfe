@@ -164,18 +164,17 @@ export const ChatContainer = memo(function ChatContainer({
 
   return (
     <div className="chat-container-root">
-      <div className="chat-top-controls" style={{ display: "flex", alignItems: "center", fontWeight: "400", justifyContent: "space-between", padding: "8px 16px", gap: "16px", backgroundColor: theme === 'light' ? 'rgba(250, 236, 195, 0.7)' : 'rgba(31, 41, 55, 0.9)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)', borderBottom: '1px solid rgba(255, 255, 255, 0.1)', height: '60px' }}>
+      <div className="chat-top-controls" style={{ display: "flex", alignItems: "center", fontWeight: "400", justifyContent: "space-between", padding: "8px 16px", gap: "16px", backgroundColor: theme === 'light' ? 'rgba(250, 236, 195, 0.7)' : 'rgba(31, 41, 55, 0.9)', borderBottom: '1px solid rgba(255, 255, 255, 0.1)', height: '60px' }}>
         {/* LEFT: Logo, App Name & Title */}
         <div dir={effectiveLanguage === 'ar' ? 'rtl' : 'ltr'} style={{ display: "flex", alignItems: "center", gap: "12px", color: theme === 'light' ? '#4B5563' : "white" }}>
           <img
             loading="lazy"
-            src="https://cdn.builder.io/api/v1/image/assets%2Fc88de0889c4545b98ff911f5842e062a%2Fba0373f666ef4d3a8e7df76c08d95b9f"
-            style={{ aspectRatio: "1.21", objectFit: "cover", objectPosition: "center", width: "40px", minHeight: "20px", minWidth: "20px", overflow: "hidden", height: "36px", border: "4px hidden rgba(249, 250, 251, 0.07)" }}
+            src="https://cdn.builder.io/api/v1/image/assets%2Fdcb6338cd56942dd9d0d7f3bbd865659%2Fe4fa8a9e49344786befd964c7169a6de"
+            style={{ aspectRatio: "1", objectFit: "cover", objectPosition: "center", width: "40px", height: "40px", overflow: "hidden", margin: "-5px auto" }}
           />
           <div style={{ display: 'flex', flexDirection: 'column' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span style={{ font: "700 16px __Inter_d65c78, sans-serif", color: theme === 'light' ? '#4B5563' : "white" }}>AI Twin Tech</span>
-              <span style={{ color: theme === 'light' ? '#4B5563' : "rgb(209, 213, 219)", font: "400 16px __Inter_d65c78, sans-serif" }}>JOSOOR</span>
               {title && (
                 <>
                   <div style={{ width: '1px', height: '16px', backgroundColor: 'rgba(255,255,255,0.2)', margin: '0 4px' }} />

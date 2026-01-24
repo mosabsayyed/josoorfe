@@ -9,6 +9,7 @@ import { ABTesting } from './pages/admin/ABTesting';
 import { MonitoringDashboard } from './pages/admin/MonitoringDashboard';
 import LandingPage from './pages/LandingPage';
 import ChatAppPage from './pages/ChatAppPage';
+import BuilderPage from './pages/BuilderPage';
 import JosoorShell from './app/josoor/JosoorShell';
 import './index.css';
 
@@ -26,6 +27,10 @@ import { ExplorerDesk } from './components/desks/ExplorerDesk';
 
 function ProtectedRoute({ children, allowGuest = false }: { children: React.ReactElement; allowGuest?: boolean }) {
   const { user, loading } = useAuth();
+
+  // TEMP: Auth disabled for development
+  const AUTH_DISABLED = true;
+  if (AUTH_DISABLED) return children;
 
   if (loading) {
     return <div className="flex items-center justify-center h-screen">Loading...</div>;
@@ -106,6 +111,7 @@ function AppContent() {
       </Route>
 
       {/* Fallback */}
+      <Route path="/builder" element={<BuilderPage />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

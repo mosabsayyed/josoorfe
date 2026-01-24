@@ -56,14 +56,12 @@ const deskItems = [
 
 const contentItems = [
   { id: 'knowledge', label: { en: 'Multimedia Tutorials', ar: 'الدروس المتعددة الوسائط' }, icon: '/icons/josoor.png' },
-  { id: 'chat', label: { en: 'Graph Chat', ar: 'محادثة الرسم البياني' }, icon: '/icons/chat.png' },
   { id: 'explorer', label: { en: 'Graph Explorer', ar: 'مستكشف الرسم البياني' }, icon: '/icons/demo.png' },
   { id: 'roadmap', label: { en: 'Roadmap', ar: 'خارطة الطريق' }, icon: '/icons/approach.png' },
 ];
 
 const adminItems = [
   { id: 'settings', label: { en: 'Settings', ar: 'الإعدادات' }, icon: '/icons/menu.png' },
-  { id: 'monitoring', label: { en: 'Monitoring', ar: 'المراقبة' }, icon: '/icons/demo.png' },
   { id: 'observability', label: { en: 'Observability', ar: 'المراقبة' }, icon: '/icons/architecture.png' },
 ];
 
@@ -183,11 +181,11 @@ export function Sidebar({
   // We're using the canonical action labels directly from `quickActions`.
   // No labelOverrides are needed in this simplified approach.
 
-  const renderSection = (title: string, items: any[]) => (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '8px', padding: collapsed ? '0 4px' : '0' }}>
+  const renderSection = (title: string, items: any[], isFirst: boolean = false) => (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', margin: isFirst ? '8px 29px 0 0' : '8px 28px 0 0', padding: '1px', border: '1px solid rgba(238, 201, 4, 1)' }}>
       {!collapsed && (
-        <div className="sidebar-quickactions-title" style={{ fontWeight: "400", padding: '0 8px' }}>
-          <div style={{ display: "inline", font: '700 14px/18.2px Tajawal, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif', color: theme === 'light' ? "rgb(55, 65, 81)" : undefined }}>{title}</div>
+        <div className="sidebar-quickactions-title" style={{ fontWeight: "400", paddingLeft: '8px' }}>
+          <div style={{ display: "inline", font: isFirst ? '700 18px/18.2px system-ui, sans-serif' : '700 18px/18.2px Tajawal, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif', color: 'rgba(238, 201, 4, 1)' }}><span style={{ color: 'rgb(238, 201, 4)' }}>{title}</span></div>
         </div>
       )}
 
@@ -238,30 +236,55 @@ export function Sidebar({
       <div className="sidebar-header" style={{ width: "100%", height: "auto", padding: collapsed ? "10px 0" : "10px 20px", display: "flex", flexDirection: "column", gap: "6px", alignItems: collapsed ? 'center' : 'stretch' }}>
 
         {/* Actions row */}
-        <div className="sidebar-header-actions" style={{ display: "flex", alignItems: "center", gap: "8px", justifyContent: collapsed ? "center" : "flex-start", padding: collapsed ? '0' : '0 0 10px 0' }}>
+        <div className="sidebar-header-actions" style={{ display: "flex", alignItems: "center", gap: "8px", justifyContent: collapsed ? "center" : "flex-start", padding: collapsed ? '0' : '0 0 10px 0', marginRight: collapsed ? '0' : '33px' }}>
           <button className="sidebar-icon-button clickable" onClick={() => onRequestToggleCollapse?.()} title={translations.toggleSidebar} style={{ display: "flex", alignItems: "center", backgroundColor: "rgba(0, 0, 0, 0)", height: "40px", justifyContent: "center", width: "40px", border: 'none' }}>
             <img src="/icons/menu.png" alt={translations.toggleSidebar} style={{ height: "24px", width: "24px" }} />
           </button>
 
           {!collapsed && (
-            <Button onClick={onNewChat} className="sidebar-newchat-button clickable" variant="default" style={{ flex: 1, backgroundColor: "rgb(255, 215, 0)", color: "rgb(17, 24, 39)", borderRadius: "8px", padding: "8px 10px", fontWeight: "400" }}>
-              {translations.newChat}
-            </Button>
+            <div style={{ display: "block", color: "#eec904", margin: "0 auto", font: "600 18px __Inter_d65c78, sans-serif" }}>
+              JOSOOR
+            </div>
           )}
         </div>
 
         {/* Sections */}
-        {renderSection(language === 'ar' ? 'الحوكمة والرقابة' : 'Governance & Oversight', deskItems)}
+        {renderSection(language === 'ar' ? 'الحوكمة والرقابة' : 'Governance/Oversight', deskItems, true)}
         {renderSection(language === 'ar' ? 'المراجع' : 'References', contentItems)}
         {renderSection(language === 'ar' ? 'الإدارة' : 'Admin', adminItems)}
       </div>
 
       {/* Conversations - only if not collapsed */}
       {!collapsed && (
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, padding: '0 5px 20px', overflowY: 'auto' }}>
-          <div className="conversations-card">
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, marginLeft: '20px', maxWidth: '210px', padding: '1px', border: '1px solid rgba(238, 201, 4, 1)', overflowY: 'auto' }}>
+          {/* Graph Chat Button */}
+          <button
+            title="Graph Chat"
+            onClick={() => onQuickAction?.({ id: 'graph-chat', label: { en: 'Graph Chat', ar: 'دردشة الرسم البياني' }, icon: '/icons/chat.png' })}
+            className="quickaction-item clickable"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              backgroundColor: "rgba(0, 0, 0, 0)",
+              borderRadius: "4px",
+              color: "rgb(243, 244, 246)",
+              gap: "8px",
+              justifyContent: "flex-start",
+              width: "100%",
+              padding: "6px 0",
+              font: '400 13px Cairo, "Segoe UI", Roboto, Arial, sans-serif',
+              border: "1px solid rgba(0, 0, 0, 0)",
+              cursor: "pointer"
+            }}
+          >
+            <img src="/icons/chat.png" alt="Graph Chat" className="sidebar-quickaction-icon sidebar-quickaction-large" style={{ display: "block", fontWeight: "600", height: "24px", width: "24px", objectFit: "cover" }} />
+            <div className="quickaction-meta" style={{ display: "flex", alignItems: "flex-start", flexDirection: "column" }}>
+              <span className="quickaction-title" style={{ display: "block", fontSize: "14px" }}>Graph Chat</span>
+            </div>
+          </button>
+
+          <div className="conversations-card" style={{ marginRight: '-0', padding: '5px 10px 5px 0' }}>
             <button onClick={() => setShowConversations(!showConversations)} className="conversations-header clickable">
-              <img src="/icons/chat.png" alt="chat" className="conversations-toggle-icon" />
               <span className="conversations-title">{translations.conversations}</span>
             </button>
             {showConversations && (
