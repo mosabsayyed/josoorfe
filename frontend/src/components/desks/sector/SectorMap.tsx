@@ -165,7 +165,11 @@ function getMainCategory(sector?: string): MainCategory | null {
 function getSimpleStatus(status?: string): 'Running' | 'Future' {
   if (!status) return 'Future';
   const s = status.toLowerCase();
-  if (s === 'existing' || s === 'active') return 'Running';
+
+  // Running = Existing or Active
+  if (s === 'existing' || s === 'active' || s === 'operational') return 'Running';
+
+  // Everything else is Future (Planned, Under Construction, Tendering, Awarded, etc.)
   return 'Future';
 }
 
@@ -177,6 +181,102 @@ function getCoords(node: GraphNode): [number, number] | null {
   }
   return null;
 }
+
+
+// SVG Network Overlay Component (Native Animated SVG)
+const NetworkSVGOverlay: React.FC<{
+  manualGeoJSON: any;
+  dbGeoJSON: any;
+  mapRef: React.RefObject<any>;
+  viewport: any;
+}> = ({ manualGeoJSON, dbGeoJSON, mapRef, viewport }) => {
+  const [paths, setPaths] = useState<{ d: string; color: string; id: string; label?: string; labelPos?: { x: number; y: number; angle: number } }[]>([]);
+
+  useEffect(() => {
+    const map = mapRef.current?.getMap();
+    if (!map) return;
+
+    const generatePaths = (geojson: any, color: string, idPrefix: string) => {
+      return geojson.features.map((f: any, i: number) => {
+        const coords = f.geometry.coordinates;
+        if (!coords || coords.length < 2) return null;
+        const p1 = map.project(coords[0]);
+        const p2 = map.project(coords[1]);
+
+        // Calculate mid-point and angle for labels
+        const midX = (p1.x + p2.x) / 2;
+        const midY = (p1.y + p2.y) / 2;
+        const angle = Math.atan2(p2.y - p1.y, p2.x - p1.x) * (180 / Math.PI);
+
+        return {
+          id: `${idPrefix}-${i}`,
+          d: `M ${p1.x} ${p1.y} L ${p2.x} ${p2.y}`,
+          color,
+          label: f.properties.label,
+          labelPos: { x: midX, y: midY, angle }
+        };
+      }).filter(Boolean);
+    };
+
+    setPaths([
+      ...generatePaths(manualGeoJSON, '#818cf8', 'manual'),
+      ...generatePaths(dbGeoJSON, '#22d3ee', 'db')
+    ].filter(Boolean) as any);
+  }, [manualGeoJSON, dbGeoJSON, viewport, mapRef]);
+
+  return (
+    <svg className="network-svg-overlay">
+      <defs>
+        <filter id="soft-glow" x="-20%" y="-20%" width="140%" height="140%">
+          <feGaussianBlur stdDeviation="2" result="blur" />
+          <feMerge>
+            <feMergeNode in="blur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+      </defs>
+      {paths.map(path => (
+        <g key={path.id}>
+          <path
+            d={path.d}
+            className="network-path-base"
+            stroke={path.color}
+            strokeWidth="4"
+            strokeOpacity="0.3"
+          />
+          <path
+            d={path.d}
+            className="network-path-flow"
+            stroke={path.color}
+            strokeWidth="2"
+            strokeOpacity="1.0"
+            filter="url(#soft-glow)"
+          />
+          {/* Text labels for connections */}
+          {path.label && (
+            <text
+              x={path.labelPos.x}
+              y={path.labelPos.y}
+              dy="-4"
+              textAnchor="middle"
+              className="network-line-label"
+              fill={path.color}
+              style={{
+                fontSize: '10px',
+                fontWeight: 600,
+                textShadow: '0 0 4px black',
+                pointerEvents: 'none'
+              }}
+              transform={`rotate(${path.labelPos.angle > 90 || path.labelPos.angle < -90 ? path.labelPos.angle + 180 : path.labelPos.angle}, ${path.labelPos.x}, ${path.labelPos.y})`}
+            >
+              {path.label}
+            </text>
+          )}
+        </g>
+      ))}
+    </svg>
+  );
+};
 
 const SectorMap: React.FC<SectorMapProps> = ({
   selectedSector,
@@ -192,10 +292,20 @@ const SectorMap: React.FC<SectorMapProps> = ({
   const mapRef = useRef<any>(null);
 
   // UI State
+  // UI State
   const [selectedAsset, setSelectedAsset] = useState<GraphNode | null>(null);
   const [hoverAsset, setHoverAsset] = useState<GraphNode | null>(null);
   const [isPanelCollapsed, setIsPanelCollapsed] = useState(false);
-  const [showFuture, setShowFuture] = useState(true);
+  const [timelineFilter, setTimelineFilter] = useState<'current' | 'future' | 'both'>('both');
+  const [priorityFilter, setPriorityFilter] = useState<'major' | 'strategic' | 'both'>('both');
+
+  // Animation State for Line Flow - REMOVED (Now handled by CSS in SVG)
+  const [mapViewport, setMapViewport] = useState<any>(null);
+
+  // Sync SVG on move
+  const onMove = useCallback((evt: any) => {
+    setMapViewport(evt.viewState);
+  }, []);
 
   // NO CONTROLLED ViewState - Allows smooth animations via mapRef.current.flyTo()
 
@@ -216,7 +326,12 @@ const SectorMap: React.FC<SectorMapProps> = ({
       if (selectedRegion && node.region !== selectedRegion) return false;
 
       const simpleStatus = getSimpleStatus(node.status);
-      if (!showFuture && simpleStatus === 'Future') return false;
+      if (timelineFilter === 'current' && simpleStatus === 'Future') return false;
+      if (timelineFilter === 'future' && simpleStatus === 'Running') return false;
+
+      // Priority Filter
+      const assetPriority = node.priority === 'HIGH' ? 'major' : 'strategic';
+      if (priorityFilter !== 'both' && assetPriority !== priorityFilter) return false;
 
       // Global Date Filter
       if (year) {
@@ -226,7 +341,7 @@ const SectorMap: React.FC<SectorMapProps> = ({
 
       return true;
     });
-  }, [allAssets, selectedSector, selectedRegion, showFuture, year]);
+  }, [allAssets, selectedSector, selectedRegion, timelineFilter, priorityFilter, year]);
 
   // Handle Region Selection Zoom
   useEffect(() => {
@@ -296,52 +411,60 @@ const SectorMap: React.FC<SectorMapProps> = ({
     const findNode = (id: string) => allAssets.find(n => n.id === id || n.name === id);
     const getPoint = (node: GraphNode | undefined) => node ? getCoords(node) : null;
 
-    // 1. Manual Lines (Red)
+    // VISIBILITY CHECK: Only show lines if both ends are in filteredAssets
+    const isVisible = (id: string) => filteredAssets.some(a => a.id === id || a.name === id);
+
+    // 1. Manual Lines
     const manualFeatures = MANUAL_CONNECTIONS.map(conn => {
       const sNode = findNode(conn.s);
       const dNode = findNode(conn.d);
-      const sRegion = KSA_REGIONS.find(r => r.id === conn.s || r.name === conn.s);
-      const dRegion = KSA_REGIONS.find(r => r.id === conn.d || r.name === conn.d);
 
-      const sPoint = getPoint(sNode) || (sRegion ? [sRegion.long, sRegion.lat] : null);
-      const dPoint = getPoint(dNode) || (dRegion ? [dRegion.long, dRegion.lat] : null);
+      // Auto-hide if ends are missing or filtered out
+      if (!isVisible(conn.s) || !isVisible(conn.d)) return null;
+
+      const sPoint = getPoint(sNode);
+      const dPoint = getPoint(dNode);
 
       if (sPoint && dPoint) {
         return {
           type: 'Feature',
-          properties: { type: 'Manual', status: conn.status },
+          properties: {
+            type: 'Manual',
+            status: conn.status,
+            label: `${conn.type} Connection`,
+            sector: conn.type
+          },
           geometry: { type: 'LineString', coordinates: [sPoint, dPoint] }
         };
       }
       return null;
     }).filter(Boolean);
 
-    // 2. DB Lines (Green)
+    // 2. DB Lines
     const dbConnections = allAssets.filter(n => n.asset_type === 'Network Connection');
     const dbFeatures = dbConnections.map(conn => {
+      if (!conn.source_asset_name || !conn.destination_asset_name) return null;
+
+      // Auto-hide if ends are filtered out
+      if (!isVisible(conn.source_asset_name) || !isVisible(conn.destination_asset_name)) return null;
+
       let sPoint: [number, number] | null = null;
       let dPoint: [number, number] | null = null;
 
-      if (conn.source_lat && conn.source_long && conn.source_lat !== 0) {
-        sPoint = [conn.source_long, conn.source_lat];
-      }
-      if (conn.dest_lat && conn.dest_long && conn.dest_lat !== 0) {
-        dPoint = [conn.dest_long, conn.dest_lat];
-      }
+      const sAsset = allAssets.find(a => a.name === conn.source_asset_name);
+      const dAsset = allAssets.find(a => a.name === conn.destination_asset_name);
 
-      if (!sPoint && conn.source_asset_name) {
-        const n = allAssets.find(a => a.name === conn.source_asset_name);
-        if (n) sPoint = getCoords(n);
-      }
-      if (!dPoint && conn.destination_asset_name) {
-        const n = allAssets.find(a => a.name === conn.destination_asset_name);
-        if (n) dPoint = getCoords(n);
-      }
+      if (sAsset) sPoint = getCoords(sAsset);
+      if (dAsset) dPoint = getCoords(dAsset);
 
       if (sPoint && dPoint) {
         return {
           type: 'Feature',
-          properties: { type: 'DB', status: 'Existing' },
+          properties: {
+            type: 'DB',
+            status: 'Existing',
+            label: conn.name || 'Transmission Line'
+          },
           geometry: { type: 'LineString', coordinates: [sPoint, dPoint] }
         };
       }
@@ -352,7 +475,7 @@ const SectorMap: React.FC<SectorMapProps> = ({
       manualGeoJSON: { type: 'FeatureCollection', features: manualFeatures },
       dbGeoJSON: { type: 'FeatureCollection', features: dbFeatures }
     };
-  }, [allAssets]);
+  }, [allAssets, filteredAssets]);
 
   // Focus Handling
   useEffect(() => {
@@ -396,38 +519,43 @@ const SectorMap: React.FC<SectorMapProps> = ({
         maxZoom={16}
         maxBounds={[[32.0, 15.0], [60.0, 35.0]]} // Strict KSA Bounds
         terrain={{ source: 'mapbox-dem', exaggeration: 1.5 }}
+        onMove={onMove}
       >
         <NavigationControl position="top-right" />
         <FullscreenControl position="top-right" />
 
-        {/* --- GREEN LINE (DB DATA) --- */}
+        {/* SVG ANIMATED OVERLAY */}
+        <NetworkSVGOverlay
+          manualGeoJSON={manualGeoJSON}
+          dbGeoJSON={dbGeoJSON}
+          mapRef={mapRef}
+          viewport={mapViewport}
+        />
+
+        {/* Background Network Lines (Mapbox Layers) - Keep static base for depth */}
         {dbGeoJSON.features.length > 0 && (
           <Source id="lines-db" type="geojson" data={dbGeoJSON as any}>
             <Layer
               id="layer-lines-db"
               type="line"
               paint={{
-                'line-color': '#00ff00', // GREEN
-                'line-width': 4,
-                'line-opacity': 0.6,
-                'line-dasharray': [1, 2], // Dotted
+                'line-color': '#06b6d4',
+                'line-width': 2,
+                'line-opacity': 0.2, // Very subtle background
               } as any}
             />
           </Source>
         )}
 
-        {/* --- RED LINE (MANUAL DATA) --- */}
         {manualGeoJSON.features.length > 0 && (
           <Source id="lines-manual" type="geojson" data={manualGeoJSON as any}>
             <Layer
               id="layer-lines-manual"
               type="line"
               paint={{
-                'line-color': '#ff0000', // RED
-                'line-width': 6,
-                'line-opacity': 1, // ALWAYS VISIBLE
-                'line-dasharray': [2, 4]
-                // 'line-dash-offset': lineDashOffset // REMOVED: Invalid property causes crash
+                'line-color': '#6366f1',
+                'line-width': 2,
+                'line-opacity': 0.2,
               } as any}
             />
           </Source>
@@ -473,8 +601,6 @@ const SectorMap: React.FC<SectorMapProps> = ({
                 e.originalEvent.stopPropagation();
                 setSelectedAsset(asset);
                 setIsPanelCollapsed(false);
-                setSelectedAsset(asset);
-                setIsPanelCollapsed(false);
                 onAssetSelect?.(asset);
                 mapRef.current?.flyTo({
                   center: coords,
@@ -488,6 +614,10 @@ const SectorMap: React.FC<SectorMapProps> = ({
             >
               <div
                 className={`asset-marker-container ${isHigh ? 'high-priority' : ''} ${isSelected ? 'selected' : ''}`}
+                style={{
+                  transform: `translateY(${isSelected ? -12 : -8}px)`, // Offset from city center
+                  transition: 'transform 0.3s ease'
+                }}
                 onMouseEnter={() => setHoverAsset(asset)}
                 onMouseLeave={() => setHoverAsset(null)}
               >
@@ -498,15 +628,21 @@ const SectorMap: React.FC<SectorMapProps> = ({
                   style={{
                     width: size,
                     height: size,
-                    // transform/transition handled in CSS (City Approach)
                   }}
                 />
+
+                {/* Visual indicator for Major Unlock vs Strategic Impact - REMOVED per user request (Legend is sufficient) */}
 
                 {/* TOOLTIP ON HOVER */}
                 {hoverAsset?.id === asset.id && !isSelected && (
                   <div className="asset-tooltip">
                     <strong>{asset.name}</strong>
-                    <div>{asset.sector}</div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                      <span>{asset.sector}</span>
+                      {asset.subCategory && (
+                        <span style={{ fontSize: '10px', opacity: 0.8 }}>{asset.subCategory}</span>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
@@ -521,41 +657,62 @@ const SectorMap: React.FC<SectorMapProps> = ({
 
         {/* 1. Left Group: Controls (Toggle + Stats + Reset) */}
         <div className="controls-group" style={{ display: 'flex', flexDirection: 'column', gap: '12px', pointerEvents: 'auto' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            {/* Future Toggle */}
-            <button
-              className={`control-btn ${showFuture ? 'active' : ''}`}
-              onClick={() => setShowFuture(!showFuture)}
-              title="Toggle Future Projects"
-            >
-              <Clock size={18} />
-              <span>Future</span>
-            </button>
 
-            {/* Stats Pill */}
-            <div className="map-stats-pill" style={{ position: 'relative', top: 0, left: 0, transform: 'none', margin: 0, display: 'flex', gap: '8px', padding: '6px 8px' }}>
-              {/* Total */}
-              <div className="stat-item total" style={{ borderRight: '1px solid rgba(255,255,255,0.1)', paddingRight: '12px', marginRight: '4px' }}>
-                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                  <span className="lbl" style={{ fontSize: '9px' }}>Total Assets</span>
-                  <span className="val" style={{ fontSize: '14px' }}>{allAssets.length}</span>
-                </div>
+          {/* THREE-WAY TIMELINE TOGGLE */}
+          <div className="pill-toggle-group">
+            <button
+              className={`pill-btn ${timelineFilter === 'current' ? 'active' : ''}`}
+              onClick={() => setTimelineFilter('current')}
+            >Current</button>
+            <button
+              className={`pill-btn ${timelineFilter === 'future' ? 'active' : ''}`}
+              onClick={() => setTimelineFilter('future')}
+            >Future</button>
+            <button
+              className={`pill-btn ${timelineFilter === 'both' ? 'active' : ''}`}
+              onClick={() => setTimelineFilter('both')}
+            >Both</button>
+          </div>
+
+          {/* ASSET IMPACT TOGGLE */}
+          <div className="pill-toggle-group">
+            <button
+              className={`pill-btn ${priorityFilter === 'major' ? 'active' : ''}`}
+              onClick={() => setPriorityFilter('major')}
+            >Major Unlock</button>
+            <button
+              className={`pill-btn ${priorityFilter === 'strategic' ? 'active' : ''}`}
+              onClick={() => setPriorityFilter('strategic')}
+            >Strategic Impact</button>
+            <button
+              className={`pill-btn ${priorityFilter === 'both' ? 'active' : ''}`}
+              onClick={() => setPriorityFilter('both')}
+            >All</button>
+          </div>
+
+          {/* Stats Pill */}
+          <div className="map-stats-pill" style={{ position: 'relative', top: 0, left: 0, transform: 'none', margin: 0, display: 'flex', gap: '8px', padding: '6px 8px' }}>
+            {/* Total */}
+            <div className="stat-item total" style={{ borderRight: '1px solid rgba(255,255,255,0.1)', paddingRight: '12px', marginRight: '4px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <span className="lbl" style={{ fontSize: '9px' }}>Total Assets</span>
+                <span className="val" style={{ fontSize: '14px' }}>{allAssets.length}</span>
               </div>
-              {/* Current */}
-              <div className="stat-item current" style={{ background: 'rgba(16, 185, 129, 0.15)', padding: '4px 12px', borderRadius: '10px' }}>
-                <div className="dot" style={{ width: '6px', height: '6px', background: '#10b981' }}></div>
-                <div>
-                  <div className="lbl" style={{ fontSize: '9px', color: '#86efac' }}>Now</div>
-                  <div className="val" style={{ fontSize: '14px' }}>{filteredAssets.filter(a => getSimpleStatus(a.status) === 'Running').length}</div>
-                </div>
+            </div>
+            {/* Current */}
+            <div className="stat-item current" style={{ background: 'rgba(16, 185, 129, 0.15)', padding: '4px 12px', borderRadius: '10px' }}>
+              <div className="dot" style={{ width: '6px', height: '6px', background: '#10b981' }}></div>
+              <div>
+                <div className="lbl" style={{ fontSize: '9px', color: '#86efac' }}>Now</div>
+                <div className="val" style={{ fontSize: '14px' }}>{filteredAssets.filter(a => getSimpleStatus(a.status) === 'Running').length}</div>
               </div>
-              {/* Future */}
-              <div className="stat-item future" style={{ background: 'rgba(99, 102, 241, 0.15)', padding: '4px 12px', borderRadius: '10px' }}>
-                <div className="dot-future" style={{ width: '6px', height: '6px', background: '#6366f1' }}></div>
-                <div>
-                  <div className="lbl" style={{ fontSize: '9px', color: '#a5b4fc' }}>Future</div>
-                  <div className="val" style={{ fontSize: '14px' }}>{filteredAssets.filter(a => getSimpleStatus(a.status) === 'Future').length}</div>
-                </div>
+            </div>
+            {/* Future */}
+            <div className="stat-item future" style={{ background: 'rgba(99, 102, 241, 0.15)', padding: '4px 12px', borderRadius: '10px' }}>
+              <div className="dot-future" style={{ width: '6px', height: '6px', background: '#6366f1' }}></div>
+              <div>
+                <div className="lbl" style={{ fontSize: '9px', color: '#a5b4fc' }}>Future</div>
+                <div className="val" style={{ fontSize: '14px' }}>{filteredAssets.filter(a => getSimpleStatus(a.status) === 'Future').length}</div>
               </div>
             </div>
           </div>
@@ -569,6 +726,15 @@ const SectorMap: React.FC<SectorMapProps> = ({
               Reset View
             </button>
           )}
+
+          {/* DISCLAIMER */}
+          <div className="map-disclaimer" style={{ maxWidth: '240px', marginTop: '10px' }}>
+            <p style={{ fontSize: '9px', color: 'rgba(255,255,255,0.5)', lineHeight: '1.4', margin: 0 }}>
+              Disclaimer:<br />
+              - Data based on publicly available KSA public Sector datasets and could be out of date.<br />
+              - Data is non-comprehensive and highly selective for demo purpose.
+            </p>
+          </div>
         </div>
 
         {/* 2. Right Group: Asset Panel (Next to Stats Pill) */}
@@ -576,9 +742,14 @@ const SectorMap: React.FC<SectorMapProps> = ({
           <div className="asset-panel-fixed glass-panel" style={{ pointerEvents: 'auto', marginBottom: isPanelCollapsed ? '0' : '20px' }}>
             <div className="popup-header" style={{ marginBottom: isPanelCollapsed ? '0' : '20px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span className="popup-category" style={{ color: MAIN_CATEGORY_COLORS[getMainCategory(selectedAsset.sector) || 'Industry'] }}>
-                  {selectedAsset.sector?.toUpperCase()}
-                </span>
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <span className="popup-category" style={{ color: MAIN_CATEGORY_COLORS[getMainCategory(selectedAsset.sector) || 'Industry'] }}>
+                    {selectedAsset.sector?.toUpperCase()}
+                  </span>
+                  {selectedAsset.subCategory && (
+                    <span style={{ fontSize: '9px', color: '#94a3b8', marginTop: '-2px' }}>{selectedAsset.subCategory}</span>
+                  )}
+                </div>
                 <span className={`popup-status ${getStatusClass(selectedAsset.status)}`}>
                   {selectedAsset.status}
                 </span>
@@ -656,14 +827,19 @@ const SectorMap: React.FC<SectorMapProps> = ({
                     </div>
                   )}
 
-                  {/* 3. STRATEGIC ALIGNMENT */}
-                  {(selectedAsset.fiscalAction || selectedAsset.priority) && (
+                  {/* 3. STRATEGIC ALIGNMENT & OWNERSHIP */}
+                  {(selectedAsset.fiscalAction || selectedAsset.priority || selectedAsset.ownership_type) && (
                     <div className="popup-section full-width">
-                      <label>Strategic Mandate</label>
+                      <label>Strategic Mandate & Ownership</label>
                       <div className="tags-row">
                         {selectedAsset.priority && (
                           <span className={`tag-pill priority-${selectedAsset.priority.toLowerCase()}`}>
-                            {selectedAsset.priority} Priority
+                            {selectedAsset.priority === 'HIGH' ? 'Major Unlock' : 'Strategic Impact'}
+                          </span>
+                        )}
+                        {selectedAsset.ownership_type && (
+                          <span className="tag-pill ownership" style={{ background: selectedAsset.ownership_type === 'PPP' ? '#6366f1' : '#475569' }}>
+                            {selectedAsset.ownership_type}
                           </span>
                         )}
                         {selectedAsset.fiscalAction && (
@@ -671,35 +847,43 @@ const SectorMap: React.FC<SectorMapProps> = ({
                             ACTION: {selectedAsset.fiscalAction}
                           </span>
                         )}
-                        {selectedAsset.fundingSource && (
-                          <span className="tag-pill source">
-                            Source: {selectedAsset.fundingSource}
-                          </span>
-                        )}
                       </div>
                     </div>
                   )}
 
-                  {/* 4. SECTOR SPLIT (Breakdown) */}
-                  {(selectedAsset.sectors || selectedAsset.sector_split) && (
+                  {/* 4. SECTOR SPLIT (Breakdown) - Visualized as Bars */}
+                  {(selectedAsset.sector_split || selectedAsset.sectors) && (
                     <div className="popup-section full-width">
-                      <label>Sector Distribution</label>
+                      <label>{selectedAsset.sector === 'Water' ? 'Water Supply Split' : 'Sector Distribution'}</label>
                       <div className="sector-bars">
-                        {Object.entries(selectedAsset.sectors || selectedAsset.sector_split || {}).map(([key, val]) => (
+                        {Object.entries(selectedAsset.sector_split || selectedAsset.sectors || {}).map(([key, val]) => (
                           <div key={key} className="sector-bar-item">
                             <div className="bar-label">
                               <span>{key}</span>
-                              <span>{typeof val === 'number' ? val.toLocaleString() : String(val)}</span>
+                              <span style={{ fontWeight: 700 }}>{typeof val === 'number' ? `${val}%` : String(val)}</span>
                             </div>
-                            <div className="bar-track">
+                            <div className="bar-track" style={{ height: '4px', background: 'rgba(255,255,255,0.1)', borderRadius: '2px', marginTop: '4px' }}>
                               <div
                                 className="bar-fill"
-                                style={{ width: `${Math.min(100, (Number(val) / 100000) * 100)}%` }} // Rough scaling
+                                style={{
+                                  height: '100%',
+                                  borderRadius: '2px',
+                                  width: `${typeof val === 'number' ? Math.min(100, val) : 0}%`,
+                                  background: selectedAsset.sector === 'Water' ? '#06b6d4' : '#3b82f6'
+                                }}
                               ></div>
                             </div>
                           </div>
                         ))}
                       </div>
+                    </div>
+                  )}
+
+                  {/* SPECIAL HIGHLIGHT: Investment for Private Future Assets */}
+                  {getSimpleStatus(selectedAsset.status) === 'Future' && selectedAsset.ownership_type === 'Private' && selectedAsset.investment && (
+                    <div className="popup-section full-width highlight-box" style={{ background: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.3)', padding: '12px', borderRadius: '8px' }}>
+                      <div style={{ fontSize: '10px', color: '#f59e0b', textTransform: 'uppercase', fontWeight: 700, marginBottom: '4px' }}>Private Investment Size</div>
+                      <div style={{ fontSize: '20px', fontWeight: 800, color: 'white' }}>{formatNumber(selectedAsset.investment, true)}</div>
                     </div>
                   )}
 
@@ -710,30 +894,26 @@ const SectorMap: React.FC<SectorMapProps> = ({
                   </div>
                 </div>
 
-                <div className="popup-actions">
+                <div className="popup-actions" style={{ marginTop: '20px' }}>
                   <button
                     className="popup-btn primary"
-                    onClick={() => window.open(`/assets/${selectedAsset.id}`, '_blank')}
-                  >
-                    View Details
-                  </button>
-                  <button
-                    className="popup-btn secondary"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setIsPanelCollapsed(true);
+                    style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                    onClick={() => {
+                      const lat = selectedAsset.latitude ?? selectedAsset.lat;
+                      const lng = selectedAsset.longitude ?? selectedAsset.long;
+                      window.open(`https://www.google.com/maps?q=${lat},${lng}`, '_blank');
                     }}
                   >
-                    Minimize
+                    See on Google Maps
                   </button>
                 </div>
               </>
             )}
           </div>
         )}
+
       </div>
 
-      {/* Collapsed Panel Tab (Bottom Right) */}
       {/* LEGEND - RESTORED */}
       <div style={{
         position: 'absolute', bottom: '24px', right: '24px',
@@ -755,8 +935,8 @@ const SectorMap: React.FC<SectorMapProps> = ({
           ))}
         </div>
         <div style={{ marginTop: '16px', paddingTop: '12px', borderTop: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <img src={legendPriority} alt="High Priority" style={{ width: '20px', height: '20px' }} />
-          <span style={{ color: '#fbbf24', fontSize: '11px', fontWeight: 600 }}>High Priority Asset</span>
+          <img src={legendPriority} alt="Major Unlock" style={{ width: '20px', height: '20px' }} />
+          <span style={{ color: '#fbbf24', fontSize: '11px', fontWeight: 600 }}>Major Unlock Asset</span>
         </div>
       </div>
     </div>

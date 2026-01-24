@@ -95,6 +95,9 @@ export interface StrategicAsset {
     priority?: string;
     fiscalAction?: string;
     rationale?: string;
+    ownership_type?: 'Government' | 'Private' | 'PPP';
+    ownership_confidence?: 'High' | 'Medium' | 'Low';
+    sector_split?: Record<string, number>; // e.g., { 'Urban': 40, 'Agri': 50, 'Ind': 10 }
 }
 
 // 72 Strategic Assets from saudi_assets.csv
@@ -121,9 +124,9 @@ export const strategicAssets: StrategicAsset[] = [
     { id: 'A-015', name: 'Jubail Power Plant', category: 'Utilities', subCategory: 'Desalination/Power', status: 'Existing', lat: 27.03, long: 49.63, region: 'Eastern Region', description: 'Supplies Jubail Industrial City & Riyadh', capacity: 'Integrated Complex', priority: 'Medium', fiscalAction: 'MAINTAIN', rationale: 'Standard strategic alignment; optimize for efficiency.' },
     { id: 'A-016', name: 'Ghazlan Power Plant', category: 'Utilities', subCategory: 'Power Generation', status: 'Existing', lat: 26.839, long: 49.923, region: 'Eastern Region', description: 'Major gas-fired plant supporting Eastern grid', capacity: '4000+ MW', priority: 'Medium', fiscalAction: 'MAINTAIN', rationale: 'Standard strategic alignment; optimize for efficiency.' },
     { id: 'A-017', name: 'Qurayyah IPP', category: 'Utilities', subCategory: 'Power Generation', status: 'Existing', lat: 25.86, long: 50.11, region: 'Eastern Region', description: 'Combined cycle gas turbine plant', capacity: '3927 MW', priority: 'Medium', fiscalAction: 'MAINTAIN', rationale: 'Standard strategic alignment; optimize for efficiency.' },
-    { id: 'A-018', name: 'Rabigh 3 IWP', category: 'Utilities', subCategory: 'Desalination', status: 'Existing', lat: 22.68, long: 39.02, region: 'Makkah', description: 'Major Reverse Osmosis (RO) facility', capacity: '600k m3/day', priority: 'Medium', fiscalAction: 'MAINTAIN', rationale: 'Supports religious tourism capacity.' },
-    { id: 'A-019', name: 'Yanbu 4 IWP', category: 'Utilities', subCategory: 'Desalination', status: 'Under Construction', lat: 23.85, long: 38.15, region: 'Madinah', description: 'Supplies Madinah and Yanbu region', capacity: '450k m3/day', priority: 'Medium', fiscalAction: 'MAINTAIN', rationale: 'Standard strategic alignment; optimize for efficiency.' },
-    { id: 'A-020', name: 'Ras Al Khair 2 IWP', category: 'Utilities', subCategory: 'Desalination', status: 'Tendering', lat: 27.56, long: 49.18, region: 'Eastern Region', description: 'New SWRO plant to supply Riyadh (COD 2028)', capacity: '600k m3/day', priority: 'Medium', fiscalAction: 'MAINTAIN', rationale: 'Standard strategic alignment; optimize for efficiency.' },
+    { id: 'A-018', name: 'Rabigh 3 IWP', category: 'Utilities', subCategory: 'Desalination', status: 'Existing', lat: 22.68, long: 39.02, region: 'Makkah', description: 'Major Reverse Osmosis (RO) facility', capacity: '600k m3/day', priority: 'Medium', fiscalAction: 'MAINTAIN', rationale: 'Supports religious tourism capacity.', ownership_type: 'PPP', sector_split: { 'Urban': 70, 'Agri': 20, 'Ind': 10 } },
+    { id: 'A-019', name: 'Yanbu 4 IWP', category: 'Utilities', subCategory: 'Desalination', status: 'Under Construction', lat: 23.85, long: 38.15, region: 'Madinah', description: 'Supplies Madinah and Yanbu region', capacity: '450k m3/day', priority: 'Medium', fiscalAction: 'MAINTAIN', rationale: 'Standard strategic alignment; optimize for efficiency.', ownership_type: 'PPP', sector_split: { 'Urban': 60, 'Agri': 30, 'Ind': 10 } },
+    { id: 'A-020', name: 'Ras Al Khair 2 IWP', category: 'Utilities', subCategory: 'Desalination', status: 'Tendering', lat: 27.56, long: 49.18, region: 'Eastern Region', description: 'New SWRO plant to supply Riyadh (COD 2028)', capacity: '600k m3/day', priority: 'Medium', fiscalAction: 'MAINTAIN', rationale: 'Standard strategic alignment; optimize for efficiency.', ownership_type: 'PPP', investment: 'SAR 3.5 Billion' },
     { id: 'A-021', name: 'Tabuk 1 IWP', category: 'Utilities', subCategory: 'Desalination', status: 'Tendering', lat: 27.3517, long: 35.6901, region: 'Tabuk', description: 'Supplies NEOM & Madinah region (COD 2028)', capacity: '400k m3/day', priority: 'Medium', fiscalAction: 'MAINTAIN', rationale: 'Standard strategic alignment; optimize for efficiency.' },
     { id: 'A-022', name: 'Ras Mohaisen IWP', category: 'Utilities', subCategory: 'Desalination', status: 'Awarded', lat: 19.5, long: 40.5, region: 'Makkah', description: 'Anchor supply for Makkah/Baha; Awarded to ACWA', capacity: '300k m3/day', priority: 'Medium', fiscalAction: 'MAINTAIN', rationale: 'Supports religious tourism capacity.' },
     { id: 'A-023', name: 'Jazan 1 IWP', category: 'Utilities', subCategory: 'Desalination', status: 'Planned', lat: 17.26, long: 42.1, region: 'Jazan', description: 'Replacing dams/groundwater in South (COD 2028)', capacity: '300k m3/day', priority: 'Medium', fiscalAction: 'MAINTAIN', rationale: 'Standard strategic alignment; optimize for efficiency.' },
@@ -287,4 +290,36 @@ export const ksaRegions = [
     { id: 'REG-11', name: 'Al-Baha', lat: 20.0129, long: 41.4677 },
     { id: 'REG-12', name: 'Northern Borders', lat: 30.9753, long: 41.0381 },
     { id: 'REG-13', name: 'Al-Jouf', lat: 29.9697, long: 40.1996 }
+];
+
+// Strategic Network Connections (Source -> Target)
+// Represents supply chains: Mining -> Industry -> Port
+export interface NetworkConnection {
+    source: string; // Asset ID
+    target: string; // Asset ID
+    type: 'Supply Chain' | 'Transport' | 'Power' | 'Water';
+}
+
+export const strategicConnections: NetworkConnection[] = [
+    // Mining to Processing (Phosphate)
+    { source: 'A-049', target: 'A-005', type: 'Supply Chain' }, // Al Jalamid -> Waad Al Shamal
+
+    // Mining to Export (Bauxite/Aluminum)
+    { source: 'A-050', target: 'A-003', type: 'Supply Chain' }, // Al Baitha -> Ras Al Khair
+
+    // Energy to Industry
+    { source: 'A-013', target: 'A-003', type: 'Power' }, // Ras Al Khair Power -> Ras Al Khair City
+    { source: 'A-015', target: 'A-001', type: 'Power' }, // Jubail Power -> Jubail City
+
+    // Water to Cities
+    { source: 'A-014', target: 'REG-02', type: 'Water' }, // Shoaiba -> Makkah Region
+    { source: 'A-024', target: 'A-041', type: 'Water' }, // Riyadh-Qassim Pipeline -> Roshn (Mock)
+
+    // Logistics/Transport
+    { source: 'A-001', target: 'SP-013', type: 'Transport' }, // Jubail -> King Abdul Aziz Port
+    { source: 'A-002', target: 'SP-012', type: 'Transport' }, // Yanbu -> Yanbu Port
+
+    // Cross-Regional
+    { source: 'A-067', target: 'A-001', type: 'Transport' }, // Landbridge -> Jubail
+    { source: 'A-067', target: 'A-009', type: 'Transport' }  // Landbridge -> Jeddah
 ];

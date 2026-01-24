@@ -65,8 +65,7 @@ export function SectorSidebar({ year, quarter }: SectorSidebarProps) {
         metrics: []
     });
 
-    // RECOVERED: Trend Data from ControlTower history (Client-side Mock)
-    // RECOVERED: Trend Data - Default to Zeros for correct Empty State
+    // Trend Data - Initialized to empty state
     const [trendData, setTrendData] = useState({
         labels: ['Last Q', 'Current Q', 'Next Q'],
         projectVelocity: [0, 0, 0],

@@ -1,0 +1,347 @@
+{
+  "meta": {
+    "title": "KSA Vision 2030 Sectoral Master Database",
+    "version": "1.0",
+    "last_updated": "2026-01-22",
+    "source_reliability": "High (Official VRPs & Strategy Docs)"
+  },
+  "sectors": [
+    {
+      "id": "health",
+      "name": "Health",
+      "pillar": "Vibrant Society",
+      "objectives": [
+        {
+          "title": "Ease Access to Healthcare Services",
+          "baseline": "82% (Urban) / 60% (Rural)",
+          "target_2030": "100% Coverage (Institutional)",
+          "metric": "Percentage of population covered by specialized care",
+          "priority": "Critical"
+        },
+        {
+          "title": "Improve Value of Healthcare Services",
+          "baseline": "74 Years (Life Expectancy)",
+          "target_2030": "80 Years",
+          "metric": "Life Expectancy at Birth",
+          "priority": "High"
+        },
+        {
+          "title": "Strengthen Prevention Against Health Risks",
+          "baseline": "15% (Obesity Rate)",
+          "target_2030": "Decrease by 3% (Relative)",
+          "metric": "Prevalence of non-communicable diseases",
+          "priority": "High"
+        }
+      ],
+      "programs": [
+        {
+          "name": "Health Sector Transformation Program (HSTP)",
+          "type": "Strategic Program",
+          "budget_sar_bn": "N/A (Operating Budget)",
+          "owner": "Ministry of Health (MoH)",
+          "status": "Active"
+        },
+        {
+          "name": "Private Health Insurance Program",
+          "type": "Regulatory Framework",
+          "owner": "Council of Health Insurance (CHI)",
+          "status": "Active"
+        }
+      ],
+      "kpis": [
+        {
+          "name": "Life Expectancy at Birth",
+          "actual": "75.3 Years",
+          "target_annual": "76 Years",
+          "unit": "Years",
+          "source": "GASTAT / MoH"
+        },
+        {
+          "name": "Percentage of Beneficiaries with Unified Digital Record",
+          "actual": "65%",
+          "target_annual": "80%",
+          "unit": "Percentage",
+          "source": "Seha / MoH"
+        }
+      ],
+      "transactions": [
+        {
+          "name": "Patient Referral Request",
+          "generator": "PHC Center",
+          "frequency": "Daily",
+          "asset": "Seha Virtual Hospital"
+        },
+        {
+          "name": "Insurance Claim Processing",
+          "generator": "Private Provider",
+          "frequency": "Real-time",
+          "asset": "NPHIES Platform"
+        }
+      ]
+    },
+    {
+      "id": "water",
+      "name": "Water & Environment",
+      "pillar": "Vibrant Society",
+      "objectives": [
+        {
+          "title": "Ensure Sustainable Water Resources",
+          "baseline": "416% (Agri Consumption of Renewable Water)",
+          "target_2030": "350%",
+          "metric": "Consumption Rate vs Renewable Rate",
+          "priority": "Critical"
+        },
+        {
+          "title": "Increase Water Services Coverage",
+          "baseline": "82% (2018)",
+          "target_2030": "95%",
+          "metric": "Household Coverage %",
+          "priority": "High"
+        }
+      ],
+      "programs": [
+        {
+          "name": "National Water Strategy 2030 (NWS)",
+          "type": "Strategic Program",
+          "budget_sar_bn": 179,
+          "owner": "MEWA",
+          "status": "Active"
+        },
+        {
+          "name": "Qatrah (Conservation Program)",
+          "type": "Incentive/Awareness",
+          "owner": "NWC",
+          "status": "Active"
+        }
+      ],
+      "kpis": [
+        {
+          "name": "Urban Water Coverage",
+          "actual": "86%",
+          "target_annual": "88%",
+          "unit": "Percentage",
+          "source": "NWC Monthly Report"
+        },
+        {
+          "name": "Treated Sewage Effluent (TSE) Reuse",
+          "actual": "22%",
+          "target_annual": "35%",
+          "unit": "Percentage",
+          "source": "SWA (Saudi Water Authority)"
+        }
+      ],
+      "transactions": [
+        {
+          "name": "Smart Meter Reading",
+          "generator": "NWC Regional Ops",
+          "frequency": "Daily",
+          "asset": "Smart Meter Grid"
+        },
+        {
+          "name": "Desalination Production Log",
+          "generator": "SWA Plant Manager",
+          "frequency": "Daily",
+          "asset": "Jubail Desalination Plant"
+        }
+      ]
+    },
+    {
+      "id": "energy",
+      "name": "Energy",
+      "pillar": "Thriving Economy",
+      "objectives": [
+        {
+          "title": "Diversify National Energy Mix",
+          "baseline": "<1% Renewables (2016)",
+          "target_2030": "50% Renewables / 50% Gas",
+          "metric": "Generation Capacity Mix",
+          "priority": "Critical"
+        },
+        {
+          "title": "Maximize Local Content in Energy",
+          "baseline": "35%",
+          "target_2030": "75%",
+          "metric": "Localization Rate",
+          "priority": "High"
+        }
+      ],
+      "programs": [
+        {
+          "name": "National Renewable Energy Program (NREP)",
+          "type": "Infrastructure Project",
+          "budget_sar_bn": "Varies (Private Investment)",
+          "owner": "Ministry of Energy",
+          "status": "Active"
+        },
+        {
+          "name": "Liquid Fuel Displacement Program",
+          "type": "Strategic Program",
+          "owner": "Ministry of Energy",
+          "status": "Active"
+        }
+      ],
+      "kpis": [
+        {
+          "name": "Renewable Energy Capacity",
+          "actual": "2.8 GW",
+          "target_annual": "5 GW",
+          "unit": "Gigawatts",
+          "source": "SPPC / MoE"
+        },
+        {
+          "name": "Carbon Emissions Reduction",
+          "actual": "N/A",
+          "target_annual": "-278 MTPA (by 2030)",
+          "unit": "Million Tonnes",
+          "source": "Circular Carbon Economy Center"
+        }
+      ],
+      "transactions": [
+        {
+          "name": "Power Purchase Agreement (PPA) Settlement",
+          "generator": "SPPC",
+          "frequency": "Monthly",
+          "asset": "Sakaka Solar Plant"
+        },
+        {
+          "name": "Grid Load Dispatch Order",
+          "generator": "Saudi Electricity Co (SEC)",
+          "frequency": "Real-time",
+          "asset": "National Grid"
+        }
+      ]
+    },
+    {
+      "id": "logistics",
+      "name": "Logistics",
+      "pillar": "Thriving Economy",
+      "objectives": [
+        {
+          "title": "Global Hub Connection",
+          "baseline": "Rank 49 (LPI)",
+          "target_2030": "Top 10 (LPI)",
+          "metric": "Logistics Performance Index Rank",
+          "priority": "Critical"
+        },
+        {
+          "title": "Expand Port Capacity",
+          "baseline": "15M TEU",
+          "target_2030": "40M TEU",
+          "metric": "Annual Throughput Capacity",
+          "priority": "High"
+        }
+      ],
+      "programs": [
+        {
+          "name": "National Transport & Logistics Strategy (NTLS)",
+          "type": "Strategic Program",
+          "budget_sar_bn": 500,
+          "owner": "Ministry of Transport & Logistics",
+          "status": "Active"
+        },
+        {
+          "name": "Saudi Logistics Hub",
+          "type": "Incentive Scheme",
+          "owner": "Logistics Committee",
+          "status": "Active"
+        }
+      ],
+      "kpis": [
+        {
+          "name": "Total Cargo Throughput",
+          "actual": "280M Tons",
+          "target_annual": "300M Tons",
+          "unit": "Tons",
+          "source": "Mawani"
+        },
+        {
+          "name": "Rail Freight Volume",
+          "actual": "18M Tons",
+          "target_annual": "25M Tons",
+          "unit": "Tons",
+          "source": "SAR (Saudi Arabia Railways)"
+        }
+      ],
+      "transactions": [
+        {
+          "name": "Customs Clearance Declaration",
+          "generator": "Zakat, Tax and Customs Authority (ZATCA)",
+          "frequency": "Daily",
+          "asset": "Jeddah Islamic Port"
+        },
+        {
+          "name": "Rail Waybill Generation",
+          "generator": "SAR Ops",
+          "frequency": "Daily",
+          "asset": "Riyadh Dry Port"
+        }
+      ]
+    },
+    {
+      "id": "industry",
+      "name": "Industry",
+      "pillar": "Thriving Economy",
+      "objectives": [
+        {
+          "title": "Localize Military Industries",
+          "baseline": "2%",
+          "target_2030": "50%",
+          "metric": "Percentage of Military Spending Localized",
+          "priority": "Critical"
+        },
+        {
+          "title": "Increase Non-Oil Exports",
+          "baseline": "16%",
+          "target_2030": "50%",
+          "metric": "% of Non-Oil GDP",
+          "priority": "High"
+        }
+      ],
+      "programs": [
+        {
+          "name": "National Industrial Development and Logistics Program (NIDLP)",
+          "type": "Strategic Program",
+          "budget_sar_bn": "N/A (Enabler)",
+          "owner": "MIM / NIDLP",
+          "status": "Active"
+        },
+        {
+          "name": "Future Factories Program",
+          "type": "Incentive/Tech",
+          "owner": "MODON / MIM",
+          "status": "Active"
+        }
+      ],
+      "kpis": [
+        {
+          "name": "Number of Factories",
+          "actual": "11,500",
+          "target_annual": "12,000",
+          "unit": "Count",
+          "source": "Ministry of Industry (MIM)"
+        },
+        {
+          "name": "Industrial Investment Volume",
+          "actual": "SAR 1.4 Trillion",
+          "target_annual": "SAR 1.5 Trillion",
+          "unit": "SAR",
+          "source": "MISA / MIM"
+        }
+      ],
+      "transactions": [
+        {
+          "name": "Industrial License Issuance",
+          "generator": "MIM Licensing Dept",
+          "frequency": "Weekly",
+          "asset": "Senaei Platform"
+        },
+        {
+          "name": "Duty Exemption Request",
+          "generator": "Factory Owner",
+          "frequency": "Ad-hoc",
+          "asset": "ZATCA System"
+        }
+      ]
+    }
+  ]
+}

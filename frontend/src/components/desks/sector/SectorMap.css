@@ -822,3 +822,93 @@
     background: linear-gradient(90deg, #3b82f6, #60a5fa);
     border-radius: 2px;
 }
+
+/* Enhanced SVG Network Overlay */
+.network-path-base {
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.network-path-flow {
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-dasharray: 10 20;
+    /* Refined for 2px width */
+    animation: networkFlow 2s linear infinite;
+    z-index: 1000;
+}
+
+@keyframes networkFlow {
+    from {
+        stroke-dashoffset: 45;
+    }
+
+    to {
+        stroke-dashoffset: 0;
+    }
+}
+
+.network-svg-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 999;
+    /* Force to the very top */
+    overflow: visible !important;
+}
+.pill-toggle-group {
+    display: flex;
+    background: rgba(15, 23, 42, 0.8);
+    backdrop-filter: blur(8px);
+    border-radius: 8px;
+    padding: 3px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.pill-btn {
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    padding: 6px 12px;
+    font-size: 11px;
+    font-weight: 600;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    flex: 1;
+    white-space: nowrap;
+}
+
+.pill-btn:hover {
+    color: white;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.pill-btn.active {
+    background: #3b82f6;
+    color: white;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.priority-label-indicator {
+    position: absolute;
+    top: -15px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #fbbf24;
+    color: #0f172a;
+    font-size: 9px;
+    font-weight: 800;
+    padding: 2px 6px;
+    border-radius: 4px;
+    white-space: nowrap;
+    text-transform: uppercase;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    pointer-events: none;
+}

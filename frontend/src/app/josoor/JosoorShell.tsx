@@ -235,7 +235,7 @@ export default function JosoorShell() {
             {/* 1. SIDEBAR (Left) - Using original Sidebar component */}
             <div
                 style={{
-                    width: isSidebarOpen ? '260px' : '60px',
+                    width: isSidebarOpen ? '240px' : '50px',
                     transition: 'width 0.3s ease',
                     borderRight: '1px solid var(--border-color)',
                     flexShrink: 0
@@ -308,7 +308,7 @@ export default function JosoorShell() {
                 isCanvasOpen && (
                     <div
                         style={{
-                            width: '45%',
+                            width: '35%',
                             transition: 'all 0.3s ease',
                             borderLeft: '1px solid var(--border-color)',
                             overflow: 'hidden',
