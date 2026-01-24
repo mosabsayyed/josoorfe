@@ -727,14 +727,6 @@ const SectorMap: React.FC<SectorMapProps> = ({
             </button>
           )}
 
-          {/* DISCLAIMER */}
-          <div className="map-disclaimer" style={{ maxWidth: '240px', marginTop: '10px' }}>
-            <p style={{ fontSize: '9px', color: 'rgba(255,255,255,0.5)', lineHeight: '1.4', margin: 0 }}>
-              Disclaimer:<br />
-              - Data based on publicly available KSA public Sector datasets and could be out of date.<br />
-              - Data is non-comprehensive and highly selective for demo purpose.
-            </p>
-          </div>
         </div>
 
         {/* 2. Right Group: Asset Panel (Next to Stats Pill) */}

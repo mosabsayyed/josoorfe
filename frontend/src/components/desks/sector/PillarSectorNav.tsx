@@ -182,10 +182,13 @@ const PillarSectorNav: React.FC<PillarSectorNavProps> = ({
                 })}
             </div>
 
-            {/* Footer / Legend */}
-            <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid #1e293b', fontSize: '10px', color: '#64748b', display: 'flex', justifyContent: 'space-between' }}>
-                <span>Data: Neo4j Live</span>
-                <span>v2.2.0</span>
+            {/* Footer / Legend - DISCLAIMER REPLACING NEO4J INFO */}
+            <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid #1e293b', fontSize: '9px', color: '#64748b' }}>
+                <p style={{ margin: 0, lineHeight: '1.4' }}>
+                    Disclaimer:<br />
+                    - Data based on publicly available KSA public Sector datasets and could be out of date.<br />
+                    - Data is non-comprehensive and highly selective for demo purpose.
+                </p>
             </div>
         </div>
     );
