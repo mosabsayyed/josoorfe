@@ -1,806 +1,793 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { ArrowLeft, Clock } from 'lucide-react';
-import { ksaData, saudiGeoJson } from './data/ksaData';
-import { getSectorValueChain, transformToMapEntities, MapEntity } from '../../../services/sectorService';
+/**
+ * SectorMap.tsx - Pure Mapbox with Uncontrolled ViewState for Smooth Animations
+ * 
+ * FEATURES:
+ * 1. Uncontrolled Mode (initialViewState) -> Allows smooth map.flyTo() animations.
+ * 2. Manual Red Lines (100% Opacity) + DB Green Lines.
+ * 3. High-Res Circular Icons + Glow Effects.
+ * 4. Marker Jump Fix (transform-origin: bottom center).
+ * 5. Controls Overlay & Fixed Panel -> Horizontal Layout (Top Left).
+ * 6. Minimized State -> Collapses Body only (Header stays in place).
+ */
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+// @ts-ignore
+import Map, { Marker, Source, Layer, NavigationControl, FullscreenControl, Popup } from 'react-map-gl/mapbox';
+import 'mapbox-gl/dist/mapbox-gl.css';
 import './SectorMap.css';
 
-// Import icons (Public Assets) - Using relative paths
-import factoryIcon from '../../../assets/d06a8c9edb7a3c4705388fb7f4e1e9dd775f2172.png';
-import layersIcon from '../../../assets/d8f139bc6eb42908fc05a27d7464940450f1ebce.png';
-import buildingsIcon from '../../../assets/bd89c9093f7e2782417c2cf0a6e772f9b40df676.png';
-import cityIcon from '../../../assets/425f09a50feb64694c6b2c3a1203e88b8090d79e.png';
-import chipIcon from '../../../assets/d90d9826020dfd8a2255a0b0a04f11ea09dcb3cc.png';
-import mapOutline from '../../../assets/ab5ac211c3c610f7bdfcd6d4a2384b98355ce7e5.png';
+// Icons
+import { Clock } from 'lucide-react';
+import iconMining from '../../../assets/map-markers/mining.svg';
+import iconWater from '../../../assets/map-markers/water.svg';
+import iconEnergy from '../../../assets/map-markers/energy.svg';
+import iconIndustry from '../../../assets/map-markers/industry.svg';
+import iconTransportation from '../../../assets/map-markers/transportation.svg';
+import iconGiga from '../../../assets/map-markers/giga.svg';
 
-// Calculate exact GeoJSON bounds
-const calculateGeoJsonBounds = () => {
-  const coords = saudiGeoJson.features[0].geometry.coordinates[0];
-  let minLong = Infinity, maxLong = -Infinity;
-  let minLat = Infinity, maxLat = -Infinity;
+// Glow Icons
+import glowMining from '../../../assets/map-markers/miningg.svg';
+import glowWater from '../../../assets/map-markers/waterg.svg';
+import glowEnergy from '../../../assets/map-markers/energyg.svg';
+import glowIndustry from '../../../assets/map-markers/industryg.svg';
+import glowTransportation from '../../../assets/map-markers/transportationg.svg';
+import glowGiga from '../../../assets/map-markers/gigag.svg';
 
-  coords.forEach((coord: number[]) => {
-    const [long, lat] = coord;
-    minLong = Math.min(minLong, long);
-    maxLong = Math.max(maxLong, long);
-    minLat = Math.min(minLat, lat);
-    maxLat = Math.max(maxLat, lat);
-  });
+// Legend Icons
+import legendMining from '../../../assets/map-markers/lmining.svg';
+import legendWater from '../../../assets/map-markers/lwater.svg';
+import legendEnergy from '../../../assets/map-markers/lenergy.svg';
+import legendIndustry from '../../../assets/map-markers/lindustry.svg';
+import legendTransportation from '../../../assets/map-markers/ltransport.svg';
+import legendGiga from '../../../assets/map-markers/lgiga.svg';
+import legendPriority from '../../../assets/map-markers/lPriority.svg';
 
-  return { minLong, maxLong, minLat, maxLat };
-};
+const MAPBOX_TOKEN = (import.meta as any).env?.VITE_MAPBOX_TOKEN || '';
 
-const BOUNDS = calculateGeoJsonBounds();
-
-// Convert geo coordinates to SVG percentage (0-100) - FOR MAP POLYGON ONLY (5% smaller)
-const geoToPercentMap = (long: number, lat: number) => {
-  const x = ((long - BOUNDS.minLong) / (BOUNDS.maxLong - BOUNDS.minLong)) * 100;
-  const y = ((BOUNDS.maxLat - lat) / (BOUNDS.maxLat - BOUNDS.minLat)) * 100;
-
-  // Scale down map by 5% from center
-  const centerX = 50;
-  const centerY = 50;
-  const scaledX = centerX + (x - centerX) * 0.95;
-  const scaledY = centerY + (y - centerY) * 0.95;
-
-  return { x: scaledX, y: scaledY };
-};
-
-// Convert geo coordinates to SVG percentage (0-100) - FOR CITIES/PLANTS (20% larger)
-const geoToPercent = (long: number, lat: number) => {
-  // First convert to 0-100 range
-  const x = ((long - BOUNDS.minLong) / (BOUNDS.maxLong - BOUNDS.minLong)) * 100;
-  const y = ((BOUNDS.maxLat - lat) / (BOUNDS.maxLat - BOUNDS.minLat)) * 100;
-
-  // Scale from center by 20% to match the map
-  const centerX = 50;
-  const centerY = 50;
-  const scaledX = centerX + (x - centerX) * 1.2;
-  const scaledY = centerY + (y - centerY) * 1.2;
-
-  return { x: scaledX, y: scaledY };
-};
-
-// Convert GeoJSON to SVG path - USES UNSCALED COORDINATES
-const geoJsonToSvgPath = () => {
-  const coords = saudiGeoJson.features[0].geometry.coordinates[0];
-  let path = '';
-
-  coords.forEach((coord: number[], index: number) => {
-    const [long, lat] = coord;
-    const { x, y } = geoToPercentMap(long, lat);
-
-    if (index === 0) {
-      path += `M ${x} ${y} `;
-    } else {
-      path += `L ${x} ${y} `;
-    }
-  });
-  path += 'Z';
-
-  return path;
-};
+// Types
+interface GraphNode {
+  id: string;
+  name?: string;
+  sector?: string;
+  status?: string;
+  priority?: string;
+  latitude?: number;
+  longitude?: number;
+  lat?: number;
+  long?: number;
+  asset_type?: string;
+  region?: string;
+  description?: string;
+  capacity?: string;
+  investment?: string;
+  rationale?: string;
+  source_asset_name?: string;
+  destination_asset_name?: string;
+  dest_asset_name?: string;
+  source_lat?: number;
+  source_long?: number;
+  dest_lat?: number;
+  dest_long?: number;
+  completion_date?: string;
+  launch_date?: string;
+  sector_split?: { [key: string]: number }; // Optional real data field
+  [key: string]: any;
+}
 
 interface SectorMapProps {
-  year?: string;
+  selectedSector: string;
+  selectedRegion?: string | null;
+  onRegionSelect?: (regionId: string | null) => void;
+  onAssetSelect?: (asset: GraphNode | null) => void;
+  focusAssetId?: string | null;
+  assets: GraphNode[]; // Data from parent
+  isLoading?: boolean;
+  year?: number;
   quarter?: string;
 }
 
-export function SectorMap({ year, quarter }: SectorMapProps) {
-  type Plant = MapEntity; // Alias for code compatibility
-  const [showFuture, setShowFuture] = useState(false);
-  const [selectedPlant, setSelectedPlant] = useState<Plant | null>(null);
-  const [isZoomedIn, setIsZoomedIn] = useState(false);
-  const [zoomedPlantId, setZoomedPlantId] = useState<string | null>(null);
+type MainCategory = 'Mining' | 'Water' | 'Energy' | 'Industry' | 'Transportation' | 'Giga';
 
-  // New state for API data - No Fallback
-  const [mapPlants, setMapPlants] = useState<MapEntity[]>([]);
-  const [mapFlows, setMapFlows] = useState<any[]>([]); // TODO: Type flows
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+const MAIN_CATEGORY_ICONS: Record<MainCategory, string> = {
+  'Mining': iconMining,
+  'Water': iconWater,
+  'Energy': iconEnergy,
+  'Industry': iconIndustry,
+  'Transportation': iconTransportation,
+  'Giga': iconGiga
+};
 
-  // Fetch data from API - DISABLED: USES MOCK DATA AS REQUESTED
-  useEffect(() => {
-    const fetchSectorData = async () => {
-      setIsLoading(true);
-      try {
-        // MOCK DATA MODE
-        // the sectormap data is NOT to be removed BECAUSE THERE IS NO ALTERNATIVE REAL DATA YET!!!!
-        console.log('[SectorMap] Using mock ksaData');
-        setMapPlants(ksaData.plants as any);
-        setMapFlows(ksaData.flows);
+const MAIN_CATEGORY_GLOWS: Record<MainCategory, string> = {
+  'Mining': glowMining,
+  'Water': glowWater,
+  'Energy': glowEnergy,
+  'Industry': glowIndustry,
+  'Transportation': glowTransportation,
+  'Giga': glowGiga
+};
 
-        // Original API call preserved but commented out
-        /*
-        const data = await getSectorValueChain(year || '2025');
-        if (data && data.nodes) {
-          const entities = transformToMapEntities(data.nodes);
-          setMapPlants(entities);
-          setMapFlows(ksaData.flows);
+const LEGEND_ICONS: Record<MainCategory, string> = {
+  'Mining': legendMining,
+  'Water': legendWater,
+  'Energy': legendEnergy,
+  'Industry': legendIndustry,
+  'Transportation': legendTransportation,
+  'Giga': legendGiga
+};
+
+const STATUS_COLORS: Record<string, string> = {
+  'Existing': '#10b981',
+  'Active': '#10b981',
+  'Under Construction': '#f59e0b',
+  'Planned': '#6366f1',
+  'Future': '#6366f1'
+};
+
+const MAIN_CATEGORY_COLORS: Record<MainCategory, string> = {
+  'Mining': '#d97706',
+  'Water': '#06b6d4',
+  'Energy': '#facc15',
+  'Industry': '#3b82f6',
+  'Transportation': '#18181b',
+  'Giga': '#eab308'
+};
+
+// KSA Administrative Regions
+interface Region { id: string; name: string; lat: number; long: number; }
+const KSA_REGIONS: Region[] = [
+  { id: 'Riyadh', name: 'Riyadh', lat: 24.7136, long: 46.6753 },
+  { id: 'Makkah', name: 'Makkah', lat: 21.4225, long: 39.8262 },
+  { id: 'Eastern', name: 'Eastern', lat: 26.3927, long: 49.9777 },
+  { id: 'Madinah', name: 'Madinah', lat: 24.4539, long: 39.6142 },
+  { id: 'Qassim', name: 'Qassim', lat: 26.3260, long: 43.9750 },
+  { id: 'Tabuk', name: 'Tabuk', lat: 28.3835, long: 36.5662 },
+  { id: 'Hail', name: 'Hail', lat: 27.5114, long: 41.6903 },
+  { id: 'Northern', name: 'Northern Borders', lat: 30.9843, long: 41.1183 },
+  { id: 'Jawf', name: 'Al Jawf', lat: 29.8117, long: 39.8675 },
+  { id: 'Jazan', name: 'Jazan', lat: 16.8894, long: 42.5511 },
+  { id: 'Asir', name: 'Asir', lat: 18.2164, long: 42.5053 },
+  { id: 'Baha', name: 'Al Baha', lat: 20.0129, long: 41.4677 },
+  { id: 'Najran', name: 'Najran', lat: 17.4933, long: 44.1322 }
+];
+
+// Helpers
+function getMainCategory(sector?: string): MainCategory | null {
+  if (!sector) return null;
+  const s = sector.toLowerCase();
+  if (s === 'mining') return 'Mining';
+  if (s === 'water') return 'Water';
+  if (s === 'energy') return 'Energy';
+  if (s === 'industry') return 'Industry';
+  if (s === 'logistics' || s === 'transportation') return 'Transportation';
+  if (s === 'giga') return 'Giga';
+  return null;
+}
+
+function getSimpleStatus(status?: string): 'Running' | 'Future' {
+  if (!status) return 'Future';
+  const s = status.toLowerCase();
+  if (s === 'existing' || s === 'active') return 'Running';
+  return 'Future';
+}
+
+function getCoords(node: GraphNode): [number, number] | null {
+  const lng = node.longitude ?? node.long;
+  const lat = node.latitude ?? node.lat;
+  if (lng != null && lat != null && (Math.abs(lng) > 0.1 || Math.abs(lat) > 0.1)) {
+    return [lng, lat];
+  }
+  return null;
+}
+
+const SectorMap: React.FC<SectorMapProps> = ({
+  selectedSector,
+  selectedRegion,
+  onRegionSelect,
+  onAssetSelect,
+  focusAssetId,
+  assets: allAssets, // Use parent data
+  isLoading = false,
+  year,
+  quarter
+}) => {
+  const mapRef = useRef<any>(null);
+
+  // UI State
+  const [selectedAsset, setSelectedAsset] = useState<GraphNode | null>(null);
+  const [hoverAsset, setHoverAsset] = useState<GraphNode | null>(null);
+  const [isPanelCollapsed, setIsPanelCollapsed] = useState(false);
+  const [showFuture, setShowFuture] = useState(true);
+
+  // NO CONTROLLED ViewState - Allows smooth animations via mapRef.current.flyTo()
+
+  // Filter Assets
+  const filteredAssets = useMemo(() => {
+    return allAssets.filter(node => {
+      if (node.asset_type === 'Network Connection') return false;
+      const coords = getCoords(node);
+      if (!coords) return false;
+
+      const nodeSector = node.sector?.toLowerCase();
+      if (selectedSector !== 'All Factors' && nodeSector !== selectedSector.toLowerCase()) {
+        if (!(nodeSector === 'giga' && selectedSector.toLowerCase() === 'economy')) {
+          return false;
         }
-        */
-      } catch (err) {
-        console.error('Failed to load map data', err);
-        setError("Failed to load map data");
-      } finally {
-        setIsLoading(false);
       }
-    };
-    fetchSectorData();
-  }, [year]);
 
-  // State to control outline visibility with delay on zoom out
-  const [showOutline, setShowOutline] = useState(true);
+      if (selectedRegion && node.region !== selectedRegion) return false;
 
-  // Animated viewBox state for smooth transitions
-  const [animatedViewBox, setAnimatedViewBox] = useState('0 0 100 100');
-  const animationFrameRef = useRef<number | null>(null);
-  const viewBoxRef = useRef('0 0 100 100'); // Track latest value for animation logic
+      const simpleStatus = getSimpleStatus(node.status);
+      if (!showFuture && simpleStatus === 'Future') return false;
 
+      // Global Date Filter
+      if (year) {
+        const finishYear = node.completion_date ? parseInt(node.completion_date.substring(0, 4)) : null;
+        if (finishYear && finishYear > year) return false;
+      }
+
+      return true;
+    });
+  }, [allAssets, selectedSector, selectedRegion, showFuture, year]);
+
+  // Handle Region Selection Zoom
   useEffect(() => {
-    let targetViewBox = '0 0 100 100';
-    let targetOpacity = 1;
+    if (selectedRegion) {
+      const region = KSA_REGIONS.find(r => r.id === selectedRegion);
+      if (region) {
+        mapRef.current?.flyTo({
+          center: [region.long, region.lat],
+          zoom: 7,
+          pitch: 50,
+          duration: 2000,
+          essential: true,
+          easing: (t: number) => t * (2 - t)
+        });
+      }
+    } else if (!focusAssetId && !selectedAsset) {
+      // RESET TO MAIN VIEW
+      mapRef.current?.flyTo({
+        center: [45.0, 24.0],
+        zoom: 5,
+        pitch: 45,
+        bearing: 0,
+        duration: 2000,
+        essential: true,
+        easing: (t: number) => t * (2 - t)
+      });
+    }
+  }, [selectedRegion, focusAssetId, selectedAsset]);
 
-    if (isZoomedIn && zoomedPlantId) {
-      const plant = ksaData.plants.find(p => p.id === zoomedPlantId);
-      if (plant && plant.coords) {
-        const { x, y } = geoToPercent(plant.coords[0], plant.coords[1]);
-        targetViewBox = `${x - 20} ${y - 20} 40 40`;
-        targetOpacity = 0;
+  // --- 1. RED LINE: MANUAL CONNECTIONS (Strict IDs) ---
+  const MANUAL_CONNECTIONS = [
+    // Water Network (Yanbu 4 IWP Hub)
+    { s: 'Yanbu 4 IWP', d: 'Madinah', type: 'Water', status: 'Existing' },
+    { s: 'Yanbu 4 IWP', d: 'Riyadh', type: 'Water', status: 'Existing' },
+    { s: 'Jubail Power Plant', d: 'Riyadh', type: 'Water', status: 'Existing' },
+    { s: 'Jubail Power Plant', d: 'Ras Al-Khair Power Plant', type: 'Water', status: 'Existing' },
+
+    // Logistics Corridors (Landbridge & Ports)
+    { s: 'Dammam Logistics Park', d: 'Riyadh Integrated Logistics Zone', type: 'Transportation', status: 'Planned' },
+    { s: 'Riyadh Integrated Logistics Zone', d: 'King Abdullah Port Logistics', type: 'Transportation', status: 'Planned' },
+    { s: 'King Abdullah Port Logistics', d: 'Yanbu Industrial City', type: 'Transportation', status: 'Existing' },
+
+    // Industrial Supply Chains (Mining to Industry)
+    { s: 'Jubail Industrial City', d: 'NEOM (The Line)', type: 'Industry', status: 'Existing' },
+    { s: 'Wa\'ad Al-Shamal', d: 'Jubail Industrial City', type: 'Industry', status: 'Existing' },
+    { s: 'Mahd Ad Dahab Mine', d: 'Riyadh 2nd Industrial City', type: 'Industry', status: 'Existing' },
+
+    // Energy Grid (Power Distribution)
+    { s: 'Jubail Power Plant', d: 'Eastern Region', type: 'Energy', status: 'Existing' },
+    { s: 'Ras Al-Khair Power Plant', d: 'Riyadh', type: 'Energy', status: 'Existing' },
+    { s: 'Dumat Al Jandal Wind Farm', d: 'Tabuk', type: 'Energy', status: 'Planned' },
+    { s: 'Rabigh 3 IWP', d: 'Makkah', type: 'Energy', status: 'Existing' },
+
+    // Regional Connectors (Strategic)
+    { s: 'Mahd Ad Dahab Mine', d: 'Riyadh', type: 'Mining', status: 'Existing' },
+    { s: 'Mahd Ad Dahab Mine', d: 'Hail', type: 'Mining', status: 'Existing' },
+    { s: 'Madinah', d: 'King Abdullah Port Logistics', type: 'Transportation', status: 'Existing' }
+  ];
+
+  // Animation State - Disabled line dash animation to prevent Mapbox crash (property not supported)
+  // const [lineDashOffset, setLineDashOffset] = useState(0);
+
+  // useEffect(() => { ... });
+
+  // --- GENERATE LINE LAYERS ---
+  const { manualGeoJSON, dbGeoJSON } = useMemo(() => {
+    const findNode = (id: string) => allAssets.find(n => n.id === id || n.name === id);
+    const getPoint = (node: GraphNode | undefined) => node ? getCoords(node) : null;
+
+    // 1. Manual Lines (Red)
+    const manualFeatures = MANUAL_CONNECTIONS.map(conn => {
+      const sNode = findNode(conn.s);
+      const dNode = findNode(conn.d);
+      const sRegion = KSA_REGIONS.find(r => r.id === conn.s || r.name === conn.s);
+      const dRegion = KSA_REGIONS.find(r => r.id === conn.d || r.name === conn.d);
+
+      const sPoint = getPoint(sNode) || (sRegion ? [sRegion.long, sRegion.lat] : null);
+      const dPoint = getPoint(dNode) || (dRegion ? [dRegion.long, dRegion.lat] : null);
+
+      if (sPoint && dPoint) {
+        return {
+          type: 'Feature',
+          properties: { type: 'Manual', status: conn.status },
+          geometry: { type: 'LineString', coordinates: [sPoint, dPoint] }
+        };
+      }
+      return null;
+    }).filter(Boolean);
+
+    // 2. DB Lines (Green)
+    const dbConnections = allAssets.filter(n => n.asset_type === 'Network Connection');
+    const dbFeatures = dbConnections.map(conn => {
+      let sPoint: [number, number] | null = null;
+      let dPoint: [number, number] | null = null;
+
+      if (conn.source_lat && conn.source_long && conn.source_lat !== 0) {
+        sPoint = [conn.source_long, conn.source_lat];
+      }
+      if (conn.dest_lat && conn.dest_long && conn.dest_lat !== 0) {
+        dPoint = [conn.dest_long, conn.dest_lat];
+      }
+
+      if (!sPoint && conn.source_asset_name) {
+        const n = allAssets.find(a => a.name === conn.source_asset_name);
+        if (n) sPoint = getCoords(n);
+      }
+      if (!dPoint && conn.destination_asset_name) {
+        const n = allAssets.find(a => a.name === conn.destination_asset_name);
+        if (n) dPoint = getCoords(n);
+      }
+
+      if (sPoint && dPoint) {
+        return {
+          type: 'Feature',
+          properties: { type: 'DB', status: 'Existing' },
+          geometry: { type: 'LineString', coordinates: [sPoint, dPoint] }
+        };
+      }
+      return null;
+    }).filter(Boolean);
+
+    return {
+      manualGeoJSON: { type: 'FeatureCollection', features: manualFeatures },
+      dbGeoJSON: { type: 'FeatureCollection', features: dbFeatures }
+    };
+  }, [allAssets]);
+
+  // Focus Handling
+  useEffect(() => {
+    if (focusAssetId) {
+      const asset = allAssets.find(a => a.id === focusAssetId);
+      if (asset) {
+        const coords = getCoords(asset);
+        if (coords) {
+          setSelectedAsset(asset);
+          setIsPanelCollapsed(false);
+          mapRef.current?.flyTo({
+            center: coords,
+            zoom: 10,
+            pitch: 60,
+            duration: 2000,
+            essential: true,
+            easing: (t: number) => t * (2 - t)
+          });
+        }
       }
     }
-
-    const animate = () => {
-      setAnimatedViewBox(prevBox => {
-        // Update ref
-        viewBoxRef.current = prevBox;
-
-        const [px, py, pw, ph] = prevBox.split(' ').map(Number);
-        const [tx, ty, tw, th] = targetViewBox.split(' ').map(Number);
-
-        const dx = tx - px;
-        const dy = ty - py;
-        const dw = tw - pw;
-        const dh = th - ph;
-
-        if (Math.abs(dx) < 0.1 && Math.abs(dy) < 0.1 && Math.abs(dw) < 0.1) {
-          viewBoxRef.current = targetViewBox; // Ensure exact
-          return targetViewBox;
-        }
-
-        const ease = 0.1;
-        const nextBox = `${px + dx * ease} ${py + dy * ease} ${pw + dw * ease} ${ph + dh * ease}`;
-        viewBoxRef.current = nextBox;
-        return nextBox;
-      });
-
-      // Handle outline fade using Ref to avoid stale closure
-      if (isZoomedIn) {
-        setShowOutline(false);
-      } else {
-        const currentWidth = parseFloat(viewBoxRef.current.split(' ')[2]);
-        if (currentWidth > 80) setShowOutline(true);
-      }
-
-      animationFrameRef.current = requestAnimationFrame(animate);
-    };
-
-    animate();
-
-    return () => {
-      if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
-    };
-  }, [isZoomedIn, zoomedPlantId]);
-
-  // Filter plants - Only render those with VALID COORDS
-  const visiblePlants = showFuture
-    ? mapPlants.filter(p => p.coords && p.coords.length === 2)
-    : mapPlants.filter(p => {
-      const status = p.properties?.status || (p as any).status;
-      return (status === 'operational' || status === 'at-risk') && p.coords && p.coords.length === 2;
-    });
-
-  // Generate supporting assets around zoomed plant
-  const generateSupportingAssets = (mainPlant: Plant) => {
-    const assets = [];
-    const baseCoords = geoToPercent(mainPlant.coords[0], mainPlant.coords[1]);
-
-    const assetTypes = [
-      { icon: buildingsIcon, name: 'Urban Zone', angle: 0 },
-      { icon: cityIcon, name: 'Distribution Center', angle: 60 },
-      { icon: chipIcon, name: 'Control Station', angle: 120 },
-      { icon: buildingsIcon, name: 'Treatment Facility', angle: 180 },
-      { icon: cityIcon, name: 'Pump Station', angle: 240 },
-      { icon: chipIcon, name: 'Monitoring Hub', angle: 300 }
-    ];
-
-    assetTypes.forEach((asset) => {
-      const angleRad = (asset.angle) * (Math.PI / 180);
-      const offsetX = 8 * Math.cos(angleRad);
-      const offsetY = 8 * Math.sin(angleRad);
-
-      assets.push({
-        x: baseCoords.x + offsetX,
-        y: baseCoords.y + offsetY,
-        icon: asset.icon,
-        name: asset.name
-      });
-    });
-
-    return assets;
-  };
-
-  const handlePlantClick = (plant: Plant) => {
-    setSelectedPlant(plant);
-    if (!isZoomedIn) {
-      setIsZoomedIn(true);
-      setZoomedPlantId(plant.id);
-    }
-  };
-
-  const zoomOut = () => {
-    setIsZoomedIn(false);
-    setZoomedPlantId(null);
-    setSelectedPlant(null);
-  };
+  }, [focusAssetId, allAssets]);
 
   return (
     <div className="saudi-map-container">
-      {/* Map Container with fixed viewBox for perfect coordinate stability */}
-      <div className="map-view-container">
-        <div
-          className="map-wrapper"
-          style={{
-            aspectRatio: '1.0',
-            width: '100%',
-            height: '100%'
-          }}
-        >
+      <Map
+        ref={mapRef}
+        initialViewState={{
+          latitude: 24.0,
+          longitude: 45.0,
+          zoom: 5,
+          pitch: 45,
+          bearing: 0
+        }}
+        // UNCONTROLLED MODE: No viewState prop here!
+        mapboxAccessToken={MAPBOX_TOKEN}
+        mapStyle="mapbox://styles/mapbox/dark-v11"
+        style={{ width: '100%', height: '100%' }}
+        reuseMaps
+        minZoom={4.5}
+        maxZoom={16}
+        maxBounds={[[32.0, 15.0], [60.0, 35.0]]} // Strict KSA Bounds
+        terrain={{ source: 'mapbox-dem', exaggeration: 1.5 }}
+      >
+        <NavigationControl position="top-right" />
+        <FullscreenControl position="top-right" />
 
-          {/* Map Container with fixed viewBox for perfect coordinate stability */}
-          {isLoading && <div className="map-loading-overlay">Loading Sector Data...</div>}
-          {error && <div className="map-error-overlay">Error: {error}</div>}
-
-          {/* SVG Map - uses viewBox for perfect coordinate stability */}
-          <svg
-            className="map-svg"
-            viewBox={animatedViewBox}
-            preserveAspectRatio="xMidYMid meet"
-          >
-            {/* GeoJSON Shape with Gradient Fill */}
-            <defs>
-              <linearGradient id="saudiGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#10b981" stopOpacity="1" />
-                <stop offset="50%" stopColor="#06b6d4" stopOpacity="0.9" />
-                <stop offset="100%" stopColor="#3b82f6" stopOpacity="1" />
-              </linearGradient>
-              <linearGradient id="saudiFillGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#10b981" stopOpacity="0.15" />
-                <stop offset="50%" stopColor="#06b6d4" stopOpacity="0.1" />
-                <stop offset="100%" stopColor="#3b82f6" stopOpacity="0.15" />
-              </linearGradient>
-
-              {/* Arrow marker definition */}
-              <marker
-                id="arrowhead"
-                markerWidth="10"
-                markerHeight="10"
-                refX="8"
-                refY="3"
-                orient="auto"
-                markerUnits="strokeWidth"
-              >
-                <polygon
-                  points="0 0, 10 3, 0 6"
-                  fill="#ffffff"
-                  opacity="0.9"
-                />
-              </marker>
-            </defs>
-
-            {/* Saudi Arabia Shape */}
-            <path
-              d={geoJsonToSvgPath()}
-              fill="url(#saudiFillGradient)"
-              stroke="url(#saudiGradient)"
-              strokeWidth="0.5"
-              strokeLinejoin="round"
-              strokeLinecap="round"
-              opacity="0.8"
+        {/* --- GREEN LINE (DB DATA) --- */}
+        {dbGeoJSON.features.length > 0 && (
+          <Source id="lines-db" type="geojson" data={dbGeoJSON as any}>
+            <Layer
+              id="layer-lines-db"
+              type="line"
+              paint={{
+                'line-color': '#00ff00', // GREEN
+                'line-width': 4,
+                'line-opacity': 0.6,
+                'line-dasharray': [1, 2], // Dotted
+              } as any}
             />
-
-            {/* Region Dots */}
-            {ksaData.regions.map(region => {
-              const { x, y } = geoToPercent(region.long, region.lat);
-              return (
-                <g key={region.id}>
-                  <circle
-                    cx={x}
-                    cy={y}
-                    r="0.6"
-                    fill="#64748b"
-                    stroke="#94a3b8"
-                    strokeWidth="0.1"
-                  />
-                  <text
-                    x={x + 1.2}
-                    y={y + 0.3}
-                    fontSize="1.2"
-                    fill="#94a3b8"
-                    fontWeight="500"
-                  >
-                    {region.name}
-                  </text>
-                </g>
-              );
-            })}
-
-            {/* Pipeline Flows with Animated Arrows - SVG Native */}
-            {!isZoomedIn && ksaData.flows.map((flow, idx) => {
-              const sourcePlant = ksaData.plants.find(p => p.name === flow.source);
-              const targetPlant = ksaData.plants.find(p => p.name === flow.target);
-
-              if (!sourcePlant || !targetPlant) return null;
-              if (!showFuture && (sourcePlant.status === 'planned' || targetPlant.status === 'planned')) return null;
-
-              const start = geoToPercent(sourcePlant.coords[0], sourcePlant.coords[1]);
-              const end = geoToPercent(targetPlant.coords[0], targetPlant.coords[1]);
-
-              const color = flow.status === 'Green' ? '#10b981' :
-                flow.status === 'Red' ? '#ef4444' : '#f59e0b';
-
-              const pathId = `flow-path-${idx}`;
-              const pathD = `M ${start.x} ${start.y} L ${end.x} ${end.y}`;
-
-              return (
-                <g key={idx}>
-                  {/* Define the path (invisible) */}
-                  <path
-                    id={pathId}
-                    d={pathD}
-                    fill="none"
-                  />
-
-                  {/* Background glow */}
-                  <line
-                    x1={start.x}
-                    y1={start.y}
-                    x2={end.x}
-                    y2={end.y}
-                    stroke={color}
-                    strokeWidth="1.2"
-                    opacity="0.3"
-                    strokeLinecap="round"
-                    filter="url(#glow)"
-                  />
-
-                  {/* Main solid line */}
-                  <line
-                    x1={start.x}
-                    y1={start.y}
-                    x2={end.x}
-                    y2={end.y}
-                    stroke={color}
-                    strokeWidth="0.5"
-                    opacity="0.7"
-                    strokeLinecap="round"
-                  />
-
-                  {/* Animated arrow symbol moving along path */}
-                  <polygon
-                    points="0,-0.8 2,0 0,0.8"
-                    fill="#ffffff"
-                    opacity="0.9"
-                  >
-                    <animateMotion
-                      dur="4s"
-                      repeatCount="indefinite"
-                      path={pathD}
-                    />
-                    <animateTransform
-                      attributeName="transform"
-                      attributeType="XML"
-                      type="rotate"
-                      from={`0`}
-                      to={`${Math.atan2(end.y - start.y, end.x - start.x) * 180 / Math.PI}`}
-                      dur="0.01s"
-                      repeatCount="1"
-                      fill="freeze"
-                    />
-                  </polygon>
-
-                  {/* Additional trailing dots for effect */}
-                  <circle r="0.4" fill="#ffffff" opacity="0.6">
-                    <animateMotion
-                      dur="4s"
-                      repeatCount="indefinite"
-                      path={pathD}
-                      begin="0.5s"
-                    />
-                  </circle>
-                  <circle r="0.3" fill="#ffffff" opacity="0.4">
-                    <animateMotion
-                      dur="4s"
-                      repeatCount="indefinite"
-                      path={pathD}
-                      begin="1s"
-                    />
-                  </circle>
-                </g>
-              );
-            })}
-
-            {/* Plant Icons */}
-            {visiblePlants.map(plant => {
-              const { x, y } = geoToPercent(plant.coords[0], plant.coords[1]);
-              const icon = plant.status === 'planned' ? layersIcon : factoryIcon;
-              const glowColor = plant.status === 'operational' ? '#10b981' :
-                plant.status === 'planned' ? '#f59e0b' : '#ef4444';
-
-              return (
-                <g
-                  key={plant.id}
-                  style={{ cursor: 'pointer' }}
-                  onClick={() => handlePlantClick(plant)}
-                >
-                  {/* Glow */}
-                  <circle
-                    cx={x}
-                    cy={y - 1.5}
-                    r={isZoomedIn ? 4 : 4.7}
-                    fill={glowColor}
-                    opacity="0.3"
-                    filter="blur(8px)"
-                  />
-                  {/* Icon - 25% larger */}
-                  <image
-                    href={icon}
-                    xlinkHref={icon}
-                    x={x - 3.90625}
-                    y={y - 6.03125}
-                    width={isZoomedIn ? 7.5 : 7.8125}
-                    height={isZoomedIn ? 7.5 : 7.8125}
-                    style={{ pointerEvents: 'none' }}
-                  />
-                  {/* Label */}
-                  <text
-                    x={x}
-                    y={y + 2.5}
-                    fontSize={isZoomedIn ? 1.3 : 1.2}
-                    fill="#e2e8f0"
-                    fontWeight="600"
-                    textAnchor="middle"
-                    style={{ pointerEvents: 'none' }}
-                  >
-                    {plant.name}
-                  </text>
-                </g>
-              );
-            })}
-
-            {/* Supporting Assets - only show for zoomed plant */}
-            {isZoomedIn && zoomedPlantId && (() => {
-              const zoomedPlant = ksaData.plants.find(p => p.id === zoomedPlantId);
-              if (!zoomedPlant) return null;
-              const assets = generateSupportingAssets(zoomedPlant as unknown as Plant);
-
-              return assets.map((asset, idx) => (
-                <g key={`asset-${idx}`}>
-                  {/* Glow */}
-                  <circle
-                    cx={asset.x}
-                    cy={asset.y}
-                    r="2"
-                    fill="#3b82f6"
-                    opacity="0.2"
-                    filter="blur(4px)"
-                  />
-                  {/* Icon */}
-                  <image
-                    href={asset.icon}
-                    xlinkHref={asset.icon}
-                    x={asset.x - 1.5}
-                    y={asset.y - 1.5}
-                    width="3"
-                    height="3"
-                  />
-                  {/* Label */}
-                  <text
-                    x={asset.x}
-                    y={asset.y + 2.5}
-                    fontSize="0.9"
-                    fill="#cbd5e1"
-                    fontWeight="500"
-                    textAnchor="middle"
-                  >
-                    {asset.name}
-                  </text>
-                </g>
-              ));
-            })()}
-          </svg>
-
-          {/* Outline Image Overlay - FIXED position, not affected by SVG zoom */}
-          {showOutline && (
-            <img
-              src={mapOutline}
-              alt="Saudi Arabia Outline"
-              className="map-outline-overlay"
-              style={{
-                opacity: 0.6,
-                objectFit: 'contain',
-                mixBlendMode: 'screen'
-              }}
-            />
-          )}
-        </div>
-      </div>
-
-      {/* Map Controls - Hide when zoomed in on a PLANNED plant if showing future */}
-      {!(isZoomedIn && showFuture && ksaData.plants.find(p => p.id === zoomedPlantId)?.status === 'planned') && (
-        <div className="map-controls">
-          <button
-            onClick={() => setShowFuture(!showFuture)}
-            className={`control-btn ${showFuture ? 'active' : 'inactive'}`}
-          >
-            <Clock className="control-icon" />
-            {showFuture ? 'HIDE FUTURE PLANS' : 'SHOW FUTURE PLANS'}
-          </button>
-        </div>
-      )}
-
-      {/* Back Button */}
-      {isZoomedIn && (
-        <button
-          onClick={zoomOut}
-          className="back-btn"
-        >
-          <ArrowLeft className="back-icon" />
-          RETURN TO KINGDOM VIEW
-        </button>
-      )}
-
-      {/* Legend */}
-      <div className="legend-container">
-        <div className="legend-header">
-          <div className="legend-dot" />
-          Legend
-        </div>
-
-        {!isZoomedIn ? (
-          // Normal view legend
-          <>
-            <div className="legend-section">
-              <div className="legend-subtitle">Plants</div>
-              <div className="legend-item">
-                <img src={factoryIcon} alt="" className="legend-icon" />
-                <span className="legend-label">Operational</span>
-              </div>
-              <div className="legend-item">
-                <img src={layersIcon} alt="" className="legend-icon" />
-                <span className="legend-label">Planned</span>
-              </div>
-              <div className="legend-item">
-                <img src={factoryIcon} alt="" className="legend-icon" style={{ opacity: 0.75, filter: 'drop-shadow(0 0 4px #ef4444)' }} />
-                <span className="legend-label">At Risk</span>
-              </div>
-            </div>
-
-            <div className="legend-divider">
-              <div className="legend-subtitle">Pipeline Flows</div>
-              <div className="legend-item">
-                <div className="legend-line" />
-                <span className="legend-label">Active</span>
-              </div>
-            </div>
-          </>
-        ) : (
-          // Zoomed view legend - Supporting Assets
-          <div className="legend-section">
-            <div className="legend-subtitle">Supporting Assets</div>
-            <div className="legend-item">
-              <img src={buildingsIcon} alt="" className="legend-icon" />
-              <span className="legend-label">Urban Zone</span>
-            </div>
-            <div className="legend-item">
-              <img src={cityIcon} alt="" className="legend-icon" />
-              <span className="legend-label">Distribution Center</span>
-            </div>
-            <div className="legend-item">
-              <img src={chipIcon} alt="" className="legend-icon" />
-              <span className="legend-label">Control Station</span>
-            </div>
-            <div className="legend-item">
-              <img src={buildingsIcon} alt="" className="legend-icon" />
-              <span className="legend-label">Treatment Facility</span>
-            </div>
-            <div className="legend-item">
-              <img src={cityIcon} alt="" className="legend-icon" />
-              <span className="legend-label">Pump Station</span>
-            </div>
-            <div className="legend-item">
-              <img src={chipIcon} alt="" className="legend-icon" />
-              <span className="legend-label">Monitoring Hub</span>
-            </div>
-          </div>
+          </Source>
         )}
-      </div>
 
-      {/* Plant Details Panel - COMPREHENSIVE WITH ALL SECTIONS */}
-      {
-        selectedPlant && (() => {
-          const agri = selectedPlant.sectors.agriculture.toLocaleString();
-          const ind = selectedPlant.sectors.industry.toLocaleString();
-          const urb = selectedPlant.sectors.urban.toLocaleString();
+        {/* --- RED LINE (MANUAL DATA) --- */}
+        {manualGeoJSON.features.length > 0 && (
+          <Source id="lines-manual" type="geojson" data={manualGeoJSON as any}>
+            <Layer
+              id="layer-lines-manual"
+              type="line"
+              paint={{
+                'line-color': '#ff0000', // RED
+                'line-width': 6,
+                'line-opacity': 1, // ALWAYS VISIBLE
+                'line-dasharray': [2, 4]
+                // 'line-dash-offset': lineDashOffset // REMOVED: Invalid property causes crash
+              } as any}
+            />
+          </Source>
+        )}
 
-          const total = selectedPlant.sectors.agriculture + selectedPlant.sectors.industry + selectedPlant.sectors.urban;
-          const pAgri = (selectedPlant.sectors.agriculture / total) * 100;
-          const pInd = (selectedPlant.sectors.industry / total) * 100;
-          const pUrb = (selectedPlant.sectors.urban / total) * 100;
+        {/* 2. REGION MARKERS (PULSING) */}
+        {KSA_REGIONS.map(region => (
+          <Marker
+            key={region.id}
+            longitude={region.long}
+            latitude={region.lat}
+            anchor="center"
+            onClick={(e) => {
+              e.originalEvent.stopPropagation();
+              onRegionSelect?.(selectedRegion === region.id ? null : region.id);
+            }}
+          >
+            <div className={`region-marker ${selectedRegion === region.id ? 'active' : ''}`}>
+              <div className="region-dot"></div>
+              <div className="region-label">{region.name}</div>
+            </div>
+          </Marker>
+        ))}
+
+        {/* 3. ASSET MARKERS (GLOWING PINS - CITY APPROACH) */}
+        {filteredAssets.map(asset => {
+          const coords = getCoords(asset);
+          if (!coords) return null;
+          const mainCat = getMainCategory(asset.sector);
+          const isHigh = asset.priority === 'HIGH';
+          const isSelected = selectedAsset?.id === asset.id;
+
+          const iconSrc = isHigh ? MAIN_CATEGORY_GLOWS[mainCat || 'Industry'] : MAIN_CATEGORY_ICONS[mainCat || 'Industry'];
+          const size = isSelected ? 60 : 40;
 
           return (
-            <div className="plant-panel">
-              {/* Header */}
-              <div className="panel-header">
-                <div className="panel-header-content">
-                  <div className="panel-header-dots">
-                    <div className="header-dot"></div>
-                    <div className="header-dot"></div>
-                    <div className="header-dot"></div>
+            <Marker
+              key={asset.id}
+              longitude={coords[0]}
+              latitude={coords[1]}
+              anchor="bottom"
+              onClick={(e) => {
+                e.originalEvent.stopPropagation();
+                setSelectedAsset(asset);
+                setIsPanelCollapsed(false);
+                setSelectedAsset(asset);
+                setIsPanelCollapsed(false);
+                onAssetSelect?.(asset);
+                mapRef.current?.flyTo({
+                  center: coords,
+                  zoom: 9,
+                  pitch: 60,
+                  duration: 2000,
+                  essential: true,
+                  easing: (t: number) => t * (2 - t)
+                });
+              }}
+            >
+              <div
+                className={`asset-marker-container ${isHigh ? 'high-priority' : ''} ${isSelected ? 'selected' : ''}`}
+                onMouseEnter={() => setHoverAsset(asset)}
+                onMouseLeave={() => setHoverAsset(null)}
+              >
+                <img
+                  src={iconSrc}
+                  alt={asset.name}
+                  className="asset-icon"
+                  style={{
+                    width: size,
+                    height: size,
+                    // transform/transition handled in CSS (City Approach)
+                  }}
+                />
+
+                {/* TOOLTIP ON HOVER */}
+                {hoverAsset?.id === asset.id && !isSelected && (
+                  <div className="asset-tooltip">
+                    <strong>{asset.name}</strong>
+                    <div>{asset.sector}</div>
                   </div>
-                  <span className="panel-title">PLANT DETAILS</span>
+                )}
+              </div>
+            </Marker>
+          );
+        })}
+      </Map>
+
+      {/* --- OVERLAYS (Structured Layout) --- */}
+      {/* Container to align Controls and Panel side-by-side (Horizontal) */}
+      <div className="map-top-left-section" style={{ position: 'absolute', top: '20px', left: '20px', display: 'flex', flexDirection: 'row', alignItems: 'flex-start', gap: '20px', zIndex: 50, pointerEvents: 'none' }}>
+
+        {/* 1. Left Group: Controls (Toggle + Stats + Reset) */}
+        <div className="controls-group" style={{ display: 'flex', flexDirection: 'column', gap: '12px', pointerEvents: 'auto' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            {/* Future Toggle */}
+            <button
+              className={`control-btn ${showFuture ? 'active' : ''}`}
+              onClick={() => setShowFuture(!showFuture)}
+              title="Toggle Future Projects"
+            >
+              <Clock size={18} />
+              <span>Future</span>
+            </button>
+
+            {/* Stats Pill */}
+            <div className="map-stats-pill" style={{ position: 'relative', top: 0, left: 0, transform: 'none', margin: 0, display: 'flex', gap: '8px', padding: '6px 8px' }}>
+              {/* Total */}
+              <div className="stat-item total" style={{ borderRight: '1px solid rgba(255,255,255,0.1)', paddingRight: '12px', marginRight: '4px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <span className="lbl" style={{ fontSize: '9px' }}>Total Assets</span>
+                  <span className="val" style={{ fontSize: '14px' }}>{allAssets.length}</span>
                 </div>
+              </div>
+              {/* Current */}
+              <div className="stat-item current" style={{ background: 'rgba(16, 185, 129, 0.15)', padding: '4px 12px', borderRadius: '10px' }}>
+                <div className="dot" style={{ width: '6px', height: '6px', background: '#10b981' }}></div>
+                <div>
+                  <div className="lbl" style={{ fontSize: '9px', color: '#86efac' }}>Now</div>
+                  <div className="val" style={{ fontSize: '14px' }}>{filteredAssets.filter(a => getSimpleStatus(a.status) === 'Running').length}</div>
+                </div>
+              </div>
+              {/* Future */}
+              <div className="stat-item future" style={{ background: 'rgba(99, 102, 241, 0.15)', padding: '4px 12px', borderRadius: '10px' }}>
+                <div className="dot-future" style={{ width: '6px', height: '6px', background: '#6366f1' }}></div>
+                <div>
+                  <div className="lbl" style={{ fontSize: '9px', color: '#a5b4fc' }}>Future</div>
+                  <div className="val" style={{ fontSize: '14px' }}>{filteredAssets.filter(a => getSimpleStatus(a.status) === 'Future').length}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {selectedRegion && (
+            <button
+              className="control-btn"
+              onClick={() => onRegionSelect?.(null)}
+              style={{ alignSelf: 'flex-start' }}
+            >
+              Reset View
+            </button>
+          )}
+        </div>
+
+        {/* 2. Right Group: Asset Panel (Next to Stats Pill) */}
+        {selectedAsset && (
+          <div className="asset-panel-fixed glass-panel" style={{ pointerEvents: 'auto', marginBottom: isPanelCollapsed ? '0' : '20px' }}>
+            <div className="popup-header" style={{ marginBottom: isPanelCollapsed ? '0' : '20px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span className="popup-category" style={{ color: MAIN_CATEGORY_COLORS[getMainCategory(selectedAsset.sector) || 'Industry'] }}>
+                  {selectedAsset.sector?.toUpperCase()}
+                </span>
+                <span className={`popup-status ${getStatusClass(selectedAsset.status)}`}>
+                  {selectedAsset.status}
+                </span>
+              </div>
+              <div style={{ display: 'flex', gap: '8px' }}>
                 <button
-                  onClick={() => setSelectedPlant(null)}
-                  className="panel-close-btn"
+                  className="header-icon-btn"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsPanelCollapsed(!isPanelCollapsed);
+                  }}
+                  title={isPanelCollapsed ? "Expand" : "Minimize"}
+                >
+                  {isPanelCollapsed ? '□' : '_'}
+                </button>
+                <button
+                  className="header-icon-btn"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedAsset(null);
+                    onAssetSelect?.(null);
+                  }}
+                  title="Close"
                 >
                   ✕
                 </button>
               </div>
+            </div>
 
-              {/* Content */}
-              <div className="panel-content">
-                {/* Plant Name and Status */}
-                <div>
-                  <h2 className="plant-name">
-                    {selectedPlant.name}
-                  </h2>
-                  <span className={`status-badge ${selectedPlant.status === 'operational'
-                    ? 'status-operational'
-                    : selectedPlant.status === 'planned'
-                      ? 'status-planned'
-                      : 'status-risk'
-                    }`}>
-                    <span className="status-dot">●</span>
-                    {selectedPlant.status.toUpperCase()}
-                  </span>
-                </div>
+            {/* Title & Body - HIDDEN IF COLLAPSED */}
+            {!isPanelCollapsed && (
+              <>
+                <h3 className="popup-title">{selectedAsset.name}</h3>
 
-                {/* Operational Metrics */}
-                <div>
-                  <div className="section-header">
-                    <svg className="section-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                    </svg>
-                    Operational Metrics
-                  </div>
-                  <div className="metrics-grid">
-                    <div>
-                      <div className="metric-label">Water Supply</div>
-                      <div className="metric-value">{selectedPlant.capacity.toLocaleString()}</div>
-                    </div>
-                    <div>
-                      <div className="metric-label">Jobs</div>
-                      <div className="metric-value">{selectedPlant.jobs}</div>
-                    </div>
-                    <div>
-                      <div className="metric-label">Revenue</div>
-                      <div className="metric-value">{selectedPlant.revenue}</div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Sector Allocation */}
-                <div className="sector-section">
-                  <div className="section-header">
-                    <svg className="section-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4" />
-                    </svg>
-                    Sector Allocation
-                  </div>
-
-                  {/* Colored bar chart */}
-                  <div className="sector-bar-container">
-                    <div
-                      className="sector-bar bar-agri"
-                      style={{ width: `${pAgri}%` }}
-                    />
-                    <div
-                      className="sector-bar bar-ind"
-                      style={{ width: `${pInd}%` }}
-                    />
-                    <div
-                      className="sector-bar bar-urb"
-                      style={{ width: `${pUrb}%` }}
-                    />
-                  </div>
-
-                  {/* Legend with values */}
-                  <div className="sector-legend">
-                    <div className="sector-legend-item">
-                      <span className="sector-name">
-                        <span className="dot-agri">●</span> Agriculture
-                      </span>
-                      <span className="sector-val">{agri}</span>
-                    </div>
-                    <div className="sector-legend-item">
-                      <span className="sector-name">
-                        <span className="dot-ind">●</span> Industry
-                      </span>
-                      <span className="sector-val">{ind}</span>
-                    </div>
-                    <div className="sector-legend-item">
-                      <span className="sector-name">
-                        <span className="dot-urb">●</span> Urban
-                      </span>
-                      <span className="sector-val">{urb}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Investment Status */}
-                <div className="investment-section">
-                  <div className="section-header">
-                    <svg className="section-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-                    </svg>
-                    Investment Status
-                  </div>
-                  <div className="investment-row">
-                    <div className={`investment-icon-box ${selectedPlant.fundingSource === 'FDI' ? 'box-fdi' : 'box-default'
-                      }`}>
-                      <svg className={`investment-icon ${selectedPlant.fundingSource === 'FDI' ? 'icon-fdi' : 'icon-default'
-                        }`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-                      </svg>
-                    </div>
-                    <div>
-                      <div className="invest-source">{selectedPlant.fundingSource.toUpperCase()}</div>
-                      <div className="invest-launch">
-                        Launch: <span className="invest-quarter">{selectedPlant.quarterLaunched}</span>
+                <div className="popup-grid">
+                  {/* 1. FINANCIALS */}
+                  {(selectedAsset.investment || selectedAsset.revenue || selectedAsset.cost) && (
+                    <div className="popup-section full-width">
+                      <label>Financial Impact</label>
+                      <div className="metrics-row">
+                        {selectedAsset.investment && (
+                          <div className="metric-item">
+                            <span className="value">{formatNumber(selectedAsset.investment, true)}</span>
+                            <span className="label">Investment</span>
+                          </div>
+                        )}
+                        {selectedAsset.revenue && (
+                          <div className="metric-item">
+                            <span className="value">{selectedAsset.revenue}</span>
+                            <span className="label">Revenue</span>
+                          </div>
+                        )}
                       </div>
                     </div>
+                  )}
+
+                  {/* 2. SCALE & OPERATIONS */}
+                  {(selectedAsset.capacity || selectedAsset.jobs) && (
+                    <div className="popup-section full-width">
+                      <label>Operational Scale</label>
+                      <div className="metrics-row">
+                        {selectedAsset.capacity && (
+                          <div className="metric-item">
+                            <span className="value">{selectedAsset.capacity}</span>
+                            <span className="label">Capacity</span>
+                          </div>
+                        )}
+                        {selectedAsset.jobs && (
+                          <div className="metric-item">
+                            <span className="value">{selectedAsset.jobs}</span>
+                            <span className="label">Jobs Created</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 3. STRATEGIC ALIGNMENT */}
+                  {(selectedAsset.fiscalAction || selectedAsset.priority) && (
+                    <div className="popup-section full-width">
+                      <label>Strategic Mandate</label>
+                      <div className="tags-row">
+                        {selectedAsset.priority && (
+                          <span className={`tag-pill priority-${selectedAsset.priority.toLowerCase()}`}>
+                            {selectedAsset.priority} Priority
+                          </span>
+                        )}
+                        {selectedAsset.fiscalAction && (
+                          <span className="tag-pill action">
+                            ACTION: {selectedAsset.fiscalAction}
+                          </span>
+                        )}
+                        {selectedAsset.fundingSource && (
+                          <span className="tag-pill source">
+                            Source: {selectedAsset.fundingSource}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 4. SECTOR SPLIT (Breakdown) */}
+                  {(selectedAsset.sectors || selectedAsset.sector_split) && (
+                    <div className="popup-section full-width">
+                      <label>Sector Distribution</label>
+                      <div className="sector-bars">
+                        {Object.entries(selectedAsset.sectors || selectedAsset.sector_split || {}).map(([key, val]) => (
+                          <div key={key} className="sector-bar-item">
+                            <div className="bar-label">
+                              <span>{key}</span>
+                              <span>{typeof val === 'number' ? val.toLocaleString() : String(val)}</span>
+                            </div>
+                            <div className="bar-track">
+                              <div
+                                className="bar-fill"
+                                style={{ width: `${Math.min(100, (Number(val) / 100000) * 100)}%` }} // Rough scaling
+                              ></div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 5. RATIONALE */}
+                  <div className="popup-metric full-width">
+                    <label>Strategic Rationale</label>
+                    <p>{selectedAsset.rationale || selectedAsset.description || 'No description available.'}</p>
                   </div>
                 </div>
 
-                {/* Coordinates */}
-                <div className="coordinates-section">
-                  <div className="section-header">
-                    <svg className="section-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
-                    Coordinates
-                  </div>
-                  <div className="coordinates-value">
-                    {selectedPlant.coords[1].toFixed(4)}, {selectedPlant.coords[0].toFixed(4)}
-                  </div>
+                <div className="popup-actions">
+                  <button
+                    className="popup-btn primary"
+                    onClick={() => window.open(`/assets/${selectedAsset.id}`, '_blank')}
+                  >
+                    View Details
+                  </button>
+                  <button
+                    className="popup-btn secondary"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsPanelCollapsed(true);
+                    }}
+                  >
+                    Minimize
+                  </button>
                 </div>
+              </>
+            )}
+          </div>
+        )}
+      </div>
 
-                {/* Close Button */}
-                <button
-                  onClick={() => setSelectedPlant(null)}
-                  className="panel-action-btn"
-                >
-                  <svg className="section-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                  Close Panel
-                </button>
-              </div>
+      {/* Collapsed Panel Tab (Bottom Right) */}
+      {/* LEGEND - RESTORED */}
+      <div style={{
+        position: 'absolute', bottom: '24px', right: '24px',
+        background: 'rgba(15, 23, 42, 0.95)', backdropFilter: 'blur(12px)',
+        borderRadius: '12px', padding: '16px', border: '1px solid rgba(255, 255, 255, 0.1)',
+        boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.3)', minWidth: '200px', zIndex: 100
+      }}>
+        <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#94a3b8', marginBottom: '12px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '8px' }}>Asset Types</div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px 16px' }}>
+          {[
+            { l: 'Energy', i: legendEnergy }, { l: 'Water', i: legendWater },
+            { l: 'Industry', i: legendIndustry }, { l: 'Transport', i: legendTransportation },
+            { l: 'Mining', i: legendMining }, { l: 'Giga', i: legendGiga }
+          ].map(item => (
+            <div key={item.l} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <img src={item.i} alt={item.l} style={{ width: '18px', height: '18px' }} />
+              <span style={{ fontSize: '12px', color: '#e2e8f0' }}>{item.l}</span>
             </div>
-          );
-        })()
-      }
-    </div >
+          ))}
+        </div>
+        <div style={{ marginTop: '16px', paddingTop: '12px', borderTop: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <img src={legendPriority} alt="High Priority" style={{ width: '20px', height: '20px' }} />
+          <span style={{ color: '#fbbf24', fontSize: '11px', fontWeight: 600 }}>High Priority Asset</span>
+        </div>
+      </div>
+    </div>
   );
+};
+
+// Helper for status class
+function getStatusClass(status?: string): string {
+  if (!status) return 'status-unknown';
+  const s = status.toLowerCase();
+  if (s === 'existing' || s === 'active' || s === 'operational') return 'status-active';
+  if (s.includes('construct')) return 'status-construction';
+  if (s === 'planned' || s === 'future') return 'status-future';
+  return 'status-unknown';
 }
+
+
+
+function formatNumber(value: string | number | undefined, isCurrency: boolean): string {
+  if (value === undefined || value === null) return 'N/A';
+  // If string (e.g. "SAR 26 Billion"), return as is (maybe clean up?)
+  if (typeof value === 'string') return value;
+
+  // If number
+  if (typeof value === 'number') {
+    if (value >= 1e9) return (value / 1e9).toFixed(1) + 'B';
+    if (value >= 1e6) return (value / 1e6).toFixed(1) + 'M';
+    if (value >= 1e3) return (value / 1e3).toFixed(1) + 'K';
+    return value.toString();
+  }
+  return String(value);
+}
+
+export default SectorMap;
