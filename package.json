@@ -1,4 +1,9 @@
 {
+  "scripts": {
+    "dev": "npm --prefix frontend run dev",
+    "build": "npm --prefix frontend run build",
+    "preview": "npm --prefix frontend run preview"
+  },
   "dependencies": {
     "@genkit-ai/google-genai": "^1.25.0",
     "@openrouter/sdk": "^0.3.1",
