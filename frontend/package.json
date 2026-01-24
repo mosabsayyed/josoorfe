@@ -81,7 +81,7 @@
     "react-pdf": "^10.2.0",
     "react-player": "^3.4.0",
     "react-resizable-panels": "^3.0.6",
-    "react-router-dom": "^6.8.0",
+    "react-router-dom": "^6.30.3",
     "react-scripts": "5.0.1",
     "react-syntax-highlighter": "^16.1.0",
     "recharts": "^3.4.1",
