@@ -1,4 +1,10 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+/* English Fonts */
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap');
+
+/* Arabic Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600&display=swap');
 /* THEME MAPPING: Map new `uploads/styles.css` variables into the project's old variables. */
 
 /* Core variables (copied from uploads/styles.css) */
@@ -18,15 +24,39 @@
   --component-color-success: #10B981;
   --component-color-warning: #FFD700;
   --component-color-danger: #EF4444;
+  --component-color-info: #6366F1;
+
+  /* Sector-specific colors */
+  --sector-mining: #d97706;
+  --sector-water: #06b6d4;
+  --sector-energy: #facc15;
+  --sector-industry: #3b82f6;
+  --sector-logistics: #18181b;
+  --sector-giga: #eab308;
+
+  /* Status colors */
+  --status-existing: #10b981;
+  --status-construction: #f59e0b;
+  --status-planned: #6366f1;
+  --status-future: #6366f1;
+
+  /* Network/connection colors */
+  --network-manual: #818cf8;
+  --network-db: #22d3ee;
 
   --chat-bubble-user-bg: #10B981;
   --chat-bubble-user-text: #FFFFFF;
   --chat-bubble-bot-bg: #374151;
   --chat-bubble-bot-text: #F9FAFB;
 
-  --component-font-family: 'Inter', sans-serif;
-  --component-font-heading: 'Inter', sans-serif;
-  --component-font-mono: 'Inter', sans-serif;
+  /* English fonts */
+  --component-font-family: 'IBM Plex Sans', sans-serif;
+  --component-font-heading: 'IBM Plex Sans', sans-serif;
+  --component-font-mono: monospace;
+
+  /* Arabic fonts */
+  --component-font-family-ar: 'Tajawal', 'IBM Plex Sans Arabic', sans-serif;
+  --component-font-heading-ar: 'Cairo', sans-serif;
 
   /* Fix for white flash on dropdowns and native controls */
   color-scheme: dark;

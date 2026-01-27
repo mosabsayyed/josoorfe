@@ -53,7 +53,6 @@ export default function Header() {
       backdropFilter: 'blur(20px)',
       borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
       color: '#F9FAFB',
-      fontFamily: language === 'ar' ? '"Cairo", sans-serif' : '"Inter", sans-serif',
     }}>
       {/* Left: Logo & Beta Text */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>

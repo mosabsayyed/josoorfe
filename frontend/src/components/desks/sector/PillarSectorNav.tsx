@@ -71,12 +71,21 @@ const PillarSectorNav: React.FC<PillarSectorNavProps> = ({
     return (
         <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
 
-            {/* Brand Header */}
+            {/* Brand Header with KSA Vision */}
             <div className="nav-header">
-                <h1 className="nav-title">
-                    KSA Vision 2030
-                </h1>
-                <p className="nav-subtitle">Sector Command Center</p>
+                <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+                    <img
+                        alt="Energy"
+                        loading="lazy"
+                        src="/src/assets/map-markers/lenergy.svg"
+                        style={{
+                            display: 'block',
+                            height: '40px',
+                            width: '40px',
+                        }}
+                    />
+                    <h1 className="nav-title" style={{ margin: 0 }}>KSA Vision 2030</h1>
+                </div>
             </div>
 
             {/* Pillar Tabs */}
@@ -100,32 +109,6 @@ const PillarSectorNav: React.FC<PillarSectorNavProps> = ({
                 <h3 className="sector-list-title">
                     {PILLARS[selectedPillar as keyof typeof PILLARS]?.label} Sectors
                 </h3>
-
-                {/* SHOW ALL OPTION */}
-                <motion.button
-                    onClick={() => onSelectSector('All Factors')}
-                    whileHover={{ scale: 1.02, x: 5 }}
-                    whileTap={{ scale: 0.98 }}
-                    className={`sector-item ${selectedSector === 'All Factors' ? 'active' : ''}`}
-                    style={{
-                        borderColor: selectedSector === 'All Factors' ? '#fbbf24' : 'transparent',
-                        opacity: 1,
-                        cursor: 'pointer',
-                        marginBottom: '8px'
-                    }}
-                >
-                    <div
-                        className="sector-icon"
-                        style={{
-                            backgroundColor: selectedSector === 'All Factors' ? '#334155' : undefined,
-                            display: 'flex', alignItems: 'center', justifyContent: 'center'
-                        }}
-                    >
-                        <span style={{ fontSize: '14px', fontWeight: 'bold' }}>ALL</span>
-                    </div>
-                    <div className="sector-label" style={{ fontWeight: 700 }}>Show All Assets</div>
-                </motion.button>
-                <div style={{ height: '1px', background: 'rgba(255,255,255,0.1)', margin: '8px 4px 8px 4px' }} />
 
                 {PILLARS[selectedPillar as keyof typeof PILLARS]?.sectors.map((sectorId: string) => {
                     const sector = SECTORS[sectorId as keyof typeof SECTORS];

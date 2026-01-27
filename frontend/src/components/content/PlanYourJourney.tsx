@@ -10,7 +10,6 @@ export default function PlanYourJourney() {
     maxWidth: '1200px', // Increased width for horizontal layout
     margin: '0 auto',
     color: 'var(--component-text-primary)',
-    fontFamily: 'var(--font-sans, sans-serif)',
     direction: isAr ? 'rtl' as const : 'ltr' as const,
   };
 

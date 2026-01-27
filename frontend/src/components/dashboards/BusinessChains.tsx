@@ -123,10 +123,9 @@ const BusinessChains: React.FC<BusinessChainsProps> = ({ chainId, selectedYear, 
       backgroundColor: isDark ? '#111827' : '#F9FAFB', 
       width: '100%', 
       height: '100%', 
-      overflow: 'hidden', 
-      position: 'relative', 
-      cursor: 'grab', 
-      fontFamily: 'sans-serif', 
+      overflow: 'hidden',
+      position: 'relative',
+      cursor: 'grab',
       touchAction: 'none' 
     },
     connector: {
@@ -458,7 +457,7 @@ const BusinessChains: React.FC<BusinessChainsProps> = ({ chainId, selectedYear, 
     const maxY = Math.max(...nodes.map(n => n.y + (n.r || 50))) + 50;
     svgElement.setAttribute("viewBox", `${minX} ${minY} ${maxX - minX} ${maxY - minY}`);
     const style = document.createElement('style');
-    style.textContent = `@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap'); text { font-family: 'Inter', sans-serif; }`;
+    style.textContent = `text { font-family: 'Inter', sans-serif; }`;
     svgElement.prepend(style);
     const svgData = new XMLSerializer().serializeToString(svgElement);
     const svgBlob = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" });

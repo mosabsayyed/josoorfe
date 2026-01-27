@@ -23,6 +23,7 @@ import iconEnergy from '../../../assets/map-markers/energy.svg';
 import iconIndustry from '../../../assets/map-markers/industry.svg';
 import iconTransportation from '../../../assets/map-markers/transportation.svg';
 import iconGiga from '../../../assets/map-markers/giga.svg';
+import iconAll from '../../../assets/map-markers/all.svg';
 
 // Glow Icons
 import glowMining from '../../../assets/map-markers/miningg.svg';
@@ -83,11 +84,14 @@ interface SectorMapProps {
   isLoading?: boolean;
   year?: number;
   quarter?: string;
+  timelineFilter?: 'current' | 'future' | 'both';
+  priorityFilter?: 'major' | 'strategic' | 'both';
 }
 
-type MainCategory = 'Mining' | 'Water' | 'Energy' | 'Industry' | 'Transportation' | 'Giga';
+type MainCategory = 'All' | 'Mining' | 'Water' | 'Energy' | 'Industry' | 'Transportation' | 'Giga';
 
 const MAIN_CATEGORY_ICONS: Record<MainCategory, string> = {
+  'All': iconAll, // Placeholder
   'Mining': iconMining,
   'Water': iconWater,
   'Energy': iconEnergy,
@@ -115,20 +119,20 @@ const LEGEND_ICONS: Record<MainCategory, string> = {
 };
 
 const STATUS_COLORS: Record<string, string> = {
-  'Existing': '#10b981',
-  'Active': '#10b981',
-  'Under Construction': '#f59e0b',
-  'Planned': '#6366f1',
-  'Future': '#6366f1'
+  'Existing': 'var(--status-existing)',
+  'Active': 'var(--status-existing)',
+  'Under Construction': 'var(--status-construction)',
+  'Planned': 'var(--status-planned)',
+  'Future': 'var(--status-future)'
 };
 
 const MAIN_CATEGORY_COLORS: Record<MainCategory, string> = {
-  'Mining': '#d97706',
-  'Water': '#06b6d4',
-  'Energy': '#facc15',
-  'Industry': '#3b82f6',
-  'Transportation': '#18181b',
-  'Giga': '#eab308'
+  'Mining': 'var(--sector-mining)',
+  'Water': 'var(--sector-water)',
+  'Energy': 'var(--sector-energy)',
+  'Industry': 'var(--sector-industry)',
+  'Transportation': 'var(--sector-logistics)',
+  'Giga': 'var(--sector-giga)'
 };
 
 // KSA Administrative Regions
@@ -149,9 +153,42 @@ const KSA_REGIONS: Region[] = [
   { id: 'Najran', name: 'Najran', lat: 17.4933, long: 44.1322 }
 ];
 
+// TEMPORARY: Hardcoded infrastructure asset coordinates until DB is populated
+const INFRASTRUCTURE_FALLBACK: Record<string, [number, number]> = {
+  // Water facilities
+  'w_jubail': [49.6583, 27.0174],      // Jubail desalination
+  'w_ras': [49.9777, 27.8864],          // Ras Al-Khair
+  'w_yanbu': [38.0618, 24.0889],        // Yanbu IWP
+  'w_shuaibah': [39.5149, 20.9844],     // Shuaibah desalination
+  'w_shuqaiq': [42.0450, 17.7167],      // Shuqaiq plant
+  
+  // Industrial cities
+  'i_jubail': [49.6583, 27.0174],       // Jubail Industrial City
+  'i_yanbu': [38.0618, 24.0889],        // Yanbu Industrial City
+  'i_waad': [41.1183, 30.0],            // Waad Al-Shamal
+  'i_ras': [49.9777, 27.8864],          // Ras Al-Khair Industrial
+  
+  // Logistics hubs
+  'l_dam': [50.1000, 26.4207],          // Dammam Logistics Park
+  'l_dry': [46.6753, 24.7136],          // Dry Port Riyadh
+  'l_jed': [39.1925, 21.5433],          // Jeddah Islamic Port
+  'l_kaec': [39.1031, 22.3411],         // King Abdullah Economic City
+  
+  // Energy projects
+  'e_neom': [35.3171, 28.4006],         // NEOM
+  
+  // Cities/Regions (reuse from KSA_REGIONS)
+  'riyadh': [46.6753, 24.7136],
+  'makkah': [39.8262, 21.4225],
+  'medina': [39.6142, 24.4539],
+  'hail': [41.6903, 27.5114],
+  'jawf': [39.8675, 29.8117],
+  'asir': [42.5053, 18.2164]
+};
+
 // Helpers
-function getMainCategory(sector?: string): MainCategory | null {
-  if (!sector) return null;
+function getMainCategory(sector?: string): MainCategory {
+  if (!sector || sector === 'all') return 'All';
   const s = sector.toLowerCase();
   if (s === 'mining') return 'Mining';
   if (s === 'water') return 'Water';
@@ -159,7 +196,7 @@ function getMainCategory(sector?: string): MainCategory | null {
   if (s === 'industry') return 'Industry';
   if (s === 'logistics' || s === 'transportation') return 'Transportation';
   if (s === 'giga') return 'Giga';
-  return null;
+  return 'All';
 }
 
 function getSimpleStatus(status?: string): 'Running' | 'Future' {
@@ -191,41 +228,140 @@ const NetworkSVGOverlay: React.FC<{
   viewport: any;
 }> = ({ manualGeoJSON, dbGeoJSON, mapRef, viewport }) => {
   const [paths, setPaths] = useState<{ d: string; color: string; id: string; label?: string; labelPos?: { x: number; y: number; angle: number } }[]>([]);
+  const svgRef = useRef<SVGSVGElement>(null);
+
+  // Sanitize coordinates to prevent NaN/Infinity in SVG paths
+  const sanitizeCoord = (value: number): number => {
+    if (!isFinite(value) || isNaN(value)) {
+      return 0;
+    }
+    return Math.round(value * 100) / 100;
+  };
+
+  const generatePaths = useCallback((geojson: any, color: string, idPrefix: string) => {
+    const map = mapRef.current?.getMap();
+    if (!map) return [];
+    
+    return geojson.features.map((f: any, i: number) => {
+        try {
+          const coords = f.geometry.coordinates;
+          if (!coords || coords.length < 2) return null;
+          
+          // Validate coordinates are valid numbers
+          if (!Array.isArray(coords[0]) || !Array.isArray(coords[1]) ||
+              typeof coords[0][0] !== 'number' || typeof coords[0][1] !== 'number' ||
+              typeof coords[1][0] !== 'number' || typeof coords[1][1] !== 'number' ||
+              !isFinite(coords[0][0]) || !isFinite(coords[0][1]) ||
+              !isFinite(coords[1][0]) || !isFinite(coords[1][1])) {
+            return null;
+          }
+          
+          const p1 = map.project(coords[0]);
+          const p2 = map.project(coords[1]);
+          
+          // Validate projected coordinates - must be objects with FINITE x and y values
+          if (!p1 || !p2 || typeof p1.x !== 'number' || typeof p1.y !== 'number' ||
+              typeof p2.x !== 'number' || typeof p2.y !== 'number' ||
+              !isFinite(p1.x) || !isFinite(p1.y) || !isFinite(p2.x) || !isFinite(p2.y)) {
+            return null;
+          }
+
+          // Sanitize all coordinates (belt and suspenders approach)
+          const p1x = sanitizeCoord(p1.x);
+          const p1y = sanitizeCoord(p1.y);
+          const p2x = sanitizeCoord(p2.x);
+          const p2y = sanitizeCoord(p2.y);
+
+          // Calculate mid-point and angle for labels
+          const midX = sanitizeCoord((p1x + p2x) / 2);
+          const midY = sanitizeCoord((p1y + p2y) / 2);
+          const angle = Math.atan2(p2y - p1y, p2x - p1x) * (180 / Math.PI);
+
+          // Final validation: ensure no Infinity or NaN in final values
+          if (!isFinite(p1x) || !isFinite(p1y) || !isFinite(p2x) || !isFinite(p2y) ||
+              !isFinite(midX) || !isFinite(midY) || !isFinite(angle)) {
+            return null;
+          }
+
+          const pathString = `M ${p1x} ${p1y} L ${p2x} ${p2y}`;
+          
+          // Sanity check on the path string itself
+          if (pathString.includes('Infinity') || pathString.includes('NaN')) {
+            return null;
+          }
+
+          return {
+            id: `${idPrefix}-${i}`,
+            d: pathString,
+            color,
+            label: f.properties.label,
+            labelPos: { x: midX, y: midY, angle }
+          };
+        } catch (err) {
+          return null;
+        }
+      }).filter(Boolean);
+  }, [mapRef]);
 
   useEffect(() => {
     const map = mapRef.current?.getMap();
     if (!map) return;
 
-    const generatePaths = (geojson: any, color: string, idPrefix: string) => {
-      return geojson.features.map((f: any, i: number) => {
-        const coords = f.geometry.coordinates;
-        if (!coords || coords.length < 2) return null;
-        const p1 = map.project(coords[0]);
-        const p2 = map.project(coords[1]);
+    // Initial draw
+    setPaths([
+      ...generatePaths(manualGeoJSON, 'var(--network-manual)', 'manual'),
+      ...generatePaths(dbGeoJSON, 'var(--network-db)', 'db')
+    ].filter(Boolean) as any);
 
-        // Calculate mid-point and angle for labels
-        const midX = (p1.x + p2.x) / 2;
-        const midY = (p1.y + p2.y) / 2;
-        const angle = Math.atan2(p2.y - p1.y, p2.x - p1.x) * (180 / Math.PI);
+    // Direct DOM manipulation for smooth updates during drag
+    const updatePathsDirect = () => {
+      if (!svgRef.current) return;
+      
+      const newPaths = [
+        ...generatePaths(manualGeoJSON, 'var(--network-manual)', 'manual'),
+        ...generatePaths(dbGeoJSON, 'var(--network-db)', 'db')
+      ].filter(Boolean) as any;
 
-        return {
-          id: `${idPrefix}-${i}`,
-          d: `M ${p1.x} ${p1.y} L ${p2.x} ${p2.y}`,
-          color,
-          label: f.properties.label,
-          labelPos: { x: midX, y: midY, angle }
-        };
-      }).filter(Boolean);
+      // Update path elements and labels by matching data-id attribute
+      newPaths.forEach((pathData: any) => {
+        const basePath = svgRef.current?.querySelector(`path.network-path-base[data-id="${pathData.id}"]`);
+        const flowPath = svgRef.current?.querySelector(`path.network-path-flow[data-id="${pathData.id}"]`);
+        const labelGroup = svgRef.current?.querySelector(`g.network-label[data-id="${pathData.id}"]`);
+        
+        if (basePath) basePath.setAttribute('d', pathData.d);
+        if (flowPath) flowPath.setAttribute('d', pathData.d);
+        
+        // Update label position and rotation
+        if (labelGroup && pathData.labelPos) {
+          const { x, y, angle } = pathData.labelPos;
+          const rotation = angle > 90 || angle < -90 ? angle + 180 : angle;
+          labelGroup.setAttribute('transform', `rotate(${rotation}, ${x}, ${y})`);
+          
+          // Update rect and text positions
+          const rect = labelGroup.querySelector('rect');
+          const text = labelGroup.querySelector('text');
+          if (rect && pathData.label) {
+            rect.setAttribute('x', String(x - (pathData.label.length * 3)));
+            rect.setAttribute('y', String(y - 14));
+          }
+          if (text) {
+            text.setAttribute('x', String(x));
+            text.setAttribute('y', String(y));
+          }
+        }
+      });
     };
 
-    setPaths([
-      ...generatePaths(manualGeoJSON, '#818cf8', 'manual'),
-      ...generatePaths(dbGeoJSON, '#22d3ee', 'db')
-    ].filter(Boolean) as any);
-  }, [manualGeoJSON, dbGeoJSON, viewport, mapRef]);
+    // Listen to map move events for real-time updates during drag
+    map.on('move', updatePathsDirect);
+
+    return () => {
+      map.off('move', updatePathsDirect);
+    };
+  }, [manualGeoJSON, dbGeoJSON, mapRef, generatePaths]);
 
   return (
-    <svg className="network-svg-overlay">
+    <svg ref={svgRef} className="network-svg-overlay">
       <defs>
         <filter id="soft-glow" x="-20%" y="-20%" width="140%" height="140%">
           <feGaussianBlur stdDeviation="2" result="blur" />
@@ -236,10 +372,11 @@ const NetworkSVGOverlay: React.FC<{
         </filter>
       </defs>
       {paths.map(path => (
-        <g key={path.id}>
+        <g key={path.id} className="network-connection-group">
           <path
             d={path.d}
             className="network-path-base"
+            data-id={path.id}
             stroke={path.color}
             strokeWidth="4"
             strokeOpacity="0.3"
@@ -247,30 +384,41 @@ const NetworkSVGOverlay: React.FC<{
           <path
             d={path.d}
             className="network-path-flow"
+            data-id={path.id}
             stroke={path.color}
             strokeWidth="2"
             strokeOpacity="1.0"
             filter="url(#soft-glow)"
           />
-          {/* Text labels for connections */}
+          {/* Hover-only label */}
           {path.label && (
-            <text
-              x={path.labelPos.x}
-              y={path.labelPos.y}
-              dy="-4"
-              textAnchor="middle"
-              className="network-line-label"
-              fill={path.color}
-              style={{
-                fontSize: '10px',
-                fontWeight: 600,
-                textShadow: '0 0 4px black',
-                pointerEvents: 'none'
-              }}
-              transform={`rotate(${path.labelPos.angle > 90 || path.labelPos.angle < -90 ? path.labelPos.angle + 180 : path.labelPos.angle}, ${path.labelPos.x}, ${path.labelPos.y})`}
-            >
-              {path.label}
-            </text>
+            <g className="network-label" data-id={path.id} transform={`translate(${path.labelPos.x}, ${path.labelPos.y})`}>
+              <rect
+                x={-path.label.length * 3.5}
+                y={-10}
+                width={path.label.length * 7}
+                height={20}
+                fill="rgba(0,0,0,0.9)"
+                stroke={path.color}
+                strokeWidth="1.5"
+                rx="4"
+              />
+              <text
+                x={0}
+                y={0}
+                dy="4"
+                textAnchor="middle"
+                fill="white"
+                style={{
+                  fontSize: '10px',
+                  fontWeight: 600,
+                  pointerEvents: 'none',
+                  letterSpacing: '0.3px'
+                }}
+              >
+                {path.label}
+              </text>
+            </g>
           )}
         </g>
       ))}
@@ -287,17 +435,16 @@ const SectorMap: React.FC<SectorMapProps> = ({
   assets: allAssets, // Use parent data
   isLoading = false,
   year,
-  quarter
+  quarter,
+  timelineFilter = 'both',
+  priorityFilter = 'both'
 }) => {
   const mapRef = useRef<any>(null);
 
   // UI State
-  // UI State
   const [selectedAsset, setSelectedAsset] = useState<GraphNode | null>(null);
   const [hoverAsset, setHoverAsset] = useState<GraphNode | null>(null);
   const [isPanelCollapsed, setIsPanelCollapsed] = useState(false);
-  const [timelineFilter, setTimelineFilter] = useState<'current' | 'future' | 'both'>('both');
-  const [priorityFilter, setPriorityFilter] = useState<'major' | 'strategic' | 'both'>('both');
 
   // Animation State for Line Flow - REMOVED (Now handled by CSS in SVG)
   const [mapViewport, setMapViewport] = useState<any>(null);
@@ -311,13 +458,22 @@ const SectorMap: React.FC<SectorMapProps> = ({
 
   // Filter Assets
   const filteredAssets = useMemo(() => {
+    const activeSectors = ['water', 'energy', 'mining', 'industry', 'logistics', 'giga'];
+
     return allAssets.filter(node => {
       if (node.asset_type === 'Network Connection') return false;
+      if (node.asset_type === 'Region') return false; // Exclude region markers (rendered separately)
       const coords = getCoords(node);
       if (!coords) return false;
 
       const nodeSector = node.sector?.toLowerCase();
-      if (selectedSector !== 'All Factors' && nodeSector !== selectedSector.toLowerCase()) {
+
+      // Handle 'all' sector - show all 6 active sectors
+      if (selectedSector === 'all') {
+        if (!activeSectors.includes(nodeSector || '')) {
+          return false;
+        }
+      } else if (selectedSector !== 'All Factors' && nodeSector !== selectedSector.toLowerCase()) {
         if (!(nodeSector === 'giga' && selectedSector.toLowerCase() === 'economy')) {
           return false;
         }
@@ -374,31 +530,31 @@ const SectorMap: React.FC<SectorMapProps> = ({
   // --- 1. RED LINE: MANUAL CONNECTIONS (Strict IDs) ---
   const MANUAL_CONNECTIONS = [
     // Water Network (Yanbu 4 IWP Hub)
-    { s: 'Yanbu 4 IWP', d: 'Madinah', type: 'Water', status: 'Existing' },
-    { s: 'Yanbu 4 IWP', d: 'Riyadh', type: 'Water', status: 'Existing' },
-    { s: 'Jubail Power Plant', d: 'Riyadh', type: 'Water', status: 'Existing' },
-    { s: 'Jubail Power Plant', d: 'Ras Al-Khair Power Plant', type: 'Water', status: 'Existing' },
+    { s: 'Yanbu 4 IWP', d: 'Madinah', type: 'Water', status: 'Existing', label: 'Yanbu-Madinah Water Line' },
+    { s: 'Yanbu 4 IWP', d: 'Riyadh', type: 'Water', status: 'Existing', label: 'Yanbu-Riyadh Water Line' },
+    { s: 'Jubail Power Plant', d: 'Riyadh', type: 'Water', status: 'Existing', label: 'Jubail-Riyadh Water Line' },
+    { s: 'Jubail Power Plant', d: 'Ras Al-Khair Power Plant', type: 'Water', status: 'Existing', label: 'Jubail-Ras Al-Khair Water Line' },
 
     // Logistics Corridors (Landbridge & Ports)
-    { s: 'Dammam Logistics Park', d: 'Riyadh Integrated Logistics Zone', type: 'Transportation', status: 'Planned' },
-    { s: 'Riyadh Integrated Logistics Zone', d: 'King Abdullah Port Logistics', type: 'Transportation', status: 'Planned' },
-    { s: 'King Abdullah Port Logistics', d: 'Yanbu Industrial City', type: 'Transportation', status: 'Existing' },
+    { s: 'Dammam Logistics Park', d: 'Riyadh Integrated Logistics Zone', type: 'Transportation', status: 'Planned', label: 'Dammam-Riyadh Logistics Corridor' },
+    { s: 'Riyadh Integrated Logistics Zone', d: 'King Abdullah Port Logistics', type: 'Transportation', status: 'Planned', label: 'Riyadh-Jeddah Landbridge' },
+    { s: 'King Abdullah Port Logistics', d: 'Yanbu Industrial City', type: 'Transportation', status: 'Existing', label: 'Red Sea Logistics Route' },
 
     // Industrial Supply Chains (Mining to Industry)
-    { s: 'Jubail Industrial City', d: 'NEOM (The Line)', type: 'Industry', status: 'Existing' },
-    { s: 'Wa\'ad Al-Shamal', d: 'Jubail Industrial City', type: 'Industry', status: 'Existing' },
-    { s: 'Mahd Ad Dahab Mine', d: 'Riyadh 2nd Industrial City', type: 'Industry', status: 'Existing' },
+    { s: 'Jubail Industrial City', d: 'NEOM (The Line)', type: 'Industry', status: 'Existing', label: 'Jubail-NEOM Industrial Link' },
+    { s: 'Wa\'ad Al-Shamal', d: 'Jubail Industrial City', type: 'Industry', status: 'Existing', label: 'Phosphate Supply Chain' },
+    { s: 'Mahd Ad Dahab Mine', d: 'Riyadh 2nd Industrial City', type: 'Industry', status: 'Existing', label: 'Gold-Industrial Supply Line' },
 
     // Energy Grid (Power Distribution)
-    { s: 'Jubail Power Plant', d: 'Eastern Region', type: 'Energy', status: 'Existing' },
-    { s: 'Ras Al-Khair Power Plant', d: 'Riyadh', type: 'Energy', status: 'Existing' },
-    { s: 'Dumat Al Jandal Wind Farm', d: 'Tabuk', type: 'Energy', status: 'Planned' },
-    { s: 'Rabigh 3 IWP', d: 'Makkah', type: 'Energy', status: 'Existing' },
+    { s: 'Jubail Power Plant', d: 'Eastern Region', type: 'Energy', status: 'Existing', label: 'Eastern Grid Trunk' },
+    { s: 'Ras Al-Khair Power Plant', d: 'Riyadh', type: 'Energy', status: 'Existing', label: 'East-Central Power Line' },
+    { s: 'Dumat Al Jandal Wind Farm', d: 'Tabuk', type: 'Energy', status: 'Planned', label: 'Northern Renewable Link' },
+    { s: 'Rabigh 3 IWP', d: 'Makkah', type: 'Energy', status: 'Existing', label: 'Rabigh-Makkah Power Line' },
 
     // Regional Connectors (Strategic)
-    { s: 'Mahd Ad Dahab Mine', d: 'Riyadh', type: 'Mining', status: 'Existing' },
-    { s: 'Mahd Ad Dahab Mine', d: 'Hail', type: 'Mining', status: 'Existing' },
-    { s: 'Madinah', d: 'King Abdullah Port Logistics', type: 'Transportation', status: 'Existing' }
+    { s: 'Mahd Ad Dahab Mine', d: 'Riyadh', type: 'Mining', status: 'Existing', label: 'Gold Mining Route' },
+    { s: 'Mahd Ad Dahab Mine', d: 'Hail', type: 'Mining', status: 'Existing', label: 'Mining Regional Link' },
+    { s: 'Madinah', d: 'King Abdullah Port Logistics', type: 'Transportation', status: 'Existing', label: 'Madinah-Jeddah Corridor' }
   ];
 
   // Animation State - Disabled line dash animation to prevent Mapbox crash (property not supported)
@@ -411,8 +567,9 @@ const SectorMap: React.FC<SectorMapProps> = ({
     const findNode = (id: string) => allAssets.find(n => n.id === id || n.name === id);
     const getPoint = (node: GraphNode | undefined) => node ? getCoords(node) : null;
 
-    // VISIBILITY CHECK: Only show lines if both ends are in filteredAssets
-    const isVisible = (id: string) => filteredAssets.some(a => a.id === id || a.name === id);
+    // VISIBILITY CHECK: Show lines if both endpoints exist in allAssets (not filtered view)
+    // This allows connections to display even when endpoints are filtered out of current view
+    const isVisible = (id: string) => allAssets.some(a => a.id === id || a.name === id);
 
     // 1. Manual Lines
     const manualFeatures = MANUAL_CONNECTIONS.map(conn => {
@@ -431,7 +588,7 @@ const SectorMap: React.FC<SectorMapProps> = ({
           properties: {
             type: 'Manual',
             status: conn.status,
-            label: `${conn.type} Connection`,
+            label: conn.label || `${conn.type} Connection`,
             sector: conn.type
           },
           geometry: { type: 'LineString', coordinates: [sPoint, dPoint] }
@@ -442,20 +599,57 @@ const SectorMap: React.FC<SectorMapProps> = ({
 
     // 2. DB Lines
     const dbConnections = allAssets.filter(n => n.asset_type === 'Network Connection');
-    const dbFeatures = dbConnections.map(conn => {
-      if (!conn.source_asset_name || !conn.destination_asset_name) return null;
-
-      // Auto-hide if ends are filtered out
-      if (!isVisible(conn.source_asset_name) || !isVisible(conn.destination_asset_name)) return null;
+    
+    console.log('=== DB CONNECTIONS DEBUG ===');
+    console.log(`Total DB connections found: ${dbConnections.length}`);
+    console.log('Available asset names:', allAssets.map(a => a.name).filter(Boolean).slice(0, 30));
+    
+    const dbFeatures = dbConnections.map((conn, idx) => {
+      if (!conn.source_asset_name || !conn.destination_asset_name) {
+        console.log(`#${idx + 1} SKIP: Missing source/dest names`, conn.name);
+        return null;
+      }
 
       let sPoint: [number, number] | null = null;
       let dPoint: [number, number] | null = null;
 
-      const sAsset = allAssets.find(a => a.name === conn.source_asset_name);
-      const dAsset = allAssets.find(a => a.name === conn.destination_asset_name);
+      // Flexible matching: try name, id, case-insensitive, OR fallback coords
+      const findAsset = (searchName: string) => {
+        const normalized = searchName.trim().toLowerCase();
+        
+        // First try to find in actual assets
+        const found = allAssets.find(a => 
+          a.name?.trim().toLowerCase() === normalized || 
+          a.id?.trim().toLowerCase() === normalized
+        );
+        
+        if (found) return found;
+        
+        // FALLBACK: Create temporary asset from hardcoded coords
+        const coords = INFRASTRUCTURE_FALLBACK[normalized];
+        if (coords) {
+          return {
+            id: normalized,
+            name: searchName,
+            longitude: coords[0],
+            latitude: coords[1]
+          } as GraphNode;
+        }
+        
+        return undefined;
+      };
+
+      const sAsset = findAsset(conn.source_asset_name);
+      const dAsset = findAsset(conn.destination_asset_name);
 
       if (sAsset) sPoint = getCoords(sAsset);
       if (dAsset) dPoint = getCoords(dAsset);
+      
+      console.log(`#${idx + 1} "${conn.name || 'Unnamed'}"`);
+      console.log(`  Source: "${conn.source_asset_name}" → ${sAsset ? `FOUND: "${sAsset.name}"` : 'NOT FOUND'} → ${sPoint ? `[${sPoint}]` : 'NO COORDS'}`);
+      console.log(`  Dest: "${conn.destination_asset_name}" → ${dAsset ? `FOUND: "${dAsset.name}"` : 'NOT FOUND'} → ${dPoint ? `[${dPoint}]` : 'NO COORDS'}`);
+      console.log(`  Result: ${sPoint && dPoint ? '✅ LINE CREATED' : '❌ LINE SKIPPED'}`);
+      console.log('');
 
       if (sPoint && dPoint) {
         return {
@@ -533,13 +727,14 @@ const SectorMap: React.FC<SectorMapProps> = ({
         />
 
         {/* Background Network Lines (Mapbox Layers) - Keep static base for depth */}
+
         {dbGeoJSON.features.length > 0 && (
           <Source id="lines-db" type="geojson" data={dbGeoJSON as any}>
             <Layer
               id="layer-lines-db"
               type="line"
               paint={{
-                'line-color': '#06b6d4',
+                'line-color': getComputedStyle(document.documentElement).getPropertyValue('--network-db').trim() || '#22d3ee',
                 'line-width': 2,
                 'line-opacity': 0.2, // Very subtle background
               } as any}
@@ -553,7 +748,7 @@ const SectorMap: React.FC<SectorMapProps> = ({
               id="layer-lines-manual"
               type="line"
               paint={{
-                'line-color': '#6366f1',
+                'line-color': getComputedStyle(document.documentElement).getPropertyValue('--network-manual').trim() || '#818cf8',
                 'line-width': 2,
                 'line-opacity': 0.2,
               } as any}
@@ -575,7 +770,6 @@ const SectorMap: React.FC<SectorMapProps> = ({
           >
             <div className={`region-marker ${selectedRegion === region.id ? 'active' : ''}`}>
               <div className="region-dot"></div>
-              <div className="region-label">{region.name}</div>
             </div>
           </Marker>
         ))}
@@ -636,13 +830,10 @@ const SectorMap: React.FC<SectorMapProps> = ({
                 {/* TOOLTIP ON HOVER */}
                 {hoverAsset?.id === asset.id && !isSelected && (
                   <div className="asset-tooltip">
-                    <strong>{asset.name}</strong>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                      <span>{asset.sector}</span>
-                      {asset.subCategory && (
-                        <span style={{ fontSize: '10px', opacity: 0.8 }}>{asset.subCategory}</span>
-                      )}
-                    </div>
+                    <span>{asset.sector}</span>
+                    {asset.subCategory && (
+                      <span style={{ fontSize: '10px', opacity: 0.8 }}>{asset.subCategory}</span>
+                    )}
                   </div>
                 )}
               </div>
@@ -655,69 +846,9 @@ const SectorMap: React.FC<SectorMapProps> = ({
       {/* Container to align Controls and Panel side-by-side (Horizontal) */}
       <div className="map-top-left-section" style={{ position: 'absolute', top: '20px', left: '20px', display: 'flex', flexDirection: 'row', alignItems: 'flex-start', gap: '20px', zIndex: 50, pointerEvents: 'none' }}>
 
-        {/* 1. Left Group: Controls (Toggle + Stats + Reset) */}
-        <div className="controls-group" style={{ display: 'flex', flexDirection: 'column', gap: '12px', pointerEvents: 'auto' }}>
-
-          {/* THREE-WAY TIMELINE TOGGLE */}
-          <div className="pill-toggle-group">
-            <button
-              className={`pill-btn ${timelineFilter === 'current' ? 'active' : ''}`}
-              onClick={() => setTimelineFilter('current')}
-            >Current</button>
-            <button
-              className={`pill-btn ${timelineFilter === 'future' ? 'active' : ''}`}
-              onClick={() => setTimelineFilter('future')}
-            >Future</button>
-            <button
-              className={`pill-btn ${timelineFilter === 'both' ? 'active' : ''}`}
-              onClick={() => setTimelineFilter('both')}
-            >Both</button>
-          </div>
-
-          {/* ASSET IMPACT TOGGLE */}
-          <div className="pill-toggle-group">
-            <button
-              className={`pill-btn ${priorityFilter === 'major' ? 'active' : ''}`}
-              onClick={() => setPriorityFilter('major')}
-            >Major Unlock</button>
-            <button
-              className={`pill-btn ${priorityFilter === 'strategic' ? 'active' : ''}`}
-              onClick={() => setPriorityFilter('strategic')}
-            >Strategic Impact</button>
-            <button
-              className={`pill-btn ${priorityFilter === 'both' ? 'active' : ''}`}
-              onClick={() => setPriorityFilter('both')}
-            >All</button>
-          </div>
-
-          {/* Stats Pill */}
-          <div className="map-stats-pill" style={{ position: 'relative', top: 0, left: 0, transform: 'none', margin: 0, display: 'flex', gap: '8px', padding: '6px 8px' }}>
-            {/* Total */}
-            <div className="stat-item total" style={{ borderRight: '1px solid rgba(255,255,255,0.1)', paddingRight: '12px', marginRight: '4px' }}>
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <span className="lbl" style={{ fontSize: '9px' }}>Total Assets</span>
-                <span className="val" style={{ fontSize: '14px' }}>{allAssets.length}</span>
-              </div>
-            </div>
-            {/* Current */}
-            <div className="stat-item current" style={{ background: 'rgba(16, 185, 129, 0.15)', padding: '4px 12px', borderRadius: '10px' }}>
-              <div className="dot" style={{ width: '6px', height: '6px', background: '#10b981' }}></div>
-              <div>
-                <div className="lbl" style={{ fontSize: '9px', color: '#86efac' }}>Now</div>
-                <div className="val" style={{ fontSize: '14px' }}>{filteredAssets.filter(a => getSimpleStatus(a.status) === 'Running').length}</div>
-              </div>
-            </div>
-            {/* Future */}
-            <div className="stat-item future" style={{ background: 'rgba(99, 102, 241, 0.15)', padding: '4px 12px', borderRadius: '10px' }}>
-              <div className="dot-future" style={{ width: '6px', height: '6px', background: '#6366f1' }}></div>
-              <div>
-                <div className="lbl" style={{ fontSize: '9px', color: '#a5b4fc' }}>Future</div>
-                <div className="val" style={{ fontSize: '14px' }}>{filteredAssets.filter(a => getSimpleStatus(a.status) === 'Future').length}</div>
-              </div>
-            </div>
-          </div>
-
-          {selectedRegion && (
+        {/* 1. Left Group: Controls (Reset only) */}
+        {selectedRegion && (
+          <div className="controls-group" style={{ display: 'flex', flexDirection: 'column', gap: '12px', pointerEvents: 'auto' }}>
             <button
               className="control-btn"
               onClick={() => onRegionSelect?.(null)}
@@ -725,9 +856,8 @@ const SectorMap: React.FC<SectorMapProps> = ({
             >
               Reset View
             </button>
-          )}
-
-        </div>
+          </div>
+        )}
 
         {/* 2. Right Group: Asset Panel (Next to Stats Pill) */}
         {selectedAsset && (
@@ -739,7 +869,7 @@ const SectorMap: React.FC<SectorMapProps> = ({
                     {selectedAsset.sector?.toUpperCase()}
                   </span>
                   {selectedAsset.subCategory && (
-                    <span style={{ fontSize: '9px', color: '#94a3b8', marginTop: '-2px' }}>{selectedAsset.subCategory}</span>
+                    <span style={{ fontSize: '9px', color: 'var(--component-text-muted)', marginTop: '-2px' }}>{selectedAsset.subCategory}</span>
                   )}
                 </div>
                 <span className={`popup-status ${getStatusClass(selectedAsset.status)}`}>
@@ -830,7 +960,7 @@ const SectorMap: React.FC<SectorMapProps> = ({
                           </span>
                         )}
                         {selectedAsset.ownership_type && (
-                          <span className="tag-pill ownership" style={{ background: selectedAsset.ownership_type === 'PPP' ? '#6366f1' : '#475569' }}>
+                          <span className="tag-pill ownership" style={{ background: selectedAsset.ownership_type === 'PPP' ? 'var(--component-color-info)' : 'var(--component-panel-border)' }}>
                             {selectedAsset.ownership_type}
                           </span>
                         )}
@@ -861,7 +991,7 @@ const SectorMap: React.FC<SectorMapProps> = ({
                                   height: '100%',
                                   borderRadius: '2px',
                                   width: `${typeof val === 'number' ? Math.min(100, val) : 0}%`,
-                                  background: selectedAsset.sector === 'Water' ? '#06b6d4' : '#3b82f6'
+                                  background: selectedAsset.sector === 'Water' ? 'var(--sector-water)' : 'var(--sector-industry)'
                                 }}
                               ></div>
                             </div>
@@ -873,8 +1003,8 @@ const SectorMap: React.FC<SectorMapProps> = ({
 
                   {/* SPECIAL HIGHLIGHT: Investment for Private Future Assets */}
                   {getSimpleStatus(selectedAsset.status) === 'Future' && selectedAsset.ownership_type === 'Private' && selectedAsset.investment && (
-                    <div className="popup-section full-width highlight-box" style={{ background: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.3)', padding: '12px', borderRadius: '8px' }}>
-                      <div style={{ fontSize: '10px', color: '#f59e0b', textTransform: 'uppercase', fontWeight: 700, marginBottom: '4px' }}>Private Investment Size</div>
+                    <div className="popup-section full-width highlight-box" style={{ background: 'color-mix(in srgb, var(--component-color-warning) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--component-color-warning) 30%, transparent)', padding: '12px', borderRadius: '8px' }}>
+                      <div style={{ fontSize: '10px', color: 'var(--status-construction)', textTransform: 'uppercase', fontWeight: 700, marginBottom: '4px' }}>Private Investment Size</div>
                       <div style={{ fontSize: '20px', fontWeight: 800, color: 'white' }}>{formatNumber(selectedAsset.investment, true)}</div>
                     </div>
                   )}
@@ -906,31 +1036,7 @@ const SectorMap: React.FC<SectorMapProps> = ({
 
       </div>
 
-      {/* LEGEND - RESTORED */}
-      <div style={{
-        position: 'absolute', bottom: '24px', right: '24px',
-        background: 'rgba(15, 23, 42, 0.95)', backdropFilter: 'blur(12px)',
-        borderRadius: '12px', padding: '16px', border: '1px solid rgba(255, 255, 255, 0.1)',
-        boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.3)', minWidth: '200px', zIndex: 100
-      }}>
-        <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#94a3b8', marginBottom: '12px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '8px' }}>Asset Types</div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px 16px' }}>
-          {[
-            { l: 'Energy', i: legendEnergy }, { l: 'Water', i: legendWater },
-            { l: 'Industry', i: legendIndustry }, { l: 'Transport', i: legendTransportation },
-            { l: 'Mining', i: legendMining }, { l: 'Giga', i: legendGiga }
-          ].map(item => (
-            <div key={item.l} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <img src={item.i} alt={item.l} style={{ width: '18px', height: '18px' }} />
-              <span style={{ fontSize: '12px', color: '#e2e8f0' }}>{item.l}</span>
-            </div>
-          ))}
-        </div>
-        <div style={{ marginTop: '16px', paddingTop: '12px', borderTop: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <img src={legendPriority} alt="Major Unlock" style={{ width: '20px', height: '20px' }} />
-          <span style={{ color: '#fbbf24', fontSize: '11px', fontWeight: 600 }}>Major Unlock Asset</span>
-        </div>
-      </div>
+      {/* LEGEND REMOVED - Now redundant with header sector icons */}
     </div>
   );
 };

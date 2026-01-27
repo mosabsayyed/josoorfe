@@ -26,11 +26,10 @@ export default function ContactUsPage() {
   const isRTL = language === 'ar';
 
   return (
-    <div style={{ 
-      minHeight: '100vh', 
-      background: '#111827', 
+    <div style={{
+      minHeight: '100vh',
+      background: '#111827',
       color: '#F9FAFB',
-      fontFamily: isRTL ? '"Cairo", sans-serif' : '"Inter", sans-serif',
       paddingTop: '80px'
     }}>
       <Header />

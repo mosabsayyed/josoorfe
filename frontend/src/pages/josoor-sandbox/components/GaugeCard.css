@@ -25,7 +25,7 @@
 /* Typography */
 .gauge-card-label {
     position: absolute;
-    font-family: 'Inter', sans-serif;
+    font-family: var(--component-font-family);
     font-weight: 700;
     line-height: 1.1;
     left: 50%;
@@ -39,7 +39,7 @@
 
 .gauge-card-value {
     position: absolute;
-    font-family: 'Inter', sans-serif;
+    font-family: var(--component-font-family);
     font-weight: 700;
     line-height: normal;
     left: 50%;
@@ -77,7 +77,7 @@
 /* Tick Values */
 .tick-value {
     position: absolute;
-    font-family: 'Inter', sans-serif;
+    font-family: var(--component-font-family);
     font-weight: 400;
     line-height: normal;
     font-style: normal;

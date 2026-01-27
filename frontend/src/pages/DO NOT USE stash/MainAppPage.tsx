@@ -39,7 +39,6 @@ const MainAppLayout: React.FC = () => {
       width: '100vw',
       backgroundColor: 'var(--component-bg-primary)',
       overflow: 'hidden',
-      fontFamily: 'var(--component-font-family)',
       direction: isRTL ? 'rtl' : 'ltr'
     }}>
       <MainSidebar 

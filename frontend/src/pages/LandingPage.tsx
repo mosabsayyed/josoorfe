@@ -223,7 +223,7 @@ export default function LandingPage() {
       .landing-page {
         background: var(--component-bg-primary);
         color: var(--component-text-primary);
-        font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", sans-serif;
+        font-family: "Inter", sans-serif;
         overflow-x: hidden;
         overflow-y: auto;
         line-height: 1.5;
@@ -231,17 +231,6 @@ export default function LandingPage() {
         position: relative;
       }
       
-      /* Arabic Font Overrides */
-      [dir="rtl"] .landing-page {
-        font-family: "Cairo", "Segoe UI", "Roboto", sans-serif;
-      }
-      
-      [dir="rtl"] .landing-page h1, 
-      [dir="rtl"] .landing-page h2, 
-      [dir="rtl"] .landing-page h3 {
-        font-family: "Tajawal", "Segoe UI", "Roboto", sans-serif;
-      }
-
       .landing-page * {
         box-sizing: border-box;
       }

@@ -182,9 +182,6 @@ export const ChatContainer = memo(function ChatContainer({
                 </>
               )}
             </div>
-            {subtitle && (
-              <div style={{ color: 'var(--component-text-accent)', fontSize: '11px', opacity: 0.8, marginTop: '2px' }}>{subtitle}</div>
-            )}
           </div>
         </div>
 
@@ -354,12 +351,7 @@ export const ChatContainer = memo(function ChatContainer({
           overflow: 'auto',
         }}
       >
-        {children ? (
-          // DESK MODE - Render children (Outlet with desk component)
-          <div style={{ flex: 1, overflow: 'auto' }}>
-            {children}
-          </div>
-        ) : (
+        {!children ? (
           // CHAT MODE - Render messages or welcome screen
           <>
             <ScrollArea
@@ -495,6 +487,10 @@ export const ChatContainer = memo(function ChatContainer({
               />
             </div>
           </>
+        ) : (
+          <div style={{ flex: 1, overflow: 'auto' }}>
+            {children}
+          </div>
         )}
       </div>
     </div>

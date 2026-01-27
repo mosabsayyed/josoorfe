@@ -12,7 +12,7 @@
 }
 
 .insights-section-title h3 {
-    font-family: 'Inter', sans-serif;
+    font-family: var(--component-font-family);
     font-style: normal;
     font-weight: 500;
     font-size: 0.875rem;
@@ -43,7 +43,7 @@
 }
 
 .insight-description {
-    font-family: 'Inter', sans-serif;
+    font-family: var(--component-font-family);
     font-style: normal;
     font-weight: 400;
     font-size: 0.8rem;
@@ -59,7 +59,7 @@
 }
 
 .insight-stat {
-    font-family: 'Inter', sans-serif;
+    font-family: var(--component-font-family);
     font-style: normal;
     font-weight: 600;
     font-size: 1.125rem;
@@ -67,14 +67,14 @@
 }
 
 .insight-details {
-    font-family: 'Inter', sans-serif;
+    font-family: var(--component-font-family);
     font-style: normal;
     font-size: 0.875rem;
     color: var(--component-text-secondary);
 }
 
 .insight-explanation {
-    font-family: 'Inter', sans-serif;
+    font-family: var(--component-font-family);
     font-style: normal;
     font-size: 0.75rem;
     color: var(--component-text-muted);

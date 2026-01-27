@@ -54,9 +54,6 @@ const ChartRenderer: React.FC<ChartRendererProps> = ({ artifact, showHeader = tr
         chart: {
           type: chartData.type || chartData.chart?.type || 'column',
           backgroundColor: 'transparent',
-          style: {
-            fontFamily: "'Segoe UI', -apple-system, BlinkMacSystemFont, 'Roboto', sans-serif"
-          },
           ...chartData.chart
         },
         title: chartData.title || {
@@ -110,10 +107,7 @@ const ChartRenderer: React.FC<ChartRendererProps> = ({ artifact, showHeader = tr
       ],
       chart: {
         type: chartData.type || 'column',
-        backgroundColor: 'transparent',
-        style: {
-          fontFamily: 'var(--component-font-family)'
-        }
+        backgroundColor: 'transparent'
       },
       title: {
         text: chartData.chart_title || '',

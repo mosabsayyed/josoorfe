@@ -34,7 +34,7 @@ export function UnifiedSidebar({
         reporting: language === 'ar' ? 'التقارير' : 'Reporting',
         knowledge: language === 'ar' ? 'المعرفة' : 'Knowledge',
         roadmap: language === 'ar' ? 'الخارطة' : 'Roadmap',
-        graph: language === 'ar' ? 'المستكشف' : 'Graph Explorer'
+        graph: language === 'ar' ? 'المستكشف' : 'Graph Explorer',
 
         admin: language === 'ar' ? 'المسؤول' : 'Admin',
         providers: language === 'ar' ? 'المزودين' : 'Providers',
@@ -183,6 +183,8 @@ export function UnifiedSidebar({
                             {!isCollapsed && <span style={{ fontSize: '14px' }}>{item.label}</span>}
                         </button>
                     ))}
+
+                    <div style={{ height: '1px', backgroundColor: 'var(--component-panel-border)', margin: '12px 0 20px 0' }}></div>
                 </div>
             </div>
 

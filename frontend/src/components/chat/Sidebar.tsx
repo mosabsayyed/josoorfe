@@ -181,15 +181,41 @@ export function Sidebar({
   // We're using the canonical action labels directly from `quickActions`.
   // No labelOverrides are needed in this simplified approach.
 
-  const renderSection = (title: string, items: any[], isFirst: boolean = false) => (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', margin: isFirst ? '8px 29px 0 0' : '8px 28px 0 0', padding: '1px', border: '1px solid rgba(238, 201, 4, 1)' }}>
-      {!collapsed && (
+  const renderSection = (
+    title: string,
+    items: any[],
+    options: { isFirst?: boolean; marginTop?: number; marginBottom?: number } = {}
+  ) => {
+    const { isFirst = false, marginTop = 8, marginBottom = 0 } = options;
+    const rightMargin = isFirst ? 29 : 28;
+
+    return (
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '4px',
+          margin: `${marginTop}px ${rightMargin}px ${marginBottom}px 0`,
+          padding: '1px',
+          border: '1px solid rgba(238, 201, 4, 1)'
+        }}
+      >
+        {!collapsed && (
         <div className="sidebar-quickactions-title" style={{ fontWeight: "400", paddingLeft: '8px' }}>
-          <div style={{ display: "inline", font: isFirst ? '700 18px/18.2px system-ui, sans-serif' : '700 18px/18.2px Tajawal, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif', color: 'rgba(238, 201, 4, 1)' }}><span style={{ color: 'rgb(238, 201, 4)' }}>{title}</span></div>
+          <div style={{
+            display: "inline",
+            fontWeight: 700,
+            fontSize: '18px',
+            lineHeight: '18.2px',
+            fontFamily: language === 'ar' ? 'var(--component-font-heading-ar)' : 'var(--component-font-heading)',
+            color: 'rgba(238, 201, 4, 1)'
+          }}>
+            <span style={{ color: 'rgb(238, 201, 4)' }}>{title}</span>
+          </div>
         </div>
       )}
 
-      {items.map((item) => {
+        {items.map((item) => {
         const overrideLabel = item.label?.[language] || item.label?.en || item.label;
         const isActive = activeView === item.id;
         return (
@@ -207,7 +233,6 @@ export function Sidebar({
               justifyContent: collapsed ? 'center' : 'flex-start',
               backgroundColor: isActive ? 'var(--component-bg-disconnected)' : "rgba(0, 0, 0, 0)",
               color: theme === 'light' ? "rgb(55, 65, 81)" : "rgb(243, 244, 246)",
-              fontFamily: 'Cairo, "Segoe UI", Roboto, Arial, sans-serif',
               fontSize: "13px",
               fontWeight: "400",
               gap: collapsed ? '0' : '8px',
@@ -226,60 +251,115 @@ export function Sidebar({
             )}
           </button>
         );
-      })}
-    </div>
-  );
+        })}
+      </div>
+    );
+  };
 
   return (
     <aside className={`sidebar ${collapsed ? 'collapsed' : ''} tajawal-headings cairo-body`} dir={isRTL ? 'rtl' : 'ltr'}>
       {/* Fixed Top Section */}
-      <div className="sidebar-header" style={{ width: "100%", height: "auto", padding: collapsed ? "10px 0" : "10px 20px", display: "flex", flexDirection: "column", gap: "6px", alignItems: collapsed ? 'center' : 'stretch' }}>
-
+      <div
+        className="sidebar-header"
+        style={{
+          width: '100%',
+          height: 'auto',
+          padding: collapsed ? '10px 0' : '10px 20px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '6px',
+          alignItems: collapsed ? 'center' : 'stretch'
+        }}
+      >
         {/* Actions row */}
-        <div className="sidebar-header-actions" style={{ display: "flex", alignItems: "center", gap: "8px", justifyContent: collapsed ? "center" : "flex-start", padding: collapsed ? '0' : '0 0 10px 0', marginRight: collapsed ? '0' : '33px' }}>
-          <button className="sidebar-icon-button clickable" onClick={() => onRequestToggleCollapse?.()} title={translations.toggleSidebar} style={{ display: "flex", alignItems: "center", backgroundColor: "rgba(0, 0, 0, 0)", height: "40px", justifyContent: "center", width: "40px", border: 'none' }}>
-            <img src="/icons/menu.png" alt={translations.toggleSidebar} style={{ height: "24px", width: "24px" }} />
+        <div
+          className="sidebar-header-actions"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            justifyContent: collapsed ? 'center' : 'flex-start',
+            padding: collapsed ? '0' : '0 0 10px 0',
+            marginRight: collapsed ? '0' : '33px'
+          }}
+        >
+          <button
+            className="sidebar-icon-button clickable"
+            onClick={() => onRequestToggleCollapse?.()}
+            title={translations.toggleSidebar}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              backgroundColor: 'rgba(0, 0, 0, 0)',
+              height: '40px',
+              justifyContent: 'center',
+              width: '40px',
+              border: 'none'
+            }}
+          >
+            <img src="/icons/menu.png" alt={translations.toggleSidebar} style={{ height: '24px', width: '24px' }} />
           </button>
 
           {!collapsed && (
-            <div style={{ display: "block", color: "#eec904", margin: "0 auto", font: "600 18px __Inter_d65c78, sans-serif" }}>
+            <div style={{ display: 'block', color: '#eec904', margin: '0 auto', font: '600 18px __Inter_d65c78, sans-serif' }}>
               JOSOOR
             </div>
           )}
         </div>
 
         {/* Sections */}
-        {renderSection(language === 'ar' ? 'الحوكمة والرقابة' : 'Governance/Oversight', deskItems, true)}
+        {renderSection(language === 'ar' ? 'الحوكمة والرقابة' : 'Governance/Oversight', deskItems, { isFirst: true })}
         {renderSection(language === 'ar' ? 'المراجع' : 'References', contentItems)}
-        {renderSection(language === 'ar' ? 'الإدارة' : 'Admin', adminItems)}
       </div>
 
       {/* Conversations - only if not collapsed */}
       {!collapsed && (
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, marginLeft: '20px', maxWidth: '210px', padding: '1px', border: '1px solid rgba(238, 201, 4, 1)', overflowY: 'auto' }}>
+        <div
+          style={{
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            minHeight: 0,
+            marginLeft: '20px',
+            maxWidth: '210px',
+            padding: '1px',
+            border: '1px solid rgba(238, 201, 4, 1)',
+            overflowY: 'auto'
+          }}
+        >
           {/* Graph Chat Button */}
           <button
             title="Graph Chat"
-            onClick={() => onQuickAction?.({ id: 'graph-chat', label: { en: 'Graph Chat', ar: 'دردشة الرسم البياني' }, icon: '/icons/chat.png' })}
+            onClick={() =>
+              onQuickAction?.({ id: 'graph-chat', label: { en: 'Graph Chat', ar: 'دردشة الرسم البياني' }, icon: '/icons/chat.png' })
+            }
             className="quickaction-item clickable"
             style={{
-              display: "flex",
-              alignItems: "center",
-              backgroundColor: "rgba(0, 0, 0, 0)",
-              borderRadius: "4px",
-              color: "rgb(243, 244, 246)",
-              gap: "8px",
-              justifyContent: "flex-start",
-              width: "100%",
-              padding: "6px 0",
-              font: '400 13px Cairo, "Segoe UI", Roboto, Arial, sans-serif',
-              border: "1px solid rgba(0, 0, 0, 0)",
-              cursor: "pointer"
+              display: 'flex',
+              alignItems: 'center',
+              backgroundColor: 'rgba(0, 0, 0, 0)',
+              borderRadius: '4px',
+              color: 'rgb(243, 244, 246)',
+              gap: '8px',
+              justifyContent: 'flex-start',
+              width: '100%',
+              padding: '6px 0',
+              fontWeight: 400,
+              fontSize: '13px',
+              lineHeight: '1.4',
+              fontFamily: language === 'ar' ? 'var(--component-font-family-ar)' : 'var(--component-font-family)',
+              border: '1px solid rgba(0, 0, 0, 0)',
+              cursor: 'pointer'
             }}
           >
-            <img src="/icons/chat.png" alt="Graph Chat" className="sidebar-quickaction-icon sidebar-quickaction-large" style={{ display: "block", fontWeight: "600", height: "24px", width: "24px", objectFit: "cover" }} />
-            <div className="quickaction-meta" style={{ display: "flex", alignItems: "flex-start", flexDirection: "column" }}>
-              <span className="quickaction-title" style={{ display: "block", fontSize: "14px" }}>Graph Chat</span>
+            <img
+              src="/icons/chat.png"
+              alt="Graph Chat"
+              className="sidebar-quickaction-icon sidebar-quickaction-large"
+              style={{ display: 'block', fontWeight: '600', height: '24px', width: '24px', objectFit: 'cover' }}
+            />
+            <div className="quickaction-meta" style={{ display: 'flex', alignItems: 'flex-start', flexDirection: 'column' }}>
+              <span className="quickaction-title" style={{ display: 'block', fontSize: '14px' }}>Graph Chat</span>
             </div>
           </button>
 
@@ -305,6 +385,13 @@ export function Sidebar({
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {/* Admin Section - moved after Graph Chat */}
+      {!collapsed && (
+        <div style={{ padding: collapsed ? '0' : '0 20px' }}>
+          {renderSection(language === 'ar' ? 'الإدارة' : 'Admin', adminItems, { marginTop: 12, marginBottom: 20 })}
         </div>
       )}
     </aside>

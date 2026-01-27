@@ -1,4 +1,17 @@
-/* Sector Desk Layout */
+/* Sector Desk Layout - NEW Horizontal Header Version */
+.sector-desk-container-new {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    background-color: var(--component-bg-primary);
+    overflow: hidden;
+    font-family: var(--component-font-family);
+    color: var(--component-text-primary);
+    box-sizing: border-box;
+}
+
+/* Sector Desk Layout - LEGACY (kept for compatibility) */
 .sector-desk-container {
     display: flex;
     width: 100%;

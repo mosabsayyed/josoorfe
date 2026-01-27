@@ -76,7 +76,6 @@ export default function InvestorDemoHub() {
     maxWidth: '1200px',
     margin: '0 auto',
     color: 'var(--component-text-primary)',
-    fontFamily: 'var(--component-font-family)',
     direction: isRTL ? 'rtl' : 'ltr',
   };
 

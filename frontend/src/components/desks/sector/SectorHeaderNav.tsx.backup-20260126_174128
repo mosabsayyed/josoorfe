@@ -1,0 +1,251 @@
+import React from 'react';
+import { motion } from 'framer-motion';
+
+// SVG Icons
+import iconMining from '../../../assets/map-markers/lmining.svg';
+import iconWater from '../../../assets/map-markers/lwater.svg';
+import iconEnergy from '../../../assets/map-markers/lenergy.svg';
+import iconIndustry from '../../../assets/map-markers/lindustry.svg';
+import iconTransportation from '../../../assets/map-markers/ltransport.svg';
+import iconGiga from '../../../assets/map-markers/lgiga.svg';
+import iconAll from '../../../assets/map-markers/all.svg';
+
+// Pin icons
+import majorUnlockPin from '../../../assets/map-markers/lPriority.svg';
+import strategicImpactPin from '../../../assets/map-markers/lnormal.svg';
+
+const SECTORS: Record<string, { label: string; icon: string }> = {
+    'all': { label: 'All', icon: iconAll },
+    'water': { label: 'Water', icon: iconWater },
+    'energy': { label: 'Energy', icon: iconEnergy },
+    'mining': { label: 'Mining', icon: iconMining },
+    'industry': { label: 'Industry', icon: iconIndustry },
+    'logistics': { label: 'Logistics', icon: iconTransportation },
+    'giga': { label: 'Giga', icon: iconGiga }
+};
+
+interface SectorHeaderNavProps {
+    selectedPillar: string;
+    selectedSector: string;
+    onSelectPillar: (id: string) => void;
+    onSelectSector: (id: string) => void;
+    timelineFilter: 'current' | 'future' | 'both';
+    onTimelineFilterChange: (filter: 'current' | 'future' | 'both') => void;
+    priorityFilter: 'major' | 'strategic' | 'both';
+    onPriorityFilterChange: (filter: 'major' | 'strategic' | 'both') => void;
+    existingCount: number;
+    plannedCount: number;
+}
+
+const SectorHeaderNav: React.FC<SectorHeaderNavProps> = ({
+    selectedSector,
+    onSelectSector,
+    timelineFilter,
+    onTimelineFilterChange,
+    priorityFilter,
+    onPriorityFilterChange,
+    existingCount,
+    plannedCount
+}) => {
+    return (
+        <div style={{
+            display: 'flex',
+            width: '100%',
+            height: '88px',
+            background: 'var(--component-bg-primary)',
+            borderBottom: '1px solid var(--component-panel-border)',
+            padding: '14px 24px',
+            gap: '32px',
+            boxSizing: 'border-box',
+            alignItems: 'center'
+        }}>
+            {/* SECTION 1: SECTORS - 50% */}
+            <div style={{ flex: '0 0 50%', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div style={{ fontSize: '10px', fontWeight: 600, color: 'var(--component-text-muted)', letterSpacing: '0.5px', textTransform: 'uppercase' }}>
+                    Filter by Sector
+                </div>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                    {Object.entries(SECTORS).map(([id, sector]) => {
+                        const isSelected = selectedSector === id;
+                        return (
+                            <motion.button
+                                key={id}
+                                onClick={() => onSelectSector(id)}
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                style={{
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    alignItems: 'center',
+                                    gap: '4px',
+                                    padding: '6px 8px',
+                                    background: isSelected ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.04)',
+                                    border: isSelected ? '1.5px solid var(--component-text-accent)' : '1.5px solid transparent',
+                                    borderRadius: '6px',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s',
+                                    flex: 1
+                                }}
+                            >
+                                <img src={sector.icon} alt={sector.label} style={{ width: '24px', height: '24px' }} />
+                                <div style={{ fontSize: '9px', fontWeight: 600, color: isSelected ? 'var(--component-text-primary)' : 'var(--component-text-secondary)' }}>
+                                    {sector.label}
+                                </div>
+                            </motion.button>
+                        );
+                    })}
+                </div>
+            </div>
+
+            {/* SECTION 2: ASSET STATUS - 25% */}
+            <div style={{ flex: '0 0 22%', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div style={{ fontSize: '10px', fontWeight: 600, color: 'var(--component-text-muted)', letterSpacing: '0.5px', textTransform: 'uppercase' }}>
+                    Asset Status
+                </div>
+                <div style={{ display: 'flex', gap: '6px' }}>
+                    <button
+                        onClick={() => onTimelineFilterChange('current')}
+                        style={{
+                            flex: 1,
+                            padding: '8px 10px',
+                            background: timelineFilter === 'current' ? 'var(--component-color-success)' : 'rgba(255,255,255,0.06)',
+                            border: timelineFilter === 'current' ? '1.5px solid var(--component-color-success)' : '1.5px solid transparent',
+                            borderRadius: '5px',
+                            color: timelineFilter === 'current' ? '#fff' : 'var(--component-text-secondary)',
+                            fontSize: '11px',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            transition: 'all 0.2s',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            gap: '2px'
+                        }}
+                    >
+                        <span>{existingCount}</span>
+                        <span style={{ fontSize: '8px', opacity: 0.8 }}>Operational</span>
+                    </button>
+                    <button
+                        onClick={() => onTimelineFilterChange('future')}
+                        style={{
+                            flex: 1,
+                            padding: '8px 10px',
+                            background: timelineFilter === 'future' ? 'var(--component-color-info)' : 'rgba(255,255,255,0.06)',
+                            border: timelineFilter === 'future' ? '1.5px solid var(--component-color-info)' : '1.5px solid transparent',
+                            borderRadius: '5px',
+                            color: timelineFilter === 'future' ? '#fff' : 'var(--component-text-secondary)',
+                            fontSize: '11px',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            transition: 'all 0.2s',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            gap: '2px'
+                        }}
+                    >
+                        <span>{plannedCount}</span>
+                        <span style={{ fontSize: '8px', opacity: 0.8 }}>Planned</span>
+                    </button>
+                    <button
+                        onClick={() => onTimelineFilterChange('both')}
+                        style={{
+                            flex: 1,
+                            padding: '8px 10px',
+                            background: timelineFilter === 'both' ? 'var(--component-text-accent)' : 'rgba(255,255,255,0.06)',
+                            border: timelineFilter === 'both' ? '1.5px solid var(--component-text-accent)' : '1.5px solid transparent',
+                            borderRadius: '5px',
+                            color: timelineFilter === 'both' ? '#fff' : 'var(--component-text-secondary)',
+                            fontSize: '11px',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            transition: 'all 0.2s',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            gap: '2px'
+                        }}
+                    >
+                        <span>{existingCount + plannedCount}</span>
+                        <span style={{ fontSize: '8px', opacity: 0.8 }}>All</span>
+                    </button>
+                </div>
+            </div>
+
+            {/* SECTION 3: PRIORITY LEVEL - 25% */}
+            <div style={{ flex: '0 0 22%', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div style={{ fontSize: '10px', fontWeight: 600, color: 'var(--component-text-muted)', letterSpacing: '0.5px', textTransform: 'uppercase' }}>
+                    Priority Level
+                </div>
+                <div style={{ display: 'flex', gap: '6px' }}>
+                    <button
+                        onClick={() => onPriorityFilterChange('major')}
+                        style={{
+                            flex: 1,
+                            padding: '8px 10px',
+                            background: priorityFilter === 'major' ? 'var(--component-color-warning)' : 'rgba(255,255,255,0.06)',
+                            border: priorityFilter === 'major' ? '1.5px solid var(--component-color-warning)' : '1.5px solid transparent',
+                            borderRadius: '5px',
+                            color: priorityFilter === 'major' ? '#000' : 'var(--component-text-secondary)',
+                            fontSize: '10px',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            transition: 'all 0.2s',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '4px'
+                        }}
+                    >
+                        <img src={majorUnlockPin} alt="High" style={{ width: '14px', height: '14px' }} />
+                        <span>High</span>
+                    </button>
+                    <button
+                        onClick={() => onPriorityFilterChange('strategic')}
+                        style={{
+                            flex: 1,
+                            padding: '8px 10px',
+                            background: priorityFilter === 'strategic' ? 'var(--component-color-info)' : 'rgba(255,255,255,0.06)',
+                            border: priorityFilter === 'strategic' ? '1.5px solid var(--component-color-info)' : '1.5px solid transparent',
+                            borderRadius: '5px',
+                            color: priorityFilter === 'strategic' ? '#fff' : 'var(--component-text-secondary)',
+                            fontSize: '10px',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            transition: 'all 0.2s',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '4px'
+                        }}
+                    >
+                        <img src={strategicImpactPin} alt="Normal" style={{ width: '14px', height: '14px' }} />
+                        <span>Normal</span>
+                    </button>
+                    <button
+                        onClick={() => onPriorityFilterChange('both')}
+                        style={{
+                            flex: 1,
+                            padding: '8px 10px',
+                            background: priorityFilter === 'both' ? 'var(--component-text-accent)' : 'rgba(255,255,255,0.06)',
+                            border: priorityFilter === 'both' ? '1.5px solid var(--component-text-accent)' : '1.5px solid transparent',
+                            borderRadius: '5px',
+                            color: priorityFilter === 'both' ? '#fff' : 'var(--component-text-secondary)',
+                            fontSize: '10px',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            transition: 'all 0.2s',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                        }}
+                    >
+                        All
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+export default SectorHeaderNav;

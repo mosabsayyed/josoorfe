@@ -14,6 +14,29 @@
   box-sizing: border-box;
 }
 
+/* GLOBAL FONT ENFORCEMENT - Apply to ALL elements */
+* {
+  font-family: var(--component-font-family);
+  font-style: normal;
+}
+
+/* Arabic language support */
+html[lang="ar"],
+html[lang="ar"] *,
+[dir="rtl"],
+[dir="rtl"] * {
+  font-family: var(--component-font-family-ar);
+}
+
+/* Ensure buttons and inputs inherit fonts */
+button,
+input,
+textarea,
+select {
+  font-family: inherit;
+  font-style: normal;
+}
+
 html {
   background-color: var(--component-bg-primary);
   margin: 0;
@@ -85,7 +108,7 @@ a:hover {
 /* Arabic language overrides */
 :root[lang="ar"] body,
 :root[dir="rtl"] body {
-  font-family: 'Cairo', 'Segoe UI', 'Roboto', sans-serif;
+  font-family: var(--component-font-family-ar);
 }
 
 :root[lang="ar"] h1,
@@ -100,15 +123,15 @@ a:hover {
 :root[dir="rtl"] h4,
 :root[dir="rtl"] h5,
 :root[dir="rtl"] h6 {
-  font-family: 'Tajawal', 'Segoe UI', 'Roboto', sans-serif;
+  font-family: var(--component-font-heading-ar);
 }
 
 .tajawal {
-  font-family: 'Tajawal', sans-serif !important;
+  font-family: var(--component-font-family-ar) !important;
 }
 
 .cairo {
-  font-family: 'Cairo', sans-serif !important;
+  font-family: var(--component-font-heading-ar) !important;
 }
 
 /* =========================================

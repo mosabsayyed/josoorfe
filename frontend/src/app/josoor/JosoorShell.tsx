@@ -56,7 +56,7 @@ export default function JosoorShell() {
     const [streamingMessage, setStreamingMessage] = useState<APIMessage | null>(null);
 
     // Active View State
-    const [activeView, setActiveView] = useState<JosoorView>('chat');
+    const [activeView, setActiveView] = useState<JosoorView>('sector-desk');
 
     useEffect(() => {
         console.log('JosoorShell activeView changed to:', activeView);

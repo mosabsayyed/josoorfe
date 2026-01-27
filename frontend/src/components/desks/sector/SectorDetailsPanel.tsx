@@ -71,14 +71,20 @@ const SectorDetailsPanel: React.FC<SectorDetailsPanelProps> = ({
 
     // Filter assets based on selection
     const filteredAssets = useMemo(() => {
+        const activeSectors = ['water', 'energy', 'mining', 'industry', 'logistics', 'giga'];
+
         return allAssets.filter(node => {
             if (!node) return false;
             // Sector filter
             const nodeSector = node.sector?.toLowerCase();
             if (!nodeSector) return false;
 
-            // FIX: Allow 'All Factors' to pass through
-            if (selectedSector !== 'All Factors' && nodeSector !== selectedSector.toLowerCase()) {
+            // Handle 'all' sector - show all 6 active sectors
+            if (selectedSector === 'all') {
+                if (!activeSectors.includes(nodeSector)) {
+                    return false;
+                }
+            } else if (selectedSector !== 'All Factors' && nodeSector !== selectedSector.toLowerCase()) {
                 // Allow Economy aggregation if needed, but for now strict
                 if (!(selectedSector.toLowerCase() === 'economy' && ['mining', 'industry', 'energy'].includes(nodeSector))) {
                     return false;
@@ -93,8 +99,8 @@ const SectorDetailsPanel: React.FC<SectorDetailsPanelProps> = ({
                 const finishYear = node.completion_date ? parseInt(node.completion_date.substring(0, 4)) : null;
                 // If asset finishes AFTER the selected year, filtering it.
                 if (finishYear && finishYear > year) return false;
-                // NOTE: We don't filter based on 'Future' status here because details panel might want to show future assets 
-                // but strictly respects the Time Filter. 
+                // NOTE: We don't filter based on 'Future' status here because details panel might want to show future assets
+                // but strictly respects the Time Filter.
                 // Actually, if year < completion, it's NOT YET EXISTENT. So hide it.
             }
 
@@ -110,21 +116,13 @@ const SectorDetailsPanel: React.FC<SectorDetailsPanelProps> = ({
     const chart1Data = useMemo(() => {
         if (selectedRegion) {
             // REGIONAL VIEW: Region vs National Average (Asset Count)
+            // Use filteredAssets to respect all active filters (sector, timeline, priority)
             const regionCounts: Record<string, number> = {};
-            // USE FILTERED ASSETS or ALL? 
-            // User complained about inconsistency. The chart title is "Region vs National Avg".
-            // If we filter by 'Industry' sector, it should be "Industry in Region" vs "Avg Industry per Region".
-            // So we MUST use filteredAssets logic (or re-filter allAssets by the CURRENT sector).
 
-            // Re-filter allAssets by the current sector to get the "National Average" for THIS sector
-            const sectorAssets = allAssets.filter(node => {
-                if (selectedSector === 'All Factors') return true;
-                return node.sector?.toLowerCase() === selectedSector.toLowerCase();
-            });
-
-            sectorAssets.forEach(a => {
+            filteredAssets.forEach(a => {
                 if (a.region) regionCounts[a.region] = (regionCounts[a.region] || 0) + 1;
             });
+
             const values = Object.values(regionCounts);
             const avg = values.length > 0 ? Math.round(values.reduce((a, b) => a + b, 0) / values.length) : 0;
             const current = regionCounts[selectedRegion] || 0;
@@ -167,8 +165,8 @@ const SectorDetailsPanel: React.FC<SectorDetailsPanelProps> = ({
 
             if (publicCount + privateCount > 0) {
                 return [
-                    { name: 'Public', value: publicCount, color: '#10b981' },
-                    { name: 'Private', value: privateCount, color: '#3b82f6' }
+                    { name: 'Public', value: publicCount, color: 'var(--component-text-accent)' },
+                    { name: 'Private', value: privateCount, color: 'color-mix(in srgb, var(--component-text-accent) 50%, var(--component-text-primary))' }
                 ];
             } else {
                 // Fallback to Status Mix if labels missing
@@ -179,8 +177,8 @@ const SectorDetailsPanel: React.FC<SectorDetailsPanelProps> = ({
                     else future++;
                 });
                 return [
-                    { name: 'Operational', value: running, color: '#10b981' },
-                    { name: 'Future', value: future, color: '#6366f1' }
+                    { name: 'Operational', value: running, color: 'var(--component-text-accent)' },
+                    { name: 'Future', value: future, color: 'color-mix(in srgb, var(--component-text-accent) 40%, var(--component-text-primary))' }
                 ].filter(d => d.value > 0);
             }
         }
@@ -195,10 +193,10 @@ const SectorDetailsPanel: React.FC<SectorDetailsPanelProps> = ({
     const operationalPct = totalCount > 0 ? Math.round((opCount / totalCount) * 100) : 0;
 
     const kpis: KPI[] = [
-        { name: 'Total Assets', value: totalCount, unit: '', trend: 'up', color: '#fbbf24' },
-        { name: 'Operational', value: operationalPct, unit: '%', trend: 'stable', color: '#10b981' },
-        { name: 'Est. Investment', value: totalInvestment > 0 ? parseFloat(totalInvestment.toFixed(1)) : 'N/A', unit: totalInvestment > 0 ? 'B SAR' : '', trend: 'up', color: '#3b82f6' },
-        { name: 'High Priority', value: highPriority, unit: '', trend: 'stable', color: '#f59e0b' },
+        { name: 'Total Assets', value: totalCount, unit: '', trend: 'up', color: 'var(--component-text-accent)' },
+        { name: 'Operational', value: operationalPct, unit: '%', trend: 'stable', color: 'var(--component-color-success)' },
+        { name: 'Est. Investment', value: totalInvestment > 0 ? parseFloat(totalInvestment.toFixed(1)) : 'N/A', unit: totalInvestment > 0 ? 'B SAR' : '', trend: 'up', color: 'var(--component-color-info)' },
+        { name: 'High Priority', value: highPriority, unit: '', trend: 'stable', color: 'var(--component-color-warning)' },
     ];
 
     return (
@@ -208,7 +206,7 @@ const SectorDetailsPanel: React.FC<SectorDetailsPanelProps> = ({
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                     <div>
                         <h2 className="details-title" style={{ textTransform: 'capitalize', margin: 0 }}>
-                            {selectedSector === 'All Factors' ? 'All Sectors' : `${selectedSector} Sector`}
+                            {selectedSector === 'all' || selectedSector === 'All Factors' ? 'All Sectors' : `${selectedSector} Sector`}
                         </h2>
                         <p className="details-subtitle" style={{ margin: '0.25rem 0 0 0' }}>
                             {selectedRegion ? `Region: ${selectedRegion}` : 'National Perspective'}
@@ -218,8 +216,8 @@ const SectorDetailsPanel: React.FC<SectorDetailsPanelProps> = ({
                         <button
                             onClick={onBackToNational}
                             style={{
-                                fontSize: '0.625rem', padding: '4px 8px', background: 'rgba(255,255,255,0.1)',
-                                border: '1px solid rgba(255,255,255,0.2)', borderRadius: '4px', color: '#94a3b8',
+                                fontSize: '0.625rem', padding: '4px 8px', background: 'var(--component-panel-bg)',
+                                border: '1px solid var(--component-panel-border)', borderRadius: '4px', color: 'var(--component-text-secondary)',
                                 cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '0.05em'
                             }}
                         >
@@ -230,13 +228,13 @@ const SectorDetailsPanel: React.FC<SectorDetailsPanelProps> = ({
             </div>
 
             {/* Tabs */}
-            <div style={{ padding: '0 1rem', display: 'flex', gap: '1rem', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+            <div style={{ padding: '0 1rem', display: 'flex', gap: '1rem', borderBottom: '1px solid var(--component-panel-border)' }}>
                 <button
                     onClick={() => setActiveTab('performance')}
                     style={{
                         padding: '0.75rem 0', background: 'none', border: 'none',
-                        color: activeTab === 'performance' ? '#fbbf24' : '#94a3b8',
-                        borderBottom: activeTab === 'performance' ? '2px solid #fbbf24' : 'none',
+                        color: activeTab === 'performance' ? 'var(--component-text-accent)' : 'var(--component-text-secondary)',
+                        borderBottom: activeTab === 'performance' ? '2px solid var(--component-text-accent)' : 'none',
                         cursor: 'pointer', fontSize: '0.875rem', fontWeight: 600
                     }}
                 >
@@ -246,8 +244,8 @@ const SectorDetailsPanel: React.FC<SectorDetailsPanelProps> = ({
                     onClick={() => setActiveTab('assets')}
                     style={{
                         padding: '0.75rem 0', background: 'none', border: 'none',
-                        color: activeTab === 'assets' ? '#fbbf24' : '#94a3b8',
-                        borderBottom: activeTab === 'assets' ? '2px solid #fbbf24' : 'none',
+                        color: activeTab === 'assets' ? 'var(--component-text-accent)' : 'var(--component-text-secondary)',
+                        borderBottom: activeTab === 'assets' ? '2px solid var(--component-text-accent)' : 'none',
                         cursor: 'pointer', fontSize: '0.875rem', fontWeight: 600
                     }}
                 >
@@ -263,8 +261,8 @@ const SectorDetailsPanel: React.FC<SectorDetailsPanelProps> = ({
                     {/* KPI Grid - Top Row */}
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.75rem', marginBottom: '1.5rem' }}>
                         {kpis.slice(0, 2).map((kpi, idx) => (
-                            <div key={idx} style={{ background: 'rgba(255,255,255,0.03)', padding: '0.75rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.08)' }}>
-                                <div style={{ fontSize: '0.65rem', color: '#94a3b8', textTransform: 'uppercase' }}>{kpi.name}</div>
+                            <div key={idx} style={{ background: 'var(--component-panel-bg)', padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--component-panel-border)' }}>
+                                <div style={{ fontSize: '0.65rem', color: 'var(--component-text-secondary)', textTransform: 'uppercase' }}>{kpi.name}</div>
                                 <div style={{ fontSize: '1.2rem', fontWeight: 700, color: kpi.color }}>{kpi.value}{kpi.unit}</div>
                             </div>
                         ))}
@@ -272,27 +270,27 @@ const SectorDetailsPanel: React.FC<SectorDetailsPanelProps> = ({
 
                     {/* Chart 1: Bar Chart (Top Regions OR Region Vs Avg) */}
                     <div style={{ marginBottom: '1.5rem', height: '180px' }}>
-                        <div style={{ fontSize: '0.75rem', color: '#fbbf24', fontWeight: 600, marginBottom: '0.5rem' }}>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--component-text-accent)', fontWeight: 600, marginBottom: '0.5rem' }}>
                             {selectedRegion ? 'Region vs National Avg' : 'Regional Comparison (Assets)'}
                         </div>
                         {chart1Data.length > 0 ? (
                             <ResponsiveContainer width="100%" height="100%">
                                 <BarChart data={chart1Data} layout="vertical" margin={{ left: 10, right: 10 }}>
                                     <XAxis type="number" hide />
-                                    <YAxis dataKey="name" type="category" width={90} tick={{ fill: '#94a3b8', fontSize: 10 }} />
+                                    <YAxis dataKey="name" type="category" width={90} tick={{ fill: 'var(--component-text-secondary)', fontSize: 10 }} />
                                     <Tooltip
-                                        cursor={{ fill: 'rgba(255,255,255,0.05)' }}
-                                        contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px' }}
+                                        cursor={{ fill: 'color-mix(in srgb, var(--component-text-primary) 5%, transparent)' }}
+                                        contentStyle={{ backgroundColor: 'var(--component-panel-bg)', border: '1px solid var(--component-panel-border)', borderRadius: '8px', color: 'var(--component-text-primary)' }}
                                     />
-                                    <Bar dataKey="value" fill="#3b82f6" radius={[0, 4, 4, 0]} barSize={16}>
+                                    <Bar dataKey="value" fill="var(--component-text-accent)" radius={[0, 4, 4, 0]} barSize={16}>
                                         {chart1Data.map((entry, index) => (
-                                            <Cell key={`cell-${index}`} fill={['#3b82f6', '#06b6d4', '#8b5cf6', '#ec4899', '#f0abfc'][index % 5]} />
+                                            <Cell key={`cell-${index}`} fill={index === 0 ? 'var(--component-text-accent)' : 'color-mix(in srgb, var(--component-text-accent) 60%, var(--component-text-primary))'} />
                                         ))}
                                     </Bar>
                                 </BarChart>
                             </ResponsiveContainer>
                         ) : (
-                            <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b', fontSize: '0.75rem', fontStyle: 'italic' }}>
+                            <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--component-text-muted)', fontSize: '0.75rem', fontStyle: 'italic' }}>
                                 No data available
                             </div>
                         )}
@@ -301,8 +299,8 @@ const SectorDetailsPanel: React.FC<SectorDetailsPanelProps> = ({
                     {/* KPI Grid - Bottom Row */}
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.75rem', marginBottom: '1.5rem' }}>
                         {kpis.slice(2, 4).map((kpi, idx) => (
-                            <div key={idx} style={{ background: 'rgba(255,255,255,0.03)', padding: '0.75rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.08)' }}>
-                                <div style={{ fontSize: '0.65rem', color: '#94a3b8', textTransform: 'uppercase' }}>{kpi.name}</div>
+                            <div key={idx} style={{ background: 'color-mix(in srgb, var(--component-text-primary) 3%, transparent)', padding: '0.75rem', borderRadius: '8px', border: '1px solid color-mix(in srgb, var(--component-text-primary) 8%, transparent)' }}>
+                                <div style={{ fontSize: '0.65rem', color: 'var(--component-text-muted)', textTransform: 'uppercase' }}>{kpi.name}</div>
                                 <div style={{ fontSize: '1.2rem', fontWeight: 700, color: kpi.color }}>{kpi.value} <span style={{ fontSize: '0.7rem' }}>{kpi.unit}</span></div>
                             </div>
                         ))}
@@ -310,7 +308,7 @@ const SectorDetailsPanel: React.FC<SectorDetailsPanelProps> = ({
 
                     {/* Chart 2: Donut/Pie (Composition) */}
                     <div style={{ marginBottom: '1rem', height: '180px' }}>
-                        <div style={{ fontSize: '0.75rem', color: '#fbbf24', fontWeight: 600, marginBottom: '0.5rem' }}>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--sector-giga)', fontWeight: 600, marginBottom: '0.5rem' }}>
                             {selectedRegion ? 'Local Asset Mix' : 'Sector Composition'}
                         </div>
                         {chart2Data.length > 0 ? (
@@ -325,18 +323,18 @@ const SectorDetailsPanel: React.FC<SectorDetailsPanelProps> = ({
                                         stroke="none"
                                     >
                                         {chart2Data.map((entry, index) => (
-                                            <Cell key={`cell-${index}`} fill={entry.color || ['#10b981', '#6366f1', '#f59e0b', '#ec4899'][index % 4]} />
+                                            <Cell key={`cell-${index}`} fill={entry.color || 'var(--component-text-accent)'} />
                                         ))}
                                     </Pie>
                                     <Tooltip
-                                        contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px' }}
-                                        itemStyle={{ color: '#fff' }}
+                                        contentStyle={{ backgroundColor: 'var(--component-panel-bg)', border: '1px solid var(--component-panel-border)', borderRadius: '8px' }}
+                                        itemStyle={{ color: 'var(--component-text-primary)' }}
                                     />
-                                    <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ fontSize: '11px', color: '#ccc' }} />
+                                    <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ fontSize: '11px', color: 'var(--component-text-secondary)' }} />
                                 </PieChart>
                             </ResponsiveContainer>
                         ) : (
-                            <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b', fontSize: '0.75rem', fontStyle: 'italic' }}>
+                            <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--component-text-muted)', fontSize: '0.75rem', fontStyle: 'italic' }}>
                                 No composition data
                             </div>
                         )}
@@ -350,9 +348,9 @@ const SectorDetailsPanel: React.FC<SectorDetailsPanelProps> = ({
                         flex: 1, overflowY: 'auto', padding: '1rem'
                     }}>
                         {isLoading ? (
-                            <div style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>Loading...</div>
+                            <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--component-text-muted)' }}>Loading...</div>
                         ) : filteredAssets.length === 0 ? (
-                            <div style={{ textAlign: 'center', padding: '2rem', color: '#64748b', fontStyle: 'italic' }}>
+                            <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--component-text-muted)', fontStyle: 'italic' }}>
                                 No assets found.
                             </div>
                         ) : (
@@ -362,28 +360,28 @@ const SectorDetailsPanel: React.FC<SectorDetailsPanelProps> = ({
                                     className="asset-card"
                                     onClick={() => onAssetClick?.(asset.id)}
                                     style={{
-                                        background: 'rgba(255,255,255,0.03)',
+                                        background: 'color-mix(in srgb, var(--component-text-primary) 3%, transparent)',
                                         padding: '0.75rem',
                                         borderRadius: '8px',
                                         marginBottom: '0.5rem',
-                                        border: '1px solid rgba(255,255,255,0.08)',
+                                        border: '1px solid color-mix(in srgb, var(--component-text-primary) 8%, transparent)',
                                         cursor: 'pointer',
                                         transition: 'background 0.2s'
                                     }}
-                                    onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.06)'}
-                                    onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.03)'}
+                                    onMouseEnter={(e) => e.currentTarget.style.background = 'color-mix(in srgb, var(--component-text-primary) 6%, transparent)'}
+                                    onMouseLeave={(e) => e.currentTarget.style.background = 'color-mix(in srgb, var(--component-text-primary) 3%, transparent)'}
                                 >
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                                        <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'white' }}>{asset.name}</div>
+                                        <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--component-text-primary)' }}>{asset.name}</div>
                                         {asset.priority === 'HIGH' && (
-                                            <span style={{ fontSize: '0.5rem', padding: '2px 6px', background: 'rgba(234,179,8,0.2)', color: '#fbbf24', borderRadius: '4px', border: '1px solid rgba(234,179,8,0.4)' }}>
+                                            <span style={{ fontSize: '0.5rem', padding: '2px 6px', background: 'color-mix(in srgb, var(--sector-giga) 20%, transparent)', color: 'var(--sector-giga)', borderRadius: '4px', border: '1px solid color-mix(in srgb, var(--sector-giga) 40%, transparent)' }}>
                                                 HIGH
                                             </span>
                                         )}
                                     </div>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.5rem', fontSize: '0.6875rem', color: '#94a3b8' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.5rem', fontSize: '0.6875rem', color: 'var(--component-text-muted)' }}>
                                         <span>{asset.asset_type || 'Asset'}</span>
-                                        <span style={{ color: getSimpleStatus(asset.status) === 'Running' ? '#10b981' : '#6366f1' }}>
+                                        <span style={{ color: getSimpleStatus(asset.status) === 'Running' ? 'var(--component-color-success)' : 'var(--component-color-info)' }}>
                                             ● {asset.status || 'Unknown'}
                                         </span>
                                     </div>

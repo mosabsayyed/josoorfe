@@ -587,7 +587,7 @@ function JSONCollapsible({
           <pre style={{
             whiteSpace: 'pre-wrap',
             fontSize: '0.85em',
-            fontFamily: 'monospace',
+            fontFamily: 'var(--component-font-mono)',
             margin: 0,
             color: 'var(--component-text-primary)'
           }}>
@@ -718,7 +718,7 @@ function ReasoningCollapsible({
             maxHeight: '400px',
             overflowY: 'auto',
             whiteSpace: 'pre-wrap',
-            fontFamily: 'monospace, var(--font-primary)'
+            fontFamily: 'var(--component-font-mono)'
           }}
           onClick={(e) => e.stopPropagation()}
         >

@@ -40,3 +40,5 @@ logs/
 attached_assets/
 *.zip
 *.m4a
+frontend_backup_*
+temp_delete_after/

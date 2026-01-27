@@ -118,7 +118,7 @@ export function HtmlRenderer({ html, artifact, title, embeddedArtifacts: propArt
   const containerStyle: React.CSSProperties = {
     width: '100%',
     minHeight: 200,
-    fontFamily: 'var(--font-sans, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial)',
+    fontFamily: 'var(--component-font-family)',
     color: 'var(--component-text, inherit)',
     lineHeight: 1.45,
     WebkitFontSmoothing: 'antialiased',
@@ -131,7 +131,7 @@ export function HtmlRenderer({ html, artifact, title, embeddedArtifacts: propArt
   // Scoped styles for the renderer content
   const scopedStyles = `
     .html-renderer-inner {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+      font-family: var(--component-font-family);
       color: var(--component-text-primary);
       line-height: 1.6;
     }
@@ -149,7 +149,7 @@ export function HtmlRenderer({ html, artifact, title, embeddedArtifacts: propArt
     .html-renderer-inner a { color: var(--component-text-accent); text-decoration: none; }
     .html-renderer-inner a:hover { text-decoration: underline; }
     .html-renderer-inner code { 
-      font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace; 
+      font-family: var(--component-font-mono, monospace); 
       background: rgba(0, 0, 0, 0.2); 
       padding: 0.2em 0.4em; 
       border-radius: 0.25em; 

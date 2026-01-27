@@ -63,7 +63,7 @@
 .sidebar.cairo-body button,
 .sidebar.cairo-body span,
 .sidebar.cairo-body p {
-  font-family: 'Cairo', 'Segoe UI', Roboto, Arial, sans-serif;
+  font-family: var(--component-font-family-ar);
   font-weight: 400;
 }
 
@@ -96,7 +96,7 @@
 .sidebar.tajawal-headings h3,
 .sidebar.tajawal-headings .brand-title,
 .sidebar.tajawal-headings .explore-title {
-  font-family: 'Tajawal', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-family: var(--component-font-heading-ar);
   font-weight: 700;
 }
 

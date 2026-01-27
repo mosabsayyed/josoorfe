@@ -37,8 +37,7 @@ export const JosoorFrame: React.FC = () => {
             height: '100vh',
             width: '100vw',
             backgroundColor: '#050912', // Deepest background
-            overflow: 'hidden',
-            fontFamily: '"Inter", sans-serif'
+            overflow: 'hidden'
         }}>
             {/* Sidebar (Left) */}
             <FrameSidebar isCollapsed={isSidebarCollapsed} />

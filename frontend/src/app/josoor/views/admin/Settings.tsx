@@ -46,7 +46,8 @@ export default function AdminSettings() {
         try {
             const data = await adminService.getProviders();
             setProviders(data);
-            const active = data.find((p: any) => p.active);
+            setProviders(data);
+            const active = data.find((p: any) => p.is_active);
             if (active) {
                 setSelectedProviderId(active.id);
             } else if (data.length > 0) {
@@ -109,7 +110,7 @@ export default function AdminSettings() {
         setSaveLoading(true);
         setError(null);
         try {
-            const { id, active, ...editableFields } = providerDraft;
+            const { id, is_active, ...editableFields } = providerDraft;
             await adminService.updateProvider(selectedProviderId, editableFields);
             await loadProviderDetail(selectedProviderId);
             await loadProviders();
@@ -239,7 +240,7 @@ export default function AdminSettings() {
                                     Configure and manage LLM provider connections
                                 </p>
                             </div>
-                            {providerDraft?.active && (
+                            {providerDraft?.is_active && (
                                 <span className="status-badge active">
                                     <Check className="icon-sm" /> Active
                                 </span>
@@ -255,7 +256,7 @@ export default function AdminSettings() {
                             >
                                 {providers.map((p: any) => (
                                     <option key={p.id} value={p.id}>
-                                        {p.display_name || p.name} {p.active ? '●' : ''}
+                                        {p.display_name || p.name} {p.is_active ? '●' : ''}
                                     </option>
                                 ))}
                             </select>
@@ -300,8 +301,8 @@ export default function AdminSettings() {
                                             <label>Endpoint Path</label>
                                             <input
                                                 type="text"
-                                                value={providerDraft.endpoint_path || ''}
-                                                onChange={(e) => updateProviderField('endpoint_path', e.target.value)}
+                                                value={providerDraft.endpoint_path_template || ''}
+                                                onChange={(e) => updateProviderField('endpoint_path_template', e.target.value)}
                                                 className="form-input"
                                             />
                                         </div>
@@ -313,7 +314,7 @@ export default function AdminSettings() {
                                                 onChange={(e) => updateProviderField('default_model', e.target.value)}
                                                 className="form-select"
                                             >
-                                                {(providerDraft.models || []).map((m: string) => (
+                                                {(providerDraft.supported_models || []).map((m: string) => (
                                                     <option key={m} value={m}>{m}</option>
                                                 ))}
                                             </select>
@@ -390,7 +391,7 @@ export default function AdminSettings() {
                                         Test Connection
                                     </button>
 
-                                    {!providerDraft.active && (
+                                    {!providerDraft.is_active && (
                                         <button
                                             className="btn-secondary"
                                             onClick={activateProvider}

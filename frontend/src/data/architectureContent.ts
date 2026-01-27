@@ -19,7 +19,7 @@ export const ARCHITECTURE_HTML = `<!DOCTYPE html>
     html, body {
       width: 100%;
       height: 100%;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
+      font-family: "Inter", sans-serif;
       background: #f5f5f5;
     }
 

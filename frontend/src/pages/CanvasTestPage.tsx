@@ -269,7 +269,6 @@ Diana Prince,29,Philadelphia,68000,Marketing`,
       display: 'flex',
       height: '100vh',
       background: 'var(--bg-primary)',
-      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
       direction: isRTL ? 'rtl' : 'ltr',
     }}>
       {/* Sidebar */}

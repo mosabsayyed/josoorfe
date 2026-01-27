@@ -11,7 +11,6 @@ export default function ProductRoadmap() {
     maxWidth: '1200px',
     margin: '0 auto',
     color: 'var(--component-text-primary, #F9FAFB)',
-    fontFamily: 'var(--font-sans, "Inter", sans-serif)',
     direction: isRTL ? 'rtl' : 'ltr',
     textAlign: isRTL ? 'right' : 'left',
   };

@@ -40,10 +40,10 @@ export const Legend: React.FC<LegendProps> = ({ meta }) => {
               background: color,
               border: '1px solid rgba(255,255,255,0.3)'
             }} />
-            <span style={{ 
-              color: '#fff', 
+            <span style={{
+              color: '#fff',
               fontSize: '11px',
-              fontFamily: 'monospace'
+              fontFamily: 'var(--component-font-mono)'
             }}>
               {type}
             </span>

@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import PillarSectorNav from './sector/PillarSectorNav';
+import SectorHeaderNav from './sector/SectorHeaderNav';
 import SectorMap from './sector/SectorMap';
 import SectorDetailsPanel from './sector/SectorDetailsPanel';
 
@@ -26,9 +26,11 @@ interface SectorDeskProps {
 
 export const SectorDesk: React.FC<SectorDeskProps> = ({ year: propYear, quarter: propQuarter }) => {
     const [selectedPillar, setSelectedPillar] = useState('economy');
-    const [selectedSector, setSelectedSector] = useState('industry');
+    const [selectedSector, setSelectedSector] = useState('all');
     const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
     const [focusedAssetId, setFocusedAssetId] = useState<string | null>(null);
+    const [timelineFilter, setTimelineFilter] = useState<'current' | 'future' | 'both'>('both');
+    const [priorityFilter, setPriorityFilter] = useState<'major' | 'strategic' | 'both'>('both');
 
     // Handle both Prop (JosoorShell) and Context (Legacy Desk) injection
     const outletContext = useOutletContext<{ year: string; quarter: string } | null>();
@@ -44,7 +46,7 @@ export const SectorDesk: React.FC<SectorDeskProps> = ({ year: propYear, quarter:
     useEffect(() => {
         const PILLARS_SECTORS: { [key: string]: string[] } = {
             'society': ['health', 'livability', 'water', 'culture'],
-            'economy': ['energy', 'logistics', 'industry', 'mining', 'giga'], // Added giga
+            'economy': ['all', 'energy', 'logistics', 'industry', 'mining', 'giga'], // 'all' as first
             'nation': ['gov']
         };
 
@@ -59,8 +61,8 @@ export const SectorDesk: React.FC<SectorDeskProps> = ({ year: propYear, quarter:
         const fetchData = async () => {
             setLoading(true);
             try {
-                // Fetch Entities + Connections + Regions/Cities for line endpoints
-                const res = await fetch('/api/graph?nodeLabels=SectorGovEntity,SectorBusiness,NetworkConnection,Region,City,SectorRegion');
+                // Fetch Entities + Connections + Regions/Cities for line endpoints + Infrastructure Projects
+                const res = await fetch('/api/graph?nodeLabels=SectorGovEntity,SectorBusiness,NetworkConnection,Region,City,SectorRegion,EntityProject');
                 if (!res.ok) throw new Error(`HTTP ${res.status}`);
                 const data = await res.json();
                 const nodes = (data.nodes || []) as GraphNode[];
@@ -90,45 +92,115 @@ export const SectorDesk: React.FC<SectorDeskProps> = ({ year: propYear, quarter:
         setTimeout(() => setFocusedAssetId(null), 100);
     }, []);
 
+    // Filter assets based on ALL active filters
+    const filteredAssets = useMemo(() => {
+        const activeSectors = ['water', 'energy', 'mining', 'industry', 'logistics', 'giga'];
+
+        return allAssets.filter(a => {
+            // Sector filter
+            if (selectedSector === 'all') {
+                // "All" shows all 6 active sectors
+                if (!activeSectors.includes(a.sector?.toLowerCase() || '')) {
+                    return false;
+                }
+            } else if (selectedSector !== 'All Factors' &&
+                a.sector?.toLowerCase() !== selectedSector.toLowerCase()) {
+                return false;
+            }
+
+            // Timeline filter
+            const status = a.status?.toLowerCase();
+            const isRunning = status === 'existing' || status === 'active' || status === 'operational';
+            if (timelineFilter === 'current' && !isRunning) return false;
+            if (timelineFilter === 'future' && isRunning) return false;
+
+            // Priority filter
+            const priority = a.priority === 'HIGH' ? 'major' : 'strategic';
+            if (priorityFilter !== 'both' && priority !== priorityFilter) return false;
+
+            return true;
+        });
+    }, [allAssets, selectedSector, timelineFilter, priorityFilter]);
+
+    // Stats calculation with region filter
+    const statsAssets = useMemo(() => {
+        let assets = filteredAssets;
+        // Apply region filter if active
+        if (selectedRegion) {
+            assets = assets.filter(a => a.region === selectedRegion);
+        }
+        return assets;
+    }, [filteredAssets, selectedRegion]);
+
+    const existingCount = statsAssets.filter(a => {
+        const status = a.status?.toLowerCase();
+        return status === 'existing' || status === 'active' || status === 'operational';
+    }).length;
+
+    const plannedCount = statsAssets.length - existingCount;
+
     return (
-        <div className="sector-desk-container">
+        <div className="sector-desk-container-new">
 
-            {/* LEFT PANEL: Navigation */}
-            <div className="sector-nav-panel">
-                <PillarSectorNav
-                    selectedPillar={selectedPillar}
-                    selectedSector={selectedSector}
-                    onSelectPillar={setSelectedPillar}
-                    onSelectSector={setSelectedSector}
-                />
-            </div>
+            {/* TOP: Horizontal Header */}
+            <SectorHeaderNav
+                selectedPillar={selectedPillar}
+                selectedSector={selectedSector}
+                onSelectPillar={setSelectedPillar}
+                onSelectSector={setSelectedSector}
+                timelineFilter={timelineFilter}
+                onTimelineFilterChange={setTimelineFilter}
+                priorityFilter={priorityFilter}
+                onPriorityFilterChange={setPriorityFilter}
+                existingCount={existingCount}
+                plannedCount={plannedCount}
+            />
 
-            {/* CENTER PANEL: Map */}
-            <div className="sector-map-container">
-                <SectorMap
-                    selectedSector={selectedSector}
-                    selectedRegion={selectedRegion}
-                    onRegionSelect={setSelectedRegion}
-                    focusAssetId={focusedAssetId}
-                    assets={allAssets}  // PASSING DATA
-                    isLoading={loading}
-                    year={year ? parseInt(year) : undefined}
-                    quarter={quarter}
-                />
-            </div>
+            {/* MIDDLE: Map + Right Panel */}
+            <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
 
-            {/* RIGHT PANEL: Details */}
-            <div className="sector-details-panel">
-                <SectorDetailsPanel
-                    selectedSector={selectedSector}
-                    selectedRegion={selectedRegion}
-                    onBackToNational={() => setSelectedRegion(null)}
-                    onAssetClick={handleAssetFocus}
-                    assets={allAssets}  // PASSING DATA
-                    isLoading={loading}
-                    year={year ? parseInt(year) : undefined}
-                    quarter={quarter}
-                />
+                {/* MAP: Full width */}
+                <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
+                    <SectorMap
+                        selectedSector={selectedSector}
+                        selectedRegion={selectedRegion}
+                        onRegionSelect={setSelectedRegion}
+                        focusAssetId={focusedAssetId}
+                        assets={allAssets}
+                        isLoading={loading}
+                        year={year ? parseInt(year) : undefined}
+                        quarter={quarter}
+                        timelineFilter={timelineFilter}
+                        priorityFilter={priorityFilter}
+                    />
+                </div>
+
+                {/* RIGHT: ONLY Details + Disclaimer (NO Sidebar) */}
+                <div style={{ width: '350px', display: 'flex', flexDirection: 'column', overflow: 'hidden', borderLeft: '1px solid var(--component-panel-border)', background: 'var(--component-bg-primary)' }}>
+
+                    {/* Details Panel - 90% height */}
+                    <div style={{ flex: '0 0 90%', overflow: 'auto', padding: '1rem', borderBottom: '1px solid var(--component-panel-border)' }}>
+                        <SectorDetailsPanel
+                            selectedSector={selectedSector}
+                            selectedRegion={selectedRegion}
+                            onBackToNational={() => setSelectedRegion(null)}
+                            onAssetClick={handleAssetFocus}
+                            assets={allAssets}
+                            isLoading={loading}
+                            year={year ? parseInt(year) : undefined}
+                            quarter={quarter}
+                        />
+                    </div>
+
+                    {/* Disclaimer - 10% height */}
+                    <div style={{ flex: '0 0 10%', padding: '0.75rem', display: 'flex', alignItems: 'center' }}>
+                        <p style={{ margin: 0, lineHeight: '1.4', fontSize: '9px', color: '#64748b' }}>
+                            <strong>Disclaimer:</strong> Data based on publicly available KSA datasets. May be out of date. Non-comprehensive, for demo purposes.
+                        </p>
+                    </div>
+
+                </div>
+
             </div>
 
         </div>

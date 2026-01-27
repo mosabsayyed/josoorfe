@@ -20,7 +20,12 @@ import {
     Brain,
     Code,
     MessageSquare,
-    CheckCircle
+    CheckCircle,
+    Server,
+    Terminal,
+    ArrowRight,
+    Play,
+    Braces
 } from 'lucide-react';
 import { chatService } from '../../../../services/chatService';
 import { useAuth } from '../../../../contexts/AuthContext';
@@ -78,6 +83,8 @@ interface TraceRecord {
     last_status: string;
     last_latency_ms: number | null;
     messages?: Message[];
+    mcp_operations?: any[];
+    tool_calls_detail?: any[];
 }
 
 interface Analytics {
@@ -135,8 +142,113 @@ interface TraceDetail {
 // ============================================================================
 // MAIN COMPONENT: AdminObservability (Combines Dashboard & Settings)
 // ============================================================================
+// ============================================================================
+// MAIN COMPONENT: AdminObservability (Combines Dashboard & Settings)
+// ============================================================================
 export default function AdminObservability() {
     const { token, user } = useAuth();
+
+    // COMPACT STYLES & JSON FORMATTING
+    const styles = `
+    .obs-analytics-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 0.5rem !important;
+        margin-bottom: 0.5rem !important;
+    }
+    .analytics-card {
+        padding: 0.5rem 0.75rem !important;
+        min-height: auto !important;
+    }
+    .analytics-label {
+        font-size: 0.65rem !important;
+        margin-bottom: 0.1rem !important;
+    }
+    .analytics-value {
+        font-size: 1rem !important;
+    }
+    .analytics-subtext {
+        font-size: 0.6rem !important;
+    }
+    .obs-filters {
+        padding: 0.25rem 0.5rem !important;
+        background: rgba(255,255,255,0.03);
+        border-radius: 6px;
+        margin-bottom: 0.5rem !important;
+    }
+    .filter-group {
+        gap: 0.5rem !important;
+    }
+    .filter-select {
+        height: 28px !important;
+        font-size: 0.8rem !important;
+        padding: 0 0.5rem !important;
+    }
+    .btn-clear-filters, .btn-refresh {
+        height: 28px !important;
+        font-size: 0.8rem !important;
+        padding: 0 0.75rem !important;
+    }
+    
+    /* MCP CARD STYLES */
+    .mcp-card {
+        background: #111827;
+        border: 1px solid #1f2937;
+        border-radius: 8px;
+        overflow: hidden;
+        margin-bottom: 1rem;
+        transition: border-color 0.2s;
+    }
+    .mcp-card:hover {
+        border-color: #374151;
+    }
+    .mcp-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.75rem 1rem;
+        background: #1f2937;
+        border-bottom: 1px solid #374151;
+    }
+    .mcp-card-title {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.9rem;
+        font-weight: 500;
+        color: #e5e7eb;
+    }
+    .mcp-card-content {
+        padding: 1rem;
+    }
+    .mcp-payload-block {
+        margin-bottom: 1rem;
+    }
+    .mcp-payload-block:last-child {
+        margin-bottom: 0;
+    }
+    .mcp-payload-label {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+    .mcp-payload-pre {
+        font-family: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+        font-size: 0.8rem;
+        line-height: 1.5;
+        padding: 0.75rem;
+        border-radius: 6px;
+        overflow-x: auto;
+        margin: 0;
+        white-space: pre-wrap;
+    }
+    `;
+
     // Settings state removed
 
 
@@ -171,15 +283,20 @@ export default function AdminObservability() {
             const data = await response.json();
             const newTraces = data.traces || [];
 
-            // MERGE: Preserve existing messages from current state to avoid wiping expanded trace
+            // MERGE: Preserve extracted details (messages, mcp_operations) to avoid wiping expanded trace data
             setTraces(prev => {
-                const prevMap = new Map(prev.map(t => [String(t.conversation_id), t.messages]));
+                const prevMap = new Map(prev.map(t => [String(t.conversation_id), t]));
 
-                return newTraces.map((t: TraceRecord) => ({
-                    ...t,
-                    // Preserve messages if they exist in previous state
-                    messages: prevMap.get(String(t.conversation_id)) || t.messages
-                }));
+                return newTraces.map((t: TraceRecord) => {
+                    const prevTrace = prevMap.get(String(t.conversation_id));
+                    return {
+                        ...t,
+                        // Preserve client-side extracted fields if they exist
+                        messages: prevTrace?.messages || t.messages,
+                        mcp_operations: prevTrace?.mcp_operations || t.mcp_operations,
+                        tool_calls_detail: prevTrace?.tool_calls_detail || t.tool_calls_detail
+                    };
+                });
             });
 
             // Calculate analytics including CACHE stats (MOST IMPORTANT)
@@ -213,7 +330,7 @@ export default function AdminObservability() {
                 const p95_idx = Math.floor(latencies.length * 0.95);
                 const p95_latency_ms = latencies[p95_idx] || 0;
                 const tool_usage_count = newTraces.filter(
-                    (t: TraceRecord) => t.tool_calls_count > 0
+                    (t: TraceRecord) => t.tool_calls_count > 0 || t.request_has_tools
                 ).length;
 
                 setAnalytics({
@@ -265,9 +382,94 @@ export default function AdminObservability() {
                 const messages = mapTraceDetailToMessages(detail);
                 console.log('[Obs] Mapped messages:', messages.length, messages);
 
+                // Extract MCP calls directly from timeline (since root fields are empty)
+                console.log('[Obs] Raw Timeline Types:', (detail.timeline || []).map((e: any) => e.type));
+
+                let extractedCalls: any[] = [];
+
+                // 1. Check Nested inside 'llm_call_received' / 'llm_response' (Primary Source)
+
+                // 2. Check Nested inside 'llm_call_received' / 'llm_response'
+                const responseEvents = (detail.timeline || [])
+                    .filter((e: any) =>
+                        e.type === 'llm_call_received' ||
+                        e.type === 'llm_response' ||
+                        e.type.includes('response') ||
+                        e.type === 'agent_state_update' // Sometimes hidden here
+                    );
+
+                responseEvents.forEach((evt: any) => {
+                    // Try different paths where the output might hide
+                    const data = evt.data?.response || evt.data;
+                    const output = data?.output || data?.content;
+
+                    if (Array.isArray(output)) {
+                        const nestedCalls = output.filter((item: any) =>
+                            item.type === 'mcp_call' ||
+                            item.type === 'tool_call' ||
+                            item.type === 'mcp_list_tools' // Also capture list tools if present
+                        );
+                        if (nestedCalls.length > 0) {
+                            console.log(`[Obs] Found ${nestedCalls.length} nested calls in event ${evt.type}`);
+                            extractedCalls = [...extractedCalls, ...nestedCalls];
+                        }
+                    }
+                });
+
+                // DEDUPLICATE: Filter out identical calls (by ID or full content) because timeline may contain redundant events
+                const uniqueCalls = Array.from(new Map(extractedCalls.map(item => [item.id || JSON.stringify(item), item])).values());
+                console.log(`[Obs] Deduplicated calls: ${extractedCalls.length} -> ${uniqueCalls.length}`);
+
+                const mcpCalls = uniqueCalls.map((e: any) => {
+                    // Normalize arguments (handle stringified JSON)
+                    let args = e.arguments || e.args || e.input || e.parameters || {};
+                    if (typeof args === 'string') {
+                        try { args = JSON.parse(args); } catch (err) { /* keep as string */ }
+                    }
+
+                    // Normalize output/result
+                    let result = e.output || e.result || e.content;
+
+                    // Special handling for tool lists
+                    if (!result && e.tools) {
+                        try {
+                            const toolNames = e.tools.map((t: any) => t.name).join(', ');
+                            result = `Tools List (${e.tools.length}): ${toolNames}`;
+                        } catch (err) { /**/ }
+                    }
+
+                    if (typeof result === 'string') {
+                        try {
+                            // Try parsing once to see if it's a JSON string
+                            const parsed = JSON.parse(result);
+                            // If it's an array of text objects (standard MCP output), simplify it
+                            if (Array.isArray(parsed) && parsed[0]?.text) {
+                                result = parsed.map((p: any) => p.text).join('\n');
+                            } else {
+                                result = parsed;
+                            }
+                        } catch (err) { /* keep as string */ }
+                    }
+
+                    return {
+                        server_name: e.server_label || 'unknown',
+                        tool_name: e.name || e.tool_name || 'unknown',
+                        arguments: args,
+                        result: result,
+                        is_error: !!e.error || e.status === 'error'
+                    };
+                });
+
+                console.log('[Obs] Extracted MCP Calls:', mcpCalls);
+
                 setTraces(prev => prev.map(t =>
                     String(t.conversation_id) === String(trace.conversation_id)
-                        ? { ...t, messages: messages }
+                        ? {
+                            ...t,
+                            messages: messages,
+                            // Use our manually extracted list
+                            mcp_operations: mcpCalls
+                        }
                         : t
                 ));
                 setExpandedTrace(trace.conversation_id);
@@ -324,7 +526,6 @@ export default function AdminObservability() {
 
                 messages.push({
                     id: idx,
-                    conversation_id: parseInt(detail.conversation_id),
                     role: m.role,
                     content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content),
                     // Synthetic timestamp: history items appear before the final response
@@ -337,7 +538,6 @@ export default function AdminObservability() {
             if (req.prompt) {
                 messages.push({
                     id: 0,
-                    conversation_id: parseInt(detail.conversation_id),
                     role: 'user',
                     content: req.prompt,
                     created_at: sentEvent ? sentEvent.timestamp : baseTime.toString()
@@ -423,6 +623,7 @@ export default function AdminObservability() {
     // ------------------------------------------------------------------------
     return (
         <div className="observability-dashboard-page">
+            <style>{styles}</style>
 
             {/* Top Navigation Removed - Title is in Global Header */}
 
@@ -627,16 +828,32 @@ export default function AdminObservability() {
                                             <div className="trace-badges">
                                                 <span className="badge persona">{trace.persona || 'unknown'}</span>
                                                 <span className="badge model">{trace.request_model || trace.model_name || 'unknown'}</span>
-                                                {trace.tool_calls_count > 0 && (
-                                                    <span className="badge tools">
-                                                        <Wrench size={12} /> Tools: {trace.tool_calls_count}
+
+                                                {/* FORCE SHOW CACHE/TOOLS DEBUGGING IF 0 */}
+                                                {(trace.tool_calls_count > 0 || trace.request_has_tools) ? (
+                                                    <span className="badge tools" style={{ background: 'rgba(139, 92, 246, 0.2)', color: '#d8b4fe', border: '1px solid rgba(139, 92, 246, 0.3)' }}>
+                                                        <Terminal size={12} style={{ marginRight: 4 }} />
+                                                        Tools: {trace.tool_calls_count}
+                                                    </span>
+                                                ) : (
+                                                    // Debug: Show 0 count just to prove we checked
+                                                    <span className="badge tools faded" style={{ opacity: 0.4, fontSize: '0.6rem' }}>
+                                                        Target: 0
                                                     </span>
                                                 )}
-                                                {trace.cached_tokens && trace.cached_tokens > 0 && (
-                                                    <span className="badge cache-hit">
-                                                        <Database size={12} /> Cache: {trace.cached_tokens.toLocaleString()}
+
+                                                {(trace.cached_tokens && trace.cached_tokens > 0) ? (
+                                                    <span className="badge cache-hit" style={{ background: 'rgba(234, 179, 8, 0.2)', color: '#fde047', border: '1px solid rgba(234, 179, 8, 0.3)' }}>
+                                                        <Zap size={12} style={{ marginRight: 4 }} />
+                                                        Cache: {trace.cached_tokens}
+                                                    </span>
+                                                ) : (
+                                                    // Debug: Show 0 cache just to prove we checked
+                                                    <span className="badge cache-hit faded" style={{ opacity: 0.4, fontSize: '0.6rem' }}>
+                                                        Cache: {trace.cached_tokens || 0}
                                                     </span>
                                                 )}
+
                                                 {(trace.has_error || trace.last_status === 'error') && (
                                                     <span className="badge error">Error</span>
                                                 )}
@@ -778,6 +995,84 @@ export default function AdminObservability() {
                                                     </div>
                                                 </div>
                                             )}
+
+                                            {/* MCP OPERATIONS / TOOL CALLS (Extracted from Timeline) - ALWAYS RENDER */}
+                                            {trace.mcp_operations && trace.mcp_operations.length > 0 && (
+                                                <div className="detail-section" style={{ marginTop: '2rem' }}>
+                                                    <h4 style={{
+                                                        color: '#e2e8f0',
+                                                        fontWeight: 600,
+                                                        marginBottom: '1rem',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        gap: '0.5rem'
+                                                    }}>
+                                                        <Terminal size={16} color="#8b5cf6" />
+                                                        MCP Tool Operations
+                                                        <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 400 }}>
+                                                            ({trace.mcp_operations.length})
+                                                        </span>
+                                                    </h4>
+
+                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                                        {trace.mcp_operations.map((op: any, idx: number) => (
+                                                            <div key={idx} className="mcp-card">
+                                                                {/* Header */}
+                                                                <div className="mcp-card-header">
+                                                                    <div className="mcp-card-title">
+                                                                        <Server size={14} color="#64748b" />
+                                                                        <span style={{ color: '#94a3b8' }}>{op.server_name}</span>
+                                                                        <ArrowRight size={12} color="#475569" />
+                                                                        <span style={{ color: '#f8fafc', fontWeight: 600 }}>{op.tool_name}</span>
+                                                                    </div>
+                                                                    <span className={`badge ${op.is_error ? 'error' : 'success'}`}
+                                                                        style={{ fontSize: '0.7rem', padding: '2px 8px', borderRadius: '12px' }}>
+                                                                        {op.is_error ? 'Failed' : 'Success'}
+                                                                    </span>
+                                                                </div>
+
+                                                                {/* Content */}
+                                                                <div className="mcp-card-content">
+                                                                    {/* INPUT */}
+                                                                    <div className="mcp-payload-block">
+                                                                        <div className="mcp-payload-label" style={{ color: '#93c5fd' }}>
+                                                                            <Braces size={12} />
+                                                                            INPUT PAYLOAD
+                                                                        </div>
+                                                                        <pre className="mcp-payload-pre" style={{
+                                                                            color: '#bfdbfe',
+                                                                            background: 'rgba(15, 23, 42, 0.5)',
+                                                                            border: '1px solid rgba(147, 197, 253, 0.1)'
+                                                                        }}>
+                                                                            {typeof op.arguments === 'string' ? op.arguments : JSON.stringify(op.arguments, null, 2)}
+                                                                        </pre>
+                                                                    </div>
+
+                                                                    {/* OUTPUT */}
+                                                                    <div className="mcp-payload-block">
+                                                                        <div className="mcp-payload-label" style={{ color: '#86efac' }}>
+                                                                            <Terminal size={12} />
+                                                                            OUTPUT RESULT
+                                                                        </div>
+                                                                        <pre className="mcp-payload-pre" style={{
+                                                                            color: '#bbf7d0',
+                                                                            background: 'rgba(20, 83, 45, 0.1)',
+                                                                            border: '1px solid rgba(134, 239, 172, 0.1)'
+                                                                        }}>
+                                                                            {(() => {
+                                                                                if (op.result === undefined || op.result === null) return <span style={{ color: '#64748b' }}>(no output)</span>;
+                                                                                const str = typeof op.result === 'string' ? op.result : JSON.stringify(op.result, null, 2);
+                                                                                return str.length > 5000 ? str.substring(0, 5000) + '... (truncated)' : str;
+                                                                            })()}
+                                                                        </pre>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+
 
                                             {/* CONVERSATION MESSAGES / SNAPSHOT */}
                                             {(!trace.messages || trace.messages.length === 0) ? (

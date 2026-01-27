@@ -48,7 +48,6 @@ export default function FounderLetterPage() {
       minHeight: '100vh',
       background: '#111827',
       color: '#F9FAFB',
-      fontFamily: isRTL ? '"Cairo", sans-serif' : '"Inter", sans-serif',
       paddingTop: '80px', // Space for fixed header
       overflowY: 'auto',
       height: '100vh'

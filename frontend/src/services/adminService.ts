@@ -12,14 +12,24 @@ export const adminService = {
 
     getProviders: async (): Promise<ProviderConfig[]> => {
         const response = await apiClient.get<any>('/api/admin/providers');
-        // Handle raw response { providers: [...] } (Actual Backend behavior)
+
+        // Handle raw response { providers: [...] }
         if (response.data && Array.isArray(response.data.providers)) {
             return response.data.providers.map((p: any) => ({
                 ...p,
                 supported_models: p.models || p.supported_models || []
             }));
         }
-        // Handle wrapper response { status: 'success', data: { providers: [...] } } (Documentation spec)
+
+        // Handle DIRECT array response
+        if (Array.isArray(response.data)) {
+            return response.data.map((p: any) => ({
+                ...p,
+                supported_models: p.models || p.supported_models || []
+            }));
+        }
+
+        // Handle wrapper response { status: 'success', data: { providers: [...] } }
         if (response.data?.data?.providers) {
             return response.data.data.providers.map((p: any) => ({
                 ...p,
