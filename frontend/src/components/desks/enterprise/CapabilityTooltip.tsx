@@ -20,16 +20,16 @@ export function CapabilityTooltip({ l3, x, y, selectedOverlay }: CapabilityToolt
   const tooltipHeight = 400;
   const offsetX = 15;
   const offsetY = 15;
-  
+
   const viewportWidth = window.innerWidth;
   const viewportHeight = window.innerHeight;
-  
+
   // Adjust horizontal position if tooltip would go off right edge
   let tooltipX = x + offsetX;
   if (tooltipX + tooltipWidth > viewportWidth - 20) {
     tooltipX = x - tooltipWidth - offsetX;
   }
-  
+
   // Adjust vertical position if tooltip would go off bottom edge
   let tooltipY = y + offsetY;
   if (tooltipY + tooltipHeight > viewportHeight - 20) {

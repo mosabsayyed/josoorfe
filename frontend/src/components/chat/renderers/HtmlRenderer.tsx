@@ -5,6 +5,7 @@ import { replaceVisualizationTags } from '../../../utils/visualizationBuilder';
 import { useArtifactHydration } from '../../../hooks/useArtifactHydration';
 import { ArtifactRenderer } from '../ArtifactRenderer';
 import type { Artifact } from '../../../types/api';
+import '../../desks/sector/SectorReport.css';
 
 interface HtmlRendererProps {
   // Accept either a direct HTML string via `html` or an entire `artifact`
@@ -67,7 +68,6 @@ export function HtmlRenderer({ html, artifact, title, embeddedArtifacts: propArt
 
     // Attempt to unescape common HTML-escaped sequences the LLM may include
     candidate = candidate.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
-    candidate = candidate.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
 
     // If candidate looks like a full HTML document, extract the body inner HTML
     const extractBody = (docString: string) => {
@@ -121,6 +121,7 @@ export function HtmlRenderer({ html, artifact, title, embeddedArtifacts: propArt
     fontFamily: 'var(--component-font-family)',
     color: 'var(--component-text, inherit)',
     lineHeight: 1.45,
+    whiteSpace: 'normal', // Override parent pre-wrap
     WebkitFontSmoothing: 'antialiased',
     MozOsxFontSmoothing: 'grayscale',
   };
@@ -128,112 +129,11 @@ export function HtmlRenderer({ html, artifact, title, embeddedArtifacts: propArt
   // Hydrate visualization placeholders
   useArtifactHydration(containerRef, embeddedArtifacts, sanitizedHtml);
 
-  // Scoped styles for the renderer content
-  const scopedStyles = `
-    .html-renderer-inner {
-      font-family: var(--component-font-family);
-      color: var(--component-text-primary);
-      line-height: 1.6;
-    }
-    .html-renderer-inner h1, .html-renderer-inner h2, .html-renderer-inner h3, .html-renderer-inner h4, .html-renderer-inner h5, .html-renderer-inner h6 {
-      font-weight: 700;
-      margin-top: 1.5em;
-      margin-bottom: 0.75em;
-      color: var(--component-text-primary);
-      line-height: 1.3;
-    }
-    .html-renderer-inner h1 { font-size: 1.8em; border-bottom: 1px solid var(--component-panel-border); padding-bottom: 0.3em; }
-    .html-renderer-inner h2 { font-size: 1.5em; }
-    .html-renderer-inner h3 { font-size: 1.25em; }
-    .html-renderer-inner p { margin-top: 0; margin-bottom: 1em; }
-    .html-renderer-inner a { color: var(--component-text-accent); text-decoration: none; }
-    .html-renderer-inner a:hover { text-decoration: underline; }
-    .html-renderer-inner code { 
-      font-family: var(--component-font-mono, monospace); 
-      background: rgba(0, 0, 0, 0.2); 
-      padding: 0.2em 0.4em; 
-      border-radius: 0.25em; 
-      font-size: 0.9em;
-      color: var(--component-text-accent);
-    }
-    .html-renderer-inner pre { 
-      background: rgba(0, 0, 0, 0.2); 
-      color: var(--component-text-primary); 
-      padding: 1em; 
-      border-radius: 0.5em; 
-      overflow-x: auto; 
-      border: 1px solid var(--component-panel-border);
-    }
-    .html-renderer-inner pre code { background: transparent; padding: 0; color: inherit; }
-    .html-renderer-inner table { 
-      width: 100%; 
-      border-collapse: collapse; 
-      margin-bottom: 1.5em; 
-      font-size: 0.95em;
-    }
-    .html-renderer-inner th, .html-renderer-inner td { 
-      border: 1px solid var(--component-panel-border); 
-      padding: 0.75em; 
-      text-align: left; 
-      color: var(--component-text-primary);
-    }
-    .html-renderer-inner th { 
-      background: rgba(255, 255, 255, 0.05); 
-      font-weight: 600; 
-      color: var(--component-text-accent);
-    }
-    .html-renderer-inner tr:nth-child(even) {
-      background: rgba(255, 255, 255, 0.02);
-    }
-    .html-renderer-inner ul, .html-renderer-inner ol {
-      padding-left: 1.5em;
-      margin-bottom: 1em;
-    }
-    .html-renderer-inner li {
-      margin-bottom: 0.5em;
-    }
-    .html-renderer-inner blockquote {
-      border-left: 4px solid var(--component-accent);
-      margin: 0 0 1em 0;
-      padding-left: 1em;
-      color: var(--component-text-secondary);
-      font-style: normal;
-    }
-    /* Visualization placeholder styles used before hydration */
-    .visualization-placeholder {
-      display: block;
-      padding: 1em;
-      margin: 1em 0;
-      background: rgba(100, 150, 200, 0.1);
-      border: 2px dashed var(--component-text-accent);
-      border-radius: 0.5em;
-      color: var(--component-text-secondary);
-      font-size: 0.95em;
-      font-style: normal;
-      text-align: center;
-    }
-    .visualization-table {
-      background: rgba(74, 144, 226, 0.08);
-      border-color: #4a90e2;
-    }
-    .visualization-chart {
-      background: rgba(244, 100, 50, 0.08);
-      border-color: #f46432;
-    }
-    /* Hydrated container style */
-    .hydrated-visualization-container {
-      margin: 1.5em 0;
-      width: 100%;
-      min-height: 400px; 
-    }
-  `;
-
   return (
     <div className="html-renderer-wrapper" style={{ padding: 8 }} aria-label={title || 'HTML content'}>
-      <style>{scopedStyles}</style>
       <div
         ref={containerRef}
-        className="html-renderer-inner"
+        className="html-renderer-inner josoor-report-content"
         style={containerStyle}
         // eslint-disable-next-line react/no-danger
         dangerouslySetInnerHTML={{ __html: sanitizedHtml }}

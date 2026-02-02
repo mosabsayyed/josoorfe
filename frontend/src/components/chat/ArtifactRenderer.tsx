@@ -65,6 +65,7 @@ import { CodeRenderer } from './renderers/CodeRenderer';
 import { MediaRenderer } from './renderers/MediaRenderer';
 import { FileRenderer } from './renderers/FileRenderer';
 import './MessageBubble.css';
+import '../desks/sector/SectorReport.css';
 // Using internal Recharts-based ChartRenderer (NOT Highcharts)
 
 
@@ -218,17 +219,23 @@ interface ArtifactRendererProps {
   artifact: Artifact;
   language?: 'en' | 'ar';
   fullHeight?: boolean;
+  embeddedArtifacts?: Record<string, Artifact>;
 }
 
-export function ArtifactRenderer({ artifact, language = 'en', fullHeight = false }: ArtifactRendererProps) {
+export function ArtifactRenderer({ artifact, language = 'en', fullHeight = false, embeddedArtifacts }: ArtifactRendererProps) {
   return (
     <ErrorBoundary>
-      <ArtifactRendererContent artifact={artifact} language={language} fullHeight={fullHeight} />
+      <ArtifactRendererContent
+        artifact={artifact}
+        language={language}
+        fullHeight={fullHeight}
+        embeddedArtifacts={embeddedArtifacts}
+      />
     </ErrorBoundary>
   );
 }
 
-function ArtifactRendererContent({ artifact, language = 'en', fullHeight = false }: ArtifactRendererProps) {
+function ArtifactRendererContent({ artifact, language = 'en', fullHeight = false, embeddedArtifacts }: ArtifactRendererProps) {
   const [showDebug, setShowDebug] = useState(false);
 
 
@@ -242,9 +249,9 @@ function ArtifactRendererContent({ artifact, language = 'en', fullHeight = false
       case 'TABLE':
         return <TableRenderer artifact={artifact as TableArtifact} language={language} fullHeight={fullHeight} />;
       case 'REPORT':
-        return <ReportRenderer artifact={artifact as ReportArtifact} language={language} fullHeight={fullHeight} />;
+        return <ReportRenderer artifact={artifact as ReportArtifact} language={language} fullHeight={fullHeight} embeddedArtifacts={embeddedArtifacts} />;
       case 'DOCUMENT':
-        return <DocumentRenderer artifact={artifact as DocumentArtifact} language={language} fullHeight={fullHeight} />;
+        return <DocumentRenderer artifact={artifact as DocumentArtifact} language={language} fullHeight={fullHeight} embeddedArtifacts={embeddedArtifacts} />;
       case 'TWIN_KNOWLEDGE':
         return <TwinKnowledgeRenderer artifact={artifact as TwinKnowledgeArtifact} />;
       case 'HTML':
@@ -359,16 +366,26 @@ function ChartRenderer({ artifact, height = 400 }: { artifact: ChartArtifact, he
   console.log('[ChartRenderer] artifact.content:', content);
 
   // Try to get type from various locations
-  let rawType = content.chart?.type || (content as any).type;
+  let rawType = content.chart?.type || content.type || (content as any).type;
+
+  // If type is still just 'chart', try to find something more specific in content
+  if (String(rawType).toLowerCase() === 'chart' && content.config?.chart?.type) {
+    rawType = content.config.chart.type;
+  }
 
   // If no type found, infer from content structure
-  if (!rawType) {
-    console.log('[ChartRenderer] No type found, inferring from content structure');
+  if (!rawType || String(rawType).toLowerCase() === 'chart') {
+    console.log('[ChartRenderer] No specific type found, inferring from content structure');
 
     // Check for radar chart indicators
-    if ((content as any).categories && (content as any).series && (content as any).maxValue) {
+    if ((content as any).categories && (content as any).series && ((content as any).maxValue || (content as any).series?.[0]?.values)) {
       rawType = 'radar';
-      console.log('[ChartRenderer] Inferred type: radar (has categories, series, maxValue)');
+      console.log('[ChartRenderer] Inferred type: radar');
+    }
+    // Check for table indicators in case it leaked here
+    else if ((content as any).columns || (content as any).rows) {
+      rawType = 'table';
+      console.log('[ChartRenderer] Inferred type: table (leaked to chart renderer)');
     }
     // Check for line chart indicators
     else if ((content as any).strokeWidth || artifact.title?.toLowerCase().includes('line')) {
@@ -788,28 +805,20 @@ function TableRenderer({ artifact, language, fullHeight }: { artifact: TableArti
   }
 
   return (
-    <div className="w-full overflow-auto rounded-lg markdown-content" style={{ maxHeight: fullHeight ? "100%" : "600px" }}>
+    <div className="w-full overflow-auto rounded-lg josoor-report-content" style={{ maxHeight: typeof fullHeight === 'number' ? `${fullHeight}px` : (fullHeight ? "100%" : "600px") }}>
       {normalizedColumns.length === 0 || displayRows.length === 0 ? (
         <div className="p-4 text-center text-gray-500">
           No data available
         </div>
       ) : (
-        <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '1rem', backgroundColor: "var(--component-panel-bg)", zIndex: 10, position: "relative" }}>
+        <table className="josoor-table">
           <thead>
             <tr>
               {normalizedColumns.map((column, index) => (
                 <th
                   key={index}
                   onClick={() => handleSort(index)}
-                  style={{
-                    cursor: "pointer",
-                    padding: '8px 12px',
-                    border: '1px solid var(--component-panel-border)',
-                    textAlign: 'left',
-                    backgroundColor: 'var(--component-bg-secondary)',
-                    fontWeight: 600,
-                    color: 'var(--component-text-primary)'
-                  }}
+                  className="cursor-pointer"
                 >
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                     <span>{column}</span>
@@ -825,15 +834,9 @@ function TableRenderer({ artifact, language, fullHeight }: { artifact: TableArti
           </thead>
           <tbody>
             {displayRows.map((row, rowIndex) => (
-              <tr key={rowIndex} style={{ backgroundColor: rowIndex % 2 === 0 ? 'var(--component-panel-bg)' : 'var(--component-bg-secondary)' }}
-              >
+              <tr key={rowIndex}>
                 {row.map((cell, cellIndex) => (
-                  <td key={cellIndex} style={{
-                    padding: '8px 12px',
-                    border: '1px solid var(--component-panel-border)',
-                    textAlign: 'left',
-                    color: 'var(--component-text-primary)',
-                  }}>
+                  <td key={cellIndex}>
                     {typeof cell === "number" ? cell.toLocaleString() : String(cell || "")}
                   </td>
                 ))}
@@ -850,7 +853,7 @@ function TableRenderer({ artifact, language, fullHeight }: { artifact: TableArti
 // REPORT RENDERER
 // ============================================================================
 
-function ReportRenderer({ artifact, language, fullHeight }: { artifact: ReportArtifact; language: 'en' | 'ar'; fullHeight?: boolean | number }) {
+function ReportRenderer({ artifact, language, fullHeight, embeddedArtifacts }: { artifact: ReportArtifact; language: 'en' | 'ar'; fullHeight?: boolean | number; embeddedArtifacts?: Record<string, Artifact> }) {
   const { content } = artifact;
   const isRTL = language === 'ar';
 
@@ -863,27 +866,26 @@ function ReportRenderer({ artifact, language, fullHeight }: { artifact: ReportAr
   if (isHtml) {
     return (
       <div className="w-full overflow-auto" style={{ maxHeight: fullHeight ? "100%" : undefined, direction: isRTL ? 'rtl' : 'ltr' }}>
-        <HtmlRenderer artifact={artifact} />
+        <HtmlRenderer artifact={artifact} embeddedArtifacts={embeddedArtifacts} />
       </div>
     );
   }
 
   // Markdown format: Parse and render as HTML
-  if (isMarkdown || typeof content.body === 'string') {
+  const body = typeof content === 'string' ? content : (content.body || '');
+  if (isMarkdown || body) {
     return (
-      <div className="w-full overflow-auto " style={{ border: "1px solid var(--component-border)", padding: 8, maxHeight: fullHeight ? "100%" : "400px" }}>
-        <div
-          className="prose prose-sm max-w-none prose-headings:text-text-primary prose-p:text-text-primary prose-strong:text-text-primary prose-li:text-text-primary prose-a:text-interactive-primary-default"
-          dir={isRTL ? 'rtl' : 'ltr'}
-          dangerouslySetInnerHTML={{ __html: parseMarkdown(content.body) }}
-        />
+      <div className="w-full overflow-auto josoor-report-content" style={{ border: "1px solid var(--component-panel-border)", padding: '1rem', maxHeight: fullHeight ? "100%" : "600px" }}>
+        <div dir={isRTL ? 'rtl' : 'ltr'}>
+          <MarkdownRenderer content={body} embeddedArtifacts={embeddedArtifacts} />
+        </div>
       </div>
     );
   }
 
   // Fallback: JSON dump
   return (
-    <div className="w-full overflow-auto " style={{ border: "1px solid var(--component-border)", padding: 8, maxHeight: fullHeight ? "100%" : "400px" }}>
+    <div className="w-full overflow-auto josoor-report-content" style={{ border: "1px solid var(--component-panel-border)", padding: '1rem', maxHeight: fullHeight ? "100%" : "600px" }}>
       <pre className="whitespace-pre-wrap text-sm text-text-primary bg-canvas-page p-4 overflow-auto border border-border-default">
         {JSON.stringify(content.body, null, 2)}
       </pre>
@@ -895,40 +897,27 @@ function ReportRenderer({ artifact, language, fullHeight }: { artifact: ReportAr
 // DOCUMENT RENDERER
 // ============================================================================
 
-function DocumentRenderer({ artifact, language, fullHeight }: { artifact: DocumentArtifact; language: 'en' | 'ar'; fullHeight?: boolean | number }) {
+function DocumentRenderer({ artifact, language, fullHeight, embeddedArtifacts }: { artifact: DocumentArtifact; language: 'en' | 'ar'; fullHeight?: boolean | number; embeddedArtifacts?: Record<string, Artifact> }) {
   const { content } = artifact;
   const isRTL = language === 'ar';
 
   // Render embedded HTML content (body)
   if (content.body) {
     if (content.format === 'html') {
-      const sanitizedHtml = DOMPurify.sanitize(content.body);
       return (
-        <div className="w-full overflow-auto" style={{
-          fontSize: '14px',
-          lineHeight: '1.6',
-          color: 'var(--component-text-primary)',
-          direction: isRTL ? 'rtl' : 'ltr'
-        }}>
-          <div
-            dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
-            style={{
-              width: '100%',
-              padding: '0'
-            }}
-          />
+        <div className="w-full overflow-auto" style={{ maxHeight: fullHeight ? "100%" : "600px", direction: isRTL ? 'rtl' : 'ltr' }}>
+          <HtmlRenderer artifact={artifact} embeddedArtifacts={embeddedArtifacts} />
         </div>
       );
     }
 
     // Render as markdown (default)
+    const body = typeof content === 'string' ? content : (content.body || '');
     return (
-      <div className="w-full overflow-auto " style={{ border: "1px solid var(--component-border)", padding: 8, maxHeight: fullHeight ? "100%" : "400px" }}>
-        <div
-          className="prose prose-sm max-w-none prose-headings:text-text-primary prose-p:text-text-primary prose-strong:text-text-primary prose-li:text-text-primary prose-a:text-interactive-primary-default"
-          dir={isRTL ? 'rtl' : 'ltr'}
-          dangerouslySetInnerHTML={{ __html: parseMarkdown(content.body) }}
-        />
+      <div className="w-full overflow-auto josoor-report-content" style={{ border: "1px solid var(--component-panel-border)", padding: '1rem', maxHeight: fullHeight ? "100%" : "600px" }}>
+        <div dir={isRTL ? 'rtl' : 'ltr'}>
+          <MarkdownRenderer content={body} embeddedArtifacts={embeddedArtifacts} />
+        </div>
       </div>
     );
   }

@@ -389,13 +389,6 @@ class ChatService {
         }
       }
 
-      // Try to parse the final buffer as the complete response for onComplete
-      // This is a naive implementation; normally streaming returns chunks of text and maybe a final JSON event.
-      // For now, assuming the stream is text-only or we reconstruct it.
-      // actually, if it's SSE, we need proper parsing. 
-      // Given I don't have the backend stream spec, I'll fallback to a simplified flow: 
-      // Just accumulate text and call onComplete with a synthetic response.
-
       const finalResponse: ChatResponse = {
         message: buffer,
         conversation_id: request.conversation_id || 0, // Mock ID if missing
@@ -476,6 +469,27 @@ class ChatService {
       }
     );
     return response.json();
+  }
+
+  // NEW METHOD: Generate Strategic Report for Sector Desk
+  async generateStrategicReport(scope: 'national' | 'region', scopeId: string, assets: any[]): Promise<string> {
+    const prompt = `Analyze the strategic alignment for ${scope} ${scopeId}.
+    Context: ${assets.length} assets provided.
+    Provide a concise strategic summary in HTML format (<h3>, <p>, <ul>).`;
+
+    // Note: In a real app, we might want to create a specific conversation or use a transient one.
+    // For now, we simulate a request.
+    const response = await this.sendMessage({
+      message: prompt,
+      conversation_id: 0, // 0 usually implies new or transient
+      metadata: {
+        scope,
+        scopeId,
+        assetCount: assets.length
+      }
+    });
+
+    return response.llm_payload?.answer || response.message || "Analysis not available.";
   }
 
   // Helper method to format error messages for display

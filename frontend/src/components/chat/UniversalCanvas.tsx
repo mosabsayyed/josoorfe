@@ -197,7 +197,7 @@ function detectContentType(content: any, explicitType?: string, artifact?: any):
   return { type: 'markdown' };
 }
 
-export function UniversalCanvas({ content: propsContent, title, type, artifact, onNext }: UniversalCanvasProps) {
+export function UniversalCanvas({ content: propsContent, title, type, artifact, embeddedArtifacts, onNext }: UniversalCanvasProps) {
   // Support both calling patterns:
   // 1. CanvasPanel: passes content, title, type directly
   // 2. MessageBubble: might pass artifact (flat visualization object)
@@ -375,7 +375,10 @@ export function UniversalCanvas({ content: propsContent, title, type, artifact, 
 
         return (
           <div style={{ width: '100%', height: '100%', minHeight: '400px', display: 'flex', flexDirection: 'column' }}>
-            <ArtifactRenderer artifact={artifactForRenderer as Artifact} />
+            <ArtifactRenderer
+              artifact={artifactForRenderer as Artifact}
+              embeddedArtifacts={embeddedArtifacts}
+            />
           </div>
         );
       }
@@ -384,6 +387,8 @@ export function UniversalCanvas({ content: propsContent, title, type, artifact, 
         <HtmlRenderer
           html={htmlString || seedStrings[0] || ''}
           title={title}
+          artifact={artifact}
+          embeddedArtifacts={embeddedArtifacts}
         />
       );
     }
@@ -394,6 +399,7 @@ export function UniversalCanvas({ content: propsContent, title, type, artifact, 
           content={typeof content === 'string' ? content : (content.content || '')}
           title={title}
           artifact={artifact}
+          embeddedArtifacts={embeddedArtifacts}
         />
       );
 
@@ -450,23 +456,29 @@ export function UniversalCanvas({ content: propsContent, title, type, artifact, 
       });
 
       let artifactType = detected.type === 'chart' ? 'CHART' : 'TABLE';
+      const vizType = String(content.type || '').toLowerCase();
+      const specificChartTypes = ['column', 'bar', 'line', 'area', 'pie', 'radar', 'bubble', 'bullet', 'combo', 'scatter'];
+      const isSpecificChart = specificChartTypes.includes(vizType);
 
       // Detect if it's actually a table disguised as a chart
       if (detected.type === 'chart' && (content.chart?.type === 'table' || content.type === 'table')) {
         artifactType = 'TABLE';
       }
 
+      const baseContent = (content && typeof content === 'object') ? (content.config || content) : { body: String(content) };
       const artifactForRenderer = {
         artifact_type: artifactType,
         title: content.title || title || 'Untitled',
         description: content.description,
-        // CRITICAL FIX: Preserve the type field from the original content
         content: {
-          ...(content.config || content),
-          // If content has a type field at root, preserve it as chart.type
-          ...(content.type && { chart: { type: content.type } })
+          ...(typeof baseContent === 'object' ? baseContent : { body: baseContent }),
+          // Preserve specific chart type if it was at the root
+          ...(isSpecificChart && { chart: { type: vizType } }),
+          // Ensure we don't drop the existing chart config if it was nested
+          ...((content.chart || (typeof baseContent === 'object' && baseContent.chart)) && {
+            chart: (content.chart || (baseContent as any).chart)
+          })
         },
-        // Also expose data at the top level for convenience
         data: content.config?.data || content.data,
       };
 
@@ -474,14 +486,17 @@ export function UniversalCanvas({ content: propsContent, title, type, artifact, 
       console.log('[UniversalCanvas] Created artifactForRenderer:', artifactForRenderer);
       return (
         <div style={{ width: '100%', height: '100%', minHeight: '400px', display: 'flex', flexDirection: 'column' }}>
-          <ArtifactRenderer artifact={artifactForRenderer as Artifact} />
+          <ArtifactRenderer
+            artifact={artifactForRenderer as Artifact}
+            embeddedArtifacts={embeddedArtifacts}
+          />
         </div>
       );
 
     case 'artifact':
       // For DOCUMENT type, use the full artifact if available, otherwise content
       const artifactToRender = (artifact && 'artifact_type' in artifact) ? artifact : (content as Artifact);
-      return <ArtifactRenderer artifact={artifactToRender as Artifact} fullHeight={true} />;
+      return <ArtifactRenderer artifact={artifactToRender as Artifact} fullHeight={true} embeddedArtifacts={embeddedArtifacts} />;
 
     case 'json':
       return (

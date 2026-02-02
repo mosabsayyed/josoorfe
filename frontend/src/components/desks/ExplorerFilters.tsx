@@ -3,7 +3,6 @@ import {
     ChevronDown,
     ChevronUp,
     Filter,
-    Database,
     Play,
     FileText,
     Activity,
@@ -25,7 +24,6 @@ interface ExplorerFiltersProps {
     onChainChange: (chain: string | null) => void;
     onVizModeChange: (mode: '3d' | 'sankey') => void;
     onApply: () => void;
-    onLoadMock: () => void;
     availableLabels?: string[];
     availableRelationships?: string[];
     isDark?: boolean;
@@ -83,7 +81,6 @@ export function ExplorerFilters({
     onChainChange,
     onVizModeChange,
     onApply,
-    onLoadMock,
     // Ignore dynamic props, use SST authoritatively
     availableLabels = SST_LABELS,
     availableRelationships = SST_RELATIONSHIPS,
@@ -346,9 +343,6 @@ export function ExplorerFilters({
                                 className="btn-reset main-action-btn"
                             >
                                 <Play className="w-4 h-4 mr-2" /> Fetch Live Graph
-                            </button>
-                            <button onClick={onLoadMock} className="btn-reset secondary-action-btn">
-                                <Database className="w-4 h-4 mr-2" /> Load Demo Snapshot
                             </button>
                         </div>
                     </div>

@@ -2,6 +2,10 @@ export interface CanonicalStep {
     sourceLabel: string | string[];
     relationship: string;
     targetLabel: string | string[];
+    // Optional: Specify hierarchy levels (L1, L2, L3) to distinguish same-label nodes at different levels
+    // When a node type appears at different levels in the flow, use level to disambiguate columns
+    sourceLevel?: string;
+    targetLevel?: string;
 }
 
 export interface CanonicalPathDef {
@@ -26,80 +30,53 @@ export const CANONICAL_PATHS: Record<string, CanonicalPathDef> = {
         steps: [
             { sourceLabel: 'SectorObjective', relationship: 'REALIZED_VIA', targetLabel: 'SectorPolicyTool' },
             { sourceLabel: 'SectorPolicyTool', relationship: 'SETS_PRIORITIES', targetLabel: 'EntityCapability' },
-            {
-                sourceLabel: 'EntityCapability',
-                relationship: 'ROLE_GAPS|KNOWLEDGE_GAPS|AUTOMATION_GAPS',
-                targetLabel: ['EntityOrgUnit', 'EntityProcess', 'EntityITSystem']
-            },
-            {
-                sourceLabel: ['EntityOrgUnit', 'EntityProcess', 'EntityITSystem'],
-                relationship: 'GAPS_SCOPE',
-                targetLabel: 'EntityProject'
-            },
+            { sourceLabel: 'EntityCapability', relationship: 'ROLE_GAPS|KNOWLEDGE_GAPS|AUTOMATION_GAPS', targetLabel: ['EntityOrgUnit', 'EntityProcess', 'EntityITSystem'] },
+            { sourceLabel: ['EntityOrgUnit', 'EntityProcess', 'EntityITSystem'], relationship: 'GAPS_SCOPE', targetLabel: 'EntityProject' },
             { sourceLabel: 'EntityProject', relationship: 'ADOPTION_RISKS', targetLabel: 'EntityChangeAdoption' }
         ]
     },
     'setting_strategic_priorities': {
         name: 'Setting Strategic Priorities',
         steps: [
-            { sourceLabel: 'SectorObjective', relationship: 'AGGREGATES_TO', targetLabel: 'SectorPerformance' }, // Reverse direction in canonical? Doc says Aggregates To, but flow is Objective <- Performance? 
-            // Doc says: SectorObjective <-AGGREGATES_TO- SectorPerformance
-            // But Sankey flows L->R. So we should list Source as Performance? 
-            // Wait, the doc Canonical Path says: "SectorObjective <-AGGREGATES_TO- SectorPerformance".
-            // If the Sankey starts at SectorObjective, this step goes backwards? 
-            // "Start anchors: SectorPerformance (preferred)".
-            // If we start at Objective, we might need to invert for visualization if the user wants L->R.
-            // However, the text says "Operate target cascade: objectives/performance targets cascade to capabilities".
-            // So Objective -> Performance -> Capability.
-            // Relation is (Performance)-[AGGREGATES_TO]->(Objective).
-            // So flow is Objective <-(AGGREGATES_TO)- Performance.
-            // Let's assume for visual flow we want Objective -> Performance?
-            // User Ex: "SectorObjective -[:REALIZED_VIA]-> ...".
-            // Let's stick to the doc's "Canonical Path" text order.
-            // Doc: "SectorObjective <-AGGREGATES_TO- SectorPerformance". 
-            // This is slightly confusing for a L->R Sankey if we start at Objective.
-            // But let's encode the RELATIONSHIP. If we want Visual Flow A->B, and Relation is B->A, we might need to annotate direction.
-            // For now, I will implement as defined in the text sequence, assuming the visual flow follows the text line order.
-
-            // Actually, for 'setting_strategic_priorities', the "canonical path" text in doc (346) starts with SectorObjective.
-            // "SectorObjective <-[:AGGREGATES_TO]- SectorPerformance"
-            // Then "-[:SETS_TARGETS]-> EntityCapability"
-            // So it visually goes Objective -> Performance -> Capability.
-            // Even though the relation AGGREGATES_TO points Perf->Obj.
-            // I will encode it as: Source=Objective, Rel=AGGREGATES_TO (INCOMING), Target=Performance.
-            // But my simple schema above assumes Source->Rel->Target.
-            // I will add 'direction' field later if needed. For now simple.
-
-            // Wait, if I use the "Visual Source" and "Visual Target", I can just say:
-            // Source: SectorObjective, Target: SectorPerformance, Rel: "AGGREGATES_TO (Rev)"?
-            // Or just "AGGREGATES_TO" and handle direction lookup in the matcher.
-
-            // Let's assume standard direction for now, but careful.
-            // Actually, Recharts Sankey is purely visual. If I say A links to B, it draws A->B.
-            // I just need to find the link in the data.
-            // If data has (Perf)-[AGG]->(Obj), but I want to draw Obj->Perf, I need to find the incoming link.
-
-            // I'll stick to 'setting_strategic_initiatives' and 'sector_value_chain' first as primary examples which are mostly forward.
-            // For 'setting_strategic_priorities':
-            { sourceLabel: 'SectorObjective', relationship: 'AGGREGATES_TO', targetLabel: 'SectorPerformance' }, // Implies Incoming
-            { sourceLabel: 'SectorPerformance', relationship: 'SETS_TARGETS', targetLabel: 'EntityCapability' },
-            { sourceLabel: 'EntityCapability', relationship: 'ROLE_GAPS|KNOWLEDGE_GAPS|AUTOMATION_GAPS', targetLabel: ['EntityOrgUnit', 'EntityProcess', 'EntityITSystem'] },
-            { sourceLabel: ['EntityOrgUnit', 'EntityProcess', 'EntityITSystem'], relationship: 'GAPS_SCOPE', targetLabel: 'EntityProject' },
-            { sourceLabel: 'EntityProject', relationship: 'ADOPTION_RISKS', targetLabel: 'EntityChangeAdoption' }
+            { sourceLabel: 'SectorObjective', sourceLevel: 'L1', relationship: 'CASCADED_VIA', targetLabel: 'SectorPerformance', targetLevel: 'L1' },
+            { sourceLabel: 'SectorPerformance', sourceLevel: 'L1', relationship: 'PARENT_OF', targetLabel: 'SectorPerformance', targetLevel: 'L2' },
+            { sourceLabel: 'SectorPerformance', sourceLevel: 'L2', relationship: 'SETS_TARGETS', targetLabel: 'EntityCapability', targetLevel: 'L2' },
+            { sourceLabel: 'EntityCapability', sourceLevel: 'L2', relationship: 'PARENT_OF', targetLabel: 'EntityCapability', targetLevel: 'L3' },
+            { sourceLabel: 'EntityCapability', sourceLevel: 'L3', relationship: 'ROLE_GAPS|KNOWLEDGE_GAPS|AUTOMATION_GAPS', targetLabel: ['EntityOrgUnit', 'EntityProcess', 'EntityITSystem'], targetLevel: 'L3' }
         ]
     },
     'build_oversight': {
         name: 'Build Oversight',
         steps: [
-            { sourceLabel: 'EntityCapability', relationship: 'MONITORED_BY', targetLabel: 'EntityRisk' },
-            { sourceLabel: 'EntityRisk', relationship: 'INFORMS', targetLabel: 'SectorPolicyTool' }
+            { sourceLabel: 'EntityChangeAdoption', sourceLevel: 'L3', relationship: 'INCREASE_ADOPTION', targetLabel: 'EntityProject', targetLevel: 'L3' },
+            { sourceLabel: 'EntityProject', sourceLevel: 'L3', relationship: 'CLOSE_GAPS', targetLabel: ['EntityOrgUnit', 'EntityProcess', 'EntityITSystem'], targetLevel: 'L3' },
+            { sourceLabel: ['EntityOrgUnit', 'EntityProcess', 'EntityITSystem'], sourceLevel: 'L3', relationship: 'ROLE_GAPS', targetLabel: 'EntityCapability', targetLevel: 'L3' },
+            { sourceLabel: 'EntityCapability', sourceLevel: 'L3', relationship: 'MONITORED_BY', targetLabel: 'EntityRisk', targetLevel: 'L3' },
+            { sourceLabel: 'EntityRisk', sourceLevel: 'L3', relationship: 'PARENT_OF', targetLabel: 'EntityRisk', targetLevel: 'L2' },
+            { sourceLabel: 'EntityRisk', sourceLevel: 'L2', relationship: 'INFORMS', targetLabel: 'SectorPolicyTool', targetLevel: 'L2' },
+            { sourceLabel: 'SectorPolicyTool', sourceLevel: 'L2', relationship: 'GOVERNED_BY', targetLabel: 'SectorObjective', targetLevel: 'L1' }
         ]
     },
     'operate_oversight': {
         name: 'Operate Oversight',
         steps: [
-            { sourceLabel: 'EntityCapability', relationship: 'MONITORED_BY', targetLabel: 'EntityRisk' },
-            { sourceLabel: 'EntityRisk', relationship: 'INFORMS', targetLabel: 'SectorPerformance' }
+            { sourceLabel: 'EntityCapability', sourceLevel: 'L3', relationship: 'MONITORED_BY', targetLabel: 'EntityRisk', targetLevel: 'L3' },
+            { sourceLabel: 'EntityRisk', sourceLevel: 'L3', relationship: 'PARENT_OF', targetLabel: 'EntityRisk', targetLevel: 'L2' },
+            { sourceLabel: 'EntityRisk', sourceLevel: 'L2', relationship: 'INFORMS', targetLabel: 'SectorPerformance', targetLevel: 'L2' },
+            { sourceLabel: 'SectorPerformance', sourceLevel: 'L2', relationship: 'AGGREGATES_TO', targetLabel: 'SectorObjective', targetLevel: 'L1' }
         ]
+    },
+    'sustainable_operations': {
+        name: 'Sustainable Operations',
+        steps: [
+            { sourceLabel: 'EntityCultureHealth', relationship: 'MONITORS_FOR', targetLabel: 'EntityOrgUnit' },
+            { sourceLabel: 'EntityOrgUnit', relationship: 'APPLY', targetLabel: 'EntityProcess' },
+            { sourceLabel: 'EntityProcess', relationship: 'AUTOMATION', targetLabel: 'EntityITSystem' },
+            { sourceLabel: 'EntityITSystem', relationship: 'DEPENDS_ON', targetLabel: 'EntityVendor' }
+        ]
+    },
+    'integrated_oversight': {
+        name: 'Integrated Oversight',
+        steps: []
     }
 };

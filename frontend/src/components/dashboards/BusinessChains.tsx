@@ -5,33 +5,33 @@ import { useQuery } from '@tanstack/react-query';
 const INITIAL_NODES = [
   // Top: Objectives (centered)
   { id: 'obj', type: 'dark', label: 'Objectives', x: 714, y: 156, r: 70, neoLabel: 'SectorObjective' },
-  
+
   // Upper level: Performance (left) and Policy Tools (right)
   { id: 'perf', type: 'dark', label: 'Performance', x: 178, y: 546, r: 70, neoLabel: 'SectorPerformance' },
   { id: 'pol', type: 'dark', label: 'Policy Tools', x: 1250, y: 546, r: 70, neoLabel: 'SectorPolicyTool' },
-  
+
   // Middle gray box: Sector entities (Citizen, Business, Gov, Data, Admin)
   { id: 'ent_cit', type: 'white', label: 'Citizen', x: 714, y: 364, r: 50, neoLabel: 'SectorCitizen' },
   { id: 'ent_bus', type: 'white', label: 'Business', x: 714, y: 546, r: 50, neoLabel: 'SectorBusiness' },
   { id: 'ent_gov', type: 'white', label: 'Gov. Entities', x: 714, y: 728, r: 50, neoLabel: 'SectorGovEntity' },
   { id: 'data', type: 'white', label: 'Data Transaction', x: 446, y: 546, r: 65, neoLabel: 'SectorDataTransaction' },
   { id: 'admin', type: 'white', label: 'Admin Records', x: 982, y: 546, r: 65, neoLabel: 'SectorAdminRecord' },
-  
+
   // Below gray box: Risks (centered)
   { id: 'risks', type: 'dark', label: 'Risks', x: 714, y: 1027, r: 55, neoLabel: 'EntityRisk' },
-  
+
   // Capability (centered, below dashed line)
   { id: 'cap', type: 'dark', label: 'Capability', x: 714, y: 1248, r: 75, neoLabel: 'EntityCapability' },
-  
+
   // Bottom gray box: Entity nodes (IT Systems, Processes, Organization)
   { id: 'it', type: 'white', label: 'IT Systems', x: 496, y: 1599, r: 60, neoLabel: 'EntityITSystem' },
   { id: 'proc', type: 'white', label: 'Processes', x: 714, y: 1599, r: 60, neoLabel: 'EntityProcess' },
   { id: 'org', type: 'white', label: 'Organization', x: 933, y: 1599, r: 60, neoLabel: 'EntityOrgUnit' },
-  
+
   // Outside bottom box: Vendor SLA (left) and Culture Health (right)
   { id: 'vend', type: 'light', label: 'Vendor SLA', x: 278, y: 1599, r: 55, neoLabel: 'EntityVendor' },
   { id: 'cult', type: 'light', label: 'Culture Health', x: 1151, y: 1599, r: 55, neoLabel: 'EntityCultureHealth' },
-  
+
   // Bottom: Projects Outputs and Change Architecture (centered)
   { id: 'proj', type: 'dark', label: 'Projects Outputs', x: 714, y: 1950, r: 70, neoLabel: 'EntityProject' },
   { id: 'chg', type: 'dark', label: 'Change Adoption', x: 714, y: 2184, r: 65, neoLabel: 'EntityChangeAdoption' },
@@ -52,12 +52,12 @@ const INITIAL_EDGES = [
   { id: 'e10', from: 'data', to: 'perf', type: 'static', label: 'Measured By', sourceSide: 'left', targetSide: 'right', arrow: 'end', neoRelType: 'MEASURED_BY', labelOffset: { x: 0, y: -50 } },
   { id: 'e11', from: 'perf', to: 'obj', type: 'static', label: 'Aggregates To', sourceSide: 'top', targetSide: 'left', arrow: 'end', neoRelType: 'AGGREGATES_TO', labelPos: 1.00, labelOffset: { x: -100, y: 86 } },
   { id: 'e12', from: 'pol', to: 'obj', type: 'static', label: 'Governed By', sourceSide: 'top', targetSide: 'right', arrow: 'end', neoRelType: 'GOVERNED_BY', labelPos: 1.00, labelOffset: { x: 100, y: 86 } },
-  
+
   // Risk Management
   { id: 'e13', from: 'risks', to: 'perf', type: 'active', label: 'Informs', sourceSide: 'right', targetSide: 'bottom', arrow: 'end', neoRelType: 'INFORMS' },
   { id: 'e14', from: 'risks', to: 'pol', type: 'active', label: 'Informs', sourceSide: 'left', targetSide: 'bottom', arrow: 'end', neoRelType: 'INFORMS' },
   { id: 'e15', from: 'cap', to: 'risks', type: 'active', label: 'Monitors', sourceSide: 'top', targetSide: 'bottom', arrow: 'end', neoRelType: 'MONITORED_BY' },
-  
+
   // Capability Connections
   { id: 'e16', from: 'pol', to: 'cap', type: 'active', label: 'Sets Priorities', sourceSide: 'right', targetSide: 'right', arrow: 'end', neoRelType: 'SETS_PRIORITIES', labelOffset: { x: 0, y: 16 } },
   { id: 'e17', from: 'perf', to: 'cap', type: 'active', label: 'Sets Targets', sourceSide: 'left', targetSide: 'left', arrow: 'end', neoRelType: 'SETS_TARGETS', labelOffset: { x: 0, y: 16 } },
@@ -69,7 +69,7 @@ const INITIAL_EDGES = [
   { id: 'e23', from: 'it', to: 'cap', type: 'active', label: 'Operates', sourceSide: 'top', targetSide: 'bottom', arrow: 'end', neoRelType: 'OPERATES', labelOffset: { x: -150, y: -40 } },
   { id: 'e24', from: 'cap', to: 'pol', type: 'active', label: 'Executes', sourceSide: 'right', targetSide: 'right', arrow: 'end', neoRelType: 'EXECUTES', labelOffset: { x: 0, y: 16 } },
   { id: 'e25', from: 'cap', to: 'perf', type: 'active', label: 'Reports', sourceSide: 'left', targetSide: 'left', arrow: 'end', neoRelType: 'REPORTS', labelOffset: { x: 0, y: 16 } },
-  
+
   // Project and Change
   { id: 'e26', from: 'org', to: 'proj', type: 'active', label: 'Gaps Scope', sourceSide: 'bottom', targetSide: 'top', arrow: 'end', neoRelType: 'GAPS_SCOPE', labelOffset: { x: 120, y: -45 } },
   { id: 'e27', from: 'proc', to: 'proj', type: 'active', label: 'Gaps Scope', sourceSide: 'bottom', targetSide: 'top', arrow: 'end', neoRelType: 'GAPS_SCOPE', labelOffset: { x: 0, y: -45 } },
@@ -79,7 +79,7 @@ const INITIAL_EDGES = [
   { id: 'e31', from: 'proj', to: 'org', type: 'active', label: 'Close Gaps', sourceSide: 'top', targetSide: 'bottom', arrow: 'end', neoRelType: 'CLOSE_GAPS', labelOffset: { x: 120, y: -45 } },
   { id: 'e32', from: 'proj', to: 'proc', type: 'active', label: 'Close Gaps', sourceSide: 'top', targetSide: 'bottom', arrow: 'end', neoRelType: 'CLOSE_GAPS', labelOffset: { x: 0, y: -45 } },
   { id: 'e33', from: 'proj', to: 'it', type: 'active', label: 'Close Gaps', sourceSide: 'top', targetSide: 'bottom', arrow: 'end', neoRelType: 'CLOSE_GAPS', labelOffset: { x: -120, y: -45 } },
-  
+
   // Entity Operations
   { id: 'e34', from: 'cult', to: 'org', type: 'active', label: 'Monitors For', sourceSide: 'left', targetSide: 'right', arrow: 'end', neoRelType: 'MONITORS_FOR' },
   { id: 'e35', from: 'org', to: 'proc', type: 'active', label: 'Apply', sourceSide: 'left', targetSide: 'right', arrow: 'end', neoRelType: 'APPLY' },
@@ -99,34 +99,34 @@ const BusinessChains: React.FC<BusinessChainsProps> = ({ chainId, selectedYear, 
   // Theme-aware STYLES object
   const STYLES = {
     node: {
-      dark: { 
-        backgroundColor: isDark ? '#1F2937' : '#FFFFFF', 
-        border: isDark ? '2px solid #FFD700' : '2px solid #D97706', 
-        color: isDark ? '#F9FAFB' : '#111827', 
-        boxShadow: isDark ? '0 10px 15px -3px rgba(0,0,0,0.4)' : '0 4px 6px -1px rgba(0,0,0,0.1)' 
+      dark: {
+        backgroundColor: isDark ? '#1F2937' : '#FFFFFF',
+        border: isDark ? '2px solid #FFD700' : '2px solid #D97706',
+        color: isDark ? '#F9FAFB' : '#111827',
+        boxShadow: isDark ? '0 10px 15px -3px rgba(0,0,0,0.4)' : '0 4px 6px -1px rgba(0,0,0,0.1)'
       },
-      light: { 
-        backgroundColor: isDark ? '#1F2937' : '#F3F4F6', 
-        border: isDark ? '2px solid #10B981' : '2px solid #059669', 
-        color: isDark ? '#F9FAFB' : '#111827', 
-        boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' 
+      light: {
+        backgroundColor: isDark ? '#1F2937' : '#F3F4F6',
+        border: isDark ? '2px solid #10B981' : '2px solid #059669',
+        color: isDark ? '#F9FAFB' : '#111827',
+        boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)'
       },
-      white: { 
-        backgroundColor: isDark ? '#F9FAFB' : '#FFFFFF', 
-        border: isDark ? '2px solid #4B5563' : '2px solid #9CA3AF', 
-        color: '#111827', 
-        boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' 
+      white: {
+        backgroundColor: isDark ? '#F9FAFB' : '#FFFFFF',
+        border: isDark ? '2px solid #4B5563' : '2px solid #9CA3AF',
+        color: '#111827',
+        boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)'
       },
       selected: { boxShadow: isDark ? '0 0 0 4px #FFD700' : '0 0 0 4px #D97706', zIndex: 50 },
     },
-    canvas: { 
-      backgroundColor: isDark ? '#111827' : '#F9FAFB', 
-      width: '100%', 
-      height: '100%', 
+    canvas: {
+      backgroundColor: isDark ? '#111827' : '#F9FAFB',
+      width: '100%',
+      height: '100%',
       overflow: 'hidden',
       position: 'relative',
       cursor: 'grab',
-      touchAction: 'none' 
+      touchAction: 'none'
     },
     connector: {
       active: isDark ? '#FFD700' : '#D97706',
@@ -218,27 +218,27 @@ const BusinessChains: React.FC<BusinessChainsProps> = ({ chainId, selectedYear, 
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-  const [hasMoved, setHasMoved] = useState(false); 
+  const [hasMoved, setHasMoved] = useState(false);
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Auto-fit on mount
   useEffect(() => {
     if (containerRef.current) {
-        const { width, height } = containerRef.current.getBoundingClientRect();
-        // Graph bounds
-        const graphWidth = 1500;
-        const graphHeight = 2300;
-        
-        // Calculate scale to fit WIDTH only (as requested)
-        const scaleX = width / graphWidth;
-        const scale = Math.min(scaleX, 1) * 0.95; // 95% width fit
-        
-        // Center horizontally, start at top
-        const x = (width - graphWidth * scale) / 2;
-        const y = 20; // Slight top padding
-        
-        setView({ x, y, k: scale });
+      const { width, height } = containerRef.current.getBoundingClientRect();
+      // Graph bounds
+      const graphWidth = 1500;
+      const graphHeight = 2300;
+
+      // Calculate scale to fit WIDTH only (as requested)
+      const scaleX = width / graphWidth;
+      const scale = Math.min(scaleX, 1) * 0.95; // 95% width fit
+
+      // Center horizontally, start at top
+      const x = (width - graphWidth * scale) / 2;
+      const y = 20; // Slight top padding
+
+      setView({ x, y, k: scale });
     }
   }, []);
 
@@ -263,7 +263,7 @@ const BusinessChains: React.FC<BusinessChainsProps> = ({ chainId, selectedYear, 
       const params = new URLSearchParams();
       if (selectedYear && selectedYear !== 'all') params.append('year', selectedYear);
       if (selectedQuarter && selectedQuarter !== 'all') params.append('quarter', selectedQuarter);
-      
+
       const url = `/api/business-chain/counts?${params.toString()}`;
       const response = await fetch(url);
       if (!response.ok) throw new Error('Failed to fetch counts');
@@ -278,7 +278,7 @@ const BusinessChains: React.FC<BusinessChainsProps> = ({ chainId, selectedYear, 
     enabled: !!chainId,
     queryFn: async () => {
       const yearVal = (selectedYear === 'all' || !selectedYear) ? 2025 : selectedYear;
-      
+
       const url = `/api/business-chain/${chainId}?year=${yearVal}`;
       const response = await fetch(url);
       if (!response.ok) throw new Error('Failed to fetch chain path');
@@ -289,37 +289,37 @@ const BusinessChains: React.FC<BusinessChainsProps> = ({ chainId, selectedYear, 
   // Extract nodes and rels that are part of the active chain for highlighting
   const activeChainNodes = new Set<string>();
   const activeChainRels = new Set<string>();
-  
+
   if (chainData) {
     // 1. New Flat Format Support (GraphOntology standard)
     if (chainData.nodes && Array.isArray(chainData.nodes)) {
-        chainData.nodes.forEach((n: any) => {
-            if (n.labels && Array.isArray(n.labels) && n.labels.length > 0) {
-                 activeChainNodes.add(n.labels[0]);
-            }
-        });
+      chainData.nodes.forEach((n: any) => {
+        if (n.labels && Array.isArray(n.labels) && n.labels.length > 0) {
+          activeChainNodes.add(n.labels[0]);
+        }
+      });
     }
     if (chainData.links && Array.isArray(chainData.links)) {
-        chainData.links.forEach((l: any) => {
-            if (l.type) activeChainRels.add(l.type);
-        });
+      chainData.links.forEach((l: any) => {
+        if (l.type) activeChainRels.add(l.type);
+      });
     }
 
     // 2. Legacy Path Format Support (Fallback)
     if (chainData.results && Array.isArray(chainData.results)) {
-        chainData.results.forEach((path: any) => {
+      chainData.results.forEach((path: any) => {
         // Neo4j path format handling
         if (path.nodes) {
-            path.nodes.forEach((n: any) => {
+          path.nodes.forEach((n: any) => {
             if (n.labels && n.labels[0]) activeChainNodes.add(n.labels[0]);
-            });
+          });
         }
         if (path.relationships) {
-            path.relationships.forEach((r: any) => {
+          path.relationships.forEach((r: any) => {
             if (r.type) activeChainRels.add(r.type);
-            });
+          });
         }
-        });
+      });
     }
   }
 
@@ -359,14 +359,14 @@ const BusinessChains: React.FC<BusinessChainsProps> = ({ chainId, selectedYear, 
     const rect = containerRef.current.getBoundingClientRect();
     const mx = e.clientX - rect.left;
     const my = e.clientY - rect.top;
-    
+
     // Zoom towards mouse pointer
     const oldWorldX = (mx - view.x) / view.k;
     const oldWorldY = (my - view.y) / view.k;
-    
+
     const newX = mx - oldWorldX * newK;
     const newY = my - oldWorldY * newK;
-    
+
     setView({ x: newX, y: newY, k: newK });
   };
 
@@ -397,7 +397,7 @@ const BusinessChains: React.FC<BusinessChainsProps> = ({ chainId, selectedYear, 
     setHasMoved(true);
     const dx = e.clientX - dragStart.x;
     const dy = e.clientY - dragStart.y;
-    
+
     // Determine if we are panning the view or moving nodes
     if (selectedIds.length > 0) {
       // Moving nodes
@@ -437,9 +437,9 @@ const BusinessChains: React.FC<BusinessChainsProps> = ({ chainId, selectedYear, 
   };
   const alignDistribute = () => {
     if (selectedIds.length < 3) return;
-    const selected = nodes.filter(n => selectedIds.includes(n.id)).sort((a,b) => a.x - b.x);
+    const selected = nodes.filter(n => selectedIds.includes(n.id)).sort((a, b) => a.x - b.x);
     const start = selected[0].x;
-    const end = selected[selected.length-1].x;
+    const end = selected[selected.length - 1].x;
     const gap = (end - start) / (selected.length - 1);
     setNodes(prev => prev.map(n => {
       const idx = selected.findIndex(s => s.id === n.id);
@@ -474,10 +474,10 @@ const BusinessChains: React.FC<BusinessChainsProps> = ({ chainId, selectedYear, 
   const getSmartPath = (start: any, end: any, side1: string, side2: string) => {
     const p1 = getAnchorPoint(start, side1);
     const p2 = getAnchorPoint(end, side2);
-    
+
     // Offset for control points
     const gap = 40;
-    
+
     let cp1 = { ...p1 };
     let cp2 = { ...p2 };
 
@@ -496,128 +496,128 @@ const BusinessChains: React.FC<BusinessChainsProps> = ({ chainId, selectedYear, 
 
     // Smart Join: Logic for "Same Side" loops (e.g. Right -> Right)
     if (side1 === 'right' && side2 === 'right') {
-        const maxX = Math.max(cp1.x, cp2.x);
-        path = `M ${p1.x} ${p1.y} L ${maxX} ${p1.y} L ${maxX} ${p2.y} L ${p2.x} ${p2.y}`;
-        labelPoint = { x: maxX, y: (p1.y + p2.y) / 2 };
+      const maxX = Math.max(cp1.x, cp2.x);
+      path = `M ${p1.x} ${p1.y} L ${maxX} ${p1.y} L ${maxX} ${p2.y} L ${p2.x} ${p2.y}`;
+      labelPoint = { x: maxX, y: (p1.y + p2.y) / 2 };
     }
     else if (side1 === 'left' && side2 === 'left') {
-        const minX = Math.min(cp1.x, cp2.x);
-        path = `M ${p1.x} ${p1.y} L ${minX} ${p1.y} L ${minX} ${p2.y} L ${p2.x} ${p2.y}`;
-        labelPoint = { x: minX, y: (p1.y + p2.y) / 2 };
+      const minX = Math.min(cp1.x, cp2.x);
+      path = `M ${p1.x} ${p1.y} L ${minX} ${p1.y} L ${minX} ${p2.y} L ${p2.x} ${p2.y}`;
+      labelPoint = { x: minX, y: (p1.y + p2.y) / 2 };
     }
     else if (side1 === 'top' && side2 === 'top') {
-        const minY = Math.min(cp1.y, cp2.y);
-        path = `M ${p1.x} ${p1.y} L ${p1.x} ${minY} L ${p2.x} ${minY} L ${p2.x} ${p2.y}`;
-        labelPoint = { x: (p1.x + p2.x) / 2, y: minY };
+      const minY = Math.min(cp1.y, cp2.y);
+      path = `M ${p1.x} ${p1.y} L ${p1.x} ${minY} L ${p2.x} ${minY} L ${p2.x} ${p2.y}`;
+      labelPoint = { x: (p1.x + p2.x) / 2, y: minY };
     }
     else if (side1 === 'bottom' && side2 === 'bottom') {
-        const maxY = Math.max(cp1.y, cp2.y);
-        path = `M ${p1.x} ${p1.y} L ${p1.x} ${maxY} L ${p2.x} ${maxY} L ${p2.x} ${p2.y}`;
-        labelPoint = { x: (p1.x + p2.x) / 2, y: maxY };
+      const maxY = Math.max(cp1.y, cp2.y);
+      path = `M ${p1.x} ${p1.y} L ${p1.x} ${maxY} L ${p2.x} ${maxY} L ${p2.x} ${p2.y}`;
+      labelPoint = { x: (p1.x + p2.x) / 2, y: maxY };
     }
     // Standard Orthogonal Routing for opposite/adjacent sides
     else {
-        const midX = (p1.x + p2.x) / 2;
-        const midY = (p1.y + p2.y) / 2;
+      const midX = (p1.x + p2.x) / 2;
+      const midY = (p1.y + p2.y) / 2;
 
-        // Prioritize Vertical segments for Top/Bottom
-        if ((side1 === 'top' || side1 === 'bottom') && (side2 === 'top' || side2 === 'bottom')) {
-            path = `M ${p1.x} ${p1.y} L ${p1.x} ${midY} L ${p2.x} ${midY} L ${p2.x} ${p2.y}`;
-            labelPoint = { x: (p1.x + p2.x) / 2, y: midY };
-        }
-        // Prioritize Horizontal segments for Left/Right
-        else if ((side1 === 'left' || side1 === 'right') && (side2 === 'left' || side2 === 'right')) {
-            path = `M ${p1.x} ${p1.y} L ${midX} ${p1.y} L ${midX} ${p2.y} L ${p2.x} ${p2.y}`;
-            labelPoint = { x: midX, y: (p1.y + p2.y) / 2 };
-        }
-        // Corner routing
-        else if (side1 === 'left' || side1 === 'right') {
-            path = `M ${p1.x} ${p1.y} L ${p2.x} ${p1.y} L ${p2.x} ${p2.y}`;
-            // Label at corner for L-shapes
-            labelPoint = { x: p2.x, y: p1.y };
-        } else {
-            path = `M ${p1.x} ${p1.y} L ${p1.x} ${p2.y} L ${p2.x} ${p2.y}`;
-            labelPoint = { x: p1.x, y: p2.y };
-        }
+      // Prioritize Vertical segments for Top/Bottom
+      if ((side1 === 'top' || side1 === 'bottom') && (side2 === 'top' || side2 === 'bottom')) {
+        path = `M ${p1.x} ${p1.y} L ${p1.x} ${midY} L ${p2.x} ${midY} L ${p2.x} ${p2.y}`;
+        labelPoint = { x: (p1.x + p2.x) / 2, y: midY };
+      }
+      // Prioritize Horizontal segments for Left/Right
+      else if ((side1 === 'left' || side1 === 'right') && (side2 === 'left' || side2 === 'right')) {
+        path = `M ${p1.x} ${p1.y} L ${midX} ${p1.y} L ${midX} ${p2.y} L ${p2.x} ${p2.y}`;
+        labelPoint = { x: midX, y: (p1.y + p2.y) / 2 };
+      }
+      // Corner routing
+      else if (side1 === 'left' || side1 === 'right') {
+        path = `M ${p1.x} ${p1.y} L ${p2.x} ${p1.y} L ${p2.x} ${p2.y}`;
+        // Label at corner for L-shapes
+        labelPoint = { x: p2.x, y: p1.y };
+      } else {
+        path = `M ${p1.x} ${p1.y} L ${p1.x} ${p2.y} L ${p2.x} ${p2.y}`;
+        labelPoint = { x: p1.x, y: p2.y };
+      }
     }
-    
+
     return { path, labelPoint };
   };
 
   return (
     <div style={{ display: 'flex', height: '100%', overflow: 'hidden', backgroundColor: isDark ? '#111827' : '#F9FAFB' }}
-         onWheel={handleWheel}
-         onMouseDown={(e) => handleMouseDown(e, null)}
-         onMouseMove={handleMouseMove}
-         onMouseUp={handleMouseUp}
+      onWheel={handleWheel}
+      onMouseDown={(e) => handleMouseDown(e, null)}
+      onMouseMove={handleMouseMove}
+      onMouseUp={handleMouseUp}
     >
       <div ref={containerRef} style={{ backgroundColor: isDark ? '#111827' : '#F9FAFB', width: '100%', height: '100%', overflow: 'hidden', position: 'relative', cursor: isDragging ? 'grabbing' : 'grab' }}>
-        <div style={{ 
-            transform: `translate(${view.x}px, ${view.y}px) scale(${view.k})`,
-            transformOrigin: '0 0', 
-            position: 'absolute', 
-            top: 0, 
-            left: 0,
-            width: '1500px', 
-            height: '2300px',
-            willChange: 'transform' // Optimize performance
+        <div style={{
+          transform: `translate(${view.x}px, ${view.y}px) scale(${view.k})`,
+          transformOrigin: '0 0',
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '1500px',
+          height: '2300px',
+          willChange: 'transform' // Optimize performance
         }}>
-            <svg ref={svgRef} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none', overflow: 'visible' }}>
+          <svg ref={svgRef} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none', overflow: 'visible' }}>
             <defs>
               {/* Arrow markers for different colors */}
-              <marker id="arrow-end" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6" stroke="currentColor" strokeWidth="1.5" fill="none"/></marker>
-              <marker id="arrow-both-start" markerWidth="6" markerHeight="6" refX="1" refY="3" orient="auto"><path d="M6,0 L0,3 L6,6" stroke="currentColor" strokeWidth="1.5" fill="none"/></marker>
+              <marker id="arrow-end" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6" stroke="currentColor" strokeWidth="1.5" fill="none" /></marker>
+              <marker id="arrow-both-start" markerWidth="6" markerHeight="6" refX="1" refY="3" orient="auto"><path d="M6,0 L0,3 L6,6" stroke="currentColor" strokeWidth="1.5" fill="none" /></marker>
             </defs>
             {edges.map((edge, i) => {
               const start = nodes.find(n => n.id === edge.from);
               const end = nodes.find(n => n.id === edge.to);
-              if(!start || !end) return null;
-              
+              if (!start || !end) return null;
+
               const color = edge.type === 'active' ? STYLES.connector.active : STYLES.connector.static;
               const { path, labelPoint } = getSmartPath(start, end, edge.sourceSide, edge.targetSide);
-              
+
               const p1 = getAnchorPoint(start, edge.sourceSide);
               const p2 = getAnchorPoint(end, edge.targetSide);
-              
+
               // Calculate label position
               let mx = labelPoint.x;
               let my = labelPoint.y;
-              
+
               // Override if labelPos is specified (for simple cases or fine tuning)
               // But for L-shapes and C-shapes, labelPoint from getSmartPath is better.
               // We'll trust getSmartPath unless labelPos is extreme?
               // Actually, let's use labelPos to shift along the segment if needed, 
               // but for now, let's stick to the smart point.
-              
+
               // Apply offset for horizontal labels to avoid covering arrows
               // If the segment is horizontal (y is constant), shift y up
               // We can check if the label point is on a horizontal segment
               // Simple heuristic: if source/target are left/right, it's likely horizontal
-              if ((edge.sourceSide === 'left' || edge.sourceSide === 'right') && 
-                  (edge.targetSide === 'left' || edge.targetSide === 'right')) {
-                  my -= 10; // Shift up 10px
+              if ((edge.sourceSide === 'left' || edge.sourceSide === 'right') &&
+                (edge.targetSide === 'left' || edge.targetSide === 'right')) {
+                my -= 10; // Shift up 10px
               }
-              
+
               // Try to get count from specific relationship (source-relType-target) first
               let relCount: number | undefined;
-              
+
               if (edge.neoRelType && start.neoLabel && end.neoLabel && countsData?.specificRelCounts) {
                 const specificKey = `${start.neoLabel}-${edge.neoRelType}-${end.neoLabel}`;
                 relCount = countsData.specificRelCounts[specificKey];
               }
-              
+
               // Fallback to general relationship type count
               if (relCount === undefined && edge.neoRelType && countsData?.relCounts) {
                 relCount = countsData.relCounts[edge.neoRelType];
               }
-              
+
               // Fallback to node pair count (undirected)
               if (relCount === undefined && start.neoLabel && end.neoLabel && countsData?.pairCounts) {
                 const pair1 = `${start.neoLabel}-${end.neoLabel}`;
                 const pair2 = `${end.neoLabel}-${start.neoLabel}`;
                 relCount = countsData.pairCounts[pair1] || countsData.pairCounts[pair2];
               }
-              
+
               const labelText = edge.label || '';
               const countText = relCount !== undefined ? ` (${relCount})` : '';
               const fullLabel = labelText + countText;
@@ -629,15 +629,15 @@ const BusinessChains: React.FC<BusinessChainsProps> = ({ chainId, selectedYear, 
 
               // Determine color, pattern, and animation based on relationship count
               // If part of active chain, use special highlighting
-              const isChainActive = chainId && edge.neoRelType && activeChainRels.has(edge.neoRelType) && 
-                                   start.neoLabel && activeChainNodes.has(start.neoLabel) &&
-                                   end.neoLabel && activeChainNodes.has(end.neoLabel);
+              const isChainActive = chainId && edge.neoRelType && activeChainRels.has(edge.neoRelType) &&
+                start.neoLabel && activeChainNodes.has(start.neoLabel) &&
+                end.neoLabel && activeChainNodes.has(end.neoLabel);
 
               let edgeColor: string;
               let strokeDasharray: string;
               let animationDuration: string;
               let strokeWidth = "2";
-              
+
               if (isChainActive) {
                 // Highlighted Active Chain: Gold/Glow, Fast animation
                 edgeColor = '#FFD700';
@@ -663,13 +663,13 @@ const BusinessChains: React.FC<BusinessChainsProps> = ({ chainId, selectedYear, 
 
               return (
                 <g key={i} style={{ color: edgeColor }}>
-                  <path d={path} stroke={edgeColor} strokeWidth={strokeWidth} fill="none" 
+                  <path d={path} stroke={edgeColor} strokeWidth={strokeWidth} fill="none"
                     strokeDasharray={strokeDasharray}
                     markerEnd={edge.arrow === 'both' || edge.arrow === 'end' ? `url(#arrow-end)` : ''}
                     markerStart={edge.arrow === 'both' ? `url(#arrow-both-start)` : ''}
-                    strokeLinecap="round" strokeLinejoin="round" 
+                    strokeLinecap="round" strokeLinejoin="round"
                     id={`path-${i}`} />
-                  
+
                   {(isChainActive || (relCount !== undefined && relCount > 0)) && (
                     <>
                       <circle r={isChainActive ? "4" : "3"} fill={edgeColor}>
@@ -679,11 +679,11 @@ const BusinessChains: React.FC<BusinessChainsProps> = ({ chainId, selectedYear, 
                       </circle>
                     </>
                   )}
-                  
+
                   {fullLabel && (
-                    <g transform={`translate(${mx - labelWidth/2 + offsetX}, ${my + offsetY + 4})`}>
+                    <g transform={`translate(${mx - labelWidth / 2 + offsetX}, ${my + offsetY + 4})`}>
                       <rect width={labelWidth} height="20" rx="4" fill={isDark ? 'rgba(31, 41, 55, 0.85)' : 'rgba(255, 255, 255, 0.85)'} stroke={edgeColor} strokeWidth={isChainActive ? "2" : "1"} />
-                      <text x={labelWidth/2} y="14" fill={isDark ? '#F9FAFB' : '#1F2937'} fontSize="11" textAnchor="middle" fontWeight="600">{fullLabel}</text>
+                      <text x={labelWidth / 2} y="14" fill={isDark ? '#F9FAFB' : '#1F2937'} fontSize="11" textAnchor="middle" fontWeight="600">{fullLabel}</text>
                     </g>
                   )}
                 </g>
@@ -702,25 +702,25 @@ const BusinessChains: React.FC<BusinessChainsProps> = ({ chainId, selectedYear, 
                       <stop offset="100%" stopColor={node.type === 'white' ? '#E5E7EB' : node.type === 'dark' ? '#1F2937' : '#111827'} />
                     </radialGradient>
                   </defs>
-                  
+
                   {isNodeActive && (
                     <circle cx={node.x} cy={node.y} r={r + 6} fill="none" stroke="#FFD700" strokeWidth="2" strokeDasharray="4,2">
                       <animateTransform attributeName="transform" type="rotate" from={`0 ${node.x} ${node.y}`} to={`360 ${node.x} ${node.y}`} dur="10s" repeatCount="indefinite" />
                     </circle>
                   )}
 
-                  <circle cx={node.x} cy={node.y} r={r} 
+                  <circle cx={node.x} cy={node.y} r={r}
                     fill={`url(#gradient-${node.id})`}
-                    stroke={isNodeActive ? '#FFD700' : (node.type === 'dark' ? (isDark ? '#FFD700' : '#D97706') : node.type === 'light' ? (isDark ? '#10B981' : '#059669') : (isDark ? '#9CA3AF' : '#6B7280'))} 
+                    stroke={isNodeActive ? '#FFD700' : (node.type === 'dark' ? (isDark ? '#FFD700' : '#D97706') : node.type === 'light' ? (isDark ? '#10B981' : '#059669') : (isDark ? '#9CA3AF' : '#6B7280'))}
                     strokeWidth={isNodeActive ? "5" : "3"}
-                    filter={isNodeActive ? "drop-shadow(0 0 12px rgba(255, 215, 0, 0.6))" : "drop-shadow(0 4px 6px rgba(0,0,0,0.3))"}/>
-                  <text x={node.x} y={count !== undefined ? node.y - 5 : node.y + 5} textAnchor="middle" 
-                    fill={node.type === 'white' ? '#111827' : (isDark ? '#F9FAFB' : '#1F2937')} 
-                    fontWeight="700" fontSize="13" fontFamily="'Inter', sans-serif">{node.label}</text>
+                    filter={isNodeActive ? "drop-shadow(0 0 12px rgba(255, 215, 0, 0.6))" : "drop-shadow(0 4px 6px rgba(0,0,0,0.3))"} />
+                  <text x={node.x} y={count !== undefined ? node.y - 5 : node.y + 5} textAnchor="middle"
+                    fill={node.type === 'white' ? '#111827' : (isDark ? '#F9FAFB' : '#1F2937')}
+                    fontWeight="700" fontSize="13" fontFamily="var(--component-font-family)">{node.label}</text>
                   {count !== undefined && (
                     <g transform={`translate(${node.x}, ${node.y + 18})`}>
-                      <circle cx="0" cy="0" r="18" fill={isDark ? '#FFD700' : '#D97706'}/>
-                      <text x="0" y="5" textAnchor="middle" fill="#111827" fontWeight="700" fontSize="12" fontFamily="'Inter', sans-serif">{count}</text>
+                      <circle cx="0" cy="0" r="18" fill={isDark ? '#FFD700' : '#D97706'} />
+                      <text x="0" y="5" textAnchor="middle" fill="#111827" fontWeight="700" fontSize="12" fontFamily="var(--component-font-family)">{count}</text>
                     </g>
                   )}
                 </g>
@@ -733,9 +733,9 @@ const BusinessChains: React.FC<BusinessChainsProps> = ({ chainId, selectedYear, 
             const isNodeActive = chainId && node.neoLabel && activeChainNodes.has(node.neoLabel);
             const r = node.r || 50;
             const diameter = r * 2;
-            
+
             return (
-              <div key={node.id} 
+              <div key={node.id}
                 style={{
                   position: 'absolute',
                   display: 'flex',
@@ -743,17 +743,17 @@ const BusinessChains: React.FC<BusinessChainsProps> = ({ chainId, selectedYear, 
                   alignItems: 'center',
                   justifyContent: 'center',
                   userSelect: 'none',
-                  left: node.x - r, 
-                  top: node.y - r, 
-                  width: diameter, 
-                  height: diameter, 
+                  left: node.x - r,
+                  top: node.y - r,
+                  width: diameter,
+                  height: diameter,
                   zIndex: 10,
                   borderRadius: '50%',
-                  background: node.type === 'white' 
-                    ? (isDark ? 'radial-gradient(circle at 35% 35%, #F9FAFB, #E5E7EB)' : 'radial-gradient(circle at 35% 35%, #FFFFFF, #F3F4F6)') 
+                  background: node.type === 'white'
+                    ? (isDark ? 'radial-gradient(circle at 35% 35%, #F9FAFB, #E5E7EB)' : 'radial-gradient(circle at 35% 35%, #FFFFFF, #F3F4F6)')
                     : node.type === 'dark'
-                    ? (isDark ? 'radial-gradient(circle at 35% 35%, #374151, #1F2937)' : 'radial-gradient(circle at 35% 35%, #FFFFFF, #F3F4F6)')
-                    : (isDark ? 'radial-gradient(circle at 35% 35%, #1F2937, #111827)' : 'radial-gradient(circle at 35% 35%, #F3F4F6, #E5E7EB)'),
+                      ? (isDark ? 'radial-gradient(circle at 35% 35%, #374151, #1F2937)' : 'radial-gradient(circle at 35% 35%, #FFFFFF, #F3F4F6)')
+                      : (isDark ? 'radial-gradient(circle at 35% 35%, #1F2937, #111827)' : 'radial-gradient(circle at 35% 35%, #F3F4F6, #E5E7EB)'),
                   border: `3px solid ${isNodeActive ? '#FFD700' : (node.type === 'dark' ? (isDark ? '#FFD700' : '#D97706') : node.type === 'light' ? (isDark ? '#10B981' : '#059669') : (isDark ? '#9CA3AF' : '#6B7280'))}`,
                   boxShadow: isNodeActive ? '0 0 20px rgba(255, 215, 0, 0.4), inset 0 2px 4px rgba(255,255,255,0.1)' : '0 4px 6px rgba(0,0,0,0.3), inset 0 2px 4px rgba(255,255,255,0.1)',
                 }}>

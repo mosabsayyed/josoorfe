@@ -18,9 +18,9 @@ export function TransformationRadar() {
         <RadarChart cx="50%" cy="50%" outerRadius="70%" data={data}>
           <PolarGrid stroke="rgba(255,255,255,0.1)" />
           {/* @ts-ignore */}
-          <PolarAngleAxis 
-            dataKey="subject" 
-            tick={{ fill: "#94a3b8", fontSize: 10, fontFamily: "Rajdhani" }}
+          <PolarAngleAxis
+            dataKey="subject"
+            tick={{ fill: "#94a3b8", fontSize: 10, fontFamily: "var(--component-font-family)" }}
           />
           {/* @ts-ignore */}
           <PolarRadiusAxis angle={30} domain={[0, 150]} tick={false} axisLine={false} />
@@ -43,8 +43,8 @@ export function TransformationRadar() {
           />
         </RadarChart>
       </ResponsiveContainer>
-      
-      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, display: 'flex', justifyContent: 'center', gap: '1.5rem', fontSize: '0.75rem', fontFamily: 'monospace' }}>
+
+      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, display: 'flex', justifyContent: 'center', gap: '1.5rem', fontSize: '0.75rem', fontFamily: 'var(--component-font-mono)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <div style={{ width: '0.75rem', height: '0.75rem', backgroundColor: 'rgba(0, 240, 255, 0.3)', border: '1px solid #00F0FF' }}></div>
           <span style={{ color: 'rgba(255, 255, 255, 0.8)' }}>Actual</span>

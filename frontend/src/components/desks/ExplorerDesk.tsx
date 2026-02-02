@@ -7,7 +7,6 @@ import { CANONICAL_PATHS } from '../../data/canonicalPaths';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../../contexts/AuthContext';
 import { graphService } from '../../services/graphService';
-import FULL_GRAPH_DATA from '../../data/dashboard/full_graph_snapshot.json';
 import { GraphData } from '../../types/dashboard';
 import './ExplorerDesk.css';
 
@@ -25,24 +24,24 @@ const CHAIN_MAPPINGS: Record<string, { labels: string[], relationships: string[]
         relationships: ['REALIZED_VIA', 'SETS_PRIORITIES', 'ROLE_GAPS', 'KNOWLEDGE_GAPS', 'AUTOMATION_GAPS', 'GAPS_SCOPE', 'ADOPTION_RISKS']
     },
     'setting_strategic_priorities': {
-        labels: ['SectorObjective', 'SectorPerformance', 'EntityCapability', 'EntityOrgUnit', 'EntityProcess', 'EntityITSystem', 'EntityProject', 'EntityChangeAdoption'],
-        relationships: ['AGGREGATES_TO', 'CASCADED_VIA', 'MEASURED_BY', 'SETS_TARGETS', 'ROLE_GAPS', 'KNOWLEDGE_GAPS', 'AUTOMATION_GAPS', 'GAPS_SCOPE', 'ADOPTION_RISKS']
+        labels: ['SectorObjective', 'SectorPerformance', 'EntityCapability', 'EntityOrgUnit', 'EntityProcess', 'EntityITSystem'],
+        relationships: ['CASCADED_VIA', 'SETS_TARGETS', 'ROLE_GAPS', 'KNOWLEDGE_GAPS', 'AUTOMATION_GAPS']
     },
     'build_oversight': {
-        labels: ['EntityRisk', 'EntityCapability', 'SectorPolicyTool'],
-        relationships: ['MONITORED_BY', 'EXECUTES', 'SETS_PRIORITIES', 'INFORMS']
+        labels: ['EntityChangeAdoption', 'EntityProject', 'EntityOrgUnit', 'EntityProcess', 'EntityITSystem', 'EntityCapability', 'EntityRisk', 'SectorPolicyTool', 'SectorObjective'],
+        relationships: ['INCREASE_ADOPTION', 'CLOSE_GAPS', 'ROLE_GAPS', 'MONITORED_BY', 'INFORMS', 'GOVERNED_BY']
     },
     'operate_oversight': {
-        labels: ['EntityRisk', 'EntityCapability', 'SectorPerformance', 'SectorObjective'],
-        relationships: ['MONITORED_BY', 'REPORTS', 'SETS_TARGETS', 'INFORMS', 'AGGREGATES_TO']
+        labels: ['EntityCapability', 'EntityRisk', 'SectorPerformance', 'SectorObjective'],
+        relationships: ['MONITORED_BY', 'INFORMS', 'AGGREGATES_TO']
     },
     'sustainable_operations': {
-        labels: ['EntityProcess', 'EntityITSystem', 'EntityVendor', 'EntityOrgUnit', 'EntityCultureHealth'],
-        relationships: ['AUTOMATION', 'DEPENDS_ON', 'APPLY', 'MONITORS_FOR']
+        labels: ['EntityCultureHealth', 'EntityOrgUnit', 'EntityProcess', 'EntityITSystem', 'EntityVendor'],
+        relationships: ['MONITORS_FOR', 'APPLY', 'AUTOMATION', 'DEPENDS_ON']
     },
     'integrated_oversight': {
-        labels: ['SectorPolicyTool', 'SectorPerformance', 'EntityCapability', 'EntityOrgUnit', 'EntityProcess', 'EntityITSystem', 'EntityRisk'],
-        relationships: ['PARENT_OF', 'INFORMS', 'REALIZED_VIA', 'SETS_PRIORITIES', 'SETS_TARGETS', 'EXECUTES', 'REPORTS', 'MONITORED_BY']
+        labels: [],
+        relationships: []
     }
 };
 
@@ -90,8 +89,6 @@ export function ExplorerDesk({ year = '2025', quarter = 'All' }: ExplorerDeskPro
     const [selectedChain, setSelectedChain] = useState<string | null>(null);
     const [vizMode, setVizMode] = useState<'3d' | 'sankey'>('3d');
 
-    const [manualMock, setManualMock] = useState<boolean>(false);
-    const [hasFetched, setHasFetched] = useState<boolean>(false);
     const [liveSummary, setLiveSummary] = useState<string | null>(null);
 
     const [activeFetchParams, setActiveFetchParams] = useState<{
@@ -195,8 +192,9 @@ export function ExplorerDesk({ year = '2025', quarter = 'All' }: ExplorerDeskPro
         // If it's a chain call, use the specialized endpoint
         if (chain) {
             const params = new URLSearchParams();
-            params.append('year', pYear);
-            if (pQuarter && pQuarter !== 'All') params.append('quarter', pQuarter);
+            const yearNum = Number.parseInt(String(pYear), 10);
+            const yearParam = Number.isNaN(yearNum) ? '0' : String(yearNum);
+            params.append('year', yearParam);
             params.append('analyzeGaps', analyzeGaps.toString());
             params.append('excludeEmbeddings', 'true');
             const url = `${baseUrl}/api/business-chain/${chain}?${params.toString()}`;
@@ -247,8 +245,6 @@ export function ExplorerDesk({ year = '2025', quarter = 'All' }: ExplorerDeskPro
 
     const handleApply = () => {
         console.log(`[ExplorerDesk] handleApply triggered: mode=${queryType}, year=${year}, quarter=${quarter}, chain=${selectedChain}`);
-        setManualMock(false);
-        setHasFetched(true);
         setActiveFetchParams({
             labels: [...selectedLabels],
             relationships: [...selectedRelationships],
@@ -260,41 +256,23 @@ export function ExplorerDesk({ year = '2025', quarter = 'All' }: ExplorerDeskPro
         });
     };
 
-    const handleLoadMock = () => {
-        setManualMock(true);
-        setHasFetched(false);
-        setSelectedChain(null);
-    };
-
     // Logic for data display
     // Logic for data display with Metadata Injection
     const displayData = useMemo(() => {
         // 1. Determine Base Data
-        const baseData: GraphData | null = manualMock ? {
-            nodes: [
-                { id: '101', group: 'SectorObjective', label: 'SectorObjective', val: 10, properties: { name: 'Enhance Efficiency' } },
-                { id: '102', group: 'SectorPolicyTool', label: 'SectorPolicyTool', val: 5, properties: { name: 'Digital Platform' } },
-                { id: '103', group: 'SectorPerformance', label: 'SectorPerformance', val: 5, properties: { name: 'Adoption Rate' } }
-            ],
-            links: [
-                { source: '101', target: '102', type: 'REALIZED_VIA', value: 1, sourceId: '101', targetId: '102' },
-                { source: '102', target: '103', type: 'MEASURED_BY', value: 1, sourceId: '102', targetId: '103' }
-            ],
-            metadata: undefined
-        } : (graphData as unknown as GraphData);
+        const baseData: GraphData | null = (graphData as unknown as GraphData);
 
         if (!baseData) return null;
 
-        // 2. Inject Canonical Metadata if available locally
-        // This ensures layouts are strictly enforced even if backend metadata is missing
+        // 2. Always enforce SST 6A canonicalPath for rendering
         if (selectedChain && CANONICAL_PATHS[selectedChain]) {
             const def = CANONICAL_PATHS[selectedChain];
             const canonicalPath: any[] = [];
 
             def.steps.forEach((step, idx) => {
-                if (idx === 0) canonicalPath.push({ type: 'node', label: step.sourceLabel });
+                if (idx === 0) canonicalPath.push({ type: 'node', label: step.sourceLabel, level: step.sourceLevel });
                 canonicalPath.push({ type: 'edge', label: step.relationship });
-                canonicalPath.push({ type: 'node', label: step.targetLabel });
+                canonicalPath.push({ type: 'node', label: step.targetLabel, level: step.targetLevel });
             });
 
             return {
@@ -307,11 +285,10 @@ export function ExplorerDesk({ year = '2025', quarter = 'All' }: ExplorerDeskPro
         }
 
         return baseData;
-    }, [manualMock, graphData, selectedChain]);
+    }, [graphData, selectedChain]);
 
     // Strict Mode: No automatic fallbacks
     const usingMockFallback = false;
-    const isLargeDataset = (graphData?.nodes?.length || 0) > 1000;
 
     return (
         <div className="explorer-container">
@@ -329,14 +306,13 @@ export function ExplorerDesk({ year = '2025', quarter = 'All' }: ExplorerDeskPro
                 onChainChange={handleChainChange}
                 onVizModeChange={setVizMode}
                 onApply={handleApply}
-                onLoadMock={handleLoadMock}
                 isDark={isDark}
             />
 
             <div className="explorer-content custom-scrollbar">
                 <div className="viz-wrapper">
                     {/* Status Overlay */}
-                    {(isLoading || error || usingMockFallback || manualMock || !displayData) && (
+                    {(isLoading || error || usingMockFallback || !displayData) && (
                         <div className="status-overlay-container">
                             {isLoading && (
                                 <div className="status-toast status-toast-loading">
@@ -350,23 +326,7 @@ export function ExplorerDesk({ year = '2025', quarter = 'All' }: ExplorerDeskPro
                                     <p className="text-xs opacity-50 mt-2">{String(error)}</p>
                                 </div>
                             )}
-                            {usingMockFallback && (
-                                <div className="status-toast status-toast-fallback">
-                                    <p className="font-bold">⚠️ Using Demo Snapshot</p>
-                                    <p className="text-xs opacity-80">
-                                        {isLargeDataset
-                                            ? `Dataset too large (${graphData?.nodes.length} nodes). Showing optimized preview.`
-                                            : 'Neo4j server unavailable. Loading offline snapshot.'}
-                                    </p>
-                                </div>
-                            )}
-                            {manualMock && (
-                                <div className="status-toast status-toast-demo">
-                                    <p className="font-bold">📦 Demo Mode Enabled</p>
-                                    <p className="text-xs opacity-80">Loading 3D Force-Directed Graph from snapshot.</p>
-                                </div>
-                            )}
-                            {!displayData && !isLoading && !error && !manualMock && (
+                            {!displayData && !isLoading && !error && (
                                 <div className="empty-state-container">
                                     <p className="text-2xl font-light">Graph Explorer</p>
                                     <p className="text-sm">Select a Business Chain or customize Nodes/Relationships</p>
@@ -411,8 +371,6 @@ export function ExplorerDesk({ year = '2025', quarter = 'All' }: ExplorerDeskPro
                     {displayData && (
                         <div className="node-count-badge">
                             {displayData.nodes.length} nodes, {displayData.links.length} edges
-                            {usingMockFallback && <span className="fallback-label">(Fallback)</span>}
-                            {manualMock && <span className="demo-label">(Demo)</span>}
                             {selectedChain && <span className="chain-label">[{selectedChain}]</span>}
                         </div>
                     )}

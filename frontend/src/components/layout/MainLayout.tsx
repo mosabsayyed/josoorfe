@@ -69,6 +69,13 @@ export const MainLayout: React.FC = () => {
 
     useEffect(() => {
         loadConversations();
+
+        const handleRefresh = () => loadConversations();
+        window.addEventListener('josoor_conversation_update', handleRefresh);
+
+        return () => {
+            window.removeEventListener('josoor_conversation_update', handleRefresh);
+        };
     }, [auth.user, loadConversations]);
 
     // Load Messages

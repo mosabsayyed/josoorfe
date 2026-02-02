@@ -199,12 +199,17 @@ CREATE (cq3:ChainQuery {
   description: "Operate Target Cascade: Shows how strategic KPIs/targets cascade into capabilities and operational footprint. FIXED to use backward AGGREGATES_TO only (single direction).",
   
   // Query Definitions (Cypher)
+  // FIXED: Now follows exact canonical path with all 7 nodes and 6 relationships
+  // Path: SectorObjective L1 -> SectorPerformance L1 -> L2 -> EntityCapability L2 -> Entity[ops] L2 -> EntityProject L3 -> EntityChangeAdoption L3
   narrativeQuery: "MATCH (root:SectorObjective)
 WHERE ($year = 0 OR root.year = $year OR root.Year = $year)
   AND ($id IS NULL OR root.id = $id OR elementId(root) = $id)
-MATCH path = (root)<-[:AGGREGATES_TO]-(perf:SectorPerformance)
+MATCH path = (root)-[:AGGREGATES_TO]->(perfL1:SectorPerformance)
+  -[:PARENT_OF]->(perfL2:SectorPerformance)
   -[:SETS_TARGETS]->(cap:EntityCapability)
   -[:ROLE_GAPS|KNOWLEDGE_GAPS|AUTOMATION_GAPS]->(gap:EntityOrgUnit|EntityProcess|EntityITSystem)
+  -[:GAPS_SCOPE]->(proj:EntityProject)
+  -[:ADOPTION_RISKS]->(adopt:EntityChangeAdoption)
 UNWIND nodes(path) AS n
 UNWIND relationships(path) AS r
 WITH DISTINCT n, r
@@ -220,10 +225,13 @@ RETURN DISTINCT
   diagnosticQuery: "MATCH (root:SectorObjective)
 WHERE ($year = 0 OR root.year = $year OR root.Year = $year)
   AND ($id IS NULL OR root.id = $id OR elementId(root) = $id)
-OPTIONAL MATCH p1 = (root)<-[:AGGREGATES_TO]-(perf:SectorPerformance)
-OPTIONAL MATCH p2 = (perf)-[:SETS_TARGETS]->(cap:EntityCapability)
-OPTIONAL MATCH p3 = (cap)-[:ROLE_GAPS|KNOWLEDGE_GAPS|AUTOMATION_GAPS]->(gap:EntityOrgUnit|EntityProcess|EntityITSystem)
-WITH root, [p1, p2, p3] AS paths_raw
+OPTIONAL MATCH p1 = (root)-[:AGGREGATES_TO]->(perfL1:SectorPerformance)
+OPTIONAL MATCH p2 = (perfL1)-[:PARENT_OF]->(perfL2:SectorPerformance)
+OPTIONAL MATCH p3 = (perfL2)-[:SETS_TARGETS]->(cap:EntityCapability)
+OPTIONAL MATCH p4 = (cap)-[:ROLE_GAPS|KNOWLEDGE_GAPS|AUTOMATION_GAPS]->(gap:EntityOrgUnit|EntityProcess|EntityITSystem)
+OPTIONAL MATCH p5 = (gap)-[:GAPS_SCOPE]->(proj:EntityProject)
+OPTIONAL MATCH p6 = (proj)-[:ADOPTION_RISKS]->(adopt:EntityChangeAdoption)
+WITH root, [p1, p2, p3, p4, p5, p6] AS paths_raw
 UNWIND [path IN paths_raw WHERE path IS NOT NULL] AS path
 WITH root, path
 UNWIND nodes(path) AS n

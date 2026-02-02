@@ -209,34 +209,41 @@ RETURN DISTINCT
 // CHAIN 3: setting_strategic_priorities
 // ============================================================================
 // SST Authority: 6A-chain-3
-// Description: Strategic priority chain showing how performance metrics set
-//              targets for capabilities, revealing gaps in organizational
-//              structure, processes, or IT systems.
+// Description: Strategic priority chain showing how sector performance cascades
+//              through SectorPerformance L1→L2, bridges to EntityCapability L2,
+//              and flows to operational gaps, projects, and adoption risks.
 //
-// IMPORTANT FIX: Uses backward AGGREGATES_TO only (single direction)
+// CRITICAL FIX (v2): Follows exact canonical path with all 6 relationships and 7 nodes
+// Previous versions were missing: PARENT_OF (L1→L2), GAPS_SCOPE, ADOPTION_RISKS
 //
-// Canonical Path:
-//   SectorObjective <-[:AGGREGATES_TO]- SectorPerformance -[:SETS_TARGETS]->
-//   EntityCapability -[:ROLE_GAPS|KNOWLEDGE_GAPS|AUTOMATION_GAPS]->
-//   (EntityOrgUnit|EntityProcess|EntityITSystem)
+// Canonical Path (Per canonicalPaths.ts):
+//   SectorObjective L1 -[:AGGREGATES_TO]-> SectorPerformance L1
+//   SectorPerformance L1 -[:PARENT_OF]-> SectorPerformance L2
+//   SectorPerformance L2 -[:SETS_TARGETS]-> EntityCapability L2
+//   EntityCapability L2 -[:ROLE_GAPS|KNOWLEDGE_GAPS|AUTOMATION_GAPS]-> Entity[ops] L2
+//   Entity[ops] L2 -[:GAPS_SCOPE]-> EntityProject L3
+//   EntityProject L3 -[:ADOPTION_RISKS]-> EntityChangeAdoption L3
 // ============================================================================
 
 CREATE (cq3:ChainQuery {
   // Identifier & Metadata
   chainId: "setting_strategic_priorities",
-  version: 1,
+  version: 2,
   isActive: true,
-  releaseDate: datetime("2026-01-17T00:00:00Z"),
+  releaseDate: datetime("2026-01-20T00:00:00Z"),
   deprecatedDate: null,
-  description: "Strategic priority chain showing how performance metrics set targets for capabilities, revealing gaps in organizational structure, processes, or IT systems.",
+  description: "Strategic priority chain: Sector performance cascades through L1→L2 hierarchy, bridges to entity capabilities, and flows to operational gaps, projects, and adoption risks. Full 7-node canonical path.",
   
-  // Narrative Query (backward AGGREGATES_TO only)
+  // Narrative Query (FIXED: includes all canonical path steps)
   narrativeQuery: "MATCH (root:SectorObjective)
 WHERE ($year = 0 OR root.year = $year OR root.Year = $year)
   AND ($id IS NULL OR root.id = $id OR elementId(root) = $id)
-MATCH path = (root)<-[:AGGREGATES_TO]-(perf:SectorPerformance)
+MATCH path = (root)-[:AGGREGATES_TO]->(perfL1:SectorPerformance)
+  -[:PARENT_OF]->(perfL2:SectorPerformance)
   -[:SETS_TARGETS]->(cap:EntityCapability)
   -[:ROLE_GAPS|KNOWLEDGE_GAPS|AUTOMATION_GAPS]->(gap:EntityOrgUnit|EntityProcess|EntityITSystem)
+  -[:GAPS_SCOPE]->(proj:EntityProject)
+  -[:ADOPTION_RISKS]->(adopt:EntityChangeAdoption)
 UNWIND nodes(path) AS n
 UNWIND relationships(path) AS r
 WITH DISTINCT n, r
@@ -249,14 +256,17 @@ RETURN DISTINCT
   elementId(startNode(r)) AS sourceId,
   elementId(endNode(r)) AS targetId",
   
-  // Diagnostic Query (optional intermediate nodes)
+  // Diagnostic Query (optional intermediate nodes via OPTIONAL MATCH)
   diagnosticQuery: "MATCH (root:SectorObjective)
 WHERE ($year = 0 OR root.year = $year OR root.Year = $year)
   AND ($id IS NULL OR root.id = $id OR elementId(root) = $id)
-OPTIONAL MATCH p1 = (root)<-[:AGGREGATES_TO]-(perf:SectorPerformance)
-OPTIONAL MATCH p2 = (perf)-[:SETS_TARGETS]->(cap:EntityCapability)
-OPTIONAL MATCH p3 = (cap)-[:ROLE_GAPS|KNOWLEDGE_GAPS|AUTOMATION_GAPS]->(gap:EntityOrgUnit|EntityProcess|EntityITSystem)
-WITH root, [p1, p2, p3] AS paths_raw
+OPTIONAL MATCH p1 = (root)-[:AGGREGATES_TO]->(perfL1:SectorPerformance)
+OPTIONAL MATCH p2 = (perfL1)-[:PARENT_OF]->(perfL2:SectorPerformance)
+OPTIONAL MATCH p3 = (perfL2)-[:SETS_TARGETS]->(cap:EntityCapability)
+OPTIONAL MATCH p4 = (cap)-[:ROLE_GAPS|KNOWLEDGE_GAPS|AUTOMATION_GAPS]->(gap:EntityOrgUnit|EntityProcess|EntityITSystem)
+OPTIONAL MATCH p5 = (gap)-[:GAPS_SCOPE]->(proj:EntityProject)
+OPTIONAL MATCH p6 = (proj)-[:ADOPTION_RISKS]->(adopt:EntityChangeAdoption)
+WITH root, [p1, p2, p3, p4, p5, p6] AS paths_raw
 UNWIND [path IN paths_raw WHERE path IS NOT NULL] AS path
 WITH root, path
 UNWIND nodes(path) AS n
@@ -274,10 +284,10 @@ RETURN DISTINCT
   
   // Audit Trail
   createdBy: "system_migration",
-  createdAt: datetime("2026-01-17T00:00:00Z"),
+  createdAt: datetime("2026-01-20T00:00:00Z"),
   modifiedBy: "system_migration",
-  modifiedAt: datetime("2026-01-17T00:00:00Z"),
-  changeNotes: "Initial migration from hardcoded sources. Fixed to use single direction backward AGGREGATES_TO (removed bidirectional conflict).",
+  modifiedAt: datetime("2026-01-20T00:00:00Z"),
+  changeNotes: "CRITICAL FIX (v2): Now follows exact canonical path from canonicalPaths.ts. Added missing PARENT_OF (L1→L2), GAPS_SCOPE, and ADOPTION_RISKS steps. Fixes multi-level Sankey rendering.",
   
   // Validation
   sst_authority: "6A-chain-3",

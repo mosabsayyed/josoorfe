@@ -71,7 +71,7 @@ export function GraphDataTable({ data, isDark }: GraphDataTableProps) {
                                     <td style={tdStyle} title={String(getNodeId(n))}>{getNodeId(n)}</td>
                                     <td style={{ ...tdStyle, color: '#60a5fa' }}>{getNodeLabel(n)}</td>
                                     <td style={{ ...tdStyle, fontWeight: 500 }} title={getNodeName(n)}>{getNodeName(n)}</td>
-                                    <td style={{ ...tdStyle, fontFamily: 'monospace', fontSize: '10px', maxWidth: '300px' }} title={JSON.stringify(n.properties, null, 2)}>
+                                    <td style={{ ...tdStyle, fontFamily: 'var(--component-font-mono)', fontSize: '10px', maxWidth: '300px' }} title={JSON.stringify(n.properties, null, 2)}>
                                         {JSON.stringify(n.properties)}
                                     </td>
                                 </tr>

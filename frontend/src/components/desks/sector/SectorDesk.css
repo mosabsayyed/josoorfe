@@ -85,7 +85,7 @@
 
 .pillar-tab:hover {
     color: var(--component-text-primary);
-    background-color: rgba(255, 255, 255, 0.05);
+    background-color: rgba(255, 255, 255, 0.08);
 }
 
 .pillar-tab.active {
@@ -204,10 +204,11 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background-color: rgba(0, 0, 0, 0.7);
+    background-color: rgba(0, 0, 0, 0.85);
     z-index: 50;
     color: var(--component-text-primary);
     font-family: var(--component-font-family);
+    backdrop-filter: blur(4px);
 }
 
 .map-popup {
@@ -437,6 +438,7 @@
 .generate-btn:hover {
     border-color: var(--component-text-accent);
     color: var(--component-text-accent);
+    background-color: rgba(212, 175, 55, 0.05);
 }
 
 /* Scrollbar Utility */

@@ -417,7 +417,7 @@ export function MessageBubble({
                 </div>
                 {showRaw && (
                   <div style={{ marginTop: 12, borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: 8 }}>
-                    <pre style={{ whiteSpace: 'pre-wrap', fontSize: '11px', fontFamily: 'monospace', opacity: 0.9, overflowX: 'auto' }}>
+                    <pre style={{ whiteSpace: 'pre-wrap', fontSize: '11px', fontFamily: 'var(--component-font-mono)', opacity: 0.9, overflowX: 'auto' }}>
                       {message.content}
                     </pre>
                   </div>
@@ -428,8 +428,8 @@ export function MessageBubble({
               <div style={{ width: '100%' }}>
                 <UniversalCanvas
                   content={undefined}
-                  type="html"
-                  title={structuredVisualizationResponse.artifacts[0].title}
+                  type={undefined}
+                  title={undefined}
                   artifact={structuredVisualizationResponse.artifacts[0]}
                   embeddedArtifacts={embeddedArtifactsMap}
                 />
@@ -441,8 +441,8 @@ export function MessageBubble({
                   return (
                     <UniversalCanvas
                       content={htmlArtifact ? undefined : htmlCandidate}
-                      type="html"
-                      title={message.metadata?.title || 'HTML Artifact'}
+                      type={undefined}
+                      title={undefined}
                       artifact={htmlArtifact}
                       embeddedArtifacts={embeddedArtifactsMap}
                     />

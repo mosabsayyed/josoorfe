@@ -3,6 +3,7 @@
 ## Critical Rules
 
 **NEVER START/STOP/RESTART SERVERS WITHOUT USER APPROVAL**
+- **backend only exists here**: All services gateway through `https://betaBE.aitwintech.com`
 
 1. **NO Tailwind CSS** - This project uses CSS variables from [frontend/src/styles/theme.css](frontend/src/styles/theme.css). Always use `var(--component-*)` tokens.
 2. **Vite Proxy Architecture** - Frontend (port 3000) proxies `/api/graph/*`, `/api/neo4j/*`, `/api/dashboard/*`, `/api/business-chain/*`, `/api/control-tower/*` to Graph Server (port 3001). Only `/api/v1/*` goes to Backend (port 8008). See [frontend/vite.config.ts](frontend/vite.config.ts).
@@ -40,7 +41,7 @@ Read [00_START_HERE.md](00_START_HERE.md) first. Always.
 # Logs: frontend/logs/frontend.log
 ```
 
-Backend requires separate `josoorbe` repository with `./sb.sh` (not in this workspace).
+Backend is running on an external server betabe.aitwintech.com.
 
 ## API Integration Patterns
 
@@ -82,7 +83,7 @@ frontend/src/
 ├── pages/
 │   ├── ChatAppPage.tsx         # Main /chat route
 │   ├── LandingPage.tsx         # Public /landing
-│   └── josoor-sandbox/*        # Dashboard routes
+│   └── josoor-sandbox/*        # not used Dashboard routes
 ```
 
 ### Styling Conventions

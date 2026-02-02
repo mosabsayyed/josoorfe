@@ -42,3 +42,30 @@ attached_assets/
 *.m4a
 frontend_backup_*
 temp_delete_after/
+
+# Environment files with secrets
+frontend/.env
+.env
+*.env
+
+# Python virtual environments
+.venv/
+.venv-upload/
+venv/
+
+# Test/debug files
+*.json
+!frontend/package.json
+!frontend/tsconfig.json
+!backend/package.json
+!backend/tsconfig.json
+*.csv
+*.txt
+*.ps1
+test_*.py
+check_*.py
+*.md
+!README.md
+!docs/**/*.md
+!.agent/workflows/*.md
+!.github/*.md

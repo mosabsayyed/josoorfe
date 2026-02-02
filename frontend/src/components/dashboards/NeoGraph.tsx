@@ -149,15 +149,45 @@ export function NeoGraph({
         </div>
       )}
 
-      {/* Tooltip */}
+      {/* Tooltip - Display ALL Node Properties */}
       {hoverNode && (
         <div className="graph-tooltip">
           <h3 className="tooltip-title">{hoverNode.properties?.name || hoverNode.label || hoverNode.id || 'Unnamed Node'}</h3>
           <div className="graph-tooltip-meta">
-            <p><strong>Type:</strong> {hoverNode.labels?.join(', ') || hoverNode.type || 'Unknown'}</p>
-            <p><strong>Year:</strong> {hoverNode.properties?.year || year}</p>
-            {hoverNode.properties?.risk_score !== undefined && (
-              <p><strong>Risk Score:</strong> {hoverNode.properties.risk_score}</p>
+            <div className="tooltip-section">
+              <p><strong>Labels:</strong> {hoverNode.labels?.join(', ') || hoverNode.type || 'Unknown'}</p>
+              <p><strong>ID:</strong> <code>{hoverNode.id}</code></p>
+            </div>
+            
+            {/* Display ALL Properties */}
+            {hoverNode.properties && Object.keys(hoverNode.properties).length > 0 && (
+              <div className="tooltip-section">
+                <strong style={{ display: 'block', marginTop: '8px', marginBottom: '4px' }}>Properties:</strong>
+                <div className="tooltip-properties">
+                  {Object.entries(hoverNode.properties).map(([key, value]: [string, any]) => (
+                    <div key={key} className="tooltip-property-row">
+                      <span className="property-key">{key}:</span>
+                      <span className="property-value">
+                        {typeof value === 'object' ? JSON.stringify(value) : String(value)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {/* Display All Relationships if available */}
+            {hoverNode.relationships && Object.keys(hoverNode.relationships).length > 0 && (
+              <div className="tooltip-section">
+                <strong style={{ display: 'block', marginTop: '8px', marginBottom: '4px' }}>Relationships:</strong>
+                <div className="tooltip-relationships">
+                  {Object.entries(hoverNode.relationships).map(([key, count]: [string, any]) => (
+                    <p key={key} style={{ fontSize: '12px', margin: '2px 0' }}>
+                      {key}: {typeof count === 'number' ? count : String(count)}
+                    </p>
+                  ))}
+                </div>
+              </div>
             )}
           </div>
         </div>

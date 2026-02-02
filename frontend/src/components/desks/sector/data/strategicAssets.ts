@@ -323,3 +323,24 @@ export const strategicConnections: NetworkConnection[] = [
     { source: 'A-067', target: 'A-001', type: 'Transport' }, // Landbridge -> Jubail
     { source: 'A-067', target: 'A-009', type: 'Transport' }  // Landbridge -> Jeddah
 ];
+
+// Heatmap Configuration
+export const HEATMAP_LAYERS: Record<string, { label: string; colors: string[]; min: number; max: number }> = {
+    healthcare: { label: 'Healthcare Access', colors: ['#fee2e2', '#ef4444'], min: 0, max: 100 },
+    education: { label: 'Education Quality', colors: ['#e0f2fe', '#3b82f6'], min: 0, max: 100 },
+    projects: { label: 'Project Density', colors: ['#fef3c7', '#f59e0b'], min: 0, max: 50 },
+    foodSecurity: { label: 'Food Security', colors: ['#dcfce7', '#22c55e'], min: 0, max: 100 },
+    digital: { label: 'Digital Adoption', colors: ['#f3e8ff', '#a855f7'], min: 0, max: 100 }
+};
+
+// Heatmap Data (Mocked based on Regions)
+export const regionalHeatmaps = ksaRegions.map(reg => ({
+    name: reg.name,
+    centroidLat: reg.lat,
+    centroidLong: reg.long,
+    healthcare: Math.floor(Math.random() * 40) + 60,
+    education: Math.floor(Math.random() * 40) + 60,
+    projects: Math.floor(Math.random() * 50),
+    foodSecurity: Math.floor(Math.random() * 40) + 60,
+    digital: Math.floor(Math.random() * 40) + 60
+}));

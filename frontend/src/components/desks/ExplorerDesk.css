@@ -3,11 +3,40 @@
     width: 100%;
     height: 100%;
     min-height: 100%;
-    /* Force height */
     overflow: hidden;
-    background: var(--component-bg-primary, #0a0a0a);
-    display: flex;
-    flex-direction: column;
+    --studio-bg: #0b0f14;
+    --studio-panel: rgba(12, 16, 22, 0.92);
+    --studio-surface: rgba(10, 14, 20, 0.75);
+    --studio-border: rgba(212, 175, 55, 0.25);
+    --studio-border-strong: rgba(212, 175, 55, 0.5);
+    --studio-accent: #D4AF37;
+    --studio-accent-strong: #FFD36E;
+    --studio-text: #e5e7eb;
+    --studio-muted: #94a3b8;
+    background: var(--studio-bg);
+    display: grid;
+    grid-template-columns: auto 1fr;
+    grid-template-rows: minmax(0, 1fr);
+    gap: 1rem;
+    padding: 1rem;
+}
+
+.explorer-container::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+        radial-gradient(circle at 15% 10%, rgba(212, 175, 55, 0.08), transparent 40%),
+        linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+    background-size: auto, 28px 28px, 28px 28px;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.explorer-container > * {
+    position: relative;
+    z-index: 1;
 }
 
 .explorer-content {
@@ -16,7 +45,12 @@
     display: flex;
     flex-direction: column;
     min-height: 0;
-    /* Allow flex children to size correctly */
+    height: 100%;
+    padding: 0.75rem;
+    border-radius: 0.75rem;
+    border: 1px solid var(--studio-border);
+    background: var(--studio-surface);
+    backdrop-filter: blur(8px);
     overflow-y: auto;
     gap: 1rem;
 }
@@ -24,21 +58,46 @@
 .viz-wrapper {
     position: relative;
     width: 100%;
-    height: 70vh;
-    min-height: 500px;
+    height: clamp(520px, 70vh, 900px);
+    min-height: 520px;
     flex-shrink: 0;
     display: flex;
-    /* Ensure children can fill */
     flex-direction: column;
+    border-radius: 0.75rem;
+    border: 1px solid var(--studio-border);
+    background: rgba(7, 9, 12, 0.7);
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.45);
+    overflow: hidden;
+}
+
+.graph-sankey {
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+    user-select: none;
+    flex: 1;
+}
+
+.graph-sankey-scroll {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    position: relative;
 }
 
 /* --- Filters Panel --- */
 .explorer-filters-overlay {
-    position: absolute;
-    left: 1rem;
-    top: 1rem;
-    z-index: 50;
-    transition: width 0.3s ease;
+    position: relative;
+    left: 0;
+    top: 0;
+    z-index: 20;
+    height: 100%;
+    min-height: 0;
+    transition: width 0.25s ease;
 }
 
 .explorer-filters-overlay.expanded {
@@ -46,26 +105,32 @@
 }
 
 .explorer-filters-overlay.collapsed {
-    width: 3rem;
+    width: 3.5rem;
 }
 
 .filters-card {
-    border: 1px solid rgba(212, 175, 55, 0.3);
-    background: rgba(0, 0, 0, 0.85);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+    height: 100%;
+    min-height: 0;
+    max-height: 100%;
+    border: 1px solid var(--studio-border);
+    background: var(--studio-panel);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.45);
     overflow: hidden;
-    border-radius: 0.5rem;
+    border-radius: 0.75rem;
+    display: flex;
+    flex-direction: column;
 }
 
 .filters-header {
-    padding: 0.75rem;
+    padding: 0.85rem 0.9rem;
     display: flex;
     align-items: center;
     justify-content: space-between;
     cursor: pointer;
     transition: background-color 0.2s;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .filters-header:hover {
@@ -76,7 +141,10 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    color: #D4AF37;
+    color: var(--studio-accent);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    font-size: 0.72rem;
 }
 
 .filters-body {
@@ -84,7 +152,9 @@
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
-    max-height: 80vh;
+    max-height: none;
+    min-height: 0;
+    flex: 1;
     overflow-y: auto;
 }
 
@@ -100,7 +170,7 @@
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    color: #9ca3af;
+    color: var(--studio-muted);
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -110,8 +180,8 @@
     display: flex;
     gap: 0.5rem;
     padding: 0.25rem;
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 0.375rem;
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 0.5rem;
 }
 
 .mode-toggle-btn {
@@ -128,14 +198,14 @@
 
 .mode-toggle-btn.active {
     background: rgba(212, 175, 55, 0.2);
-    color: #D4AF37;
-    border: 1px solid rgba(212, 175, 55, 0.3);
+    color: var(--studio-accent-strong);
+    border: 1px solid rgba(212, 175, 55, 0.35);
 }
 
 .main-action-btn {
     width: 100%;
-    background: #D4AF37;
-    color: black;
+    background: var(--studio-accent);
+    color: #0b0b0b;
     font-weight: 700;
     height: 2.25rem;
     border-radius: 0.375rem;
@@ -145,7 +215,7 @@
 }
 
 .main-action-btn:hover {
-    background: #FFD700;
+    background: var(--studio-accent-strong);
 }
 
 .secondary-action-btn {
@@ -168,22 +238,22 @@
     height: 2.25rem;
     padding: 0 0.5rem;
     font-size: 0.75rem;
-    background: rgba(0, 0, 0, 0.4);
-    border: 1px solid rgba(212, 175, 55, 0.3);
+    background: rgba(0, 0, 0, 0.45);
+    border: 1px solid var(--studio-border);
     border-radius: 0.375rem;
     color: #e2e8f0;
     cursor: pointer;
 }
 
 .native-select:focus {
-    border-color: #D4AF37;
+    border-color: var(--studio-accent);
     outline: none;
 }
 
 .native-checkbox {
     width: 0.875rem;
     height: 0.875rem;
-    accent-color: #D4AF37;
+    accent-color: var(--studio-accent);
     cursor: pointer;
 }
 
@@ -204,7 +274,7 @@
 .ontology-subgroup-title {
     font-size: 10px;
     font-weight: 700;
-    color: rgba(212, 175, 55, 0.7);
+    color: rgba(212, 175, 55, 0.8);
     text-transform: uppercase;
 }
 
@@ -222,7 +292,7 @@
 
 .checkbox-label {
     font-size: 0.75rem;
-    color: #d1d5db;
+    color: #d9dde6;
     cursor: pointer;
 }
 
@@ -378,15 +448,15 @@
 
 /* Theme support via parent data-theme or prefers-color-scheme */
 .explorer-container .node-count-badge {
-    border: 1px solid #D97706;
-    color: #D97706;
-    background: rgba(243, 244, 246, 0.9);
+    border: 1px solid var(--studio-border-strong);
+    color: var(--studio-accent);
+    background: rgba(15, 18, 24, 0.8);
 }
 
 [data-theme='dark'] .explorer-container .node-count-badge {
-    border: 1px solid #FFD700;
-    color: #FFD700;
-    background: rgba(17, 24, 39, 0.9);
+    border: 1px solid var(--studio-border-strong);
+    color: var(--studio-accent);
+    background: rgba(15, 18, 24, 0.8);
 }
 
 .node-count-badge span {
@@ -403,7 +473,22 @@
 
 .node-count-badge .chain-label {
     font-weight: 800;
-    color: white;
+    color: #ffffff;
+}
+
+@media (max-width: 1100px) {
+    .explorer-container {
+        grid-template-columns: 1fr;
+    }
+
+    .explorer-filters-overlay.expanded,
+    .explorer-filters-overlay.collapsed {
+        width: 100%;
+    }
+
+    .filters-card {
+        max-height: 60vh;
+    }
 }
 
 /* --- Health Overlay --- */
@@ -505,6 +590,18 @@
     font: inherit;
     cursor: pointer;
     outline: inherit;
+}
+
+.btn-reset.main-action-btn {
+    padding: 0 0.75rem;
+    background: var(--studio-accent);
+    color: #0b0b0b;
+    opacity: 1;
+    visibility: visible;
+}
+
+.btn-reset.secondary-action-btn {
+    padding: 0 0.75rem;
 }
 
 .relative {

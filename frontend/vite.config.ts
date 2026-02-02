@@ -64,6 +64,17 @@ export default defineConfig({
         changeOrigin: true,
         secure: true,
       },
+      '/4': {
+        target: 'https://betaBE.aitwintech.com',
+        changeOrigin: true,
+        secure: true,
+        configure: (proxy, _options) => {
+          proxy.on('proxyReq', (proxyReq, _req, _res) => {
+            proxyReq.setHeader('Origin', 'https://betaBE.aitwintech.com');
+            proxyReq.setHeader('Host', 'betaBE.aitwintech.com');
+          });
+        },
+      },
     },
   },
   optimizeDeps: {

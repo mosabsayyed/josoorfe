@@ -89,19 +89,34 @@ const PillarSectorNav: React.FC<PillarSectorNavProps> = ({
             </div>
 
             {/* Pillar Tabs */}
-            <div className="pillar-tabs">
-                {Object.entries(PILLARS).map(([key, pillar]: [string, any]) => (
-                    <button
-                        key={key}
-                        onClick={() => onSelectPillar(key)}
-                        className={`pillar-tab ${selectedPillar === key ? 'active' : ''}`}
-                        style={{
-                            borderBottomColor: selectedPillar === key ? pillar.color : 'transparent'
-                        }}
-                    >
-                        {pillar.label.split(' ')[1]}
-                    </button>
-                ))}
+            <div className="pillar-tabs" style={{ background: 'var(--component-panel-bg)', borderRadius: '12px', padding: '4px', border: '1px solid var(--component-panel-border)', marginBottom: '1.5rem' }}>
+                {Object.entries(PILLARS).map(([key, pillar]: [string, any]) => {
+                    const isActive = selectedPillar === key;
+                    return (
+                        <button
+                            key={key}
+                            onClick={() => onSelectPillar(key)}
+                            className={`pillar-tab ${isActive ? 'active' : ''}`}
+                            style={{
+                                flex: 1,
+                                padding: '8px 4px',
+                                fontSize: '0.7rem',
+                                fontWeight: 800,
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.05em',
+                                cursor: 'pointer',
+                                transition: 'all 0.2s',
+                                background: isActive ? 'var(--component-bg-primary)' : 'transparent',
+                                border: 'none',
+                                borderRadius: '8px',
+                                color: isActive ? pillar.color : 'var(--component-text-muted)',
+                                boxShadow: isActive ? '0 2px 8px rgba(0,0,0,0.2)' : 'none'
+                            }}
+                        >
+                            {pillar.label.split(' ')[1]}
+                        </button>
+                    );
+                })}
             </div>
 
             {/* Sector List */}
@@ -132,8 +147,10 @@ const PillarSectorNav: React.FC<PillarSectorNavProps> = ({
                             <div
                                 className="sector-icon"
                                 style={{
-                                    backgroundColor: isSelected ? '#334155' : undefined,
-                                    padding: '4px'
+                                    backgroundColor: isSelected ? 'var(--component-bg-primary)' : 'rgba(255,255,255,0.03)',
+                                    padding: '6px',
+                                    borderRadius: '8px',
+                                    border: isSelected ? `1px solid ${pillarColor}` : '1px solid transparent'
                                 }}
                             >
                                 <img
@@ -141,19 +158,19 @@ const PillarSectorNav: React.FC<PillarSectorNavProps> = ({
                                     alt={sector.label}
                                     style={{
                                         width: '100%', height: '100%',
-                                        filter: isSupported ? (isSelected ? 'none' : 'grayscale(100%) opacity(0.7)') : 'grayscale(100%) opacity(0.3)'
+                                        filter: isSupported ? (isSelected ? 'none' : 'grayscale(100%) opacity(0.6)') : 'grayscale(100%) opacity(0.2)'
                                     }}
                                 />
                             </div>
 
-                            <div style={{ textAlign: 'left' }}>
-                                <div className="sector-label" style={{ color: isSupported ? 'white' : '#64748b' }}>
+                            <div style={{ textAlign: 'left', flex: 1 }}>
+                                <div className="sector-label" style={{ color: isSupported ? (isSelected ? 'var(--component-text-primary)' : 'var(--component-text-secondary)') : 'var(--component-text-muted)', fontWeight: isSelected ? 800 : 500, fontSize: '0.9rem' }}>
                                     {sector.label}
                                 </div>
-                                <div className="sector-status" style={{ color: '#475569' }}>
+                                <div className="sector-status" style={{ color: isSelected ? pillarColor : 'var(--component-text-muted)', fontSize: '0.65rem', fontWeight: 600, opacity: 0.8, marginTop: '2px' }}>
                                     {isSupported
-                                        ? (isSelected ? 'Active View' : 'Click to View')
-                                        : 'Coming Soon'}
+                                        ? (isSelected ? 'ACTIVE VIEW' : 'CLICK TO EXPLORE')
+                                        : 'DEVELOPMENT IN PROGRESS'}
                                 </div>
                             </div>
 
@@ -166,11 +183,12 @@ const PillarSectorNav: React.FC<PillarSectorNavProps> = ({
             </div>
 
             {/* Footer / Legend - DISCLAIMER REPLACING NEO4J INFO */}
-            <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid #1e293b', fontSize: '9px', color: '#64748b' }}>
-                <p style={{ margin: 0, lineHeight: '1.4' }}>
-                    Disclaimer:<br />
-                    - Data based on publicly available KSA public Sector datasets and could be out of date.<br />
-                    - Data is non-comprehensive and highly selective for demo purpose.
+            <div style={{ marginTop: 'auto', paddingTop: '1.25rem', borderTop: '1px solid var(--component-panel-border)', fontSize: '10px', color: 'var(--component-text-muted)', opacity: 0.8 }}>
+                <p style={{ margin: 0, lineHeight: '1.5', fontStyle: 'italic' }}>
+                    <strong>CONFIDENTIAL DATA</strong><br />
+                    • Publicly available V2030 dataset snapshots<br />
+                    • Non-comprehensive representative simulation<br />
+                    • Authorized personnel only
                 </p>
             </div>
         </div>
