@@ -886,3 +886,121 @@ section { display: flex; flex-direction: column; gap: 0.25rem; width: 100%; }
 .narrow-mode .section-title {
   font-size: 1rem;
 }
+
+/* ===========================
+   SECTOR DETAILS PANEL DRAWER
+   =========================== */
+.sector-details-panel.drawer {
+  position: fixed;
+  right: -480px; /* Hidden off-screen */
+  top: 0;
+  bottom: 0;
+  width: 450px;
+  background: var(--component-panel-bg);
+  border-left: 2px solid var(--component-panel-border);
+  transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 100;
+  overflow-y: auto; /* CRITICAL: Enable vertical scrolling */
+  overflow-x: hidden;
+}
+
+.sector-details-panel.drawer.visible {
+  right: 0; /* Slide in */
+}
+
+.sector-details-panel .details-content {
+  overflow-y: auto; /* Enable scrolling in content area */
+  overflow-x: hidden;
+  max-height: calc(100vh - 120px); /* Account for header */
+}
+
+.sector-details-panel .region-stats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.sector-details-panel .stat-card {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--component-panel-border);
+  border-radius: 8px;
+  padding: 1rem;
+  text-align: center;
+}
+
+.sector-details-panel .stat-label {
+  font-size: 0.75rem;
+  color: var(--component-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.5rem;
+}
+
+.sector-details-panel .stat-value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--component-text-primary);
+}
+
+.sector-details-panel .asset-full-details {
+  padding: 1.5rem;
+}
+
+.sector-details-panel .detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.sector-details-panel .detail-row:last-child {
+  border-bottom: none;
+}
+
+.sector-details-panel .detail-label {
+  font-size: 0.875rem;
+  color: var(--component-text-muted);
+  font-weight: 600;
+  flex-shrink: 0;
+  margin-right: 1rem;
+}
+
+.sector-details-panel .detail-value {
+  font-size: 0.875rem;
+  color: var(--component-text-primary);
+  text-align: right;
+  flex: 1;
+}
+
+.sector-details-panel .assets-list {
+  max-height: calc(100vh - 400px);
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+
+/* Sector Details Panel - Drawer and Scrolling */
+.sector-details-drawer {
+  position: relative;
+}
+
+.sector-details-panel {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.sector-details-panel .details-content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 1rem;
+}
+
+.sector-details-panel .assets-list {
+  max-height: none !important;
+  overflow-y: visible !important;
+}

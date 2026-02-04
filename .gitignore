@@ -47,6 +47,16 @@ temp_delete_after/
 frontend/.env
 .env
 *.env
+!frontend/.env.example
+
+# Supabase keys and credentials (hardcoded fallbacks are public anyway)
+# No action needed - anon keys are meant to be public
+
+# IDE Assistant configuration
+.contextstream/
+.aider.conf.yml
+.clinerules
+.cursorrules
 
 # Python virtual environments
 .venv/
@@ -64,8 +74,19 @@ venv/
 *.ps1
 test_*.py
 check_*.py
+test_*.js
+verify_*.js
 *.md
 !README.md
 !docs/**/*.md
 !.agent/workflows/*.md
 !.github/*.md
+
+# Backup files
+*.backup-*
+frontend/src/tempfiles_for_investigation/
+
+# OpenMemory - IDE/Assistant specific rules
+.github/instructions/openmemory.instructions.md
+CLAUDE.md
+AGENTS.md

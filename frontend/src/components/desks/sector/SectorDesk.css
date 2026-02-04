@@ -279,9 +279,11 @@
     position: relative;
     overflow: hidden;
     box-sizing: border-box;
+    height: 100%;
 }
 
 .details-header {
+    flex-shrink: 0;
     margin-bottom: 1.5rem;
     border-bottom: 1px solid var(--component-panel-border);
     padding-bottom: 1rem;
@@ -456,4 +458,257 @@
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
     background: var(--component-text-muted);
+}
+
+/* ========================================
+   SECTOR DETAILS PANEL - NEW STYLES
+   ======================================== */
+
+/* Blank State (L1 National View) */
+.blank-state {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+}
+
+.blank-state-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+}
+
+.blank-state-message {
+    font-size: 0.875rem;
+    color: var(--component-text-muted);
+    text-align: center;
+    margin: 0;
+}
+
+/* Header Content Layout */
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.header-text {
+    flex: 1;
+}
+
+.back-button {
+    font-size: 0.625rem;
+    padding: 0.25rem 0.5rem;
+    background: var(--component-panel-bg);
+    border: 1px solid var(--component-panel-border);
+    color: var(--component-text-secondary);
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    transition: all 0.2s;
+}
+
+.back-button:hover {
+    color: var(--component-text-primary);
+    border-color: var(--component-text-accent);
+}
+
+/* Details Content */
+.details-content {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-right: 0.5rem;
+    min-height: 0;
+}
+
+/* Sector Outputs Section */
+.sector-outputs-section {
+    margin-bottom: 1.5rem;
+}
+
+.section-title {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--component-text-primary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin: 0 0 1rem 0;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--component-panel-border);
+}
+
+.outputs-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+}
+
+.output-card {
+    background: var(--component-panel-bg);
+    border: 1px solid var(--component-panel-border);
+    padding: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.output-label {
+    font-size: 0.625rem;
+    color: var(--component-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.output-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.output-unit {
+    font-size: 0.625rem;
+    color: var(--component-text-secondary);
+}
+
+/* Assets Section */
+.assets-section {
+    margin-top: 1.5rem;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.loading-state,
+.empty-state {
+    padding: 2rem;
+    text-align: center;
+    color: var(--component-text-muted);
+    font-size: 0.875rem;
+    font-style: italic;
+}
+
+.asset-meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.75rem;
+    margin-top: 0.5rem;
+}
+
+.asset-type {
+    color: var(--component-text-muted);
+}
+
+.asset-status {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.75rem;
+}
+
+/* MAJOR Priority Asset Details */
+.asset-details {
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--component-panel-border);
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.detail-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+}
+
+.detail-label {
+    font-size: 0.625rem;
+    color: var(--component-text-accent);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+}
+
+.detail-value {
+    font-size: 0.75rem;
+    color: var(--component-text-secondary);
+    line-height: 1.4;
+}
+
+/* Scrollable containers - Fixed from inline styles */
+.details-panel-scrollable {
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.sector-kpis-scrollable {
+    max-height: 400px;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+/* Drawer Panel Variants */
+.sector-details-panel.drawer {
+    /* Base drawer state - may be hidden or visible depending on context */
+    transition: all 200ms ease;
+    will-change: transform, opacity;
+}
+
+/* Drawer visible state - used in L2 regional view */
+.sector-details-panel.drawer.visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* Mobile drawer - overlay behavior */
+@media (max-width: 768px) {
+    .sector-details-panel.drawer {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        height: 60vh;
+        border-radius: 12px 12px 0 0;
+        box-shadow: 0 -2px 16px rgba(0, 0, 0, 0.3);
+        z-index: 30;
+        max-width: 100%;
+        width: 100%;
+        border-left: none;
+        border-top: 1px solid var(--component-panel-border);
+    }
+}
+
+/* Drawer Wrapper Container - used in SectorDesk.tsx */
+.sector-details-drawer {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background-color: var(--component-bg-primary);
+    border-left: 1px solid var(--component-panel-border);
+    z-index: 30;
+    transition: all 0.3s ease;
+    height: 100%;
+    /* Width is controlled by inline style based on viewLevel */
+}
+
+/* Drawer Footer/Info Bar */
+.sector-details-drawer-footer {
+    flex-shrink: 0;
+    padding: 0.75rem;
+    border-top: 1px solid var(--component-panel-border);
+    background-color: rgba(0, 0, 0, 0.3);
+}
+
+.sector-details-drawer-footer p {
+    margin: 0;
+    line-height: 1.4;
+    font-size: 10px;
+    color: var(--component-text-muted);
+    text-align: center;
+    font-weight: 600;
+    letter-spacing: 0.05em;
 }

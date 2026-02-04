@@ -191,18 +191,18 @@ export async function fetchSectorGraphData(targetYear?: string): Promise<any[]> 
             }
         });
 
-        let uniqueNodes = Array.from(uniqueNodesMap.values());
+        const uniqueNodes = Array.from(uniqueNodesMap.values());
 
-        // UPSTREAM FILTERING: filter by year if provided
-        if (targetYear) {
-            console.log(`[Neo4jMCP] Filtering upstream for year: ${targetYear}`);
-            uniqueNodes = uniqueNodes.filter((n: any) => {
-                const ny = String(n.year || n.parent_year || '');
-                return ny === targetYear;
-            });
-        }
-
-        console.log(`[Neo4jMCP] Fetched ${nodes.length} nodes. Deduplicated/Filtered to ${uniqueNodes.length} unique assets.`);
+        // NO UPSTREAM FILTERING - Return ALL years, let client filter
+        // This allows users to switch years without re-fetching
+        console.log(`[Neo4jMCP] Fetched ${nodes.length} nodes. Deduplicated to ${uniqueNodes.length} unique assets (all years).`);
+        console.log(`[Neo4jMCP] Year distribution:`, 
+            uniqueNodes.reduce((acc: any, n: any) => {
+                const y = String(n.year || n.parent_year || 'unknown');
+                acc[y] = (acc[y] || 0) + 1;
+                return acc;
+            }, {})
+        );
         return uniqueNodes;
 
     } catch (error) {

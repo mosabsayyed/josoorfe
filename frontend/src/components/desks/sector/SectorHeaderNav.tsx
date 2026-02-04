@@ -167,68 +167,9 @@ const SectorHeaderNav: React.FC<SectorHeaderNavProps> = ({
                     })}
                 </div>
 
-                {/* 3. MAGIC STRATEGY BUTTON */}
-                <motion.button
-                    onClick={onStrategyClick}
-                    whileHover={{ scale: 1.05, boxShadow: '0 0 20px rgba(168, 85, 247, 0.5)' }}
-                    whileTap={{ scale: 0.95 }}
-                    style={{
-                        background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)',
-                        border: '1px solid rgba(255,255,255,0.2)',
-                        borderRadius: '10px',
-                        padding: '10px 20px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '10px',
-                        cursor: 'pointer',
-                        boxShadow: '0 4px 12px rgba(168, 85, 247, 0.3)',
-                        color: 'white',
-                        transition: 'all 0.2s'
-                    }}
-                >
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" fill="white" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'start' }}>
-                        <span style={{ fontSize: '0.85rem', fontWeight: 800, lineHeight: 1, letterSpacing: '0.01em' }}>Strategic Briefing</span>
-                        <span style={{ fontSize: '0.65rem', opacity: 0.85, fontWeight: 500 }}>AI Alignment Check</span>
-                    </div>
-                </motion.button>
-
-                {/* 4. FILTERS */}
+                {/* 3. FILTERS */}
                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexShrink: 0 }}>
-                    {/* A. YEAR FILTER (Left) */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                        <span style={{ fontSize: '0.6rem', color: 'var(--component-text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.02em' }}>Target Year</span>
-                        <select
-                            style={{
-                                background: 'var(--component-panel-bg)',
-                                color: 'var(--component-text-primary)',
-                                border: '1px solid var(--component-panel-border)',
-                                borderRadius: '8px',
-                                padding: '6px 12px',
-                                fontSize: '0.8rem',
-                                cursor: 'pointer',
-                                outline: 'none',
-                                fontWeight: 700,
-                                appearance: 'none',
-                                textAlign: 'center'
-                            }}
-                            value={year}
-                            onChange={(e) => onYearChange?.(e.target.value)}
-                        >
-                            <option value="2024">2024</option>
-                            <option value="2025">2025</option>
-                            <option value="2026">2026</option>
-                            <option value="2027">2027</option>
-                            <option value="2028">2028</option>
-                            <option value="2029">2029</option>
-                            <option value="2030">2030</option>
-                            <option value="both">All Years</option>
-                        </select>
-                    </div>
-
-                    {/* B. STATUS FILTER (Middle) */}
+                    {/* A. STATUS FILTER (Left) */}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                         <span style={{ fontSize: '0.6rem', color: 'var(--component-text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.02em' }}>Status</span>
                         <div style={{ display: 'flex', background: 'var(--component-panel-bg)', borderRadius: '8px', padding: '3px', border: '1px solid var(--component-panel-border)' }}>
@@ -263,7 +204,7 @@ const SectorHeaderNav: React.FC<SectorHeaderNavProps> = ({
                         </div>
                     </div>
 
-                    {/* C. PRIORITY FILTER (Right) */}
+                    {/* C. PRIORITY FILTER */}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                         <span style={{ fontSize: '0.6rem', color: 'var(--component-text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.02em' }}>Priority</span>
                         <div style={{ display: 'flex', background: 'var(--component-panel-bg)', borderRadius: '8px', padding: '3px', border: '1px solid var(--component-panel-border)', minWidth: '140px' }}>
@@ -308,6 +249,31 @@ const SectorHeaderNav: React.FC<SectorHeaderNavProps> = ({
                             </button>
                         </div>
                     </div>
+
+                    {/* D. STRATEGIC BRIEFING BUTTON */}
+                    <motion.button
+                        onClick={onStrategyClick}
+                        whileHover={{ scale: 1.03 }}
+                        whileTap={{ scale: 0.97 }}
+                        style={{
+                            background: 'var(--component-text-accent)',
+                            border: '1px solid var(--component-text-accent)',
+                            borderRadius: '8px',
+                            padding: '6px 12px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s',
+                            marginLeft: '8px'
+                        }}
+                        title="Generate Strategic AI Report"
+                    >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" fill="var(--component-text-on-accent)" stroke="var(--component-text-on-accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                        <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--component-text-on-accent)', whiteSpace: 'nowrap' }}>Strategy</span>
+                    </motion.button>
                 </div>
             </div>
 
@@ -324,23 +290,23 @@ const SectorHeaderNav: React.FC<SectorHeaderNavProps> = ({
                 marginTop: '4px',
                 gap: '12px'
             }}>
-                {/* 1. Enforce (Red) */}
-                {renderItem('Enforce', counts.enforce, '#ef4444')}
+                {/* 1. Enforce */}
+                {renderItem('Enforce', counts.enforce, 'var(--component-color-danger)')}
 
-                {/* 2. Incentive (Green) */}
-                {renderItem('Incentive', counts.incentive, '#10b981')}
+                {/* 2. Incentive */}
+                {renderItem('Incentive', counts.incentive, 'var(--component-color-success)')}
 
-                {/* 3. License (Blue) */}
-                {renderItem('License', counts.license, '#3b82f6')}
+                {/* 3. License */}
+                {renderItem('License', counts.license, 'var(--component-color-info)')}
 
-                {/* 4. Services (Cyan) */}
-                {renderItem('Services', counts.services, '#06b6d4')}
+                {/* 4. Services */}
+                {renderItem('Services', counts.services, 'var(--sector-water)')}
 
-                {/* 5. Regulate (Purple) */}
-                {renderItem('Regulate', counts.regulate, '#8b5cf6')}
+                {/* 5. Regulate */}
+                {renderItem('Regulate', counts.regulate, 'var(--status-planned)')}
 
-                {/* 6. Awareness (Yellow) */}
-                {renderItem('Awareness', counts.awareness, '#f59e0b')}
+                {/* 6. Awareness */}
+                {renderItem('Awareness', counts.awareness, 'var(--component-color-warning)')}
             </div>
 
         </div >

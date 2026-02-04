@@ -78,6 +78,7 @@ interface SectorMapProps {
   selectedSector: string;
   selectedRegion?: string | null;
   onRegionSelect?: (regionId: string | null) => void;
+  onRegionHover?: (regionId: string | null) => void;
   onAssetSelect?: (asset: GraphNode | null) => void;
   focusAssetId?: string | null;
   assets: GraphNode[]; // Data from parent
@@ -153,6 +154,46 @@ const KSA_REGIONS: Region[] = [
   { id: 'Najran', name: 'Najran', lat: 17.4933, long: 44.1322 }
 ];
 
+// Mega Regions for L1 National View
+interface MegaRegion {
+  id: string;
+  name: string;
+  lat: number;
+  long: number;
+  regions: string[]; // constituent KSA_REGIONS
+}
+
+const MEGA_REGIONS: MegaRegion[] = [
+  {
+    id: 'Northern',
+    name: 'Northern',
+    lat: 28.5, // Northern part of KSA
+    long: 39.0,
+    regions: ['Northern', 'Tabuk', 'Jawf', 'Hail'] // Added 'Northern' itself
+  },
+  {
+    id: 'Western',
+    name: 'Western',
+    lat: 22.0, // Western coast (Red Sea)
+    long: 39.5,
+    regions: ['Western', 'Makkah', 'Madinah', 'Jazan', 'Asir'] // Asir is on western coast
+  },
+  {
+    id: 'Eastern',
+    name: 'Eastern',
+    lat: 25.5, // Eastern province (Arabian Gulf)
+    long: 49.5,
+    regions: ['Eastern', 'Baha'] // Already has 'Eastern' - this is why it works!
+  },
+  {
+    id: 'Central',
+    name: 'Central',
+    lat: 24.0, // Central KSA (Riyadh area)
+    long: 45.0,
+    regions: ['Central', 'Riyadh', 'Qassim', 'Najran'] // Removed Asir (western coast)
+  }
+];
+
 // TEMPORARY: Hardcoded infrastructure asset coordinates until DB is populated
 const INFRASTRUCTURE_FALLBACK: Record<string, [number, number]> = {
   // Water facilities
@@ -213,10 +254,84 @@ function getSimpleStatus(status?: string): 'Running' | 'Future' {
 function getCoords(node: GraphNode): [number, number] | null {
   const lng = node.longitude ?? node.long;
   const lat = node.latitude ?? node.lat;
-  if (lng != null && lat != null && (Math.abs(lng) > 0.1 || Math.abs(lat) > 0.1)) {
-    return [lng, lat];
+  if (lng != null && lat != null) {
+    // Parse as numbers to handle string coordinates from database
+    const lngNum = parseFloat(String(lng));
+    const latNum = parseFloat(String(lat));
+    if (!isNaN(lngNum) && !isNaN(latNum) && (Math.abs(lngNum) > 0.1 || Math.abs(latNum) > 0.1)) {
+      return [lngNum, latNum];
+    }
   }
   return null;
+}
+
+// Calculate bounding box of assets - NO FILTERING, just calculate bounds from passed assets
+function getAssetBounds(assets: GraphNode[]): [[number, number], [number, number]] | null {
+  console.log(`[BOUNDS] Calculating bounds for ${assets.length} assets`);
+  if (assets.length === 0) {
+    console.warn(`[BOUNDS] No assets provided`);
+    return null;
+  }
+
+  let minLng = Infinity;
+  let maxLng = -Infinity;
+  let minLat = Infinity;
+  let maxLat = -Infinity;
+  let count = 0;
+
+  assets.forEach(asset => {
+    const coords = getCoords(asset);
+    if (coords) {
+      const lng = parseFloat(String(coords[0]));
+      const lat = parseFloat(String(coords[1]));
+      
+      minLng = Math.min(minLng, lng);
+      maxLng = Math.max(maxLng, lng);
+      minLat = Math.min(minLat, lat);
+      maxLat = Math.max(maxLat, lat);
+      count++;
+    }
+  });
+
+  if (count === 0) {
+    console.error(`[BOUNDS] ${assets.length} assets provided but NONE have valid coordinates`);
+    return null;
+  }
+
+  // Add padding to bounds (10% on each side)
+  const lngPadding = (maxLng - minLng) * 0.1 || 0.1;
+  const latPadding = (maxLat - minLat) * 0.1 || 0.1;
+
+  const bounds: [[number, number], [number, number]] = [
+    [minLng - lngPadding, minLat - latPadding], // southwest
+    [maxLng + lngPadding, maxLat + latPadding]  // northeast
+  ];
+
+  console.log(`[BOUNDS] Calculated bounds:`, bounds, `(from ${count} assets with coords)`);
+  return bounds;
+}
+
+// Calculate center of asset cluster - NO FILTERING
+function getAssetClusterCenter(assets: GraphNode[]): [number, number] | null {
+  if (assets.length === 0) return null;
+
+  let sumLat = 0;
+  let sumLng = 0;
+  let count = 0;
+
+  assets.forEach(asset => {
+    const coords = getCoords(asset);
+    if (coords) {
+      sumLng += parseFloat(String(coords[0]));
+      sumLat += parseFloat(String(coords[1]));
+      count++;
+    }
+  });
+
+  if (count === 0) return null;
+
+  const center: [number, number] = [sumLng / count, sumLat / count];
+  return center;
 }
 
 
@@ -430,6 +545,7 @@ const SectorMap: React.FC<SectorMapProps> = ({
   selectedSector,
   selectedRegion,
   onRegionSelect,
+  onRegionHover,
   onAssetSelect,
   focusAssetId,
   assets: allAssets, // Use parent data
@@ -444,7 +560,6 @@ const SectorMap: React.FC<SectorMapProps> = ({
   // UI State
   const [selectedAsset, setSelectedAsset] = useState<GraphNode | null>(null);
   const [hoverAsset, setHoverAsset] = useState<GraphNode | null>(null);
-  const [isPanelCollapsed, setIsPanelCollapsed] = useState(false);
 
   // Animation State for Line Flow - REMOVED (Now handled by CSS in SVG)
   const [mapViewport, setMapViewport] = useState<any>(null);
@@ -456,66 +571,91 @@ const SectorMap: React.FC<SectorMapProps> = ({
 
   // NO CONTROLLED ViewState - Allows smooth animations via mapRef.current.flyTo()
 
-  // Filter Assets
+  // Filter Assets - minimal filtering (parent handles region/year/priority)
   const filteredAssets = useMemo(() => {
-    const activeSectors = ['water', 'energy', 'mining', 'industry', 'logistics', 'giga'];
-
-    return allAssets.filter(node => {
+    const result = allAssets.filter(node => {
+      // Remove non-renderable items
       if (node.asset_type === 'Network Connection') return false;
-      if (node.asset_type === 'Region') return false; // Exclude region markers (rendered separately)
+      if (node.asset_type === 'Region') return false;
+      
+      // Remove items without coordinates
       const coords = getCoords(node);
       if (!coords) return false;
 
-      const nodeSector = node.sector?.toLowerCase();
+      // L1 VIEW: Hide all assets (only show 4 mega-region circles)
+      if (!selectedRegion) return false;
 
-      // Handle 'all' sector - show all 6 active sectors
-      if (selectedSector === 'all') {
-        if (!activeSectors.includes(nodeSector || '')) {
-          return false;
-        }
-      } else if (selectedSector !== 'All Factors' && nodeSector !== selectedSector.toLowerCase()) {
-        if (!(nodeSector === 'giga' && selectedSector.toLowerCase() === 'economy')) {
-          return false;
-        }
-      }
-
-      if (selectedRegion && node.region !== selectedRegion) return false;
-
-      const simpleStatus = getSimpleStatus(node.status);
-      if (timelineFilter === 'current' && simpleStatus === 'Future') return false;
-      if (timelineFilter === 'future' && simpleStatus === 'Running') return false;
-
-      // Priority Filter
-      const assetPriority = node.priority === 'HIGH' ? 'major' : 'strategic';
-      if (priorityFilter !== 'both' && assetPriority !== priorityFilter) return false;
-
-      // Global Date Filter
-      if (year) {
-        const finishYear = node.completion_date ? parseInt(node.completion_date.substring(0, 4)) : null;
-        if (finishYear && finishYear > year) return false;
-      }
-
+      // L2 VIEW: Show whatever parent gave us (already filtered by region/year/priority)
       return true;
     });
-  }, [allAssets, selectedSector, selectedRegion, timelineFilter, priorityFilter, year]);
+
+    return result;
+  }, [allAssets, selectedRegion]);
+
+  // Track camera positioning to prevent infinite loop - store region + asset count
+  const cameraPositionedFor = useRef<{ region: string | null; assetCount: number }>({ region: null, assetCount: 0 });
 
   // Handle Region Selection Zoom
   useEffect(() => {
+    const map = mapRef.current?.getMap();
+    if (!map) return;
+
+    console.log('[CAMERA DEBUG] Effect running:', {
+      selectedRegion,
+      filteredAssetsLength: filteredAssets.length,
+      allAssetsLength: allAssets.length,
+      sampleAssets: filteredAssets.slice(0, 3).map(a => ({ name: a.name, region: a.region, lat: a.lat, long: a.long }))
+    });
+
     if (selectedRegion) {
-      const region = KSA_REGIONS.find(r => r.id === selectedRegion);
-      if (region) {
-        mapRef.current?.flyTo({
-          center: [region.long, region.lat],
-          zoom: 7,
+      // Skip if we already positioned camera for this exact region + asset count
+      const currentKey = { region: selectedRegion, assetCount: filteredAssets.length };
+      if (cameraPositionedFor.current.region === currentKey.region && 
+          cameraPositionedFor.current.assetCount === currentKey.assetCount) {
+        return;
+      }
+
+      // L2 VIEW: Fit bounds to show ALL assets in region
+      const assetBounds = getAssetBounds(filteredAssets);
+
+      if (assetBounds) {
+        // Use fitBounds to automatically zoom to show ALL assets
+        console.log('[ZOOM] Fitting bounds for', selectedRegion, '- assets:', filteredAssets.length, 'bounds:', assetBounds);
+        map.fitBounds(assetBounds, {
           pitch: 50,
           duration: 2000,
-          essential: true,
-          easing: (t: number) => t * (2 - t)
+          padding: 30,
+          essential: true
         });
+      } else {
+        // Fallback ONLY if no assets have coordinates
+        const megaRegion = MEGA_REGIONS.find(mr => mr.id === selectedRegion);
+        
+        if (megaRegion) {
+          const fallbackCenter: [number, number] = [megaRegion.long, megaRegion.lat];
+          console.warn('[ZOOM] No asset bounds for', selectedRegion, '- using fallback:', fallbackCenter);
+          map.flyTo({
+            center: fallbackCenter,
+            zoom: 7,
+            pitch: 45,
+            duration: 2000,
+            essential: true,
+            easing: (t: number) => t * (2 - t)
+          });
+        }
       }
-    } else if (!focusAssetId && !selectedAsset) {
-      // RESET TO MAIN VIEW
-      mapRef.current?.flyTo({
+
+      // Mark that we've positioned camera for this region + asset count
+      cameraPositionedFor.current = currentKey;
+
+      // DISABLE scroll zoom and pan in L2 view
+      map.scrollZoom.disable();
+      map.dragPan.disable();
+    } else {
+      // L1 VIEW: Reset to national view
+      cameraPositionedFor.current = { region: null, assetCount: 0 };
+      
+      map.flyTo({
         center: [45.0, 24.0],
         zoom: 5,
         pitch: 45,
@@ -524,8 +664,12 @@ const SectorMap: React.FC<SectorMapProps> = ({
         essential: true,
         easing: (t: number) => t * (2 - t)
       });
+
+      // RE-ENABLE scroll zoom and pan in L1 view
+      map.scrollZoom.enable();
+      map.dragPan.enable();
     }
-  }, [selectedRegion, focusAssetId, selectedAsset]);
+  }, [selectedRegion, filteredAssets.length]); // Re-run when region OR asset count changes
 
   // --- 1. RED LINE: MANUAL CONNECTIONS (Strict IDs) ---
   const MANUAL_CONNECTIONS = [
@@ -679,7 +823,6 @@ const SectorMap: React.FC<SectorMapProps> = ({
         const coords = getCoords(asset);
         if (coords) {
           setSelectedAsset(asset);
-          setIsPanelCollapsed(false);
           mapRef.current?.flyTo({
             center: coords,
             zoom: 10,
@@ -756,8 +899,8 @@ const SectorMap: React.FC<SectorMapProps> = ({
           </Source>
         )}
 
-        {/* 2. REGION MARKERS (PULSING) */}
-        {KSA_REGIONS.map(region => (
+        {/* 2. REGION MARKERS - L1 (Mega Regions) vs L2 (Hidden) */}
+        {!selectedRegion && MEGA_REGIONS.map(region => (
           <Marker
             key={region.id}
             longitude={region.long}
@@ -765,27 +908,46 @@ const SectorMap: React.FC<SectorMapProps> = ({
             anchor="center"
             onClick={(e) => {
               e.originalEvent.stopPropagation();
-              onRegionSelect?.(selectedRegion === region.id ? null : region.id);
+              // Find first constituent region to select
+              onRegionSelect?.(region.regions[0]);
             }}
           >
-            <div className={`region-marker ${selectedRegion === region.id ? 'active' : ''}`}>
-              <div className="region-dot"></div>
+            <div
+              className="mega-region-marker"
+              onMouseEnter={() => {
+                setHoverAsset({
+                  id: region.id,
+                  name: region.name,
+                  sector: 'Region',
+                  description: `${region.regions.length} administrative regions`
+                } as GraphNode);
+                onRegionHover?.(region.id);
+              }}
+              onMouseLeave={() => {
+                setHoverAsset(null);
+                onRegionHover?.(null);
+              }}
+            >
+              <div className="mega-region-pulse"></div>
+              <div className="mega-region-label">{region.name}</div>
             </div>
           </Marker>
         ))}
 
         {/* 3. ASSET MARKERS (GLOWING PINS - CITY APPROACH) */}
         {filteredAssets.map(asset => {
-          const coords = getCoords(asset);
-          if (!coords) return null;
-          const mainCat = getMainCategory(asset.sector);
-          const isHigh = asset.priority === 'HIGH';
-          const isSelected = selectedAsset?.id === asset.id;
+            const coords = getCoords(asset);
+            if (!coords) {
+              return null;
+            }
+            const mainCat = getMainCategory(asset.sector);
+            const isHigh = asset.priority === 'HIGH';
+            const isSelected = selectedAsset?.id === asset.id;
 
-          const iconSrc = isHigh ? MAIN_CATEGORY_GLOWS[mainCat || 'Industry'] : MAIN_CATEGORY_ICONS[mainCat || 'Industry'];
-          const size = isSelected ? 60 : 40;
+            const iconSrc = isHigh ? MAIN_CATEGORY_GLOWS[mainCat || 'Industry'] : MAIN_CATEGORY_ICONS[mainCat || 'Industry'];
+            const size = isSelected ? 60 : 40;
 
-          return (
+            return (
             <Marker
               key={asset.id}
               longitude={coords[0]}
@@ -794,16 +956,8 @@ const SectorMap: React.FC<SectorMapProps> = ({
               onClick={(e) => {
                 e.originalEvent.stopPropagation();
                 setSelectedAsset(asset);
-                setIsPanelCollapsed(false);
                 onAssetSelect?.(asset);
-                mapRef.current?.flyTo({
-                  center: coords,
-                  zoom: 9,
-                  pitch: 60,
-                  duration: 2000,
-                  essential: true,
-                  easing: (t: number) => t * (2 - t)
-                });
+                // NO ZOOM - asset data appears in right panel drawer
               }}
             >
               <div
@@ -830,10 +984,7 @@ const SectorMap: React.FC<SectorMapProps> = ({
                 {/* TOOLTIP ON HOVER */}
                 {hoverAsset?.id === asset.id && !isSelected && (
                   <div className="asset-tooltip">
-                    <span>{asset.sector}</span>
-                    {asset.subCategory && (
-                      <span style={{ fontSize: '10px', opacity: 0.8 }}>{asset.subCategory}</span>
-                    )}
+                    <span>{asset.name || 'Unnamed Asset'}</span>
                   </div>
                 )}
               </div>
@@ -846,193 +997,32 @@ const SectorMap: React.FC<SectorMapProps> = ({
       {/* Container to align Controls and Panel side-by-side (Horizontal) */}
       <div className="map-top-left-section" style={{ position: 'absolute', top: '20px', left: '20px', display: 'flex', flexDirection: 'row', alignItems: 'flex-start', gap: '20px', zIndex: 50, pointerEvents: 'none' }}>
 
-        {/* 1. Left Group: Controls (Reset only) */}
+        {/* 1. Left Group: Zoom Out Button (L2 only) */}
         {selectedRegion && (
           <div className="controls-group" style={{ display: 'flex', flexDirection: 'column', gap: '12px', pointerEvents: 'auto' }}>
             <button
-              className="control-btn"
-              onClick={() => onRegionSelect?.(null)}
-              style={{ alignSelf: 'flex-start' }}
+              className="control-btn zoom-out-btn"
+              onClick={() => {
+                onRegionSelect?.(null);
+                // Re-enable controls will happen in useEffect
+              }}
+              style={{
+                alignSelf: 'flex-start',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '12px 20px',
+                fontSize: '14px',
+                fontWeight: 600
+              }}
             >
-              Reset View
+              <span style={{ fontSize: '18px' }}>⬅</span>
+              Zoom Out to National View
             </button>
           </div>
         )}
 
-        {/* 2. Right Group: Asset Panel (Next to Stats Pill) */}
-        {selectedAsset && (
-          <div className="asset-panel-fixed glass-panel" style={{ pointerEvents: 'auto', marginBottom: isPanelCollapsed ? '0' : '20px' }}>
-            <div className="popup-header" style={{ marginBottom: isPanelCollapsed ? '0' : '20px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                  <span className="popup-category" style={{ color: MAIN_CATEGORY_COLORS[getMainCategory(selectedAsset.sector) || 'Industry'] }}>
-                    {selectedAsset.sector?.toUpperCase()}
-                  </span>
-                  {selectedAsset.subCategory && (
-                    <span style={{ fontSize: '9px', color: 'var(--component-text-muted)', marginTop: '-2px' }}>{selectedAsset.subCategory}</span>
-                  )}
-                </div>
-                <span className={`popup-status ${getStatusClass(selectedAsset.status)}`}>
-                  {selectedAsset.status}
-                </span>
-              </div>
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <button
-                  className="header-icon-btn"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setIsPanelCollapsed(!isPanelCollapsed);
-                  }}
-                  title={isPanelCollapsed ? "Expand" : "Minimize"}
-                >
-                  {isPanelCollapsed ? '□' : '_'}
-                </button>
-                <button
-                  className="header-icon-btn"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setSelectedAsset(null);
-                    onAssetSelect?.(null);
-                  }}
-                  title="Close"
-                >
-                  ✕
-                </button>
-              </div>
-            </div>
-
-            {/* Title & Body - HIDDEN IF COLLAPSED */}
-            {!isPanelCollapsed && (
-              <>
-                <h3 className="popup-title">{selectedAsset.name}</h3>
-
-                <div className="popup-grid">
-                  {/* 1. FINANCIALS */}
-                  {(selectedAsset.investment || selectedAsset.revenue || selectedAsset.cost) && (
-                    <div className="popup-section full-width">
-                      <label>Financial Impact</label>
-                      <div className="metrics-row">
-                        {selectedAsset.investment && (
-                          <div className="metric-item">
-                            <span className="value">{formatNumber(selectedAsset.investment, true)}</span>
-                            <span className="label">Investment</span>
-                          </div>
-                        )}
-                        {selectedAsset.revenue && (
-                          <div className="metric-item">
-                            <span className="value">{selectedAsset.revenue}</span>
-                            <span className="label">Revenue</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* 2. SCALE & OPERATIONS */}
-                  {(selectedAsset.capacity || selectedAsset.jobs) && (
-                    <div className="popup-section full-width">
-                      <label>Operational Scale</label>
-                      <div className="metrics-row">
-                        {selectedAsset.capacity && (
-                          <div className="metric-item">
-                            <span className="value">{selectedAsset.capacity}</span>
-                            <span className="label">Capacity</span>
-                          </div>
-                        )}
-                        {selectedAsset.jobs && (
-                          <div className="metric-item">
-                            <span className="value">{selectedAsset.jobs}</span>
-                            <span className="label">Jobs Created</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* 3. STRATEGIC ALIGNMENT & OWNERSHIP */}
-                  {(selectedAsset.fiscalAction || selectedAsset.priority || selectedAsset.ownership_type) && (
-                    <div className="popup-section full-width">
-                      <label>Strategic Mandate & Ownership</label>
-                      <div className="tags-row">
-                        {selectedAsset.priority && (
-                          <span className={`tag-pill priority-${selectedAsset.priority.toLowerCase()}`}>
-                            {selectedAsset.priority === 'HIGH' ? 'Major Unlock' : 'Strategic Impact'}
-                          </span>
-                        )}
-                        {selectedAsset.ownership_type && (
-                          <span className="tag-pill ownership" style={{ background: selectedAsset.ownership_type === 'PPP' ? 'var(--component-color-info)' : 'var(--component-panel-border)' }}>
-                            {selectedAsset.ownership_type}
-                          </span>
-                        )}
-                        {selectedAsset.fiscalAction && (
-                          <span className="tag-pill action">
-                            ACTION: {selectedAsset.fiscalAction}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* 4. SECTOR SPLIT (Breakdown) - Visualized as Bars */}
-                  {(selectedAsset.sector_split || selectedAsset.sectors) && (
-                    <div className="popup-section full-width">
-                      <label>{selectedAsset.sector === 'Water' ? 'Water Supply Split' : 'Sector Distribution'}</label>
-                      <div className="sector-bars">
-                        {Object.entries(selectedAsset.sector_split || selectedAsset.sectors || {}).map(([key, val]) => (
-                          <div key={key} className="sector-bar-item">
-                            <div className="bar-label">
-                              <span>{key}</span>
-                              <span style={{ fontWeight: 700 }}>{typeof val === 'number' ? `${val}%` : String(val)}</span>
-                            </div>
-                            <div className="bar-track" style={{ height: '4px', background: 'rgba(255,255,255,0.1)', borderRadius: '2px', marginTop: '4px' }}>
-                              <div
-                                className="bar-fill"
-                                style={{
-                                  height: '100%',
-                                  borderRadius: '2px',
-                                  width: `${typeof val === 'number' ? Math.min(100, val) : 0}%`,
-                                  background: selectedAsset.sector === 'Water' ? 'var(--sector-water)' : 'var(--sector-industry)'
-                                }}
-                              ></div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* SPECIAL HIGHLIGHT: Investment for Private Future Assets */}
-                  {getSimpleStatus(selectedAsset.status) === 'Future' && selectedAsset.ownership_type === 'Private' && selectedAsset.investment && (
-                    <div className="popup-section full-width highlight-box" style={{ background: 'color-mix(in srgb, var(--component-color-warning) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--component-color-warning) 30%, transparent)', padding: '12px', borderRadius: '8px' }}>
-                      <div style={{ fontSize: '10px', color: 'var(--status-construction)', textTransform: 'uppercase', fontWeight: 700, marginBottom: '4px' }}>Private Investment Size</div>
-                      <div style={{ fontSize: '20px', fontWeight: 800, color: 'white' }}>{formatNumber(selectedAsset.investment, true)}</div>
-                    </div>
-                  )}
-
-                  {/* 5. RATIONALE */}
-                  <div className="popup-metric full-width">
-                    <label>Strategic Rationale</label>
-                    <p>{selectedAsset.rationale || selectedAsset.description || 'No description available.'}</p>
-                  </div>
-                </div>
-
-                <div className="popup-actions" style={{ marginTop: '20px' }}>
-                  <button
-                    className="popup-btn primary"
-                    style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
-                    onClick={() => {
-                      const lat = selectedAsset.latitude ?? selectedAsset.lat;
-                      const lng = selectedAsset.longitude ?? selectedAsset.long;
-                      window.open(`https://www.google.com/maps?q=${lat},${lng}`, '_blank');
-                    }}
-                  >
-                    See on Google Maps
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-        )}
+        {/* Asset Panel REMOVED - Data now appears in right drawer panel */}
 
       </div>
 
