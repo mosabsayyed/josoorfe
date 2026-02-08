@@ -122,9 +122,9 @@ export function SettingsDesk({ year, quarter }: SettingsDeskProps) {
 
     if (!draft) {
         return (
-            <div style={{ padding: '2rem' }}>
+            <div className="admin-settings-loading">
                 {error && (
-                    <div className="observability-error" style={{ marginBottom: '1rem' }}>
+                    <div className="observability-error admin-error-spacing">
                         <AlertCircle className="icon-md" />
                         <p>{error}</p>
                     </div>
@@ -138,40 +138,33 @@ export function SettingsDesk({ year, quarter }: SettingsDeskProps) {
     }
 
     return (
-        <div className="admin-settings-container" style={{ padding: '1.5rem' }}>
-            <div className="observability-header-left" style={{ marginBottom: '1.5rem' }}>
+        <div className="admin-settings-container">
+            <div className="observability-header-left admin-header-spacing">
                 <SettingsIcon className="observability-header-icon" />
                 <div>
-                    <h2 className="observability-header-title" style={{ margin: 0 }}>Admin Settings</h2>
-                    <p className="observability-header-subtitle" style={{ margin: 0 }}>
+                    <h2 className="observability-header-title">Admin Settings</h2>
+                    <p className="observability-header-subtitle">
                         Configure LLM provider, MCP endpoints, and response schema independently.
                     </p>
                 </div>
             </div>
 
             {error && (
-                <div className="observability-error" style={{ marginBottom: '1rem' }}>
+                <div className="observability-error admin-error-spacing">
                     <AlertCircle className="icon-md" />
                     <p>{error}</p>
                 </div>
             )}
 
             {saveStatus && (
-                <div style={{
-                    padding: '0.75rem',
-                    marginBottom: '1rem',
-                    background: 'rgba(34, 197, 94, 0.1)',
-                    border: '1px solid rgba(34, 197, 94, 0.3)',
-                    borderRadius: '0.5rem',
-                    color: '#22c55e'
-                }}>
+                <div className="admin-save-status">
                     {saveStatus}
                 </div>
             )}
 
             <div className="admin-settings-grid">
                 <div className="admin-card">
-                    <h3><Cpu className="icon-md" style={{ display: 'inline', marginRight: '0.5rem' }} />Provider & Models</h3>
+                    <h3><Cpu className="icon-md admin-icon-inline" />Provider & Models</h3>
                     <label className="admin-field">
                         <span>Base URL</span>
                         <input
@@ -244,7 +237,7 @@ export function SettingsDesk({ year, quarter }: SettingsDeskProps) {
 
                 <div className="admin-card">
                     <div className="admin-card-header">
-                        <h3><Database className="icon-md" style={{ display: 'inline', marginRight: '0.5rem' }} />MCP Endpoints</h3>
+                        <h3><Database className="icon-md admin-icon-inline" />MCP Endpoints</h3>
                         <button className="trace-list-refresh" onClick={addEndpoint} type="button">
                             <Plus className="icon-sm" /> Add
                         </button>
@@ -288,8 +281,8 @@ export function SettingsDesk({ year, quarter }: SettingsDeskProps) {
                             </div>
                         ))}
                     </div>
-                    <div className="admin-card" style={{ marginTop: '1rem' }}>
-                        <h4><Zap className="icon-sm" style={{ display: 'inline', marginRight: '0.5rem' }} />Persona Bindings</h4>
+                    <div className="admin-card admin-card-spacing">
+                        <h4><Zap className="icon-sm admin-icon-inline" />Persona Bindings</h4>
                         {['noor', 'maestro', 'default'].map((persona) => (
                             <label key={persona} className="admin-field">
                                 <span>{persona} →</span>
@@ -310,21 +303,14 @@ export function SettingsDesk({ year, quarter }: SettingsDeskProps) {
                 </div>
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '1.5rem', alignItems: 'center' }}>
-                <p style={{ margin: 0, fontSize: '12px', color: '#9ca3af' }}>
+            <div className="admin-footer-row">
+                <p className="admin-footer-text">
                     Last updated: {settings?.updated_at || 'n/a'} by {settings?.updated_by || 'n/a'}
                 </p>
                 <button
-                    className="trace-list-refresh"
+                    className="trace-list-refresh admin-save-btn"
                     onClick={handleSave}
                     disabled={loading}
-                    style={{
-                        background: '#D4AF37',
-                        color: '#000',
-                        fontWeight: 700,
-                        padding: '0.5rem 1.5rem',
-                        border: 'none'
-                    }}
                 >
                     <Save className="icon-md" />
                     Save Changes

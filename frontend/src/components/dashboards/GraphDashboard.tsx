@@ -282,7 +282,7 @@ export function GraphDashboard() {
               onClick={() => setCurrentView('dashboard')}
               data-testid="link-dashboard-home"
             >
-              {t('title')} <span style={{ color: isDark ? '#FFD700' : '#D97706' }}>{t('subtitle')}</span>
+              {t('title')} <span style={{ color: isDark ? 'var(--component-text-accent)' : '#D97706' }}>{t('subtitle')}</span>
             </h1>
             <p style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.1em', color: isDark ? '#D1D5DB' : '#9CA3AF', margin: 0, lineHeight: language === 'ar' ? 1.4 : 1.2 }}>{t('tagline')}</p>
           </div>
@@ -292,7 +292,7 @@ export function GraphDashboard() {
          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
               <div id="tour-filters" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <label style={{ color: isDark ? '#FFD700' : '#D97706', fontSize: '0.75rem', fontWeight: 600 }}>{t('year')}</label>
+                  <label style={{ color: isDark ? 'var(--component-text-accent)' : '#D97706', fontSize: '0.75rem', fontWeight: 600 }}>{t('year')}</label>
                  <select
                      value={dashboardYear}
                      onChange={(e) => setDashboardYear(e.target.value)}
@@ -308,7 +308,7 @@ export function GraphDashboard() {
              </div>
 
              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <label style={{ color: isDark ? '#FFD700' : '#D97706', fontSize: '0.75rem', fontWeight: 600 }}>{t('qtr')}</label>
+                  <label style={{ color: isDark ? 'var(--component-text-accent)' : '#D97706', fontSize: '0.75rem', fontWeight: 600 }}>{t('qtr')}</label>
                  <select
                      value={searchQuarter}
                      onChange={(e) => setSearchQuarter(e.target.value)}
@@ -323,7 +323,7 @@ export function GraphDashboard() {
              </div>
           </div>
 
-           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.375rem 0.75rem', border: isDark ? '1px solid #374151' : '1px solid #D1D5DB', backgroundColor: 'rgba(255, 215, 0, 0.1)' }}>
+           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.375rem 0.75rem', border: isDark ? '1px solid #374151' : '1px solid #D1D5DB', backgroundColor: 'rgba(244, 187, 48, 0.1)' }}>
              <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: healthData?.status === 'connected' ? '#10B981' : '#EF4444' }}></div>
              <span style={{ fontSize: '0.75rem', color: isDark ? '#9CA3AF' : '#6B7280' }}>
               {healthData?.status === 'connected' 
@@ -334,7 +334,7 @@ export function GraphDashboard() {
            <Button id="tour-help-btn" onClick={() => setShowGuide(true)} variant="ghost" size="sm" style={{ color: isDark ? '#9CA3AF' : '#6B7280', marginRight: '0.5rem' }} title={t('showGuide')}>
              <CircleHelp style={{ width: '20px', height: '20px' }} />
            </Button>
-           <Button onClick={handleExport} variant="outline" size="sm" style={{ borderColor: isDark ? '#FFD700' : '#D97706', color: isDark ? '#FFD700' : '#D97706' }}>
+           <Button onClick={handleExport} variant="outline" size="sm" style={{ borderColor: isDark ? 'var(--component-text-accent)' : '#D97706', color: isDark ? 'var(--component-text-accent)' : '#D97706' }}>
              <Download style={{ width: '16px', height: '16px', marginRight: '0.5rem' }} />
             {t('export')}
           </Button>
@@ -404,7 +404,7 @@ export function GraphDashboard() {
               {graphLoading ? (
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
                   <div style={{ textAlign: 'center' }}>
-                    <div style={{ animation: 'spin 1s linear infinite', height: '3rem', width: '3rem', borderBottom: '2px solid #FFD700', margin: '0 auto 1rem auto' }}></div>
+                    <div style={{ animation: 'spin 1s linear infinite', height: '3rem', width: '3rem', borderBottom: '2px solid var(--component-text-accent)', margin: '0 auto 1rem auto' }}></div>
                     <p style={{ color: isDark ? '#9CA3AF' : '#6B7280' }}>{t('loading')}</p>
                   </div>
                 </div>
@@ -418,7 +418,7 @@ export function GraphDashboard() {
               ) : null}
               {displayGraphData && <NeoGraph data={displayGraphData} isDark={isDark} language={language} />}
               {graphData && (
-                <div style={{ position: 'absolute', top: '1rem', right: isRTL ? 'auto' : '1rem', left: isRTL ? '1rem' : 'auto', padding: '0.25rem 0.75rem', fontSize: '0.75rem', border: isDark ? '1px solid #FFD700' : '1px solid #D97706', color: isDark ? '#FFD700' : '#D97706', backgroundColor: isDark ? 'rgba(17, 24, 39, 0.9)' : 'rgba(243, 244, 246, 0.9)' }}>
+                <div style={{ position: 'absolute', top: '1rem', right: isRTL ? 'auto' : '1rem', left: isRTL ? '1rem' : 'auto', padding: '0.25rem 0.75rem', fontSize: '0.75rem', border: isDark ? '1px solid var(--component-text-accent)' : '1px solid #D97706', color: isDark ? 'var(--component-text-accent)' : '#D97706', backgroundColor: isDark ? 'rgba(17, 24, 39, 0.9)' : 'rgba(243, 244, 246, 0.9)' }}>
                   {language === 'ar' ? `مباشر: ${graphData.nodes.length} عقد، ${graphData.links.length} روابط` : `Live: ${graphData.nodes.length} nodes, ${graphData.links.length} edges`}
                 </div>
               )}

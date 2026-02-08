@@ -107,7 +107,7 @@ ${dataPackage}
   };
 
   const blockButtonStyle: React.CSSProperties = {
-    background: 'rgba(255, 215, 0, 0.1)',
+    background: 'rgba(244, 187, 48, 0.1)',
     border: '1px solid var(--color-gold)',
     padding: '10px 16px',
     borderRadius: '6px',
@@ -130,7 +130,7 @@ ${dataPackage}
           onClick={handleTrace}
           title="Trace"
         >
-          <Search size={14} color={isDark ? '#FFD700' : '#D97706'} />
+          <Search size={14} color={isDark ? 'var(--component-text-accent)' : '#D97706'} />
         </button>
       ) : (
         <button 

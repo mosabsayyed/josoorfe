@@ -561,12 +561,28 @@ const SectorMap: React.FC<SectorMapProps> = ({
   const [selectedAsset, setSelectedAsset] = useState<GraphNode | null>(null);
   const [hoverAsset, setHoverAsset] = useState<GraphNode | null>(null);
 
+  // Theme detection for map style
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    const attr = document.documentElement.getAttribute('data-theme');
+    return attr !== 'light';
+  });
+
   // Animation State for Line Flow - REMOVED (Now handled by CSS in SVG)
   const [mapViewport, setMapViewport] = useState<any>(null);
 
   // Sync SVG on move
   const onMove = useCallback((evt: any) => {
     setMapViewport(evt.viewState);
+  }, []);
+
+  // Watch for theme changes
+  useEffect(() => {
+    const observer = new MutationObserver(() => {
+      const attr = document.documentElement.getAttribute('data-theme');
+      setIsDarkMode(attr !== 'light');
+    });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+    return () => observer.disconnect();
   }, []);
 
   // NO CONTROLLED ViewState - Allows smooth animations via mapRef.current.flyTo()
@@ -577,7 +593,7 @@ const SectorMap: React.FC<SectorMapProps> = ({
       // Remove non-renderable items
       if (node.asset_type === 'Network Connection') return false;
       if (node.asset_type === 'Region') return false;
-      
+
       // Remove items without coordinates
       const coords = getCoords(node);
       if (!coords) return false;
@@ -585,12 +601,20 @@ const SectorMap: React.FC<SectorMapProps> = ({
       // L1 VIEW: Hide all assets (only show 4 mega-region circles)
       if (!selectedRegion) return false;
 
+      // Apply sector filter - show all sectors if 'all' is selected
+      if (selectedSector && selectedSector !== 'all') {
+        const nodeSector = (node.sector || '').toLowerCase();
+        if (nodeSector !== selectedSector.toLowerCase()) {
+          return false;
+        }
+      }
+
       // L2 VIEW: Show whatever parent gave us (already filtered by region/year/priority)
       return true;
     });
 
     return result;
-  }, [allAssets, selectedRegion]);
+  }, [allAssets, selectedRegion, selectedSector]);
 
   // Track camera positioning to prevent infinite loop - store region + asset count
   const cameraPositionedFor = useRef<{ region: string | null; assetCount: number }>({ region: null, assetCount: 0 });
@@ -849,13 +873,15 @@ const SectorMap: React.FC<SectorMapProps> = ({
         }}
         // UNCONTROLLED MODE: No viewState prop here!
         mapboxAccessToken={MAPBOX_TOKEN}
-        mapStyle="mapbox://styles/mapbox/dark-v11"
+        mapStyle={isDarkMode ? "mapbox://styles/mapbox/dark-v11" : "mapbox://styles/mapbox/light-v11"}
         style={{ width: '100%', height: '100%' }}
         reuseMaps
         minZoom={4.5}
         maxZoom={16}
         maxBounds={[[32.0, 15.0], [60.0, 35.0]]} // Strict KSA Bounds
         terrain={{ source: 'mapbox-dem', exaggeration: 1.5 }}
+        scrollZoom={!!selectedRegion} // Disable scroll zoom at L1 (nation level)
+        doubleClickZoom={!!selectedRegion} // Disable double-click zoom at L1
         onMove={onMove}
       >
         <NavigationControl position="top-right" />
@@ -984,7 +1010,10 @@ const SectorMap: React.FC<SectorMapProps> = ({
                 {/* TOOLTIP ON HOVER */}
                 {hoverAsset?.id === asset.id && !isSelected && (
                   <div className="asset-tooltip">
-                    <span>{asset.name || 'Unnamed Asset'}</span>
+                    <span>
+                      <span style={{ opacity: 0.6, marginRight: '6px' }}>{asset.id}</span>
+                      {asset.name || 'Unnamed Asset'}
+                    </span>
                   </div>
                 )}
               </div>

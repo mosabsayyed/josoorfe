@@ -127,7 +127,7 @@ export default function Header() {
                   width: '28px',
                   height: '28px',
                   borderRadius: '50%',
-                  background: 'linear-gradient(135deg, #FFD700 0%, #B8860B 100%)',
+                  background: 'linear-gradient(135deg, var(--component-text-accent) 0%, var(--component-text-accent) 100%)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -148,7 +148,7 @@ export default function Header() {
                   width: '280px',
                   background: 'rgba(31, 41, 55, 0.95)',
                   backdropFilter: 'blur(20px)',
-                  border: '1px solid rgba(255, 215, 0, 0.2)',
+                  border: '1px solid rgba(244, 187, 48, 0.2)',
                   borderRadius: '12px',
                   boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
                   overflow: 'hidden',
@@ -157,7 +157,7 @@ export default function Header() {
                 }}>
                   {/* User Info Header */}
                   <div style={{ padding: '16px', background: 'rgba(0,0,0,0.2)', borderRadius: '8px', marginBottom: '8px' }}>
-                    <div style={{ fontSize: '15px', fontWeight: 600, color: '#FFD700', marginBottom: '4px' }}>
+                    <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--component-text-accent)', marginBottom: '4px' }}>
                       {user.full_name?.split('|')[0] || 'Authenticated User'}
                     </div>
                     <div style={{ fontSize: '12px', color: '#9CA3AF', wordBreak: 'break-all' }}>
@@ -173,7 +173,7 @@ export default function Header() {
                       onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)'}
                       onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                     >
-                      <LayoutDashboard size={16} color="#FFD700" />
+                      <LayoutDashboard size={16} color="var(--component-text-accent)" />
                       {t.dashboard}
                     </button>
 
@@ -207,8 +207,8 @@ export default function Header() {
               onClick={() => navigate('/login')}
               style={{
                 background: 'transparent',
-                border: '1px solid #FFD700',
-                color: '#FFD700',
+                border: '1px solid var(--component-text-accent)',
+                color: 'var(--component-text-accent)',
                 padding: '8px 16px',
                 borderRadius: '6px',
                 fontSize: '14px',
@@ -217,12 +217,12 @@ export default function Header() {
                 transition: 'all 0.2s ease',
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.background = '#FFD700';
+                e.currentTarget.style.background = 'var(--component-text-accent)';
                 e.currentTarget.style.color = '#111827';
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.background = 'transparent';
-                e.currentTarget.style.color = '#FFD700';
+                e.currentTarget.style.color = 'var(--component-text-accent)';
               }}
             >
               {t.login}

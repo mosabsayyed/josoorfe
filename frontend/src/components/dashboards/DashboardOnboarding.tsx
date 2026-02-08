@@ -13,7 +13,7 @@ const DRIVER_THEME_STYLES = `
     max-width: 500px;
   }
   .driver-popover.driverjs-theme .driver-popover-title {
-    color: #FFD700; 
+    color: var(--component-text-accent); 
     font-size: 1.1rem;
     font-weight: 600;
   }
@@ -98,7 +98,7 @@ const DashboardOnboarding: React.FC<DashboardOnboardingProps> = ({ isOpen, onClo
               <div dir="rtl" style="text-align: right;">
                 <p>هذا عرض توضيحي لرحلة تحول جهة حكومية على مدى 5 سنوات. تمت إضافة البيانات بناءً على <strong>خطط مستقبلية</strong>.</p>
                 <p>تم توجيه الذكاء الاصطناعي للتعامل مع البيانات المستقبلية على أنها "مخططة" حتى لو كانت نسبة الإنجاز ليست صفر.</p>
-                <div style="background-color: rgba(255, 215, 0, 0.1); padding: 0.75rem; border-radius: 0.375rem; border-right: 4px solid #F59E0B; margin-top: 1rem;">
+                <div style="background-color: rgba(244, 187, 48, 0.1); padding: 0.75rem; border-radius: 0.375rem; border-right: 4px solid #F59E0B; margin-top: 1rem;">
                   <p style="margin: 0; font-size: 0.85rem;">توفر مؤشرات لوحة المعلومات مدخلات من جلسة <strong>التخطيط الاستراتيجي</strong>. هذا يمكّن <strong>زر الصحة</strong> من إجراء تحليل للخطط الجديدة مقابل الخطط الحالية.</p>
                 </div>
               </div>
@@ -106,7 +106,7 @@ const DashboardOnboarding: React.FC<DashboardOnboardingProps> = ({ isOpen, onClo
               <div class="space-y-4">
                 <p>This is a demo of an agency's 5-year transformation journey. The data was added based on <strong>future data being planned</strong>.</p>
                 <p>The AI is instructed to look at future data as "planned" (even if the % of completion is not 0) so that the simulation runs effectively.</p>
-                <div style="background-color: rgba(255, 215, 0, 0.1); padding: 0.75rem; border-radius: 0.375rem; border-left: 4px solid #F59E0B; margin-top: 1rem;">
+                <div style="background-color: rgba(244, 187, 48, 0.1); padding: 0.75rem; border-radius: 0.375rem; border-left: 4px solid #F59E0B; margin-top: 1rem;">
                   <p style="margin: 0; font-size: 0.85rem;">The dashboard indicators provide inputs from a <strong>Strategic Planning</strong> session. This enables the <strong>Health Button</strong> to perform an analysis of new plans vs. existing plans.</p>
                 </div>
               </div>

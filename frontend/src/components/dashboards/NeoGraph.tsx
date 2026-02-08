@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import ForceGraph3D from "react-force-graph-3d";
 import ForceGraph2D from "react-force-graph-2d";
 import { GraphData } from "../../types/dashboard";
@@ -125,6 +126,8 @@ export function NeoGraph({
     onNodeHover: setHoverNode,
     onNodeClick: (node: any) => onNodeClick && onNodeClick(node),
     cooldownTicks: 100,
+    onEngineStop: () => { graphRef.current?.zoomToFit(400, 40); },
+    onNodeDragEnd: (node: any) => { node.fx = node.x; node.fy = node.y; node.fz = node.z; },
     linkLineDash: (link: any) => (link.properties?.status === 'critical' || link.properties?.virtual) ? [5, 5] : null,
   };
 
@@ -149,48 +152,43 @@ export function NeoGraph({
         </div>
       )}
 
-      {/* Tooltip - Display ALL Node Properties */}
-      {hoverNode && (
-        <div className="graph-tooltip">
-          <h3 className="tooltip-title">{hoverNode.properties?.name || hoverNode.label || hoverNode.id || 'Unnamed Node'}</h3>
-          <div className="graph-tooltip-meta">
-            <div className="tooltip-section">
-              <p><strong>Labels:</strong> {hoverNode.labels?.join(', ') || hoverNode.type || 'Unknown'}</p>
-              <p><strong>ID:</strong> <code>{hoverNode.id}</code></p>
+      {/* Tooltip via portal - escapes CSS transforms */}
+      {hoverNode && createPortal(
+        <div style={{
+          position: 'fixed', top: '1.5rem', right: '1.5rem', padding: '1rem', width: '18rem',
+          background: 'rgba(10, 10, 10, 0.95)', backdropFilter: 'blur(16px)',
+          border: '1px solid rgba(212, 175, 55, 0.5)', borderLeft: '4px solid #D4AF37',
+          borderRadius: '0.5rem', boxShadow: '0 20px 40px rgba(0,0,0,0.8), 0 0 10px rgba(212,175,55,0.2)',
+          pointerEvents: 'none' as const, zIndex: 9999, color: '#fff'
+        }}>
+          <h3 style={{ margin: '0 0 0.75rem 0', fontSize: '1rem', fontWeight: 800, color: '#D4AF37',
+            borderBottom: '1px solid rgba(212,175,55,0.3)', paddingBottom: '0.5rem',
+            textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>
+            {hoverNode.properties?.name || hoverNode.label || hoverNode.id || 'Unnamed Node'}
+          </h3>
+          <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '0.5rem' }}>
+            <div>
+              <p style={{ margin: 0, fontSize: '0.8rem', lineHeight: 1.5, color: '#fff' }}>
+                <strong style={{ color: '#D4AF37' }}>Labels:</strong> {hoverNode.labels?.join(', ') || hoverNode.type || 'Unknown'}
+              </p>
+              <p style={{ margin: 0, fontSize: '0.8rem', lineHeight: 1.5, color: '#fff' }}>
+                <strong style={{ color: '#D4AF37' }}>ID:</strong> <code>{hoverNode.id}</code>
+              </p>
             </div>
-            
-            {/* Display ALL Properties */}
             {hoverNode.properties && Object.keys(hoverNode.properties).length > 0 && (
-              <div className="tooltip-section">
-                <strong style={{ display: 'block', marginTop: '8px', marginBottom: '4px' }}>Properties:</strong>
-                <div className="tooltip-properties">
-                  {Object.entries(hoverNode.properties).map(([key, value]: [string, any]) => (
-                    <div key={key} className="tooltip-property-row">
-                      <span className="property-key">{key}:</span>
-                      <span className="property-value">
-                        {typeof value === 'object' ? JSON.stringify(value) : String(value)}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-            
-            {/* Display All Relationships if available */}
-            {hoverNode.relationships && Object.keys(hoverNode.relationships).length > 0 && (
-              <div className="tooltip-section">
-                <strong style={{ display: 'block', marginTop: '8px', marginBottom: '4px' }}>Relationships:</strong>
-                <div className="tooltip-relationships">
-                  {Object.entries(hoverNode.relationships).map(([key, count]: [string, any]) => (
-                    <p key={key} style={{ fontSize: '12px', margin: '2px 0' }}>
-                      {key}: {typeof count === 'number' ? count : String(count)}
-                    </p>
-                  ))}
-                </div>
+              <div>
+                <strong style={{ display: 'block', marginTop: '8px', marginBottom: '4px', color: '#D4AF37' }}>Properties:</strong>
+                {Object.entries(hoverNode.properties).map(([key, value]: [string, any]) => (
+                  <div key={key} style={{ display: 'flex', gap: '4px', fontSize: '0.75rem', margin: '2px 0', color: '#fff' }}>
+                    <span style={{ color: '#9ca3af', minWidth: '60px' }}>{key}:</span>
+                    <span>{typeof value === 'object' ? JSON.stringify(value) : String(value)}</span>
+                  </div>
+                ))}
               </div>
             )}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

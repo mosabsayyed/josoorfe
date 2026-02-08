@@ -410,7 +410,7 @@ export function StrategicMap({ year, quarter }: SectorMapProps) {
                                             textAnchor="middle"
                                             style={{ pointerEvents: 'none' }}
                                         >
-                                            {asset.name.length > 20 ? asset.name.substring(0, 17) + '...' : asset.name}
+                                            {asset.id} {asset.name.length > 20 ? asset.name.substring(0, 17) + '...' : asset.name}
                                         </text>
                                     )}
                                 </g>

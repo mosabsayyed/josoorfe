@@ -28,11 +28,13 @@ export const CANONICAL_PATHS: Record<string, CanonicalPathDef> = {
     'setting_strategic_initiatives': {
         name: 'Setting Strategic Initiatives',
         steps: [
-            { sourceLabel: 'SectorObjective', relationship: 'REALIZED_VIA', targetLabel: 'SectorPolicyTool' },
-            { sourceLabel: 'SectorPolicyTool', relationship: 'SETS_PRIORITIES', targetLabel: 'EntityCapability' },
-            { sourceLabel: 'EntityCapability', relationship: 'ROLE_GAPS|KNOWLEDGE_GAPS|AUTOMATION_GAPS', targetLabel: ['EntityOrgUnit', 'EntityProcess', 'EntityITSystem'] },
-            { sourceLabel: ['EntityOrgUnit', 'EntityProcess', 'EntityITSystem'], relationship: 'GAPS_SCOPE', targetLabel: 'EntityProject' },
-            { sourceLabel: 'EntityProject', relationship: 'ADOPTION_RISKS', targetLabel: 'EntityChangeAdoption' }
+            { sourceLabel: 'SectorObjective', sourceLevel: 'L1', relationship: 'REALIZED_VIA', targetLabel: 'SectorPolicyTool', targetLevel: 'L1' },
+            { sourceLabel: 'SectorPolicyTool', sourceLevel: 'L1', relationship: 'PARENT_OF', targetLabel: 'SectorPolicyTool', targetLevel: 'L2' },
+            { sourceLabel: 'SectorPolicyTool', sourceLevel: 'L2', relationship: 'SETS_PRIORITIES', targetLabel: 'EntityCapability', targetLevel: 'L2' },
+            { sourceLabel: 'EntityCapability', sourceLevel: 'L2', relationship: 'PARENT_OF', targetLabel: 'EntityCapability', targetLevel: 'L3' },
+            { sourceLabel: 'EntityCapability', sourceLevel: 'L3', relationship: 'ROLE_GAPS|KNOWLEDGE_GAPS|AUTOMATION_GAPS', targetLabel: ['EntityOrgUnit', 'EntityProcess', 'EntityITSystem'], targetLevel: 'L3' },
+            { sourceLabel: ['EntityOrgUnit', 'EntityProcess', 'EntityITSystem'], sourceLevel: 'L3', relationship: 'GAPS_SCOPE', targetLabel: 'EntityProject', targetLevel: 'L3' },
+            { sourceLabel: 'EntityProject', sourceLevel: 'L3', relationship: 'ADOPTION_RISKS', targetLabel: 'EntityChangeAdoption', targetLevel: 'L3' }
         ]
     },
     'setting_strategic_priorities': {
@@ -50,11 +52,12 @@ export const CANONICAL_PATHS: Record<string, CanonicalPathDef> = {
         steps: [
             { sourceLabel: 'EntityChangeAdoption', sourceLevel: 'L3', relationship: 'INCREASE_ADOPTION', targetLabel: 'EntityProject', targetLevel: 'L3' },
             { sourceLabel: 'EntityProject', sourceLevel: 'L3', relationship: 'CLOSE_GAPS', targetLabel: ['EntityOrgUnit', 'EntityProcess', 'EntityITSystem'], targetLevel: 'L3' },
-            { sourceLabel: ['EntityOrgUnit', 'EntityProcess', 'EntityITSystem'], sourceLevel: 'L3', relationship: 'ROLE_GAPS', targetLabel: 'EntityCapability', targetLevel: 'L3' },
+            { sourceLabel: ['EntityOrgUnit', 'EntityProcess', 'EntityITSystem'], sourceLevel: 'L3', relationship: 'GAP_STATUS', targetLabel: 'EntityCapability', targetLevel: 'L3' },
             { sourceLabel: 'EntityCapability', sourceLevel: 'L3', relationship: 'MONITORED_BY', targetLabel: 'EntityRisk', targetLevel: 'L3' },
             { sourceLabel: 'EntityRisk', sourceLevel: 'L3', relationship: 'PARENT_OF', targetLabel: 'EntityRisk', targetLevel: 'L2' },
             { sourceLabel: 'EntityRisk', sourceLevel: 'L2', relationship: 'INFORMS', targetLabel: 'SectorPolicyTool', targetLevel: 'L2' },
-            { sourceLabel: 'SectorPolicyTool', sourceLevel: 'L2', relationship: 'GOVERNED_BY', targetLabel: 'SectorObjective', targetLevel: 'L1' }
+            { sourceLabel: 'SectorPolicyTool', sourceLevel: 'L2', relationship: 'PARENT_OF', targetLabel: 'SectorPolicyTool', targetLevel: 'L1' },
+            { sourceLabel: 'SectorPolicyTool', sourceLevel: 'L1', relationship: 'GOVERNED_BY', targetLabel: 'SectorObjective', targetLevel: 'L1' }
         ]
     },
     'operate_oversight': {
@@ -63,7 +66,8 @@ export const CANONICAL_PATHS: Record<string, CanonicalPathDef> = {
             { sourceLabel: 'EntityCapability', sourceLevel: 'L3', relationship: 'MONITORED_BY', targetLabel: 'EntityRisk', targetLevel: 'L3' },
             { sourceLabel: 'EntityRisk', sourceLevel: 'L3', relationship: 'PARENT_OF', targetLabel: 'EntityRisk', targetLevel: 'L2' },
             { sourceLabel: 'EntityRisk', sourceLevel: 'L2', relationship: 'INFORMS', targetLabel: 'SectorPerformance', targetLevel: 'L2' },
-            { sourceLabel: 'SectorPerformance', sourceLevel: 'L2', relationship: 'AGGREGATES_TO', targetLabel: 'SectorObjective', targetLevel: 'L1' }
+            { sourceLabel: 'SectorPerformance', sourceLevel: 'L2', relationship: 'PARENT_OF', targetLabel: 'SectorPerformance', targetLevel: 'L1' },
+            { sourceLabel: 'SectorPerformance', sourceLevel: 'L1', relationship: 'AGGREGATES_TO', targetLabel: 'SectorObjective', targetLevel: 'L1' }
         ]
     },
     'sustainable_operations': {

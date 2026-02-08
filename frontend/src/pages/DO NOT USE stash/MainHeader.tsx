@@ -240,8 +240,8 @@ export const MainHeader: React.FC<MainHeaderProps> = ({
                 cursor: 'pointer',
                 padding: '0.25rem 0.5rem',
                 borderRadius: '2rem',
-                backgroundColor: isGuest ? 'rgba(255, 215, 0, 0.1)' : 'rgba(255,255,255,0.05)',
-                border: isGuest ? '1px solid rgba(255, 215, 0, 0.3)' : '1px solid rgba(255,255,255,0.1)'
+                backgroundColor: isGuest ? 'rgba(244, 187, 48, 0.1)' : 'rgba(255,255,255,0.05)',
+                border: isGuest ? '1px solid rgba(244, 187, 48, 0.3)' : '1px solid rgba(255,255,255,0.1)'
               }}>
                 <div style={{ 
                   width: '32px', 
@@ -256,7 +256,7 @@ export const MainHeader: React.FC<MainHeaderProps> = ({
                   {currentUser?.user_metadata?.avatar_url ? (
                     <img src={currentUser.user_metadata.avatar_url} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   ) : (
-                    <User size={18} color={isGuest ? '#FFD700' : 'var(--text-primary)'} />
+                    <User size={18} color={isGuest ? 'var(--component-text-accent)' : 'var(--text-primary)'} />
                   )}
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column' }}>

@@ -643,3 +643,8 @@
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
     background: rgba(212, 175, 55, 0.5);
 }
+
+/* Subgroup Spacing */
+.ontology-subgroup {
+    margin-top: 1rem;
+}

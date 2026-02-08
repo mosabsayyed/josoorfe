@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { motion } from 'framer-motion';
 
 interface Node {
@@ -94,7 +95,7 @@ export function GraphSankey({ data, isDark = true, chain, metadata, isDiagnostic
             null;
             if (raw === null || raw === undefined) return null;
             const s = String(raw).trim();
-            return /^\d+(\.\d+)?$/.test(s) ? s : null;
+            return /^\d+(\.\d+)*$/.test(s) ? s : null;
         };
 
     const getLinkEndpointId = (val: any): string => {
@@ -214,8 +215,37 @@ export function GraphSankey({ data, isDark = true, chain, metadata, isDiagnostic
             }
 
             const isBroken = isDiagnostic && props.status === 'critical';
+            const isOrphanOrBastard = isDiagnostic && (props.status === 'orphan' || props.status === 'bastard');
             const isVirtual = props.virtual === true;
-            const baseColor = isDark ? '#1a365d' : '#2563eb';
+
+            // Color by label type
+            const labelColorMap: Record<string, string> = {
+                SectorObjective: '#3b82f6',
+                SectorPolicyTool: '#8b5cf6',
+                SectorAdminRecord: '#06b6d4',
+                SectorBusiness: '#f59e0b',
+                SectorCitizen: '#10b981',
+                SectorGovEntity: '#ef4444',
+                SectorDataTransaction: '#ec4899',
+                SectorPerformance: '#f97316',
+                EntityCapability: '#6366f1',
+                EntityOrgUnit: '#14b8a6',
+                EntityProcess: '#a855f7',
+                EntityITSystem: '#0ea5e9',
+                EntityProject: '#84cc16',
+                EntityChangeAdoption: '#e879f9',
+                EntityRisk: '#f43f5e',
+                EntityCultureHealth: '#22d3ee',
+                EntityVendor: '#fb923c',
+            };
+            const primaryLabel = labels[0] || '';
+            const baseColor = labelColorMap[primaryLabel] || (isDark ? '#1a365d' : '#2563eb');
+
+            // Red = disconnected, Orange = dead-end/orphan, label color = normal
+            const nodeColor = isBroken ? '#ef4444'
+                : isOrphanOrBastard ? '#f59e0b'
+                : isVirtual ? '#D4AF37'
+                : baseColor;
 
             return {
                 id,
@@ -223,8 +253,8 @@ export function GraphSankey({ data, isDark = true, chain, metadata, isDiagnostic
                 name: baseName,
                 labels,
                 properties: props,
-                color: isBroken ? '#ef4444' : (isVirtual ? '#D4AF37' : baseColor),
-                isBroken,
+                color: nodeColor,
+                isBroken: isBroken || isOrphanOrBastard,
                 isVirtual,
                 stepIndex,
                 nameDisplay,
@@ -275,7 +305,7 @@ export function GraphSankey({ data, isDark = true, chain, metadata, isDiagnostic
             const hasGovEntity = colNodes.some(n => n.labels?.includes('SectorGovEntity'));
             const hasBusiness = colNodes.some(n => n.labels?.includes('SectorBusiness'));
 
-            if ((hasOrgUnit && hasProcess) || (hasOrgUnit && hasITSystem) || (hasProcess && hasITSystem)) {
+            if (hasOrgUnit || hasProcess || hasITSystem) {
                 colNodes.forEach(node => {
                     if (node.labels?.includes('EntityOrgUnit')) node.entityTypeSubHeader = 'Org';
                     else if (node.labels?.includes('EntityProcess')) node.entityTypeSubHeader = 'Process';
@@ -283,7 +313,7 @@ export function GraphSankey({ data, isDark = true, chain, metadata, isDiagnostic
                 });
             }
 
-            if ((hasCitizen && hasGovEntity) || (hasCitizen && hasBusiness) || (hasGovEntity && hasBusiness)) {
+            if (hasCitizen || hasGovEntity || hasBusiness) {
                 colNodes.forEach(node => {
                     if (node.labels?.includes('SectorCitizen')) node.entityTypeSubHeader = 'Citizen';
                     else if (node.labels?.includes('SectorGovEntity')) node.entityTypeSubHeader = 'Gov Entity';
@@ -457,15 +487,17 @@ export function GraphSankey({ data, isDark = true, chain, metadata, isDiagnostic
                             }
                         }
                         const lineHeight = 12;
-                        const headerPadY = 6;
+                        const headerPadY = 3;
+                        const headerWidth = layout.colWidth * 1.05;
+                        const headerX = x - (headerWidth - layout.colWidth) / 2;
                         const headerHeight = headerPadY * 2 + lines.length * lineHeight;
 
                         return (
                             <g key={`head-${i}`}>
                                 <rect
-                                    x={x}
+                                    x={headerX}
                                     y={5}
-                                    width={layout.colWidth}
+                                    width={headerWidth}
                                     height={headerHeight}
                                     rx={4}
                                     fill={isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}
@@ -516,9 +548,9 @@ export function GraphSankey({ data, isDark = true, chain, metadata, isDiagnostic
                                     y: e.clientY,
                                     content: (
                                         <div className="text-xs">
-                                            <span style={{ color: '#888' }}>{link.source.name}</span>
+                                            <span style={{ color: '#888' }}>{link.source.nameDisplay}</span>
                                             {' -> '}
-                                            <span style={{ color: '#fff' }}>{link.target.name}</span>
+                                            <span style={{ color: '#fff' }}>{link.target.nameDisplay}</span>
                                             {link.isVirtual && <div className="text-gold italic mt-1">AI Recommendation</div>}
                                         </div>
                                     )
@@ -666,54 +698,53 @@ export function GraphSankey({ data, isDark = true, chain, metadata, isDiagnostic
                 </svg>
             </div>
 
-            {/* Custom Portal Tooltip */}
-            {tooltip && (() => {
-                const padding = 16;
-                const vw = typeof window !== 'undefined' ? window.innerWidth : 1200;
-                const vh = typeof window !== 'undefined' ? window.innerHeight : 800;
-                const maxWidth = Math.min(420, vw - padding * 2);
-                const maxHeight = Math.min(500, vh - padding * 2);
-                let left = tooltip.x + 12;
-                let top = tooltip.y + 12;
-                if (left + maxWidth + padding > vw) {
-                    left = tooltip.x - maxWidth - 12;
-                }
-                if (top + maxHeight + padding > vh) {
-                    top = tooltip.y - maxHeight - 12;
-                }
-                left = Math.min(left, vw - maxWidth - padding);
-                top = Math.min(top, vh - maxHeight - padding);
-                left = Math.max(padding, left);
-                top = Math.max(padding, top);
-                return (
-                <div
-                    onMouseEnter={() => {
-                        if (tooltipTimeoutRef.current) clearTimeout(tooltipTimeoutRef.current);
-                    }}
-                    onMouseLeave={() => {
-                        if (tooltipTimeoutRef.current) clearTimeout(tooltipTimeoutRef.current);
-                        tooltipTimeoutRef.current = setTimeout(() => setTooltip(null), 200);
-                    }}
-                    style={{
-                    position: 'fixed',
-                    left,
-                    top,
-                    backgroundColor: isDark ? 'rgba(0,0,0,0.9)' : 'rgba(255,255,255,0.9)',
-                    border: `1px solid ${isDark ? '#333' : '#ccc'}`,
-                    borderRadius: '4px',
-                    padding: '8px',
-                    zIndex: 9999,
-                    pointerEvents: 'auto',
-                    color: isDark ? '#fff' : '#000',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
-                    maxWidth,
-                    maxHeight,
-                    overflowY: 'auto'
-                }}>
-                    {tooltip.content}
-                </div>
-                );
-            })()}
+            {/* Tooltip via portal - escapes any parent CSS transforms */}
+            {tooltip && createPortal(
+                (() => {
+                    const pad = 20;
+                    const vw = window.innerWidth;
+                    const vh = window.innerHeight;
+                    const tw = 320;
+                    const th = 400;
+
+                    let left = tooltip.x + 15;
+                    let top = tooltip.y + 15;
+
+                    if (left + tw > vw - pad) left = Math.max(pad, tooltip.x - tw - 15);
+                    if (top + th > vh - pad) top = Math.max(pad, tooltip.y - th - 15);
+                    left = Math.max(pad, Math.min(left, vw - tw - pad));
+                    top = Math.max(pad, Math.min(top, vh - th - pad));
+
+                    return (
+                        <div
+                            onMouseEnter={() => { if (tooltipTimeoutRef.current) clearTimeout(tooltipTimeoutRef.current); }}
+                            onMouseLeave={() => {
+                                if (tooltipTimeoutRef.current) clearTimeout(tooltipTimeoutRef.current);
+                                tooltipTimeoutRef.current = setTimeout(() => setTooltip(null), 200);
+                            }}
+                            style={{
+                                position: 'fixed',
+                                left,
+                                top,
+                                backgroundColor: isDark ? 'rgba(0,0,0,0.95)' : 'rgba(255,255,255,0.95)',
+                                border: `1px solid ${isDark ? '#444' : '#ccc'}`,
+                                borderRadius: '6px',
+                                padding: '10px',
+                                zIndex: 99999,
+                                pointerEvents: 'auto',
+                                color: isDark ? '#fff' : '#000',
+                                boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+                                maxWidth: tw,
+                                maxHeight: th,
+                                overflowY: 'auto'
+                            }}
+                        >
+                            {tooltip.content}
+                        </div>
+                    );
+                })(),
+                document.body
+            )}
         </div>
     );
 }

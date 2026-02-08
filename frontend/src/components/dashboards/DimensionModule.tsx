@@ -16,7 +16,7 @@ const TrendArrow: React.FC<{ direction: 'up' | 'down' | 'steady'; isDark?: boole
     success: '#10B981',
     danger: '#EF4444',
     warning: '#F59E0B',
-    accent: isDark ? '#FFD700' : '#D97706',
+    accent: isDark ? 'var(--component-text-accent)' : '#D97706',
     borderColor: isDark ? '#374151' : '#D1D5DB',
     panelBorderColor: isDark ? '#374151' : '#D1D5DB',
   };
@@ -82,7 +82,7 @@ const DimensionModule: React.FC<DimensionModuleProps> = ({ dimension, isDark, la
     success: '#10B981',
     danger: '#EF4444',
     warning: '#F59E0B',
-    accent: isDark ? '#FFD700' : '#D97706',
+    accent: isDark ? 'var(--component-text-accent)' : '#D97706',
     borderColor: isDark ? '#374151' : '#D1D5DB',
     panelBorderColor: isDark ? '#374151' : '#D1D5DB',
   };

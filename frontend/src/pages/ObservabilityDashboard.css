@@ -23,7 +23,7 @@
 .error-icon {
   width: 48px;
   height: 48px;
-  color: var(--component-text-accent, #FFD700);
+  color: var(--component-text-accent, #F4BB30);
 }
 
 .loading-icon {
@@ -76,7 +76,7 @@
 }
 
 .time-range-selector:hover {
-  border-color: var(--component-text-accent, #FFD700);
+  border-color: var(--component-text-accent, #F4BB30);
 }
 
 .refresh-button {
@@ -92,7 +92,7 @@
 }
 
 .refresh-button:hover:not(:disabled) {
-  border-color: var(--component-text-accent, #FFD700);
+  border-color: var(--component-text-accent, #F4BB30);
   background: var(--component-bg-secondary, #374151);
 }
 
@@ -126,7 +126,7 @@
 
 .kpi-card:hover {
   transform: translateY(-2px);
-  border-color: var(--component-text-accent, #FFD700);
+  border-color: var(--component-text-accent, #F4BB30);
 }
 
 .kpi-icon {

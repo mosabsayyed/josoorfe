@@ -482,19 +482,19 @@ export function ControlsDesk() {
       <div className="controls-legend">
         <div className="legend-items">
           <div className="legend-item">
-            <div className="legend-color" style={{ backgroundColor: '#10b981' }} />
+            <div className="legend-color legend-color-green" />
             <span className="legend-text">Green: &lt;35% exposure</span>
           </div>
           <div className="legend-item">
-            <div className="legend-color" style={{ backgroundColor: '#f59e0b' }} />
+            <div className="legend-color legend-color-amber" />
             <span className="legend-text">Amber: 35-65%</span>
           </div>
           <div className="legend-item">
-            <div className="legend-color" style={{ backgroundColor: '#ef4444' }} />
+            <div className="legend-color legend-color-red" />
             <span className="legend-text">Red: &gt;65%</span>
           </div>
           <div className="legend-item">
-            <div className="legend-color" style={{ backgroundColor: '#64748b' }} />
+            <div className="legend-color legend-color-gray" />
             <span className="legend-text">Gray: missing data</span>
           </div>
         </div>

@@ -600,7 +600,7 @@ section {
 }
 
 .nav-link.active {
-  background-color: rgba(255, 215, 0, 0.1);
+  background-color: rgba(244, 187, 48, 0.1);
   /* Gold transparent */
   color: var(--component-text-accent);
   border-left: 3px solid var(--component-text-accent);
@@ -878,7 +878,7 @@ section {
   border-left: 4px solid var(--component-text-accent);
   margin: 1rem 0;
   padding: 0.5rem 0 0.5rem 1rem;
-  background: rgba(255, 215, 0, 0.05);
+  background: rgba(244, 187, 48, 0.05);
   color: var(--component-text-secondary);
   font-style: normal;
   border-radius: 0 4px 4px 0;

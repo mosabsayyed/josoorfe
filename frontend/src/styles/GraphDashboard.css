@@ -17,12 +17,12 @@
   --component-text-muted: #9CA3AF;    /* Muted Grey */
   
   /* --- BRANDING / ACCENTS --- */
-  --component-text-accent: #FFD700;   /* TRUE GOLD - Primary Action/Focus */
+  --component-text-accent: #F4BB30;   /* TRUE GOLD - Primary Action/Focus */
   --component-text-on-accent: #111827; /* Dark text on Gold backgrounds */
   
   /* --- SEMANTIC COLORS --- */
   --component-color-success: #10B981; /* EMERALD GREEN - KSA Identity */
-  --component-color-warning: #FFD700; /* Gold/Amber */
+  --component-color-warning: #F4BB30; /* Gold/Amber */
   --component-color-danger: #EF4444;  /* Red */
   
   /* --- CHAT SPECIFIC --- */
@@ -52,7 +52,7 @@
   --component-text-muted: #6B7280;    /* Muted Grey */
   
   /* --- BRANDING / ACCENTS --- */
-  /* NOTE: Pure #FFD700 is too light for text on white backgrounds. 
+  /* NOTE: Pure #F4BB30 is too light for text on white backgrounds. 
      We use a darker Amber Gold (#D97706) for text/borders to maintain readability 
      while keeping the 'Gold' identity. */
   --component-text-accent: #D97706;   
@@ -279,15 +279,15 @@ section { display: flex; flex-direction: column; gap: 0.25rem; width: 100%; }
 
 .nav-btn:hover {
   background: var(--component-panel-bg, #1F2937) !important;
-  border-color: var(--component-text-accent, #FFD700) !important;
+  border-color: var(--component-text-accent, #F4BB30) !important;
   color: var(--component-text-primary, #F9FAFB) !important;
 }
 
 .nav-btn.active {
-  background: linear-gradient(135deg, rgba(255, 215, 0, 0.15), rgba(255, 215, 0, 0.05)) !important;
-  border-color: var(--component-text-accent, #FFD700) !important;
-  color: var(--component-text-accent, #FFD700) !important;
-  box-shadow: 0 0 10px rgba(255, 215, 0, 0.25) !important;
+  background: linear-gradient(135deg, rgba(244, 187, 48, 0.15), rgba(244, 187, 48, 0.05)) !important;
+  border-color: var(--component-text-accent, #F4BB30) !important;
+  color: var(--component-text-accent, #F4BB30) !important;
+  box-shadow: 0 0 10px rgba(244, 187, 48, 0.25) !important;
 }
 
 .nav-btn-icon-wrapper {
@@ -445,7 +445,7 @@ section { display: flex; flex-direction: column; gap: 0.25rem; width: 100%; }
 }
 
 .nav-link.active {
-  background-color: rgba(255, 215, 0, 0.1); /* Gold transparent */
+  background-color: rgba(244, 187, 48, 0.1); /* Gold transparent */
   color: var(--component-text-accent);
   border-left: 3px solid var(--component-text-accent);
 }

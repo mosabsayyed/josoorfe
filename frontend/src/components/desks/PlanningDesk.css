@@ -629,3 +629,8 @@
     border-radius: 0.25rem;
     text-align: center;
 }
+
+/* Block Header Variant: Tight Spacing */
+.block-header-tight {
+    margin-bottom: 0.25rem;
+}

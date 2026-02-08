@@ -48,7 +48,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
         padding: '0.5rem',
         borderRadius: '0.25rem'
       }}>
-        <p style={{ fontWeight: 700, color: '#FFD700', margin: 0, marginBottom: '0.25rem' }}>
+        <p style={{ fontWeight: 700, color: 'var(--component-text-accent)', margin: 0, marginBottom: '0.25rem' }}>
           {label || payload[0]?.payload?.name}
         </p>
         {payload.map((pld: any, index: number) => (
@@ -66,7 +66,7 @@ const StrategicInsights: React.FC<StrategicInsightsProps> = ({ data, isDark, lan
   const theme = {
     muted: isDark ? '#9CA3AF' : '#6B7280',
     success: '#10B981',
-    accent: isDark ? '#FFD700' : '#D97706',
+    accent: isDark ? 'var(--component-text-accent)' : '#D97706',
     grid: isDark ? '#374151' : '#D1D5DB',
   };
 

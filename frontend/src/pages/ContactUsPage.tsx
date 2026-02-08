@@ -86,13 +86,13 @@ export default function ContactUsPage() {
                 href="mailto:info@aitwintech.com" 
                 style={{ 
                   fontSize: '24px', 
-                  color: '#FFD700', 
+                  color: 'var(--component-text-accent)', 
                   textDecoration: 'none', 
                   fontWeight: 600,
                   transition: 'color 0.2s'
                 }}
                 onMouseEnter={(e) => e.currentTarget.style.color = '#FCD34D'}
-                onMouseLeave={(e) => e.currentTarget.style.color = '#FFD700'}
+                onMouseLeave={(e) => e.currentTarget.style.color = 'var(--component-text-accent)'}
               >
                 info@aitwintech.com
               </a>

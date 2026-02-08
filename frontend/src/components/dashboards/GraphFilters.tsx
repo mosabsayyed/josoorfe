@@ -233,7 +233,7 @@ export function GraphFilters({
             <div style={{ 
               marginBottom: '0.75rem', 
               padding: '0.5rem', 
-              backgroundColor: 'rgba(255, 215, 0, 0.1)', 
+              backgroundColor: 'rgba(244, 187, 48, 0.1)', 
               borderRadius: '0.25rem',
               fontSize: '0.75rem',
               color: 'var(--component-text-accent)'

@@ -1,6 +1,6 @@
 import React from "react";
 /**
- * ArtifactRenderer Component - CORRECTED VERSION
+ * ArtifactRenderer Component - UNIFIED HIGHCHARTS VERSION
  *
  * Extends the Mono-Functional SaaS design system to artifacts:
  * - Monochrome palette with gold accent
@@ -8,7 +8,7 @@ import React from "react";
  * - Clean, professional styling
  *
  * Renders different artifact types:
- * - CHART: Recharts visualizations (translates from Highcharts config)
+ * - CHART: Highcharts visualizations (unified with Strategy Reports)
  * - TABLE: Interactive data tables
  * - REPORT: Markdown/JSON formatted reports
  * - DOCUMENT: HTML/Markdown documents
@@ -23,32 +23,7 @@ import {
   TableHeader,
   TableRow,
 } from '../ui/table';
-import {
-  BarChart,
-  Bar,
-  LineChart,
-  Line,
-  AreaChart,
-  Area,
-  PieChart,
-  Pie,
-  RadarChart,
-  Radar,
-  PolarGrid,
-  PolarAngleAxis,
-  PolarRadiusAxis,
-  ScatterChart,
-  Scatter,
-  XAxis,
-  YAxis,
-  ZAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-  Cell,
-  ComposedChart,
-} from 'recharts';
+import { StrategyReportChartRenderer } from '../desks/sector/StrategyReportChartRenderer';
 import type {
   Artifact,
   ChartArtifact,
@@ -96,24 +71,7 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { has
   }
 }
 
-// Color constants for charts
-const CHART_COLORS = {
-  primary: 'var(--component-text-accent)',
-  secondary: 'var(--component-text-secondary)',
-  gray1: 'var(--component-text-primary)',
-  gray2: 'var(--component-text-secondary)',
-  gray3: 'var(--component-text-muted)',
-  gray4: 'var(--component-panel-border)',
-  gray5: 'var(--component-bg-secondary)'
-};
-
-const COLOR_SEQUENCE = [
-  'var(--component-text-accent)', '#8B5CF6', '#10B981', '#F59E0B',
-  '#EF4444', '#3B82F6', '#EC4899', '#6B7280'
-];
-
-
-// Helper function to transform Highcharts data to Recharts format
+// Helper functions for data key resolution
 // Helper to resolve data keys case-insensitively
 function resolveDataKey(key: string | undefined, dataPoint: any): string | undefined {
   if (!key || !dataPoint) return undefined;
@@ -138,75 +96,6 @@ function resolveDataKey(key: string | undefined, dataPoint: any): string | undef
   }
 
   return undefined;
-}
-
-function getNumericDataKeys(dataPoint: any, xAxisKey: string): string[] {
-  if (!dataPoint) return [];
-  return Object.keys(dataPoint).filter(key =>
-    key !== xAxisKey &&
-    typeof dataPoint[key] === 'number'
-  );
-}
-
-// Helper to infer a category key (first string field) if explicit xAxis is missing
-function inferCategoryKey(dataPoint: any, excludeKeys: string[] = []): string {
-  if (!dataPoint) return 'name';
-  const keys = Object.keys(dataPoint);
-  // Find first string key that is not in excludeKeys and not 'id'
-  const found = keys.find(k =>
-    typeof dataPoint[k] === 'string' &&
-    !excludeKeys.includes(k) &&
-    k.toLowerCase() !== 'id'
-  );
-  return found || 'name';
-}
-
-function transformChartData(content: any, externalData?: any[]) {
-  // 0. If external data (from artifact.data) is provided and looks like Recharts format (array of objects)
-  // CRITICAL: Ensure it's NOT a Highcharts series array (which has objects with a 'data' array property)
-  if (externalData && Array.isArray(externalData) && externalData.length > 0) {
-    const isSeriesArray = externalData.some(item => item && Array.isArray(item.data));
-    if (!isSeriesArray) {
-      return externalData;
-    }
-  }
-
-  // Use config if available, otherwise content (handle both wrapper and direct config)
-  const source = content.config || content;
-
-  // 1. Direct data array in content
-  if (source.data && Array.isArray(source.data)) {
-    return source.data;
-  }
-
-  // 2. Categories + Series (Highcharts style or Radar chart style)
-  let categories = source.categories || source.xAxis?.categories;
-
-  // If no categories, infer from length of first series
-  if (!categories && source.series && source.series.length > 0) {
-    const dataLen = (source.series[0].data || source.series[0].values)?.length || 0;
-    categories = Array.from({ length: dataLen }, (_, i) => `Item ${i + 1}`);
-  }
-
-  if (source.series) {
-    return categories.map((category: any, index: number) => {
-      const point: any = { name: category, category: category }; // Add both for compatibility
-      source.series.forEach((series: any, sIndex: number) => {
-        // Radar charts use series.values, other charts use series.data
-        const dataArray = series.values || series.data;
-        if (dataArray && dataArray[index] !== undefined) {
-          const val = dataArray[index];
-          // Use series name as key to match flattenChartDataForRecharts format
-          // Fall back to series_N only if name is missing
-          const key = series.name || `series_${sIndex}`;
-          point[key] = (typeof val === 'object' && val !== null) ? val.y : val;
-        }
-      });
-      return point;
-    });
-  }
-
-  return [];
 }
 
 
@@ -244,8 +133,8 @@ function ArtifactRendererContent({ artifact, language = 'en', fullHeight = false
     const type = artifact.artifact_type.toUpperCase();
     switch (type) {
       case 'CHART':
-        // Using internal Recharts-based ChartRenderer
-        return <ChartRenderer artifact={artifact as ChartArtifact} height={fullHeight ? '100%' : 400} />;
+        // Using unified Highcharts renderer (same as Strategy Reports)
+        return <StrategyReportChartRenderer artifact={artifact as ChartArtifact} width="100%" height={fullHeight ? '100%' : '400px'} />;
       case 'TABLE':
         return <TableRenderer artifact={artifact as TableArtifact} language={language} fullHeight={fullHeight} />;
       case 'REPORT':
@@ -330,402 +219,9 @@ function ArtifactRendererContent({ artifact, language = 'en', fullHeight = false
 }
 
 // ============================================================================
-// CHART RENDERER
+// TABLE RENDERER
 // ============================================================================
 
-
-const CustomTooltip = ({ active, payload, label }: any) => {
-  if (active && payload && payload.length) {
-    return (
-      <div className="custom-tooltip panel" style={{
-        backgroundColor: 'var(--component-background)',
-        padding: '10px',
-        border: '1px solid var(--component-border)',
-        borderRadius: '4px',
-        boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-      }}>
-        <p className="label" style={{ margin: 0, fontWeight: 600, color: 'var(--component-text-primary)' }}>{label}</p>
-        {payload.map((entry: any, index: number) => (
-          <p key={index} style={{ margin: 0, color: entry.color || entry.fill }}>
-            {`${entry.name}: ${entry.value}`}
-          </p>
-        ))}
-      </div>
-    );
-  }
-  return null;
-};
-function ChartRenderer({ artifact, height = 400 }: { artifact: ChartArtifact, height?: number | string }) {
-
-  console.log('[ChartRenderer] FULL ARTIFACT JSON:', JSON.stringify(artifact, null, 2));
-  const { content } = artifact;
-
-  // Debug: Log all possible locations where type might be
-  console.log('[ChartRenderer] content.chart?.type:', content.chart?.type);
-  console.log('[ChartRenderer] content.type:', (content as any).type);
-  console.log('[ChartRenderer] artifact.content:', content);
-
-  // Try to get type from various locations
-  let rawType = content.chart?.type || content.type || (content as any).type;
-
-  // If type is still just 'chart', try to find something more specific in content
-  if (String(rawType).toLowerCase() === 'chart' && content.config?.chart?.type) {
-    rawType = content.config.chart.type;
-  }
-
-  // If no type found, infer from content structure
-  if (!rawType || String(rawType).toLowerCase() === 'chart') {
-    console.log('[ChartRenderer] No specific type found, inferring from content structure');
-
-    // Check for radar chart indicators
-    if ((content as any).categories && (content as any).series && ((content as any).maxValue || (content as any).series?.[0]?.values)) {
-      rawType = 'radar';
-      console.log('[ChartRenderer] Inferred type: radar');
-    }
-    // Check for table indicators in case it leaked here
-    else if ((content as any).columns || (content as any).rows) {
-      rawType = 'table';
-      console.log('[ChartRenderer] Inferred type: table (leaked to chart renderer)');
-    }
-    // Check for line chart indicators
-    else if ((content as any).strokeWidth || artifact.title?.toLowerCase().includes('line')) {
-      rawType = 'line';
-      console.log('[ChartRenderer] Inferred type: line (has strokeWidth or title contains "line")');
-    }
-    // Check for bubble chart indicators
-    else if (artifact.title?.toLowerCase().includes('bubble')) {
-      rawType = 'bubble';
-      console.log('[ChartRenderer] Inferred type: bubble (title contains "bubble")');
-    }
-    // Check for bullet chart indicators
-    else if (artifact.title?.toLowerCase().includes('bullet')) {
-      rawType = 'bullet';
-      console.log('[ChartRenderer] Inferred type: bullet (title contains "bullet")');
-    }
-    // Check for combo chart indicators
-    else if (artifact.title?.toLowerCase().includes('combo')) {
-      rawType = 'combo';
-      console.log('[ChartRenderer] Inferred type: combo (title contains "combo")');
-    }
-    // Default to column/bar for simple data
-    else {
-      rawType = 'column';
-      console.log('[ChartRenderer] Inferred type: column (default)');
-    }
-  }
-
-  const chartType = String(rawType).toLowerCase();
-  console.log('[ChartRenderer] Chart type detected:', chartType);
-  // @ts-ignore - artifact.data comes from visualizationBuilder with correct series names
-  const externalData = artifact.data;
-  // @ts-ignore - config comes from CanvasPanel
-  const rawConfig = content.config;
-
-  // PRIORITY: Use pre-flattened data from builder if available (has correct series names)
-  // Only fall back to transformChartData for legacy artifacts without .data
-  let data: any[];
-  if (externalData && Array.isArray(externalData) && externalData.length > 0) {
-    data = externalData;
-    console.log('[ChartRenderer] Using pre-flattened artifact.data:', data.length, 'rows');
-  } else {
-    data = transformChartData(content);
-    console.log('[ChartRenderer] Transformed content to data:', data.length, 'rows');
-  }
-
-  console.log('[ChartRenderer] Final data:', {
-    dataLength: data?.length,
-    sampleRow: data?.[0],
-    keys: data?.[0] ? Object.keys(data[0]) : [],
-    contentSeries: content.series?.map((s: any) => s.name)
-  });
-
-  // Handle empty data case gracefully
-  if (!data || data.length === 0) {
-    return (
-      <div className="panel" style={{ padding: 20, textAlign: 'center', color: 'var(--component-text-secondary)', border: '1px dashed var(--component-panel-border)' }}>
-        <p style={{ margin: 0, fontWeight: 500 }}>No chart data available</p>
-        <p style={{ margin: '4px 0 0 0', fontSize: '12px', opacity: 0.7 }}>The chart configuration was received but contains no data points.</p>
-      </div>
-    );
-  }
-
-  // Special handling for Bubble chart data mapping
-  if ((chartType as string) === 'bubble' && rawConfig?.data) {
-    data = rawConfig.data.map((item: any) => ({
-      ...item,
-      z: item.z || item.r || item.value || 1 // Ensure z-axis exists
-    }));
-  }
-
-  // Special handling for Bullet chart data construction
-  if ((chartType as string) === 'bullet' && rawConfig) {
-    // Bullet chart simulation:
-    // We need a single data point with ranges, value, and target
-    const { value, target, ranges } = rawConfig;
-    if (value !== undefined) {
-      const dataPoint: any = { name: 'Current' };
-
-      // Add ranges as stacked bars
-      // Recharts stacks values, so we need deltas if ranges are cumulative maxes
-      // Assuming ranges are sorted by max
-      let prevMax = 0;
-      (ranges || []).forEach((r: any, i: number) => {
-        dataPoint[`range${i}`] = r.max - prevMax;
-        dataPoint[`range${i}Color`] = r.color;
-        prevMax = r.max;
-      });
-
-      dataPoint.value = value;
-      dataPoint.target = target;
-      data = [dataPoint];
-    }
-  }
-
-  const commonProps = {
-    margin: { top: 10, right: 30, left: 0, bottom: 0 },
-    style: { fontSize: '12px' }
-  };
-
-  console.log('[ChartRenderer] Mounting for artifact:', artifact.id, 'Data Length:', data?.length);
-
-  // Calculate explicit dimensions to avoid ResponsiveContainer measurement issues
-  const containerHeight = typeof height === 'number' ? height - 40 : '100%'; // Subtract padding
-
-  return (
-    <div style={{ width: '100%', height: height, minHeight: 'unset', padding: 20 }}>
-      <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-        <ResponsiveContainer width="100%" height={containerHeight}>
-          {(() => {
-            if (!data || data.length === 0) {
-              return (
-                <div>
-                  No data available for chart
-                </div>
-              );
-            }
-            console.log('[ChartRenderer] Rendering chart type:', chartType);
-
-            if (chartType === 'bar' || chartType === 'column') {
-              const xAxisObj = content.xAxis;
-              const yAxisObj = content.yAxis;
-              const xAxisLabel = typeof xAxisObj === 'string' ? xAxisObj : xAxisObj?.title?.text;
-              const yAxisLabel = typeof yAxisObj === 'string' ? yAxisObj : yAxisObj?.title?.text;
-              const barColor = content.color || CHART_COLORS.primary;
-              // If xAxis is a string, it might be the key. If object, fallback to inference.
-              const actualXAxisKey = resolveDataKey(typeof xAxisObj === 'string' ? xAxisObj : undefined, data?.[0]) || inferCategoryKey(data?.[0]);
-              const dataKeys = getNumericDataKeys(data?.[0], actualXAxisKey);
-              return (
-                <BarChart data={data} {...commonProps} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
-                  <CartesianGrid strokeDasharray="33" stroke={CHART_COLORS.gray4} vertical={false} />
-                  <XAxis dataKey={actualXAxisKey} stroke={CHART_COLORS.gray2} fontSize={12} tickLine={false} axisLine={{ stroke: CHART_COLORS.gray4 }} label={{ value: xAxisLabel, position: 'insideBottom', offset: -10, fill: CHART_COLORS.gray2, fontSize: 12 }} />
-                  <YAxis stroke={CHART_COLORS.gray2} fontSize={12} tickLine={false} axisLine={{ stroke: CHART_COLORS.gray4 }} label={{ value: yAxisLabel, angle: -90, position: 'insideLeft', offset: 10, fill: CHART_COLORS.gray2, fontSize: 12 }} />
-                  <Tooltip content={<CustomTooltip />} />
-                  <Legend wrapperStyle={{ fontSize: '12px', color: CHART_COLORS.gray2, paddingTop: '10px' }} />
-                  {content.series ? (
-                    content.series.map((series: any, i: number) => (
-                      <Bar
-                        key={series.name || i}
-                        dataKey={series.name || `series_${i}`}
-                        name={series.name || `Series ${i + 1}`}
-                        fill={series.color || COLOR_SEQUENCE[i % COLOR_SEQUENCE.length]}
-                        radius={[4, 4, 0, 0]}
-                      />
-                    ))
-                  ) : (
-                    dataKeys.map((key, index) => (
-                      <Bar key={key} dataKey={key} fill={barColor} radius={[4, 4, 0, 0]} />
-                    ))
-                  )}
-                </BarChart>
-              );
-            } else if (chartType === 'line') {
-              const xAxisObj = content.xAxis;
-              const yAxisObj = content.yAxis;
-              const xAxisLabel = typeof xAxisObj === 'string' ? xAxisObj : xAxisObj?.title?.text;
-              const yAxisLabel = typeof yAxisObj === 'string' ? yAxisObj : yAxisObj?.title?.text;
-              const strokeWidth = content.strokeWidth || 2;
-              // Try to resolve explicit key, or infer one
-              const actualXAxisKey = resolveDataKey(typeof xAxisObj === 'string' ? xAxisObj : undefined, data?.[0]) || inferCategoryKey(data?.[0]);
-              const dataKeys = getNumericDataKeys(data?.[0], actualXAxisKey);
-              return (
-                <LineChart data={data} {...commonProps} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke={CHART_COLORS.gray4} vertical={false} />
-                  <XAxis dataKey={actualXAxisKey} stroke={CHART_COLORS.gray2} fontSize={12} tickLine={false} axisLine={{ stroke: CHART_COLORS.gray4 }} label={{ value: xAxisLabel, position: 'insideBottom', offset: -10, fill: CHART_COLORS.gray2, fontSize: 12 }} />
-                  <YAxis stroke={CHART_COLORS.gray2} fontSize={12} tickLine={false} axisLine={{ stroke: CHART_COLORS.gray4 }} label={{ value: yAxisLabel, angle: -90, position: 'insideLeft', offset: 10, fill: CHART_COLORS.gray2, fontSize: 12 }} />
-                  <Tooltip content={<CustomTooltip />} />
-                  <Legend wrapperStyle={{ fontSize: '12px', color: CHART_COLORS.gray2, paddingTop: '10px' }} />
-                  {content.series ? (
-                    content.series.map((series: any, i: number) => (
-                      <Line
-                        key={series.name || i}
-                        type="monotone"
-                        dataKey={series.name || `series_${i}`}
-                        name={series.name || `Series ${i + 1}`}
-                        stroke={series.color || COLOR_SEQUENCE[i % COLOR_SEQUENCE.length]}
-                        strokeWidth={strokeWidth}
-                      />
-                    ))
-                  ) : (
-                    dataKeys.map((key, index) => (
-                      <Line key={key} type="monotone" dataKey={key} stroke={CHART_COLORS.primary} strokeWidth={strokeWidth} />
-                    ))
-                  )}
-                </LineChart>
-              );
-            } else if (chartType === 'area') {
-              const xAxisObj = content.xAxis;
-              const yAxisObj = content.yAxis;
-              const xAxisLabel = typeof xAxisObj === 'string' ? xAxisObj : xAxisObj?.title?.text;
-              const yAxisLabel = typeof yAxisObj === 'string' ? yAxisObj : yAxisObj?.title?.text;
-              // Try to resolve explicit key, or infer one
-              const actualXAxisKey = resolveDataKey(typeof xAxisObj === 'string' ? xAxisObj : undefined, data?.[0]) || inferCategoryKey(data?.[0]);
-              const dataKeys = getNumericDataKeys(data?.[0], actualXAxisKey);
-              return (
-                <AreaChart data={data} {...commonProps} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke={CHART_COLORS.gray4} vertical={false} />
-                  <XAxis dataKey={actualXAxisKey} stroke={CHART_COLORS.gray2} fontSize={12} tickLine={false} axisLine={{ stroke: CHART_COLORS.gray4 }} label={{ value: xAxisLabel, position: 'insideBottom', offset: -10, fill: CHART_COLORS.gray2, fontSize: 12 }} />
-                  <YAxis stroke={CHART_COLORS.gray2} fontSize={12} tickLine={false} axisLine={{ stroke: CHART_COLORS.gray4 }} label={{ value: yAxisLabel, angle: -90, position: 'insideLeft', offset: 10, fill: CHART_COLORS.gray2, fontSize: 12 }} />
-                  <Tooltip content={<CustomTooltip />} />
-                  <Legend wrapperStyle={{ fontSize: '12px', color: CHART_COLORS.gray2, paddingTop: '10px' }} />
-                  {content.series ? (
-                    content.series.map((series: any, i: number) => (
-                      <Area
-                        key={series.name || i}
-                        type="monotone"
-                        dataKey={series.name || `series_${i}`}
-                        name={series.name || `Series ${i + 1}`}
-                        fill={series.color || COLOR_SEQUENCE[i % COLOR_SEQUENCE.length]}
-                        stroke={series.color || COLOR_SEQUENCE[i % COLOR_SEQUENCE.length]}
-                      />
-                    ))
-                  ) : (
-                    dataKeys.map((key, index) => (
-                      <Area key={key} type="monotone" dataKey={key} fill={CHART_COLORS.primary} stroke={CHART_COLORS.primary} />
-                    ))
-                  )}
-                </AreaChart>
-              );
-            } else if (chartType === 'bubble') {
-              const xObj = content.xAxis;
-              const yObj = content.yAxis;
-              const zObj = content.sizeMetric;
-              // Extract label strings
-              const xLabel = typeof xObj === 'string' ? xObj : xObj?.title?.text;
-              const yLabel = typeof yObj === 'string' ? yObj : yObj?.title?.text;
-              const zLabel = typeof zObj === 'string' ? zObj : zObj?.title?.text;
-
-              const xKey = resolveDataKey(typeof xObj === 'string' ? xObj : undefined, data?.[0]) || 'x';
-              const yKey = resolveDataKey(typeof yObj === 'string' ? yObj : undefined, data?.[0]) || 'y';
-              const zKey = resolveDataKey(typeof zObj === 'string' ? zObj : undefined, data?.[0]) || 'z';
-              return (
-                <ScatterChart margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke={CHART_COLORS.gray4} />
-                  <XAxis type="number" dataKey={xKey} name={xLabel} stroke={CHART_COLORS.gray2} fontSize={12} label={{ value: xLabel, position: 'insideBottom', offset: -10, fill: CHART_COLORS.gray2, fontSize: 12 }} />
-                  <YAxis type="number" dataKey={yKey} name={yLabel} stroke={CHART_COLORS.gray2} fontSize={12} label={{ value: yLabel, angle: -90, position: 'insideLeft', offset: 10, fill: CHART_COLORS.gray2, fontSize: 12 }} />
-                  <ZAxis type="number" dataKey={zKey} range={[100, 1000]} name={zLabel} />
-                  <Tooltip cursor={{ strokeDasharray: '3 3' }} />
-                  <Legend wrapperStyle={{ paddingTop: '10px' }} />
-                  <Scatter name={typeof content.title === 'string' ? content.title : content.title?.text || 'Items'} data={data} fill={CHART_COLORS.primary} />
-                </ScatterChart>
-              );
-            } else if (chartType === 'radar') {
-              const xAxisObj = content.xAxis;
-              const angleKey = resolveDataKey(typeof xAxisObj === 'string' ? xAxisObj : undefined, data?.[0]) || 'subject';
-
-              const primMetric = content.primary?.metric;
-              const valueKey = resolveDataKey(typeof primMetric === 'string' ? primMetric : primMetric?.title?.text, data?.[0]) || 'A';
-
-              const titleText = typeof content.title === 'string' ? content.title : content.title?.text;
-
-              return (
-                <RadarChart cx="50%" cy="50%" outerRadius="80%" data={data}>
-                  <PolarGrid stroke={CHART_COLORS.gray4} />
-                  {/* @ts-ignore */}
-                  <PolarAngleAxis dataKey={angleKey} stroke={CHART_COLORS.gray2} fontSize={12} />
-                  {/* @ts-ignore */}
-                  <PolarRadiusAxis angle={30} domain={[0, content.maxValue || 'auto']} stroke={CHART_COLORS.gray4} />
-                  {content.series ? (
-                    content.series.map((series: any, i: number) => (
-                      <Radar
-                        key={series.name || i}
-                        name={series.name || `Series ${i + 1}`}
-                        dataKey={series.name || `series_${i}`}
-                        stroke={COLOR_SEQUENCE[i % COLOR_SEQUENCE.length]}
-                        fill={COLOR_SEQUENCE[i % COLOR_SEQUENCE.length]}
-                        fillOpacity={0.3}
-                      />
-                    ))
-                  ) : (
-                    <Radar name={titleText || 'Value'} dataKey={valueKey} stroke={CHART_COLORS.primary} fill={CHART_COLORS.primary} fillOpacity={0.3} />
-                  )}
-                  <Legend wrapperStyle={{ paddingTop: '10px' }} />
-                  <Tooltip />
-                </RadarChart>
-              );
-            } else if (chartType === 'bullet') {
-              const measureLabelObj = (content as any).measure;
-              const targetLabelObj = (content as any).target;
-
-              const measureLabel = typeof measureLabelObj === 'string' ? measureLabelObj : measureLabelObj?.title?.text;
-              const targetLabel = typeof targetLabelObj === 'string' ? targetLabelObj : targetLabelObj?.title?.text;
-
-              const measureKey = resolveDataKey(measureLabel, data?.[0]) || 'actual';
-              const targetKey = resolveDataKey(targetLabel, data?.[0]) || 'target';
-
-              const xAxisObj = content.xAxis;
-
-              // Use xAxis from content for the category name, or fallback to inferring it
-              // Exclude the measure and target keys from inference
-              const nameKey = resolveDataKey(typeof xAxisObj === 'string' ? xAxisObj : undefined, data?.[0]) || inferCategoryKey(data?.[0], [measureKey, targetKey]);
-              return (
-                <ComposedChart layout="vertical" data={data} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke={CHART_COLORS.gray4} horizontal={false} />
-                  <XAxis type="number" stroke={CHART_COLORS.gray2} fontSize={12} />
-                  <YAxis type="category" dataKey={nameKey} stroke={CHART_COLORS.gray2} fontSize={12} width={150} />
-                  <Tooltip />
-                  <Legend wrapperStyle={{ paddingTop: '10px' }} />
-                  <Bar dataKey={measureKey} name={measureLabel} fill={CHART_COLORS.primary} barSize={20} />
-                  <Bar dataKey={targetKey} name={targetLabel} fill={CHART_COLORS.gray1} barSize={4} />
-                </ComposedChart>
-              );
-            } else if (chartType === 'combo') {
-              const primaryMetricObj = (content as any).primary?.metric;
-              const secondaryMetricObj = (content as any).secondary?.metric;
-
-              const primaryMetric = typeof primaryMetricObj === 'string' ? primaryMetricObj : primaryMetricObj?.title?.text;
-              const secondaryMetric = typeof secondaryMetricObj === 'string' ? secondaryMetricObj : secondaryMetricObj?.title?.text;
-
-              const barKey = resolveDataKey(primaryMetric, data?.[0]);
-              const lineKey = resolveDataKey(secondaryMetric, data?.[0]);
-
-              const xAxisObj = content.xAxis;
-
-              // Fix: Use content.xAxis to resolve the key, instead of hardcoded 'project'
-              const xAxisKey = resolveDataKey(typeof xAxisObj === 'string' ? xAxisObj : undefined, data?.[0]) || 'name';
-              return (
-                <ComposedChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke={CHART_COLORS.gray4} />
-                  <XAxis dataKey={xAxisKey} stroke={CHART_COLORS.gray2} fontSize={12} />
-                  <YAxis yAxisId="left" stroke={CHART_COLORS.gray2} fontSize={12} label={{ value: primaryMetric, angle: -90, position: 'insideLeft', offset: 10, fill: CHART_COLORS.gray2, fontSize: 12 }} />
-                  <YAxis yAxisId="right" orientation="right" stroke={CHART_COLORS.gray2} fontSize={12} label={{ value: secondaryMetric, angle: 90, position: 'insideRight', offset: 10, fill: CHART_COLORS.gray2, fontSize: 12 }} />
-                  <Tooltip />
-                  <Legend wrapperStyle={{ paddingTop: '10px' }} />
-                  {barKey && <Bar yAxisId="left" dataKey={barKey} name={primaryMetric} fill={CHART_COLORS.primary} />}
-                  {lineKey && <Line yAxisId="right" type="monotone" dataKey={lineKey} name={secondaryMetric} stroke={CHART_COLORS.secondary} strokeWidth={2} />}
-                </ComposedChart>
-              );
-            }
-            return (
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--component-text-secondary)' }}>
-                Unsupported chart type: {chartType}
-              </div>
-            );
-          })()}
-        </ResponsiveContainer>
-      </div>
-    </div>
-  );
-}
 function TableRenderer({ artifact, language, fullHeight }: { artifact: TableArtifact; language: 'en' | 'ar'; fullHeight?: boolean | number }) {
   const { content } = artifact;
   const [sortColumn, setSortColumn] = useState<number | null>(null);

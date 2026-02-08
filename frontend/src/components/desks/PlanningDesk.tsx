@@ -273,7 +273,7 @@ function InterventionPlanning() {
                     <div className="text-slate-200 text-10px font-bold">{intervention.type}</div>
                   </div>
                   <div className="impact-preview">
-                    <div className="block-header-gray" style={{ marginBottom: '0.25rem' }}>
+                    <div className="block-header-gray block-header-tight">
                       Impact Preview
                     </div>
                     <div className="impact-grid">

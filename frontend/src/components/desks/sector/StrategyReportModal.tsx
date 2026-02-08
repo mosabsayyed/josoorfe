@@ -5,11 +5,14 @@ import ReactMarkdown from 'react-markdown';
 import rehypeRaw from 'rehype-raw';
 import remarkGfm from 'remark-gfm';
 import { htmlToMarkdown } from '../../../utils/htmlToMarkdown';
+import { StrategyReportChartRenderer } from './StrategyReportChartRenderer';
+import { Artifact } from '../../../types/api';
 
 interface StrategyReportModalProps {
     isOpen: boolean;
     onClose: () => void;
     htmlContent: string;
+    artifacts?: Artifact[];
     onContinueInChat: () => void;
 }
 
@@ -17,8 +20,19 @@ const StrategyReportModal: React.FC<StrategyReportModalProps> = ({
     isOpen,
     onClose,
     htmlContent,
+    artifacts = [],
     onContinueInChat
 }) => {
+    // Create artifact lookup map by ID for inline rendering
+    const artifactMap = React.useMemo(() => {
+        const map: Record<string, Artifact> = {};
+        artifacts.forEach(artifact => {
+            const id = (artifact as any).id || artifact.title;
+            if (id) map[id] = artifact;
+        });
+        return map;
+    }, [artifacts]);
+
     if (!isOpen) return null;
 
     const handleSaveMd = () => {
@@ -51,7 +65,7 @@ const StrategyReportModal: React.FC<StrategyReportModalProps> = ({
                                     width: '32px', height: '32px', borderRadius: '8px',
                                     background: 'linear-gradient(135deg, var(--component-text-accent) 0%, #B8860B 100%)',
                                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    boxShadow: '0 0 15px rgba(212,175,55,0.3)'
+                                    boxShadow: '0 0 15px rgba(244,187,48,0.3)'
                                 }}>
                                     <span style={{ color: 'black', fontWeight: 800, fontSize: '14px' }}>AI</span>
                                 </div>
@@ -87,16 +101,7 @@ const StrategyReportModal: React.FC<StrategyReportModalProps> = ({
                                 </button>
                                 <button
                                     onClick={onClose}
-                                    style={{
-                                        background: 'transparent',
-                                        border: 'none',
-                                        color: 'var(--component-text-muted)',
-                                        cursor: 'pointer',
-                                        padding: '4px',
-                                        transition: 'color 0.2s'
-                                    }}
-                                    onMouseEnter={(e) => e.currentTarget.style.color = 'var(--component-text-primary)'}
-                                    onMouseLeave={(e) => e.currentTarget.style.color = 'var(--component-text-muted)'}
+                                    className="josoor-modal-close-btn"
                                 >
                                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                                 </button>
@@ -106,26 +111,59 @@ const StrategyReportModal: React.FC<StrategyReportModalProps> = ({
                         {/* Content Scroll Area */}
                         <div className="josoor-modal-content custom-scrollbar">
                             <div className="josoor-report-content">
-                                <ReactMarkdown
-                                    rehypePlugins={[rehypeRaw]}
-                                    remarkPlugins={[remarkGfm]}
-                                    components={{
-                                        // Specific overrides if needed, but CSS handles most
-                                        h1: ({ node, ...props }) => <h1 {...props} />,
-                                        h2: ({ node, ...props }) => <h2 {...props} />,
-                                        h3: ({ node, ...props }) => <h3 {...props} />,
-                                        ul: ({ node, ...props }) => <ul {...props} />,
-                                        li: ({ node, ...props }) => <li {...props} />,
-                                        p: ({ node, ...props }) => <p {...props} />,
-                                        strong: ({ node, ...props }) => <strong style={{ color: 'var(--component-text-primary)', fontWeight: 700 }} {...props} />,
-                                        a: ({ node, ...props }) => <a target="_blank" rel="noopener noreferrer" {...props} />,
-                                        table: ({ node, ...props }) => <table {...props} />,
-                                        th: ({ node, ...props }) => <th {...props} />,
-                                        td: ({ node, ...props }) => <td {...props} />,
-                                    }}
-                                >
-                                    {htmlContent}
-                                </ReactMarkdown>
+                                {/* Render content with inline charts/tables */}
+                                {htmlContent.split(/(<ui-chart[^>]*>|<ui-table[^>]*>)/g).map((part, index) => {
+                                    // Check if this part is a chart or table tag
+                                    const chartMatch = part.match(/<ui-chart[^>]*id=["']([^"']+)["'][^>]*>/);
+                                    const tableMatch = part.match(/<ui-table[^>]*id=["']([^"']+)["'][^>]*>/);
+
+                                    if (chartMatch) {
+                                        const chartId = chartMatch[1];
+                                        const artifact = artifactMap[chartId];
+                                        if (!artifact) {
+                                            console.warn('[StrategyReportModal] Chart not found:', chartId);
+                                            return null;
+                                        }
+                                        return (
+                                            <div key={`chart-${index}`} className="josoor-chart-container">
+                                                <StrategyReportChartRenderer
+                                                    artifact={artifact}
+                                                    width="100%"
+                                                    height={artifact.artifact_type === 'TABLE' ? 'auto' : '380px'}
+                                                />
+                                            </div>
+                                        );
+                                    }
+
+                                    if (tableMatch) {
+                                        const tableId = tableMatch[1];
+                                        const artifact = artifactMap[tableId];
+                                        if (!artifact) {
+                                            console.warn('[StrategyReportModal] Table not found:', tableId);
+                                            return null;
+                                        }
+                                        return (
+                                            <div key={`table-${index}`} className="josoor-table-container">
+                                                <StrategyReportChartRenderer
+                                                    artifact={artifact}
+                                                    width="100%"
+                                                    height="auto"
+                                                />
+                                            </div>
+                                        );
+                                    }
+
+                                    // Regular markdown content
+                                    return (
+                                        <ReactMarkdown
+                                            key={`content-${index}`}
+                                            rehypePlugins={[rehypeRaw]}
+                                            remarkPlugins={[remarkGfm]}
+                                        >
+                                            {part}
+                                        </ReactMarkdown>
+                                    );
+                                })}
                             </div>
                         </div>
 
@@ -145,7 +183,7 @@ const StrategyReportModal: React.FC<StrategyReportModalProps> = ({
                                     display: 'flex',
                                     alignItems: 'center',
                                     gap: '8px',
-                                    boxShadow: '0 4px 15px rgba(212,175,55,0.2)',
+                                    boxShadow: '0 4px 15px rgba(244,187,48,0.2)',
                                     transition: 'transform 0.2s'
                                 }}
                                 onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-1px)'}

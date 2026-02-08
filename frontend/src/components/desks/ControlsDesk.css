@@ -269,6 +269,22 @@
     border-radius: 0.25rem;
 }
 
+.legend-color-green {
+    background-color: #10b981;
+}
+
+.legend-color-amber {
+    background-color: #f59e0b;
+}
+
+.legend-color-red {
+    background-color: #ef4444;
+}
+
+.legend-color-gray {
+    background-color: #64748b;
+}
+
 .legend-text {
     color: #cbd5e1;
 }

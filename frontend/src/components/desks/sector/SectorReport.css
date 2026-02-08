@@ -190,3 +190,120 @@ table.josoor-table,
     gap: 0.75rem;
     background: var(--component-panel-bg);
 }
+
+/* Header Layout Components */
+.josoor-modal-header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.josoor-modal-ai-badge {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, var(--component-text-accent) 0%, var(--component-text-accent) 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 15px rgba(212, 175, 55, 0.3);
+}
+
+.josoor-modal-ai-badge-text {
+    color: black;
+    font-weight: 800;
+    font-size: 14px;
+}
+
+.josoor-modal-title {
+    margin: 0;
+    color: var(--component-text-primary);
+    font-size: 1.25rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+}
+
+.josoor-modal-header-right {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+/* Save Markdown Button */
+.josoor-modal-save-btn {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--component-panel-border);
+    color: var(--component-text-secondary);
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s;
+    font-weight: 600;
+}
+
+.josoor-modal-save-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+/* Close Button */
+.josoor-modal-close-btn {
+    background: transparent;
+    border: none;
+    color: var(--component-text-muted);
+    cursor: pointer;
+    padding: 4px;
+    transition: color 0.2s;
+}
+
+.josoor-modal-close-btn:hover {
+    color: var(--component-text-primary);
+}
+
+/* Continue Exploration Button */
+.josoor-modal-continue-btn {
+    background: var(--component-text-accent);
+    border: none;
+    color: black;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 4px 15px rgba(212, 175, 55, 0.2);
+    transition: transform 0.2s;
+}
+
+.josoor-modal-continue-btn:hover {
+    transform: translateY(-1px);
+}
+
+/* Chart Container */
+.josoor-chart-container {
+    margin-bottom: 20px;
+}
+
+.josoor-table-container {
+    margin-bottom: 20px;
+}
+
+/* Chart Not Found Error */
+.josoor-chart-error {
+    padding: 1rem;
+    background: rgba(239, 68, 68, 0.1);
+    border-radius: 8px;
+    color: #ef4444;
+    margin-bottom: 20px;
+}
+
+/* Markdown Strong Element */
+.josoor-report-content strong {
+    color: var(--component-text-primary);
+    font-weight: 700;
+}

@@ -58,7 +58,7 @@ export const StrategicInsights: React.FC = () => {
     return (
         <div className="ct-card" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
             <div className="ct-card-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Lightbulb size={16} color="#FFD700" />
+                <Lightbulb size={16} color="var(--component-text-accent)" />
                 <span>Strategic Insights</span>
             </div>
             
@@ -83,7 +83,7 @@ export const StrategicInsights: React.FC = () => {
                     ))
                 )}
             </div>
-             <button className="ct-action-link" style={{ marginTop: 'auto', paddingTop: '10px', display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.8rem', color: '#FFD700', background: 'none', border: 'none', cursor: 'pointer' }}>
+             <button className="ct-action-link" style={{ marginTop: 'auto', paddingTop: '10px', display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.8rem', color: 'var(--component-text-accent)', background: 'none', border: 'none', cursor: 'pointer' }}>
                 View All Insights <ArrowRight size={14} />
             </button>
         </div>

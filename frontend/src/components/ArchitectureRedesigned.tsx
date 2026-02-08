@@ -4,10 +4,10 @@ import '../styles/architecture-redesigned.css';
 // Configuration for animated lines
 const ANIMATION_PATHS = [
   // Group 1: Interface -> GenAI -> Workflow -> LLM -> MCP (Ping-Pong, Gold)
-  { id: 'flow-1', d: 'M 240 125 L 500 160', color: '#FFD700', duration: '2.5s', mode: 'ping-pong' },
-  { id: 'flow-2', d: 'M 500 190 L 260 225', color: '#FFD700', duration: '2.5s', mode: 'ping-pong' },
-  { id: 'flow-3', d: 'M 260 260 L 210 290', color: '#FFD700', duration: '1.5s', mode: 'ping-pong' },
-  { id: 'flow-4', d: 'M 390 350 L 410 350', color: '#FFD700', duration: '1.5s', mode: 'ping-pong' },
+  { id: 'flow-1', d: 'M 240 125 L 500 160', color: 'var(--component-text-accent)', duration: '2.5s', mode: 'ping-pong' },
+  { id: 'flow-2', d: 'M 500 190 L 260 225', color: 'var(--component-text-accent)', duration: '2.5s', mode: 'ping-pong' },
+  { id: 'flow-3', d: 'M 260 260 L 210 290', color: 'var(--component-text-accent)', duration: '1.5s', mode: 'ping-pong' },
+  { id: 'flow-4', d: 'M 390 350 L 410 350', color: 'var(--component-text-accent)', duration: '1.5s', mode: 'ping-pong' },
 
   // Group 2: Bottom Section (One-Way, Green)
   { id: 'flow-5', d: 'M 300 420 L 250 395', color: '#10B981', duration: '1.5s', mode: 'one-way' },

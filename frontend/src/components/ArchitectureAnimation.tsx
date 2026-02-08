@@ -123,7 +123,7 @@ export default function ArchitectureAnimation({
             key={`path-${i}`}
             d={pathData}
             className="arch-animation-path"
-            stroke="#FFD700"
+            stroke="var(--component-text-accent)"
             strokeWidth="2"
             fill="none"
             strokeDasharray="500"
@@ -143,7 +143,7 @@ export default function ArchitectureAnimation({
               refY="3"
               orient="auto"
             >
-              <polygon points="0 0, 10 3, 0 6" fill="#FFD700" />
+              <polygon points="0 0, 10 3, 0 6" fill="var(--component-text-accent)" />
             </marker>
           </defs>
         );

@@ -47,15 +47,15 @@ export function CanvasHeader({
   };
 
   return (
-    <div className="canvas-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem 1.5rem', position: 'sticky', top: 0, zIndex: 10, borderBottom: '1px solid #FFD700' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', overflow: 'hidden' }}>
-        <div style={{ height: '2rem', width: '0.25rem', background: 'linear-gradient(to bottom, #FBBF24, #D97706)', flexShrink: 0 }} />
-        <h2 style={{ fontSize: '1.125rem', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={title}>
+    <div className="canvas-header">
+      <div className="canvas-header-title-section">
+        <div className="canvas-header-accent-bar" />
+        <h2 className="canvas-header-title" title={title}>
           {title}
         </h2>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+      <div className="canvas-header-actions">
         {/* Language Toggle */}
         {showLanguageToggle && (
           <button

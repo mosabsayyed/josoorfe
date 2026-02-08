@@ -48,7 +48,7 @@ export const FrameSidebar: React.FC<FrameSidebarProps> = ({ isCollapsed = false 
         {
             title: language === 'ar' ? "إدارة المؤسسة" : "Enterprise Management",
             items: [
-                { label: language === 'ar' ? "برج التحكم" : "Executives Desk", icon: LayoutDashboard, path: "/josoor-sandbox/executives", color: "#FFD700" },
+                { label: language === 'ar' ? "برج التحكم" : "Executives Desk", icon: LayoutDashboard, path: "/josoor-sandbox/executives", color: "var(--component-text-accent)" },
                 { label: language === 'ar' ? "مكتب التبعيات" : "Dependency Desk", icon: GitGraph, path: "/josoor-sandbox/dependencies", color: "#60A5FA" },
                 { label: language === 'ar' ? "مكتب المخاطر" : "Risk Desk", icon: ShieldAlert, path: "/josoor-sandbox/risks", color: "#F87171" },
                 { label: language === 'ar' ? "مكتب التخطيط" : "Planning Desk", icon: Map, path: "/josoor-sandbox/planning", color: "#34D399" },
@@ -97,7 +97,7 @@ export const FrameSidebar: React.FC<FrameSidebarProps> = ({ isCollapsed = false 
                 <div style={{ 
                     width: '32px', 
                     height: '32px', 
-                    background: 'linear-gradient(135deg, #FFD700 0%, #B8860B 100%)',
+                    background: 'linear-gradient(135deg, var(--component-text-accent) 0%, var(--component-text-accent) 100%)',
                     borderRadius: '8px',
                     display: 'flex',
                     alignItems: 'center',
@@ -145,15 +145,15 @@ export const FrameSidebar: React.FC<FrameSidebarProps> = ({ isCollapsed = false 
                                             display: 'flex',
                                             alignItems: 'center',
                                             gap: '0.75rem',
-                                            backgroundColor: active ? 'rgba(255, 215, 0, 0.1)' : 'transparent',
-                                            borderLeft: active ? '3px solid #FFD700' : '3px solid transparent',
+                                            backgroundColor: active ? 'rgba(244, 187, 48, 0.1)' : 'transparent',
+                                            borderLeft: active ? '3px solid var(--component-text-accent)' : '3px solid transparent',
                                             transition: 'all 0.2s ease',
-                                            color: active ? '#FFD700' : 'rgba(255,255,255,0.6)',
+                                            color: active ? 'var(--component-text-accent)' : 'rgba(255,255,255,0.6)',
                                             justifyContent: isCollapsed ? 'center' : 'flex-start'
                                         }}
                                         title={isCollapsed ? item.label : undefined}
                                     >
-                                        <item.icon size={20} color={active ? '#FFD700' : (item.color || 'currentColor')} />
+                                        <item.icon size={20} color={active ? 'var(--component-text-accent)' : (item.color || 'currentColor')} />
                                         {!isCollapsed && (
                                             <span style={{ fontSize: '0.9rem', fontWeight: active ? 600 : 400 }}>{item.label}</span>
                                         )}

@@ -353,7 +353,7 @@ export function LoginPage({ language: propLanguage, onLanguageChange, onSkip, on
       >
         {/* Branding Content */}
         <div className="hero-content">
-          <img src={josoorLogo} alt="JOSOOR" style={{ width: '80px', marginBottom: '32px', filter: 'drop-shadow(0 0 15px rgba(255,215,0,0.5))' }} />
+          <img src={josoorLogo} alt="JOSOOR" style={{ width: '80px', marginBottom: '32px', filter: 'drop-shadow(0 0 15px rgba(244,187,48,0.5))' }} />
           <h1 style={{ fontSize: '48px', fontWeight: 700, margin: '0 0 16px 0', lineHeight: 1.1 }}>{t.title}</h1>
           <p style={{ fontSize: '20px', color: '#E5E7EB', lineHeight: 1.5, maxWidth: '400px' }}>{t.subtitle}</p>
         </div>
@@ -363,7 +363,7 @@ export function LoginPage({ language: propLanguage, onLanguageChange, onSkip, on
           <div style={{ width: '100%' }}>
             {t.features.map((feature, i) => (
               <div key={i} className="feature-item">
-                <CheckCircle2 size={24} color="#FFD700" />
+                <CheckCircle2 size={24} color="var(--component-text-accent)" />
                 <span style={{ fontSize: '18px', color: 'rgba(255,255,255,0.9)' }}>{feature}</span>
               </div>
             ))}

@@ -172,7 +172,7 @@ export const FrameHeader: React.FC<FrameHeaderProps> = ({
                         className="v2-header-select"
                         style={{
                             backgroundColor: 'transparent',
-                            color: '#FFD700',
+                            color: 'var(--component-text-accent)',
                             border: 'none',
                             fontSize: '0.9rem',
                             fontWeight: 600,
@@ -246,7 +246,7 @@ export const FrameHeader: React.FC<FrameHeaderProps> = ({
                                 cursor: 'pointer',
                                 padding: '0.3rem 0.6rem',
                                 borderRadius: '4px',
-                                color: '#FFD700',
+                                color: 'var(--component-text-accent)',
                                 fontSize: '1rem',
                                 fontWeight: 700,
                                 display: 'flex',
@@ -272,8 +272,8 @@ export const FrameHeader: React.FC<FrameHeaderProps> = ({
                                 cursor: 'pointer',
                                 padding: '0.25rem 0.5rem',
                                 borderRadius: '2rem',
-                                backgroundColor: isGuest ? 'rgba(255, 215, 0, 0.1)' : 'rgba(255,255,255,0.05)',
-                                border: isGuest ? '1px solid rgba(255, 215, 0, 0.3)' : '1px solid rgba(255,255,255,0.1)'
+                                backgroundColor: isGuest ? 'rgba(244, 187, 48, 0.1)' : 'rgba(255,255,255,0.05)',
+                                border: isGuest ? '1px solid rgba(244, 187, 48, 0.3)' : '1px solid rgba(255,255,255,0.1)'
                             }}>
                                 <div style={{
                                     width: '32px',
@@ -288,7 +288,7 @@ export const FrameHeader: React.FC<FrameHeaderProps> = ({
                                     {currentUser?.user_metadata?.avatar_url ? (
                                         <img src={currentUser.user_metadata.avatar_url} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                     ) : (
-                                        <User size={18} color={isGuest ? '#FFD700' : '#fff'} />
+                                        <User size={18} color={isGuest ? 'var(--component-text-accent)' : '#fff'} />
                                     )}
                                 </div>
                                 <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -296,7 +296,7 @@ export const FrameHeader: React.FC<FrameHeaderProps> = ({
                                         {currentUser?.user_metadata?.full_name || (isGuest ? (language === 'ar' ? 'ضيف' : 'Guest') : 'User')}
                                     </span>
                                     {isGuest && (
-                                        <span style={{ fontSize: '0.65rem', color: '#FFD700', opacity: 0.9 }}>Login to Save</span>
+                                        <span style={{ fontSize: '0.65rem', color: 'var(--component-text-accent)', opacity: 0.9 }}>Login to Save</span>
                                     )}
                                 </div>
                             </div>
@@ -318,7 +318,7 @@ export const FrameHeader: React.FC<FrameHeaderProps> = ({
 
                             {isGuest ? (
                                 <DropdownMenuItem className="cursor-pointer hover:bg-white/5" onClick={() => navigate('/login')}>
-                                    <span style={{ color: '#FFD700', fontWeight: 600 }}>🔐 Login / Sign Up</span>
+                                    <span style={{ color: 'var(--component-text-accent)', fontWeight: 600 }}>🔐 Login / Sign Up</span>
                                 </DropdownMenuItem>
                             ) : (
                                 <DropdownMenuItem className="cursor-pointer hover:bg-white/5 text-red-400" onClick={async () => {
@@ -369,13 +369,13 @@ export const FrameHeader: React.FC<FrameHeaderProps> = ({
                                 <div style={{ display: 'flex', gap: '8px' }}>
                                     <button
                                         onClick={() => { setTheme('light'); document.documentElement.setAttribute('data-theme', 'light'); }}
-                                        style={{ flex: 1, padding: '8px', borderRadius: '6px', border: theme === 'light' ? '2px solid #FFD700' : '1px solid #374151', background: theme === 'light' ? 'rgba(255,215,0,0.1)' : 'transparent', color: '#fff' }}
+                                        style={{ flex: 1, padding: '8px', borderRadius: '6px', border: theme === 'light' ? '2px solid var(--component-text-accent)' : '1px solid #374151', background: theme === 'light' ? 'rgba(244,187,48,0.1)' : 'transparent', color: '#fff' }}
                                     >
                                         {language === 'ar' ? 'فاتح' : 'Light'}
                                     </button>
                                     <button
                                         onClick={() => { setTheme('dark'); document.documentElement.setAttribute('data-theme', 'dark'); }}
-                                        style={{ flex: 1, padding: '8px', borderRadius: '6px', border: theme === 'dark' ? '2px solid #FFD700' : '1px solid #374151', background: theme === 'dark' ? 'rgba(255,215,0,0.1)' : 'transparent', color: '#fff' }}
+                                        style={{ flex: 1, padding: '8px', borderRadius: '6px', border: theme === 'dark' ? '2px solid var(--component-text-accent)' : '1px solid #374151', background: theme === 'dark' ? 'rgba(244,187,48,0.1)' : 'transparent', color: '#fff' }}
                                     >
                                         {language === 'ar' ? 'داكن' : 'Dark'}
                                     </button>
@@ -386,13 +386,13 @@ export const FrameHeader: React.FC<FrameHeaderProps> = ({
                                 <div style={{ display: 'flex', gap: '8px' }}>
                                     <button
                                         onClick={() => setLanguage('en')}
-                                        style={{ flex: 1, padding: '8px', borderRadius: '6px', border: language === 'en' ? '2px solid #FFD700' : '1px solid #374151', background: language === 'en' ? 'rgba(255,215,0,0.1)' : 'transparent', color: '#fff' }}
+                                        style={{ flex: 1, padding: '8px', borderRadius: '6px', border: language === 'en' ? '2px solid var(--component-text-accent)' : '1px solid #374151', background: language === 'en' ? 'rgba(244,187,48,0.1)' : 'transparent', color: '#fff' }}
                                     >
                                         English
                                     </button>
                                     <button
                                         onClick={() => setLanguage('ar')}
-                                        style={{ flex: 1, padding: '8px', borderRadius: '6px', border: language === 'ar' ? '2px solid #FFD700' : '1px solid #374151', background: language === 'ar' ? 'rgba(255,215,0,0.1)' : 'transparent', color: '#fff' }}
+                                        style={{ flex: 1, padding: '8px', borderRadius: '6px', border: language === 'ar' ? '2px solid var(--component-text-accent)' : '1px solid #374151', background: language === 'ar' ? 'rgba(244,187,48,0.1)' : 'transparent', color: '#fff' }}
                                     >
                                         العربية
                                     </button>

@@ -1,10 +1,15 @@
-# 🧭 JOSOOR System API Catalog & Table of Contents (v1.4)
+# 🧭 JOSOOR System API Catalog & Table of Contents (v1.5)
 
 This document is the **Ground Truth** for all server-side communication in the Josoor ecosystem. All frontend calls MUST adhere to these paths and parameter requirements.
 
-**Last Verified:** 2026-01-16  
+**Last Verified:** 2026-01-27  
 **Status:** ✅ All endpoints operational and tested  
 **Frontend Integration:** See Section 3 for complete call requirements and response parsing
+
+**Recent Updates (2026-01-27):**
+- **NEW** Added `search_ksa_facts` MCP tool to Noor (11 tools) and Maestro (4 tools) routers
+- **NEW** Added KSA Facts API endpoints (GET /api/v1/ksa-facts/search, /categories, /{id})
+- 77 pre-extracted Saudi economic facts from NotebookLM/Gemini now searchable via semantic search
 
 **Recent Fixes (2026-01-16):**
 - Fixed Graph Server Cypher syntax error (double bracket in relationship filter)
@@ -22,8 +27,8 @@ This document is the **Ground Truth** for all server-side communication in the J
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | **Backend (8008)** | HTTPS | `/api/v1/*` | 8008 | **Supabase/Postgres**, Auth, Chat, Tabular Data | N/A |
 | **Graph Server (3001)**| HTTPS | `/api/*` | 3001 | **Neo4j**, All Graph Visualizations, Business Chains | N/A |
-| **Noor MCP (8201)** | HTTP/JSON-RPC | `/1/mcp/` | 8201 | **Read-Only** Tools + Business Chains (Agent Use) | 10 tools |
-| **Maestro MCP (8202)** | HTTP/JSON-RPC | `/2/mcp/` | 8202 | **Read/Write** Core Tools Only (Agent Use) | 3 tools |
+| **Noor MCP (8201)** | HTTP/JSON-RPC | `/1/mcp/` | 8201 | **Read-Only** Tools + Business Chains + KSA Facts (Agent Use) | 11 tools |
+| **Maestro MCP (8202)** | HTTP/JSON-RPC | `/2/mcp/` | 8202 | **Read/Write** Core Tools + KSA Facts + Business Chains (Agent Use) | 11 tools |
 | **Embeddings (8203)** | HTTP/JSON-RPC | `/3/mcp/` | 8203 | **Vector Operations** (Agent Use) | 3 tools |
 | **Neo4j MCP (8080)** | HTTP/JSON-RPC | `/4/mcp/` | 8080 | Direct Cypher Execution (Agent Use) | 3 tools |
 
@@ -48,17 +53,18 @@ This document is the **Ground Truth** for all server-side communication in the J
 **Systemd:** `josoor-router-noor.service`  
 **Backend:** `local-backend-wrapper` → `/home/mastersite/development/josoorbe/backend/tools/mcp_wrapper.py`
 
-**Tools (10):**
+**Tools (11):**
 1. `recall_memory` - Search personal/project memory using semantic vector search
 2. `retrieve_instructions` - Load instruction bundles based on interaction mode
 3. `read_neo4j_cypher` - Execute Cypher query against Neo4j knowledge graph (READ-ONLY)
-4. `sector_value_chain` - STRATEGIC VIEW: Trace High-Level Sector Value Chain
-5. `setting_strategic_initiatives` - TACTICAL PLANNING: Objectives → Projects
-6. `setting_strategic_priorities` - CAPABILITY BUILDING: Performance → Capabilities
-7. `integrated_oversight` - STRATEGIC FEEDBACK LOOP: Gaps/Risks → Strategy
-8. `build_oversight` - COMPLIANCE OVERSIGHT: Capabilities → Policy
-9. `operate_oversight` - PERFORMANCE OVERSIGHT: Risks → Performance
-10. `sustainable_operations` - OPERATIONAL EFFICIENCY: Process → IT → Vendor
+4. `search_ksa_facts` - **NEW** KSA ECONOMIC DATA: Search Saudi economic facts (unemployment, FDI, GDP, Vision 2030)
+5. `sector_value_chain` - STRATEGIC VIEW: Trace High-Level Sector Value Chain
+6. `setting_strategic_initiatives` - TACTICAL PLANNING: Objectives → Projects
+7. `setting_strategic_priorities` - CAPABILITY BUILDING: Performance → Capabilities
+8. `integrated_oversight` - STRATEGIC FEEDBACK LOOP: Gaps/Risks → Strategy
+9. `build_oversight` - COMPLIANCE OVERSIGHT: Capabilities → Policy
+10. `operate_oversight` - PERFORMANCE OVERSIGHT: Risks → Performance
+11. `sustainable_operations` - OPERATIONAL EFFICIENCY: Process → IT → Vendor
 
 ### 2.2 Endpoint 2: Maestro Router (8202) - Read/Write Core Tools
 **Gateway:** `https://betaBE.aitwintech.com/2/mcp/`  
@@ -67,10 +73,20 @@ This document is the **Ground Truth** for all server-side communication in the J
 **Systemd:** `josoor-router-maestro.service`  
 **Backend:** `local-backend-wrapper` → `/home/mastersite/development/josoorbe/backend/tools/mcp_wrapper_maestro.py`
 
-**Tools (3):**
+**Tools (11):**
 1. `recall_memory` - Search memory (C-suite scopes accessible)
 2. `retrieve_instructions` - Load instruction bundles
 3. `read_neo4j_cypher` - Execute Cypher query (READ/WRITE capabilities)
+4. `search_ksa_facts` - **NEW** KSA ECONOMIC DATA: Search Saudi economic facts (unemployment, FDI, GDP, Vision 2030)
+5. `sector_value_chain` - STRATEGIC VIEW: Trace High-Level Sector Value Chain
+6. `setting_strategic_initiatives` - TACTICAL PLANNING: Objectives → Projects
+7. `setting_strategic_priorities` - CAPABILITY BUILDING: Performance → Capabilities
+8. `integrated_oversight` - STRATEGIC FEEDBACK LOOP: Gaps/Risks → Strategy
+9. `build_oversight` - COMPLIANCE OVERSIGHT: Capabilities → Policy
+10. `operate_oversight` - PERFORMANCE OVERSIGHT: Risks → Performance
+11. `sustainable_operations` - OPERATIONAL EFFICIENCY: Process → IT → Vendor
+
+**Note:** Maestro uses the same server code as Noor, so it inherits all business chain tools despite the config file only defining core tools.
 
 ### 2.3 Endpoint 3: Embeddings Router (8203) - Vector Operations
 **Gateway:** `https://betaBE.aitwintech.com/3/mcp/`  
@@ -86,7 +102,105 @@ This document is the **Ground Truth** for all server-side communication in the J
 
 **Note:** This router was FIXED on 2026-01-16. Previously had 10 tools due to auto-injection bug in router code. Now correctly exposes only configured tools.
 
-### 2.4 Endpoint 4: Neo4j MCP Direct (8080) - Cypher Execution
+### 2.5 MCP Tool Detail: `search_ksa_facts`
+**Available On:** Noor (8201), Maestro (8202)
+**Added:** 2026-01-27
+**Purpose:** Fast semantic search for pre-extracted Saudi Arabian economic data
+
+**Tool Description (for Agent Prompts):**
+> KSA ECONOMIC DATA. Search pre-extracted Saudi Arabian economic facts and statistics from official sources (GASTAT, Vision 2030, etc.). Covers unemployment, jobs creation, FDI, GDP, trade balance, non-oil exports, and Vision 2030 targets. Data period: 2023-2030.
+
+**Input Schema:**
+```json
+{
+  "type": "object",
+  "properties": {
+    "query": {
+      "type": "string",
+      "description": "Natural language search query about Saudi economic data. Examples: 'What is the unemployment rate?', 'Show FDI inflows for 2024', 'Vision 2030 employment targets'"
+    },
+    "category": {
+      "type": "string",
+      "enum": ["UNEMPLOYMENT", "JOBS_CREATION", "EMPLOYMENT", "FDI", "LOCAL_INVESTMENT", "TRADE_BALANCE", "NON_OIL_EXPORTS", "GDP", "VISION_2030", "REGIONAL"],
+      "description": "Narrow search to a specific category. Omit to search all categories."
+    },
+    "threshold": {
+      "type": "number",
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "default": 0.4,
+      "description": "Minimum similarity score (0.0-1.0). Use 0.4 for broad results, 0.7+ for high precision."
+    },
+    "limit": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 50,
+      "default": 10,
+      "description": "Maximum number of facts to return (1-50). Use lower values (3-5) for focused answers, higher (10-20) for comprehensive research."
+    }
+  },
+  "required": ["query"]
+}
+```
+
+**Example MCP Tool Call:**
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "tools/call",
+  "params": {
+    "name": "search_ksa_facts",
+    "arguments": {
+      "query": "What are the FDI inflows for 2024?",
+      "category": "FDI",
+      "limit": 5
+    }
+  }
+}
+```
+
+**Response Format:**
+```json
+{
+  "query": "What are the FDI inflows for 2024?",
+  "results": [
+    {
+      "id": "fdi_2",
+      "question": "What were the FDI inflows in 2024?",
+      "answer": "Saudi Arabia attracted $26 billion in FDI inflows in 2024, exceeding the target of $25 billion...",
+      "category": "FDI",
+      "topics": ["FDI", "investment", "2024"],
+      "similarity_score": 0.9124,
+      "relevance": "EXCELLENT"
+    }
+  ],
+  "total_found": 1,
+  "search_time_ms": 148.5
+}
+```
+
+**Use Cases:**
+- "What is the Saudi unemployment rate?" → Returns UNEMPLOYMENT facts
+- "Show me Vision 2030 targets" → Returns VISION_2030 facts
+- "How much FDI did Saudi attract in 2024?" → Returns FDI facts
+- "What is the GDP growth forecast?" → Returns GDP facts
+
+**Data Coverage (77 facts total):**
+| Category | Count | Sample Topics |
+| :--- | :--- | :--- |
+| VISION_2030 | 9 | Program pillars, targets, progress |
+| JOBS_CREATION | 8 | Annual job creation, Saudization |
+| EMPLOYMENT | 8 | Labor force participation, sector breakdown |
+| FDI | 8 | Inflows by year, targets, comparisons |
+| LOCAL_INVESTMENT | 8 | PIF, domestic investment, megaprojects |
+| GDP | 8 | Growth rates, forecasts, sector contributions |
+| UNEMPLOYMENT | 7 | National rates, trends, targets |
+| TRADE_BALANCE | 7 | Surplus/deficit, oil vs non-oil |
+| NON_OIL_EXPORTS | 7 | Export values, growth rates |
+| REGIONAL | 7 | Regional economic indicators (limited) |
+
+### 2.6 Endpoint 4: Neo4j MCP Direct (8080) - Cypher Execution
 **Gateway:** `https://betaBE.aitwintech.com/4/mcp/`  
 **Local:** `http://localhost:8080/mcp/`  
 **Binary:** `/home/mastersite/development/josoorbe/backend/mcp-server/.venv/bin/mcp-neo4j-cypher`  
@@ -222,7 +336,7 @@ const jsonData = JSON.parse(dataLine.substring(6)); // Remove "data: " prefix
 **For Direct Backend/Graph Calls (Non-MCP):**
 - Use `/api/v1/*` for Supabase/Postgres data
 - Use `/api/business-chain/*` for business chain visualizations
-- Use `/api/neo4j/*` for Neo4j health/status
+- Use `/api/neo4j/*` for Neo4j health/status and cypher calls
 - Use `/api/graph*` for graph visualizations
 
 ### 3.5 Error Handling
@@ -373,13 +487,16 @@ chain_tools_in_config = [
 
 ### 2.2 Verified Business Chains (`/business-chain/*`)
 *   **Method**: `GET`
-*   **Purpose**: Execute deterministic industry-standard value chain queries.
+*   **Purpose**: Execute deterministic industry-standard value chain queries **stored in Supabase `chain_queries` table**.
+*   **Query Source**: Backend fetches from Supabase at `/api/v1/chains/query/{chain_key}`, graph server executes against Neo4j.
 *   **Supported Keys**: `sector_value_chain`, `setting_strategic_initiatives`, `setting_strategic_priorities`, `build_oversight`, `operate_oversight`, `sustainable_operations`, `integrated_oversight`, `aggregate`.
 *   **Parameters**:
-    *   `year`: (Optional) Filter by fiscal year (default: current).
+    *   `year`: (Optional) Filter by fiscal year (default: 0 = all years).
     *   `id`: (Optional) Start chain from a specific node ID.
+    *   `quarter`: (Optional) Filter by quarter (1-4).
     *   `analyzeGaps`: (Optional) `true` for Diagnostic mode (Red/Amber/Green), `false` for Narrative.
 *   **Example**: `GET /api/business-chain/sector_value_chain?year=2025&analyzeGaps=true`
+*   **Data Requirements**: Query may return empty results if Neo4j data doesn't form complete chain paths for the specified year/quarter.
 
 ### 2.3 Graph Utilities
 | Endpoint | Method | Result |
@@ -407,6 +524,107 @@ chain_tools_in_config = [
 *   **`POST /chat/message`**: Send a message to the AI agent.
 *   **`GET /chat/conversations`**: Retrieve history thread list.
 
+### 3.3 KSA Economic Facts API (NEW - 2026-01-27)
+**Purpose**: Fast semantic search for pre-extracted Saudi Arabian economic data from NotebookLM/Gemini.
+**Data Source**: Official government sources (GASTAT, Vision 2030, Ministry of Investment)
+**Data Period**: 2023-2030 (actuals + targets)
+**Performance**: ~150ms average response time
+
+#### `GET /ksa-facts/search`
+Semantic search across 77 pre-extracted economic facts.
+
+**Query Parameters:**
+| Parameter | Type | Required | Default | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| `q` | string | ✅ Yes | - | Natural language search query (min 1 char) |
+| `category` | string | No | - | Filter by category (see list below) |
+| `threshold` | float | No | 0.4 | Minimum similarity score (0.0-1.0) |
+| `limit` | int | No | 10 | Maximum results (1-50) |
+
+**Available Categories:**
+- `UNEMPLOYMENT` - Unemployment rates, trends, targets (national level)
+- `JOBS_CREATION` - Job creation figures and annual targets
+- `EMPLOYMENT` - Employment figures, labor force participation
+- `FDI` - Foreign Direct Investment inflows and targets
+- `LOCAL_INVESTMENT` - Domestic investment and PIF data
+- `TRADE_BALANCE` - Trade surplus/deficit figures
+- `NON_OIL_EXPORTS` - Non-oil export values and growth
+- `GDP` - Gross Domestic Product figures and growth rates
+- `VISION_2030` - Vision 2030 program targets and progress
+- `REGIONAL` - Regional economic indicators (limited data)
+
+**Example Request:**
+```bash
+curl "https://betaBE.aitwintech.com/api/v1/ksa-facts/search?q=unemployment%20rate%202024&category=UNEMPLOYMENT&limit=5"
+```
+
+**Example Response:**
+```json
+{
+  "query": "unemployment rate 2024",
+  "results": [
+    {
+      "id": "unemployment_1",
+      "question": "What is the current unemployment rate in Saudi Arabia?",
+      "answer": "The unemployment rate in Saudi Arabia was 7.6% in Q1 2024, decreasing from 8.3% in Q1 2023...",
+      "category": "UNEMPLOYMENT",
+      "topics": ["unemployment", "labor market", "2024"],
+      "similarity_score": 0.8742,
+      "relevance": "EXCELLENT"
+    }
+  ],
+  "total_found": 1,
+  "search_time_ms": 142.35
+}
+```
+
+**Relevance Categories:**
+- `EXCELLENT`: score ≥ 0.8
+- `GOOD`: score ≥ 0.6
+- `OKAY`: score ≥ 0.4
+- `POOR`: score < 0.4
+
+#### `GET /ksa-facts/categories`
+List all available fact categories with counts.
+
+**Example Response:**
+```json
+{
+  "categories": [
+    {"name": "VISION_2030", "count": 9},
+    {"name": "JOBS_CREATION", "count": 8},
+    {"name": "EMPLOYMENT", "count": 8},
+    {"name": "FDI", "count": 8},
+    {"name": "LOCAL_INVESTMENT", "count": 8},
+    {"name": "GDP", "count": 8},
+    {"name": "UNEMPLOYMENT", "count": 7},
+    {"name": "TRADE_BALANCE", "count": 7},
+    {"name": "NON_OIL_EXPORTS", "count": 7},
+    {"name": "REGIONAL", "count": 7}
+  ],
+  "total_facts": 77
+}
+```
+
+#### `GET /ksa-facts/{fact_id}`
+Retrieve a specific fact by ID.
+
+**Path Parameters:**
+- `fact_id` (string): The unique identifier of the fact (e.g., "unemployment_1")
+
+**Example Response:**
+```json
+{
+  "id": "unemployment_1",
+  "question": "What is the current unemployment rate in Saudi Arabia?",
+  "answer": "The unemployment rate in Saudi Arabia was 7.6% in Q1 2024...",
+  "category": "UNEMPLOYMENT",
+  "topics": ["unemployment", "labor market", "2024"],
+  "source": "NotebookLM/Gemini extraction",
+  "extracted_at": "2026-01-27T14:30:00"
+}
+```
+
 ---
 
 ## 7. Verification & Testing
@@ -433,8 +651,8 @@ printf "4. Neo4j MCP (8080): " && curl -s -X POST https://betaBE.aitwintech.com/
 ```
 === MCP ENDPOINTS TEST ===
 
-1. Noor (8201): 10
-2. Maestro (8202): 3
+1. Noor (8201): 11
+2. Maestro (8202): 11
 3. Embeddings (8203): 3
 4. Neo4j MCP (8080): 3
 ```

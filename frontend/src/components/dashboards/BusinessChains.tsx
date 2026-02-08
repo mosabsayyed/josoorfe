@@ -101,7 +101,7 @@ const BusinessChains: React.FC<BusinessChainsProps> = ({ chainId, selectedYear, 
     node: {
       dark: {
         backgroundColor: isDark ? '#1F2937' : '#FFFFFF',
-        border: isDark ? '2px solid #FFD700' : '2px solid #D97706',
+        border: isDark ? '2px solid var(--component-text-accent)' : '2px solid #D97706',
         color: isDark ? '#F9FAFB' : '#111827',
         boxShadow: isDark ? '0 10px 15px -3px rgba(0,0,0,0.4)' : '0 4px 6px -1px rgba(0,0,0,0.1)'
       },
@@ -117,7 +117,7 @@ const BusinessChains: React.FC<BusinessChainsProps> = ({ chainId, selectedYear, 
         color: '#111827',
         boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)'
       },
-      selected: { boxShadow: isDark ? '0 0 0 4px #FFD700' : '0 0 0 4px #D97706', zIndex: 50 },
+      selected: { boxShadow: isDark ? '0 0 0 4px var(--component-text-accent)' : '0 0 0 4px #D97706', zIndex: 50 },
     },
     canvas: {
       backgroundColor: isDark ? '#111827' : '#F9FAFB',
@@ -129,7 +129,7 @@ const BusinessChains: React.FC<BusinessChainsProps> = ({ chainId, selectedYear, 
       touchAction: 'none'
     },
     connector: {
-      active: isDark ? '#FFD700' : '#D97706',
+      active: isDark ? 'var(--component-text-accent)' : '#D97706',
       static: isDark ? '#4B5563' : '#9CA3AF',
     }
   };
@@ -640,7 +640,7 @@ const BusinessChains: React.FC<BusinessChainsProps> = ({ chainId, selectedYear, 
 
               if (isChainActive) {
                 // Highlighted Active Chain: Gold/Glow, Fast animation
-                edgeColor = '#FFD700';
+                edgeColor = 'var(--component-text-accent)';
                 strokeDasharray = '10,5';
                 animationDuration = '1.2s';
                 strokeWidth = "3.5";
@@ -704,22 +704,22 @@ const BusinessChains: React.FC<BusinessChainsProps> = ({ chainId, selectedYear, 
                   </defs>
 
                   {isNodeActive && (
-                    <circle cx={node.x} cy={node.y} r={r + 6} fill="none" stroke="#FFD700" strokeWidth="2" strokeDasharray="4,2">
+                    <circle cx={node.x} cy={node.y} r={r + 6} fill="none" stroke="var(--component-text-accent)" strokeWidth="2" strokeDasharray="4,2">
                       <animateTransform attributeName="transform" type="rotate" from={`0 ${node.x} ${node.y}`} to={`360 ${node.x} ${node.y}`} dur="10s" repeatCount="indefinite" />
                     </circle>
                   )}
 
                   <circle cx={node.x} cy={node.y} r={r}
                     fill={`url(#gradient-${node.id})`}
-                    stroke={isNodeActive ? '#FFD700' : (node.type === 'dark' ? (isDark ? '#FFD700' : '#D97706') : node.type === 'light' ? (isDark ? '#10B981' : '#059669') : (isDark ? '#9CA3AF' : '#6B7280'))}
+                    stroke={isNodeActive ? 'var(--component-text-accent)' : (node.type === 'dark' ? (isDark ? 'var(--component-text-accent)' : '#D97706') : node.type === 'light' ? (isDark ? '#10B981' : '#059669') : (isDark ? '#9CA3AF' : '#6B7280'))}
                     strokeWidth={isNodeActive ? "5" : "3"}
-                    filter={isNodeActive ? "drop-shadow(0 0 12px rgba(255, 215, 0, 0.6))" : "drop-shadow(0 4px 6px rgba(0,0,0,0.3))"} />
+                    filter={isNodeActive ? "drop-shadow(0 0 12px rgba(244, 187, 48, 0.6))" : "drop-shadow(0 4px 6px rgba(0,0,0,0.3))"} />
                   <text x={node.x} y={count !== undefined ? node.y - 5 : node.y + 5} textAnchor="middle"
                     fill={node.type === 'white' ? '#111827' : (isDark ? '#F9FAFB' : '#1F2937')}
                     fontWeight="700" fontSize="13" fontFamily="var(--component-font-family)">{node.label}</text>
                   {count !== undefined && (
                     <g transform={`translate(${node.x}, ${node.y + 18})`}>
-                      <circle cx="0" cy="0" r="18" fill={isDark ? '#FFD700' : '#D97706'} />
+                      <circle cx="0" cy="0" r="18" fill={isDark ? 'var(--component-text-accent)' : '#D97706'} />
                       <text x="0" y="5" textAnchor="middle" fill="#111827" fontWeight="700" fontSize="12" fontFamily="var(--component-font-family)">{count}</text>
                     </g>
                   )}
@@ -754,15 +754,15 @@ const BusinessChains: React.FC<BusinessChainsProps> = ({ chainId, selectedYear, 
                     : node.type === 'dark'
                       ? (isDark ? 'radial-gradient(circle at 35% 35%, #374151, #1F2937)' : 'radial-gradient(circle at 35% 35%, #FFFFFF, #F3F4F6)')
                       : (isDark ? 'radial-gradient(circle at 35% 35%, #1F2937, #111827)' : 'radial-gradient(circle at 35% 35%, #F3F4F6, #E5E7EB)'),
-                  border: `3px solid ${isNodeActive ? '#FFD700' : (node.type === 'dark' ? (isDark ? '#FFD700' : '#D97706') : node.type === 'light' ? (isDark ? '#10B981' : '#059669') : (isDark ? '#9CA3AF' : '#6B7280'))}`,
-                  boxShadow: isNodeActive ? '0 0 20px rgba(255, 215, 0, 0.4), inset 0 2px 4px rgba(255,255,255,0.1)' : '0 4px 6px rgba(0,0,0,0.3), inset 0 2px 4px rgba(255,255,255,0.1)',
+                  border: `3px solid ${isNodeActive ? 'var(--component-text-accent)' : (node.type === 'dark' ? (isDark ? 'var(--component-text-accent)' : '#D97706') : node.type === 'light' ? (isDark ? '#10B981' : '#059669') : (isDark ? '#9CA3AF' : '#6B7280'))}`,
+                  boxShadow: isNodeActive ? '0 0 20px rgba(244, 187, 48, 0.4), inset 0 2px 4px rgba(255,255,255,0.1)' : '0 4px 6px rgba(0,0,0,0.3), inset 0 2px 4px rgba(255,255,255,0.1)',
                 }}>
                 <span style={{ textAlign: 'center', fontSize: '0.75rem', lineHeight: 1.25, pointerEvents: 'none', padding: '0 0.5rem', fontWeight: node.type === 'dark' ? 700 : node.type === 'white' ? 600 : 500, letterSpacing: node.type === 'dark' ? '0.025em' : 'normal', color: node.type === 'white' ? '#111827' : (isDark ? '#F9FAFB' : '#111827') }}>
                   {node.label}
                 </span>
                 {count !== undefined && (
                   <>
-                    <span style={{ fontSize: '0.75rem', marginTop: '0.25rem', padding: '0.125rem 0.5rem', backgroundColor: isDark ? '#FFD700' : '#D97706', color: '#111827', fontWeight: 700, pointerEvents: 'none', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}>
+                    <span style={{ fontSize: '0.75rem', marginTop: '0.25rem', padding: '0.125rem 0.5rem', backgroundColor: isDark ? 'var(--component-text-accent)' : '#D97706', color: '#111827', fontWeight: 700, pointerEvents: 'none', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}>
                       {count}
                     </span>
                     {levelData && (

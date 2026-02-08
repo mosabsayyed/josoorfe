@@ -210,7 +210,7 @@ export default function LandingPage() {
         --component-text-primary: #F9FAFB;
         --component-text-secondary: #D1D5DB;
         --component-text-muted: #9CA3AF;
-        --component-text-accent: #FFD700;
+        --component-text-accent: var(--component-text-accent);
         --component-text-on-accent: #111827;
       }
 
@@ -567,7 +567,7 @@ export default function LandingPage() {
         outline: none;
         border-color: var(--component-text-accent);
         background: rgba(31, 41, 55, 0.9);
-        box-shadow: 0 0 12px rgba(255, 215, 0, 0.2);
+        box-shadow: 0 0 12px rgba(244, 187, 48, 0.2);
       }
 
       .button-primary {
@@ -587,7 +587,7 @@ export default function LandingPage() {
 
       .button-primary:hover {
         transform: translateY(-2px);
-        box-shadow: 0 8px 24px rgba(255, 215, 0, 0.3);
+        box-shadow: 0 8px 24px rgba(244, 187, 48, 0.3);
       }
 
       @media (max-width: 1024px) {

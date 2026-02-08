@@ -47,6 +47,22 @@ function processMessagePayload(message: any, existingArtifacts: any[] = []): any
     console.log('[processMessagePayload] Step 6 - new artifacts:', newArtifacts.map(a => `${a.artifact_type}:${a.title}`));
   } else {
     console.log('[processMessagePayload] Step 6 - NO ui- tags found in cleanAnswer');
+    
+    // CRITICAL FIX: If datasets exist but no tags, create auto-artifacts
+    if (datasets && Object.keys(datasets).length > 0) {
+      console.log('[processMessagePayload] Auto-creating artifacts from datasets without tags');
+      newArtifacts = Object.entries(datasets).map(([id, dataset]: [string, any]) => ({
+        id: dataset.id || id,
+        artifact_type: 'chart',
+        title: dataset.title || id,
+        dataset: dataset,
+        metadata: {
+          chartType: dataset.type || 'column',
+          datasetId: id
+        }
+      }));
+      console.log('[processMessagePayload] Created auto-artifacts:', newArtifacts.map(a => `${a.artifact_type}:${a.title}`));
+    }
   }
 
   // COMPLETE MERGE: Combine embedded artifacts + existing artifacts

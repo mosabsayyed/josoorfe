@@ -42,6 +42,11 @@ attached_assets/
 *.m4a
 frontend_backup_*
 temp_delete_after/
+neo4j-4x-temp/
+neo4j-staging-data/
+neo4j-staging-logs/
+backups/
+*.backup
 
 # Environment files with secrets
 frontend/.env
@@ -62,6 +67,7 @@ frontend/.env
 .venv/
 .venv-upload/
 venv/
+venv-neo4j/
 
 # Test/debug files
 *.json
@@ -81,6 +87,34 @@ verify_*.js
 !docs/**/*.md
 !.agent/workflows/*.md
 !.github/*.md
+
+# Additional sensitive files
+passwords.txt
+secrets.json
+*.key
+*.pem
+*.p12
+*.crt
+*.cer
+*.jks
+*.pfx
+*.asc
+*.gpg
+*.kdbx
+*.kdb
+*.sqlite
+*.db
+*.bak
+*.backup
+*.sql
+*.dump
+*.tar.gz
+*.tgz
+*.zip.enc
+*.7z.enc
+*.rar.enc
+*.enc
+*.encrypted
 
 # Backup files
 *.backup-*

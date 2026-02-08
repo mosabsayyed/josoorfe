@@ -85,7 +85,7 @@ const TransformationHealth: React.FC<TransformationHealthProps> = ({
     success: '#10B981', // green-500
     danger: '#EF4444', // red-500
     warning: '#F59E0B', // amber-500
-    accent: isDark ? '#FFD700' : '#D97706', // Gold
+    accent: isDark ? 'var(--component-text-accent)' : '#D97706', // Gold
     borderColor: isDark ? '#374151' : '#D1D5DB', // gray-700
     panelBorderColor: isDark ? '#374151' : '#D1D5DB', // gray-700
   };
@@ -211,7 +211,7 @@ const TransformationHealth: React.FC<TransformationHealthProps> = ({
               minHeight: '56px',
               transition: 'all 0.3s ease',
               border: isFuture ? `1px solid ${theme.accent}` : `1px solid transparent`,
-              background: isFuture ? (isDark ? 'rgba(217, 119, 6, 0.1)' : 'rgba(255, 215, 0, 0.1)') : undefined,
+              background: isFuture ? (isDark ? 'rgba(217, 119, 6, 0.1)' : 'rgba(244, 187, 48, 0.1)') : undefined,
               borderRadius: '0.5rem',
               position: 'relative',
               overflow: 'hidden'
@@ -245,14 +245,14 @@ const TransformationHealth: React.FC<TransformationHealthProps> = ({
                   <svg viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <defs>
                       <radialGradient id="health-glow" cx="50%" cy="50%" r="50%">
-                        <stop offset="0%" stopColor="#FFD700" stopOpacity="1" />
+                        <stop offset="0%" stopColor="var(--component-text-accent)" stopOpacity="1" />
                         <stop offset="100%" stopColor="#B45309" stopOpacity="0.3" />
                       </radialGradient>
                     </defs>
                     <path 
                       d="M25 44C25 44 5 30 5 18C5 10 11 5 18 5C22 5 25 8 25 8C25 8 28 5 32 5C39 5 45 10 45 18C45 30 25 44 25 44Z" 
                       fill="url(#health-glow)" 
-                      stroke="#FFD700" 
+                      stroke="var(--component-text-accent)" 
                       strokeWidth="2"
                     />
                   </svg>

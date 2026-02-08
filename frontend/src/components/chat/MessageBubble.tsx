@@ -237,7 +237,8 @@ export function MessageBubble({
     const s = typeof message.content === 'string' ? message.content : '';
     if (!s) return false;
     if (/failed_generation/.test(s)) return true;
-    if (/\{[\s\S]*\}/.test(s)) return true;
+    // Only treat as JSON if it STARTS with { (not just contains braces somewhere)
+    if (s.trim().startsWith('{') && s.trim().endsWith('}')) return true;
     return false;
   })();
 
@@ -261,8 +262,8 @@ export function MessageBubble({
 
     // 4. Contains significant HTML tags (mixed content)
     // This handles cases where the LLM returns text mixed with HTML tags (e.g. "Here is the report: <b>Title</b>...")
-    // Added ui-chart and ui-table to detection to ensure they trigger the HtmlRenderer
-    if (/<(h[1-6]|table|div|p|ul|ol|dl|blockquote|section|article|header|footer|main|nav|aside|b|i|strong|em|br|span|ui-chart|ui-table)[^>]*>/i.test(s)) return true;
+    // NOTE: ui-chart and ui-table are handled by MarkdownRenderer, NOT as HTML
+    if (/<(h[1-6]|table|div|p|ul|ol|dl|blockquote|section|article|header|footer|main|nav|aside|b|i|strong|em|br|span)[^>]*>/i.test(s)) return true;
 
     // 5. JSON-wrapped HTML (check visualizations array and common fields)
     if (s.startsWith('{') || s.startsWith('[')) {
@@ -364,13 +365,22 @@ export function MessageBubble({
   // Memoize embedded artifacts map at top level to avoid conditional hook warnings
   const embeddedArtifactsMap = useMemo(() => {
     const artifacts = structuredVisualizationResponse?.artifacts || message.metadata?.llm_payload?.artifacts || [];
-    return artifacts.reduce((acc: any, curr: any) => {
+    const map = artifacts.reduce((acc: any, curr: any) => {
       if (curr.id) acc[curr.id] = curr;
       if (curr.dataId) acc[curr.dataId] = curr;
       if (curr.data_id) acc[curr.data_id] = curr;
       return acc;
     }, {});
-  }, [structuredVisualizationResponse, message.metadata?.llm_payload?.artifacts]);
+
+    // DEBUG: Log artifact map creation
+    console.log('[MessageBubble] embeddedArtifactsMap created:', {
+      artifactCount: artifacts.length,
+      mapKeys: Object.keys(map),
+      messageId: message.id
+    });
+
+    return map;
+  }, [structuredVisualizationResponse, message.metadata?.llm_payload?.artifacts, message.id]);
 
   return (
     <div className={rowClass} dir={isRTL ? 'rtl' : 'ltr'} onMouseEnter={() => setShowActionsHover(true)} onMouseLeave={() => setShowActionsHover(false)}>
@@ -423,16 +433,45 @@ export function MessageBubble({
                   </div>
                 )}
               </div>
-            ) : structuredVisualizationResponse ? (
-              // Structured visualization response - show HTML artifact via UniversalCanvas
+            ) : (() => {
+              // DEBUG: Log routing decision
+              console.log('[MessageBubble] Routing decision:', {
+                messageId: message.id,
+                structuredViz: !!structuredVisualizationResponse,
+                contentIsHTML: contentIsHTML,
+                contentIsJSONLike: contentIsJSONLike,
+                hasError: !!message.metadata?.error,
+                contentPreview: message.content?.substring(0, 100)
+              });
+              return null;
+            })() || structuredVisualizationResponse ? (
+              // Structured visualization response - render the answer (cleaned HTML/markdown)
               <div style={{ width: '100%' }}>
-                <UniversalCanvas
-                  content={undefined}
-                  type={undefined}
-                  title={undefined}
-                  artifact={structuredVisualizationResponse.artifacts[0]}
-                  embeddedArtifacts={embeddedArtifactsMap}
-                />
+                {(() => {
+                  const answer = structuredVisualizationResponse.answer || '';
+                  const isHTML = /<(h[1-6]|table|div|p|ul|ol|section|article)[^>]*>/i.test(answer);
+
+                  if (isHTML) {
+                    // HTML content - use UniversalCanvas
+                    return (
+                      <UniversalCanvas
+                        content={answer}
+                        type="html"
+                        title={undefined}
+                        artifact={undefined}
+                        embeddedArtifacts={embeddedArtifactsMap}
+                      />
+                    );
+                  } else {
+                    // Markdown content - use MarkdownRenderer with artifact hydration
+                    return (
+                      <MarkdownRenderer
+                        content={answer}
+                        embeddedArtifacts={embeddedArtifactsMap}
+                      />
+                    );
+                  }
+                })()}
               </div>
             ) : (contentIsHTML && htmlCandidate) ? (
               <div style={{ width: '100%' }}>

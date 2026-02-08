@@ -19,11 +19,11 @@ import { ControlsDesk } from './components/desks/ControlsDesk';
 import { PlanningDesk } from './components/desks/PlanningDesk';
 import { EnterpriseDesk } from './components/desks/EnterpriseDesk';
 import { ReportingDesk } from './components/desks/ReportingDesk';
+import { ExplorerDesk } from './components/desks/ExplorerDesk';
+import { ChainTestDesk } from './components/desks/ChainTestDesk';
 
 const KnowledgeSeries = () => <div className="p-10 text-xl">Knowledge Series (Coming Soon)</div>;
 const Roadmap = () => <div className="p-10 text-xl">Roadmap (Coming Soon)</div>;
-
-import { ExplorerDesk } from './components/desks/ExplorerDesk';
 
 function ProtectedRoute({ children, allowGuest = false }: { children: React.ReactElement; allowGuest?: boolean }) {
   const { user, loading } = useAuth();
@@ -87,6 +87,7 @@ function AppContent() {
         <Route path="knowledge" element={<KnowledgeSeries />} />
         <Route path="roadmap" element={<Roadmap />} />
         <Route path="explorer" element={<ExplorerDesk />} />
+        <Route path="chain-test" element={<ChainTestDesk />} />
         {/* Default redirect inside /desk */}
         <Route index element={<Navigate to="sector" replace />} />
       </Route>

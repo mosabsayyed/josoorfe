@@ -88,7 +88,7 @@ export default function FounderLetterPage() {
                   fontSize: isQuote ? '20px' : '16px',
                   lineHeight: '1.8',
                   marginBottom: '24px',
-                  color: isQuote ? '#FFD700' : '#D1D5DB',
+                  color: isQuote ? 'var(--component-text-accent)' : '#D1D5DB',
                   fontStyle: isQuote ? 'normal' : 'normal',
                   textAlign: isQuote ? 'center' : (isRTL ? 'right' : 'left'),
                   fontWeight: isQuote ? 500 : 400
@@ -104,7 +104,7 @@ export default function FounderLetterPage() {
               borderTop: '1px solid rgba(255, 255, 255, 0.1)',
               textAlign: isRTL ? 'left' : 'right'
             }}>
-              <p style={{ fontSize: '18px', fontWeight: 600, color: '#FFD700' }}>{t.signature}</p>
+              <p style={{ fontSize: '18px', fontWeight: 600, color: 'var(--component-text-accent)' }}>{t.signature}</p>
             </div>
           </div>
         </motion.div>

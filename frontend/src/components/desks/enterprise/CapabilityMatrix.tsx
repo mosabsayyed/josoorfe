@@ -36,12 +36,16 @@ export function CapabilityMatrix({
   const l3CellWidth = `${100 / maxL3Count}%`;
 
   // Helper to check if L2 is dimmed (all L3s are dimmed)
+  // Empty L2s (no L3 children) are NOT dimmed - they show with red status borders
   const isL2Dimmed = (l2: L2Capability): boolean => {
+    if (l2.l3.length === 0) return false; // Show empty L2s (red border = incomplete)
     return l2.l3.every(l3 => isL3Dimmed(l3));
   };
 
   // Helper to check if L1 is dimmed (all L2s are dimmed)
+  // Empty L1s (no L2 children) are NOT dimmed - they show with red status borders
   const isL1Dimmed = (l1: L1Capability): boolean => {
+    if (l1.l2.length === 0) return false; // Show empty L1s (red border = incomplete)
     return l1.l2.every(l2 => isL2Dimmed(l2));
   };
 

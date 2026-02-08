@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Test Markdown Rendering</title>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/react-markdown@9/react-markdown.min.js"></script>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script>
+    const { createElement: h } = React;
+    const { createRoot } = ReactDOM;
+
+    // Test content with custom tags
+    const testContent = `
+# Test Report
+
+Here is a chart:
+
+<ui-chart id="chart-1"></ui-chart>
+
+And some text after.
+    `;
+
+    // Test artifacts map
+    const testArtifacts = {
+      'chart-1': {
+        id: 'chart-1',
+        artifact_type: 'CHART',
+        title: 'Test Chart',
+        content: { chart: { type: 'column' }, series: [] }
+      }
+    };
+
+    // Custom components
+    const components = {
+      'ui-chart': (props) => {
+        console.log('[ui-chart component]', props);
+        const chartId = props.id || props['data-id'];
+        const artifact = testArtifacts[chartId];
+
+        if (!artifact) {
+          return h('div', { style: { color: 'red' } }, `Chart not found: ${chartId}`);
+        }
+
+        return h('div', { style: { border: '2px solid green', padding: '10px' } },
+          `Chart rendered: ${artifact.title}`
+        );
+      }
+    };
+
+    // Render
+    const App = () => {
+      console.log('[App] Rendering with components:', Object.keys(components));
+      return h(ReactMarkdown.default, {
+        children: testContent,
+        components: components,
+        rehypePlugins: []  // Test without rehypeRaw first
+      });
+    };
+
+    const root = createRoot(document.getElementById('root'));
+    root.render(h(App));
+  </script>
+</body>
+</html>

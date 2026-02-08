@@ -262,28 +262,9 @@ export function buildArtifactsFromTags(
     }
   }
 
-  // If HTML content exists, create an artifact for the body
-  if (htmlContent && htmlContent.trim()) {
-    const trimmed = htmlContent.trim();
-    const looksLikeMarkdown = (
-      /(^|\n)#{1,6}\s/.test(trimmed) || /(^|\n)[-*+]\s/.test(trimmed) || /```/.test(trimmed)
-    );
-    const hasRealHtml = /<\s*(html|body|div|p|h\d|table|thead|tbody|tr|td|span|section|article|header|footer)\b/i.test(trimmed);
-    const format: 'markdown' | 'html' = looksLikeMarkdown && !hasRealHtml ? 'markdown' : 'html';
-
-    const htmlArtifact: Artifact = {
-      artifact_type: "HTML",
-      title: "Report",
-      description: "Analysis report with embedded visualizations",
-      content: {
-        body: htmlContent, // Will be sanitized by HtmlRenderer
-        format,
-        embedded_artifacts: embeddedArtifacts, // Attach map for hydration
-      },
-    };
-    // Add HTML artifact first (usually what we want to display)
-    artifacts.unshift(htmlArtifact);
-  }
+  // NOTE: HTML artifact removed - report body is rendered separately via ReactMarkdown
+  // in StrategyReportModal.tsx. Creating HTML artifacts breaks StrategyReportChartRenderer
+  // which only handles CHART and TABLE types. Only return CHART and TABLE artifacts.
 
   console.log('[buildArtifactsFromTags] Built artifacts:', artifacts.map(a => `${a.artifact_type}:${a.title}`));
   return artifacts;
@@ -340,8 +321,8 @@ function buildChartArtifact(
     return null;
   }
 
-  // Determine chart type: prefer tag attribute, fall back to dataset
-  const chartType = chartTypeFromTag || dataset.chart_type;
+  // Determine chart type: prefer tag attribute, fall back to dataset (check both Highcharts and flat formats)
+  const chartType = chartTypeFromTag || dataset.chart?.type || dataset.chart_type || 'column';
 
   if (!chartType) {
     console.error(`[buildChartArtifact] No chart type found for ${dataId}`);
@@ -351,25 +332,22 @@ function buildChartArtifact(
   // Infer title from dataset or data-id
   const title = dataset.title || inferTitleFromDataId(dataId);
 
-  // Build artifact content (compatible with ArtifactRenderer)
-  const content: Record<string, any> = {
-    chart: { type: chartType },
-    title: { text: title },
-    series: dataset.series,
-  };
-
-  // Add axes if provided
-  if (dataset.xAxis) {
-    content.xAxis = dataset.xAxis;
-  } else {
-    content.xAxis = { type: "category" };
-  }
-
-  if (dataset.yAxis) {
-    content.yAxis = dataset.yAxis;
-  } else {
-    content.yAxis = { title: { text: "Value" } };
-  }
+  // CRITICAL: For Highcharts format (dataset.chart exists), use dataset directly as content
+  // This preserves all properties (xAxis, yAxis, series with colors, etc.)
+  const content: Record<string, any> = dataset.chart
+    ? {
+        // Highcharts format - use dataset directly, preserve all properties
+        ...dataset,
+        title: dataset.title || { text: title }
+      }
+    : {
+        // Legacy flat format - build content structure
+        chart: { type: chartType },
+        title: { text: title },
+        series: dataset.series,
+        xAxis: dataset.xAxis || { type: "category" },
+        yAxis: dataset.yAxis || { title: { text: "Value" } }
+      };
 
   // Flatten data for Recharts (optional, for compatibility)
   const flatData = flattenChartDataForRecharts(dataset);

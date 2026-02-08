@@ -123,31 +123,31 @@
 /* CACHE METRICS - MOST IMPORTANT (user's #1 priority) */
 .analytics-icon.cache,
 .analytics-icon.cache-creation {
-  background: rgba(255, 215, 0, 0.3);
-  color: #FFD700;
+  background: rgba(244, 187, 48, 0.3);
+  color: #F4BB30;
 }
 
 .analytics-card.cache-highlight {
-  border: 2px solid #FFD700;
-  background: rgba(255, 215, 0, 0.05);
-  box-shadow: 0 0 15px rgba(255, 215, 0, 0.2);
+  border: 2px solid #F4BB30;
+  background: rgba(244, 187, 48, 0.05);
+  box-shadow: 0 0 15px rgba(244, 187, 48, 0.2);
 }
 
 .analytics-card.cache-highlight:hover {
-  border-color: #FFD700;
-  background: rgba(255, 215, 0, 0.1);
-  box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+  border-color: #F4BB30;
+  background: rgba(244, 187, 48, 0.1);
+  box-shadow: 0 0 20px rgba(244, 187, 48, 0.3);
 }
 
 .cache-metric {
-  color: #FFD700 !important;
+  color: #F4BB30 !important;
   font-weight: 700 !important;
 }
 
 .cache-row {
-  background: rgba(255, 215, 0, 0.05);
+  background: rgba(244, 187, 48, 0.05);
   padding: 0.5rem !important;
-  border-left: 3px solid #FFD700;
+  border-left: 3px solid #F4BB30;
   margin-left: -0.5rem;
   padding-left: 0.75rem !important;
 }
@@ -249,7 +249,7 @@
 .filter-select:focus {
   outline: none;
   border-color: var(--component-text-accent);
-  box-shadow: 0 0 0 2px rgba(255, 215, 0, 0.1);
+  box-shadow: 0 0 0 2px rgba(244, 187, 48, 0.1);
 }
 
 .filter-clear {
@@ -265,7 +265,7 @@
 }
 
 .filter-clear:hover {
-  background: rgba(255, 215, 0, 0.1);
+  background: rgba(244, 187, 48, 0.1);
 }
 
 .btn-clear-filters {
@@ -348,7 +348,7 @@
 
 .trace-card:hover {
   border-color: var(--component-text-accent);
-  box-shadow: 0 2px 8px rgba(255, 215, 0, 0.1);
+  box-shadow: 0 2px 8px rgba(244, 187, 48, 0.1);
 }
 
 .trace-card.selected {
@@ -408,7 +408,7 @@
 .trace-id {
   font-family: monospace;
   font-size: 0.75rem;
-  color: #FFD700;
+  color: #F4BB30;
   /* GOLD as requested */
   font-weight: 700;
   min-width: 40px;
@@ -608,7 +608,7 @@
 /* Cache Hit Analytics Card Highlight */
 .analytics-card.highlight {
   border: 2px solid var(--component-text-accent);
-  background: linear-gradient(135deg, var(--component-panel-bg) 0%, rgba(255, 215, 0, 0.05) 100%);
+  background: linear-gradient(135deg, var(--component-panel-bg) 0%, rgba(244, 187, 48, 0.05) 100%);
 }
 
 .analytics-icon.cache,
@@ -655,7 +655,7 @@
 
 /* Detail Section Highlighting */
 .detail-section.highlight-section {
-  background: rgba(255, 215, 0, 0.05);
+  background: rgba(244, 187, 48, 0.05);
   border: 1px solid var(--component-text-accent);
 }
 
@@ -665,7 +665,7 @@
 
 /* Cache Metric Highlighting in Details */
 .detail-row.highlight {
-  background: rgba(255, 215, 0, 0.08);
+  background: rgba(244, 187, 48, 0.08);
   padding: 0.5rem;
   border-radius: 4px;
   border-left: 3px solid var(--component-text-accent);
@@ -827,5 +827,5 @@
 }
 
 .btn-clear-filters:hover {
-  background: rgba(255, 215, 0, 0.1);
+  background: rgba(244, 187, 48, 0.1);
 }

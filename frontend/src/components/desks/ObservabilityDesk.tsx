@@ -609,9 +609,9 @@ function AdminSettingsPanel({
 
   if (!draft) {
     return (
-      <div className="detail-panel" style={{ padding: '24px' }}>
+      <div className="detail-panel admin-settings-loading">
         {error && (
-          <div className="observability-error" style={{ marginBottom: '12px' }}>
+          <div className="observability-error admin-error-spacing">
             <AlertCircle className="icon-md" />
             <p>{error}</p>
           </div>
@@ -626,18 +626,18 @@ function AdminSettingsPanel({
 
   return (
     <div className="admin-settings-container">
-      <div className="observability-header-left" style={{ marginBottom: '12px' }}>
+      <div className="observability-header-left admin-header-spacing">
         <SettingsIcon className="observability-header-icon" />
         <div>
-          <h2 className="observability-header-title" style={{ margin: 0 }}>Admin Settings</h2>
-          <p className="observability-header-subtitle" style={{ margin: 0 }}>
+          <h2 className="observability-header-title">Admin Settings</h2>
+          <p className="observability-header-subtitle">
             Flexible LLM provider: configure endpoint, MCP tools, and response schema independently.
           </p>
         </div>
       </div>
 
       {error && (
-        <div className="observability-error" style={{ marginBottom: '12px' }}>
+        <div className="observability-error admin-error-spacing">
           <AlertCircle className="icon-md" />
           <p>{error}</p>
         </div>
@@ -762,7 +762,7 @@ function AdminSettingsPanel({
               </div>
             ))}
           </div>
-          <div className="admin-card" style={{ marginTop: '12px' }}>
+          <div className="admin-card admin-card-spacing">
             <h4>Persona Bindings</h4>
             {['noor', 'maestro', 'default'].map((persona) => (
               <label key={persona} className="admin-field">
@@ -784,13 +784,13 @@ function AdminSettingsPanel({
         </div>
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '12px' }}>
+      <div className="admin-footer-row">
         <div>
-          <p style={{ margin: 0, fontSize: '12px', color: '#9ca3af' }}>
+          <p className="admin-footer-text">
             Last updated: {settings?.updated_at || 'n/a'} by {settings?.updated_by || 'n/a'}
           </p>
         </div>
-        <div style={{ display: 'flex', gap: '8px' }}>
+        <div className="admin-button-row">
           <button className="trace-list-refresh" onClick={onReload} disabled={loading}>
             <RefreshCw className="icon-sm" /> Reload
           </button>
@@ -804,7 +804,7 @@ function AdminSettingsPanel({
       </div>
 
       {draft.audit && draft.audit.length > 0 && (
-        <div className="admin-card" style={{ marginTop: '16px' }}>
+        <div className="admin-card admin-audit-card-spacing">
           <h4>Recent Changes</h4>
           <div className="admin-audit-list">
             {draft.audit.slice(-5).reverse().map((a, idx) => (

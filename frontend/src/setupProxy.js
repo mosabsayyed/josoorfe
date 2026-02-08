@@ -9,47 +9,58 @@
 
 const { createProxyMiddleware } = require('http-proxy-middleware');
 
-module.exports = function(app) {
+module.exports = function (app) {
   // Graph Server routes - must be defined BEFORE generic /api
-  app.use('/api/neo4j', createProxyMiddleware({ 
-    target: 'https://betaBE.aitwintech.com', 
-    changeOrigin: true,
-    secure: true
-  }));
-  
-  app.use('/api/graph', createProxyMiddleware({ 
-    target: 'https://betaBE.aitwintech.com', 
-    changeOrigin: true,
-    secure: true
-  }));
-  
-  app.use('/api/business-chain', createProxyMiddleware({ 
-    target: 'https://betaBE.aitwintech.com', 
-    changeOrigin: true,
-    secure: true
-  }));
-  
-  app.use('/api/dependency', createProxyMiddleware({ 
-    target: 'https://betaBE.aitwintech.com', 
-    changeOrigin: true,
-    secure: true
-  }));
-  
-  app.use('/api/domain-graph', createProxyMiddleware({ 
-    target: 'https://betaBE.aitwintech.com', 
-    changeOrigin: true,
-    secure: true
-  }));
-  
-  app.use('/api/summary-stream', createProxyMiddleware({ 
-    target: 'https://betaBE.aitwintech.com', 
+  app.use('/api/neo4j', createProxyMiddleware({
+    target: 'https://betaBE.aitwintech.com',
     changeOrigin: true,
     secure: true
   }));
 
+  app.use('/api/graph', createProxyMiddleware({
+    target: 'https://betaBE.aitwintech.com',
+    changeOrigin: true,
+    secure: true
+  }));
+
+  app.use('/api/business-chain', createProxyMiddleware({
+    target: 'https://betaBE.aitwintech.com',
+    changeOrigin: true,
+    secure: true
+  }));
+
+  app.use('/api/dependency', createProxyMiddleware({
+    target: 'https://betaBE.aitwintech.com',
+    changeOrigin: true,
+    secure: true
+  }));
+
+  app.use('/api/domain-graph', createProxyMiddleware({
+    target: 'https://betaBE.aitwintech.com',
+    changeOrigin: true,
+    secure: true
+  }));
+
+  app.use('/api/summary-stream', createProxyMiddleware({
+    target: 'https://betaBE.aitwintech.com',
+    changeOrigin: true,
+    secure: true
+  }));
+
+  // MCP Router Proxies (Per Catalog V1.5 Section 1 System Topology)
+  // Must be defined before generic /api catch-all
+  const mcpRoutes = ['/1/mcp', '/2/mcp', '/3/mcp', '/4/mcp'];
+  mcpRoutes.forEach(route => {
+    app.use(route, createProxyMiddleware({
+      target: 'https://betaBE.aitwintech.com',
+      changeOrigin: true,
+      secure: true
+    }));
+  });
+
   // Backend routes - catches all remaining /api/* including /api/v1/chat, /api/v1/auth, etc.
-  app.use('/api', createProxyMiddleware({ 
-    target: 'https://betaBE.aitwintech.com', 
+  app.use('/api', createProxyMiddleware({
+    target: 'https://betaBE.aitwintech.com',
     changeOrigin: true,
     secure: true
   }));

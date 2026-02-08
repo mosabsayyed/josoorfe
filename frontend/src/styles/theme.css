@@ -18,25 +18,25 @@
   --component-text-secondary: #D1D5DB;
   --component-text-muted: #9CA3AF;
 
-  --component-text-accent: #FFD700;
+  --component-text-accent: #F4BB30;
   --component-text-on-accent: #111827;
 
   --component-color-success: #10B981;
-  --component-color-warning: #FFD700;
+  --component-color-warning: #F4BB30;
   --component-color-danger: #EF4444;
   --component-color-info: #6366F1;
 
   /* Sector-specific colors */
   --sector-mining: #d97706;
   --sector-water: #06b6d4;
-  --sector-energy: #facc15;
+  --sector-energy: #F4BB30;
   --sector-industry: #3b82f6;
   --sector-logistics: #18181b;
-  --sector-giga: #eab308;
+  --sector-giga: #F4BB30;
 
   /* Status colors */
   --status-existing: #10b981;
-  --status-construction: #f59e0b;
+  --status-construction: #F4BB30;
   --status-planned: #6366f1;
   --status-future: #6366f1;
 
@@ -120,12 +120,12 @@
   --component-text-secondary: #4B5563;
   --component-text-muted: #6B7280;
 
-  --component-text-accent: #D97706;
+  --component-text-accent: #F4BB30;
   /* Darker amber for readability */
-  --component-text-on-accent: #FFFFFF;
+  --component-text-on-accent: #1F2937;
 
   --component-color-success: #059669;
-  --component-color-warning: #D97706;
+  --component-color-warning: #F4BB30;
   /* Match accent */
   --component-color-danger: #DC2626;
 

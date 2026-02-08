@@ -1265,7 +1265,7 @@
 
 .settings-dirty-indicator {
   padding: 12px 16px;
-  background: rgba(255, 215, 0, 0.1);
+  background: rgba(244, 187, 48, 0.1);
   border-left: 4px solid var(--component-text-accent);
   border-radius: 4px;
   display: flex;

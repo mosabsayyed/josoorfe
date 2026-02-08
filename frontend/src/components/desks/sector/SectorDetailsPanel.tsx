@@ -409,7 +409,10 @@ const SectorDetailsPanel: React.FC<SectorDetailsPanelProps> = ({
                 <div className="details-header">
                     <div className="header-content">
                         <div className="header-text">
-                            <h2 className="details-title">{selectedAsset.name}</h2>
+                            <h2 className="details-title">
+                                <span style={{ opacity: 0.6, marginRight: '8px' }}>{selectedAsset.id}</span>
+                                {selectedAsset.name}
+                            </h2>
                             <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginTop: '4px' }}>
                                 <span className="details-subtitle" style={{ 
                                     color: 'var(--sector-' + (selectedAsset.sector?.toLowerCase() || 'industry') + ')',
@@ -875,7 +878,10 @@ const SectorDetailsPanel: React.FC<SectorDetailsPanelProps> = ({
                                     }}
                                 >
                                     <div className="asset-header">
-                                        <div className="asset-name">{asset.name}</div>
+                                        <div className="asset-name">
+                                            <span style={{ opacity: 0.6, marginRight: '6px' }}>{asset.id}</span>
+                                            {asset.name}
+                                        </div>
                                         {(asset.priority === 'HIGH' || asset.priority === 'MAJOR' || asset.priority === 'URGENT' || asset.priority === 'CRITICAL') && (
                                             <span className="priority-badge">{asset.priority}</span>
                                         )}

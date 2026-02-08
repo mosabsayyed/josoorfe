@@ -128,7 +128,7 @@
 }
 
 .warning-box {
-    background-color: rgba(255, 215, 0, 0.08);
+    background-color: rgba(244, 187, 48, 0.08);
     color: var(--component-color-warning);
     padding: 0.625rem;
     border-radius: 0.375rem;
@@ -200,7 +200,7 @@
 .recommendation-box {
     margin-top: 0.875rem;
     padding: 0.625rem 0.75rem;
-    background-color: rgba(255, 215, 0, 0.05);
+    background-color: rgba(244, 187, 48, 0.05);
     border: 1px solid var(--component-text-accent);
     border-radius: 0.375rem;
     font-size: 0.8rem;

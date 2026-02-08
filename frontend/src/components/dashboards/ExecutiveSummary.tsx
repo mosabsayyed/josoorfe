@@ -116,7 +116,7 @@ const ExecutiveSummary: React.FC<ExecutiveSummaryProps> = ({
                             width: '24px', 
                             height: '24px', 
                             border: `2px solid ${isDark ? '#374151' : '#E5E7EB'}`,
-                            borderTopColor: isDark ? '#FFD700' : '#D97706',
+                            borderTopColor: isDark ? 'var(--component-text-accent)' : '#D97706',
                             borderRadius: '50%',
                             animation: 'spin 1s linear infinite'
                         }}/>

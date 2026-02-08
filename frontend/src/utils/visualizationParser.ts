@@ -93,10 +93,63 @@ export function parseVisualizationTags(htmlContent: string): ParsedVisualization
         element: null as any, // Not used for regex-based parsing
       });
     }
+
+    // ALSO parse <div class="visualization-placeholder"> format from LLM responses
+    // This handles responses like: <div class="visualization-placeholder visualization-chart" data-id="..." data-chart-type="...">
+    const divPlaceholderRegex = /<div\s+class="([^"]*visualization-placeholder[^"]*)"\s*([^>]*?)(?:>[\s\S]*?<\/div>|\/\s*>)/gi;
+    while ((match = divPlaceholderRegex.exec(htmlContent)) !== null) {
+      const classStr = match[1]; // e.g., "visualization-placeholder visualization-chart"
+      const attributesStr = match[2]; // e.g., 'data-id="..." data-chart-type="..."'
+      
+      // Determine if it's a chart or table from the class
+      const isChart = /visualization-chart|visualization-bar|visualization-line|visualization-pie/.test(classStr);
+      const isTable = /visualization-table/.test(classStr);
+      
+      if (!isChart && !isTable) {
+        continue; // Not a recognized visualization type
+      }
+
+      // Extract data-id and data-chart-type from attributes
+      const fullAttrStr = classStr + ' ' + attributesStr;
+      const dataIdMatch = /(?:data-id|id)=["']([^"']+)["']/.exec(fullAttrStr);
+      const dataId = dataIdMatch?.[1]?.trim();
+
+      if (!dataId) {
+        console.warn("[parseVisualizationTags] visualization-placeholder div missing data-id");
+        continue;
+      }
+
+      if (isChart) {
+        // Extract chart type from data-chart-type attribute
+        const chartTypeMatch = /data-chart-type=["']([^"']+)["']/.exec(fullAttrStr);
+        const typeStr = chartTypeMatch?.[1]?.trim()?.toLowerCase();
+        const chartType = (typeStr || undefined) as ChartType | undefined;
+
+        if (chartType && !isValidChartType(chartType)) {
+          console.warn(
+            `[parseVisualizationTags] visualization-chart has invalid type: "${typeStr}". Valid types: bar, column, line, area, pie, radar, scatter, combo, bubble`
+          );
+        }
+
+        tags.push({
+          tagName: "ui-chart",
+          dataId,
+          chartType,
+          element: null as any,
+        });
+      } else if (isTable) {
+        tags.push({
+          tagName: "ui-table",
+          dataId,
+          element: null as any,
+        });
+      }
+    }
   } catch (error) {
     console.error("[parseVisualizationTags] Failed to parse tags:", error);
   }
 
+  console.log('[parseVisualizationTags] Parsed', tags.length, 'total tags (ui-chart/ui-table + div.visualization-placeholder)');
   return tags;
 }
 
@@ -116,6 +169,53 @@ function isValidChartType(type: string): type is ChartType {
     "bubble",
   ];
   return validTypes.includes(type as ChartType);
+}
+
+/**
+ * Normalize chart types to valid types
+ * Maps unsupported types to closest supported equivalents
+ */
+function normalizeChartType(type: any): ChartType {
+  if (!type || typeof type !== 'string') {
+    return 'column'; // default fallback
+  }
+
+  const typeStr = type.toLowerCase().trim();
+
+  // Direct matches
+  if (isValidChartType(typeStr)) {
+    return typeStr as ChartType;
+  }
+
+  // Type mappings for common LLM outputs
+  const typeMap: Record<string, ChartType> = {
+    'bullet': 'bar',           // Bullet charts → bar
+    'horizontal': 'bar',       // Horizontal bar → bar
+    'bar_horizontal': 'bar',
+    'progress': 'bar',         // Progress bars → bar
+    'gauge': 'pie',            // Gauges → pie
+    'sankey': 'column',        // Sankey → column
+    'flow': 'column',          // Flow → column
+    'heatmap': 'scatter',      // Heatmap → scatter
+    'tree': 'column',          // Tree → column
+    'treemap': 'column',       // Treemap → column
+    'sunburst': 'pie',         // Sunburst → pie
+    'waterfall': 'column',     // Waterfall → column
+    'funnel': 'column',        // Funnel → column
+  };
+
+  if (typeMap[typeStr]) {
+    console.warn(
+      `[normalizeChartType] Mapping unsupported type "${typeStr}" to "${typeMap[typeStr]}"`
+    );
+    return typeMap[typeStr];
+  }
+
+  // Fallback to column
+  console.warn(
+    `[normalizeChartType] Unknown chart type "${typeStr}", falling back to "column"`
+  );
+  return 'column';
 }
 
 /**
@@ -174,20 +274,37 @@ export function extractTableDataset(
  * @returns Validated chart dataset or null if not found/invalid
  */
 export interface ChartDataset {
-  type: "chart";
-  chart_type: ChartType;
+  // Legacy flat format
+  type?: "chart";
+  chart_type?: ChartType;
+
+  // Highcharts format (chart.type is preferred)
+  chart?: {
+    type: string;
+    [key: string]: any;
+  };
+
   title?: string;
   xAxis?: {
     categories?: string[];
     title?: { text: string };
     type?: string;
+    min?: number;
+    max?: number;
   };
   yAxis?: {
     title?: { text: string };
     min?: number;
     max?: number;
   };
-  series: { name: string; data: (number | { x: number; y: number; size?: number })[] }[];
+  series: {
+    name: string;
+    data: (number | { x: number; y: number; size?: number; name?: string })[];
+    color?: string;
+  }[];
+
+  // Allow additional Highcharts properties
+  [key: string]: any;
 }
 
 export function extractChartDataset(
@@ -204,28 +321,59 @@ export function extractChartDataset(
     return null;
   }
 
-  if (dataset.type !== "chart") {
+  // BUGFIX: Accept datasets with:
+  // 1. Highcharts format: dataset.chart.type (nested)
+  // 2. Flat format: dataset.type = chart type (column, bar, etc.)
+  // 3. Legacy format: dataset.type = "chart" with separate chart_type field
+  const highchartsType = dataset.chart?.type?.toLowerCase();
+  const flatType = dataset.type?.toLowerCase();
+  const isChartType = ['bar', 'column', 'line', 'area', 'pie', 'radar', 'scatter', 'combo', 'bubble'].includes(highchartsType || flatType || '');
+
+  if (!highchartsType && flatType !== "chart" && !isChartType) {
     console.error(
-      `[extractChartDataset] Dataset "${dataId}" is not a chart. Type: ${dataset.type}`
+      `[extractChartDataset] Dataset "${dataId}" is not a chart. Type: ${dataset.type}, chart.type: ${dataset.chart?.type}`
     );
     return null;
   }
 
-  // Validate chart_type
-  if (!isValidChartType(dataset.chart_type)) {
-    console.error(
-      `[extractChartDataset] Dataset "${dataId}" has invalid chart_type: ${dataset.chart_type}`
-    );
-    return null;
+  // Determine chart type: prioritize Highcharts format (chart.type), fallback to flat type
+  const chartTypeToUse = highchartsType || (isChartType ? flatType : dataset.chart_type);
+  const normalizedChartType = normalizeChartType(chartTypeToUse);
+  
+  // BUGFIX: Handle datasets with either 'series' array OR 'data' field
+  let seriesArray = dataset.series;
+
+  // If no series but has data field, convert to series format
+  if (!seriesArray && dataset.data) {
+    seriesArray = [{
+      name: dataset.title || dataId,
+      data: Array.isArray(dataset.data) ? dataset.data : []
+    }];
   }
+
+  // CRITICAL: Preserve Highcharts structure (chart, xAxis, yAxis, series)
+  // Only normalize legacy flat format datasets
+  const normalizedDataset = highchartsType
+    ? {
+        // Highcharts format - preserve original structure
+        ...dataset,
+        series: seriesArray || dataset.series // Ensure series exists
+      }
+    : {
+        // Legacy flat format - normalize
+        ...dataset,
+        type: "chart",
+        chart_type: normalizedChartType,
+        series: seriesArray
+      };
 
   // Validate series
-  if (!Array.isArray(dataset.series)) {
-    console.error(`[extractChartDataset] Dataset "${dataId}" has invalid series`);
+  if (!Array.isArray(normalizedDataset.series)) {
+    console.error(`[extractChartDataset] Dataset "${dataId}" has no valid series or data`);
     return null;
   }
 
-  for (const series of dataset.series) {
+  for (const series of normalizedDataset.series) {
     if (!series.name || !Array.isArray(series.data)) {
       console.error(
         `[extractChartDataset] Dataset "${dataId}" has invalid series entry:`,
@@ -235,7 +383,7 @@ export function extractChartDataset(
     }
   }
 
-  return dataset as ChartDataset;
+  return normalizedDataset as ChartDataset;
 }
 
 /**
@@ -263,12 +411,31 @@ export function flattenChartDataForRecharts(dataset: ChartDataset): Record<strin
 
     dataset.series.forEach((series) => {
       const value = series.data[idx];
-      if (typeof value === "object" && value !== null && "y" in value) {
-        // Bubble/scatter: { x, y, size }
-        row[series.name] = value.y;
+      
+      if (value === null || value === undefined) {
+        row[series.name] = 0;
+      } else if (typeof value === "object") {
+        // Object with multiple fields - need to extract ALL numeric fields
+        if ("y" in value) {
+          // Bubble/scatter format: { x, y, size }
+          row[series.name] = value.y;
+        } else {
+          // LLM sends objects like { pillar: "X", target: 85, actual: 72, variance: -13 }
+          // Extract ALL numeric fields into separate columns
+          Object.entries(value).forEach(([key, val]) => {
+            if (typeof val === "number") {
+              row[key] = val;
+            } else if (typeof val === "string" && key !== "name") {
+              // Use string value for category if not already set
+              if (!row.category || row.category === idx.toString()) {
+                row.category = val;
+              }
+            }
+          });
+        }
       } else {
-        // Simple value
-        row[series.name] = value !== undefined ? value : 0;
+        // Simple number value
+        row[series.name] = value;
       }
     });
 

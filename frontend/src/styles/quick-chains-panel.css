@@ -12,7 +12,7 @@
 .quick-chains-header {
   font-weight: 700;
   font-size: 15px;
-  color: var(--color-gold, #ffd700);
+  color: var(--color-gold, #F4BB30);
 }
 
 .quick-chains-inputs {
@@ -54,7 +54,7 @@
 }
 
 .quick-chains-button:hover:not(:disabled) {
-  border-color: var(--color-gold, #ffd700);
+  border-color: var(--color-gold, #F4BB30);
   transform: translateY(-1px);
 }
 

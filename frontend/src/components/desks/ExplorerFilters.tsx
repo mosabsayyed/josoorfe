@@ -235,7 +235,7 @@ export function ExplorerFilters({
                                 )}
 
                                 {entityLabels.length > 0 && (
-                                    <div style={{ marginTop: '1rem' }}>
+                                    <div className="ontology-subgroup">
                                         <div className="ontology-subgroup-header">
                                             <p className="ontology-subgroup-title">Enterprise Layer</p>
                                             <button
@@ -263,7 +263,7 @@ export function ExplorerFilters({
                                 )}
 
                                 {otherLabels.length > 0 && (
-                                    <div style={{ marginTop: '1rem' }}>
+                                    <div className="ontology-subgroup">
                                         <div className="ontology-subgroup-header">
                                             <p className="ontology-subgroup-title">Other Nodes</p>
                                             <button

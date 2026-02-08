@@ -8,6 +8,8 @@ import StrategyReportModal from './sector/StrategyReportModal';
 import './sector/SectorDesk.css';
 import { dashboardData } from './sector/SectorDashboardData';
 import { chatService } from '../../services/chatService';
+import { Artifact } from '../../types/api';
+// Removed: buildArtifactsFromTags, extractDatasetBlocks - now handled by chatService
 import { fetchSectorGraphData, L1_CATEGORY_MAP } from '../../services/neo4jMcpService';
 import { SECTOR_POLICY_MOCK_DATA } from './sector/data/SectorPolicyMock';
 import { PolicyToolCounts } from './sector/SectorPolicyClassifier';
@@ -437,7 +439,7 @@ export const SectorDesk: React.FC<SectorDeskProps> = ({ year: propYear, quarter:
         return () => { isMounted = false; };
     }, []); // Run once on mount - fetching ALL years
 
-    // --- POLICY AGGREGATION (REACTIVE TO YEAR) ---
+    // --- POLICY AGGREGATION (REACTIVE TO YEAR AND SECTOR) ---
     useEffect(() => {
         if (rawPolicyNodes.length === 0) return;
 
@@ -447,12 +449,52 @@ export const SectorDesk: React.FC<SectorDeskProps> = ({ year: propYear, quarter:
             return nodeYear === selectedYear;
         });
 
-        // 2. Reconstruct Hierarchy
-        const l1PolicyTools = yearlyNodes.filter((n: any) => n.level === 'L1');
-        const l2PolicyTools = yearlyNodes.filter((n: any) => n.level === 'L2');
+        // 2. Filter by Sector
+        // Policy tools have no sector field in DB, but we know they're all water
+        const sectorFilteredNodes = (selectedSector === 'all' || selectedSector === 'water')
+            ? yearlyNodes
+            : []; // Non-water sectors get zero policy tools
+
+        // 3. Reconstruct Hierarchy
+        const l1PolicyTools = sectorFilteredNodes.filter((n: any) => n.level === 'L1');
+        const l2PolicyTools = sectorFilteredNodes.filter((n: any) => n.level === 'L2');
 
         const counts: PolicyToolCounts = {
-            enforce: 0, incentive: 0, license: 0, services: 0, regulate: 0, awareness: 0, total: 0
+            enforce: 0, incentive: 0, license: 0, services: 0, regulate: 0, awareness: 0, total: 0,
+            enforceStatus: 'none', incentiveStatus: 'none', licenseStatus: 'none',
+            servicesStatus: 'none', regulateStatus: 'none', awarenessStatus: 'none'
+        };
+
+        // Helper to calculate risk status from nodes
+        const calculateRiskStatus = (nodes: any[]): 'high' | 'medium' | 'low' | 'none' => {
+            if (nodes.length === 0) return 'none';
+
+            // Check for risk-related properties
+            const risks = nodes.filter(n =>
+                n.risk_level || n.risk_status || n.has_risk ||
+                n.risk_severity || n.risk_count
+            );
+
+            if (risks.length === 0) return 'low'; // No explicit risks = low risk
+
+            // Aggregate risk levels
+            const highRisks = risks.filter(n =>
+                String(n.risk_level || n.risk_status || n.risk_severity || '').toLowerCase().includes('high') ||
+                String(n.risk_level || n.risk_status || n.risk_severity || '').toLowerCase().includes('critical')
+            );
+            const mediumRisks = risks.filter(n =>
+                String(n.risk_level || n.risk_status || n.risk_severity || '').toLowerCase().includes('medium') ||
+                String(n.risk_level || n.risk_status || n.risk_severity || '').toLowerCase().includes('moderate')
+            );
+
+            if (highRisks.length > 0) return 'high';
+            if (mediumRisks.length > 0) return 'medium';
+            return 'low';
+        };
+
+        // Track nodes by category for risk calculation
+        const categoryNodes: Record<string, any[]> = {
+            enforce: [], incentive: [], license: [], services: [], regulate: [], awareness: []
         };
 
         l1PolicyTools.forEach((l1: any) => {
@@ -460,8 +502,10 @@ export const SectorDesk: React.FC<SectorDeskProps> = ({ year: propYear, quarter:
             const childCount = children.length;
             const effectiveCount = childCount > 0 ? childCount : 1;
             const category = L1_CATEGORY_MAP[l1.name] || 'Services';
+            const categoryKey = category?.toLowerCase();
 
-            switch (category?.toLowerCase()) {
+            // Add to counts
+            switch (categoryKey) {
                 case 'enforce': counts.enforce += effectiveCount; break;
                 case 'incentive': counts.incentive += effectiveCount; break;
                 case 'license': counts.license += effectiveCount; break;
@@ -469,11 +513,25 @@ export const SectorDesk: React.FC<SectorDeskProps> = ({ year: propYear, quarter:
                 case 'regulate': counts.regulate += effectiveCount; break;
                 case 'awareness': counts.awareness += effectiveCount; break;
             }
+
+            // Collect nodes for risk calculation
+            if (categoryNodes[categoryKey]) {
+                categoryNodes[categoryKey].push(l1);
+                categoryNodes[categoryKey].push(...children);
+            }
         });
+
+        // Calculate risk status for each category
+        counts.enforceStatus = calculateRiskStatus(categoryNodes.enforce);
+        counts.incentiveStatus = calculateRiskStatus(categoryNodes.incentive);
+        counts.licenseStatus = calculateRiskStatus(categoryNodes.license);
+        counts.servicesStatus = calculateRiskStatus(categoryNodes.services);
+        counts.regulateStatus = calculateRiskStatus(categoryNodes.regulate);
+        counts.awarenessStatus = calculateRiskStatus(categoryNodes.awareness);
 
         counts.total = counts.enforce + counts.incentive + counts.license + counts.services + counts.regulate + counts.awareness;
         setPolicyCounts(counts);
-    }, [rawPolicyNodes, selectedYear]);
+    }, [rawPolicyNodes, selectedYear, selectedSector]);
 
     // --- EXISTING HANDLERS ---
     const handleAssetSelect = useCallback((asset: GraphNode | null) => {
@@ -498,18 +556,45 @@ export const SectorDesk: React.FC<SectorDeskProps> = ({ year: propYear, quarter:
     // --- STRATEGIC AI HANDLER ---
     const [isStrategyModalOpen, setIsStrategyModalOpen] = useState(false);
     const [strategyReportHtml, setStrategyReportHtml] = useState<string>('');
+    const [strategyArtifacts, setStrategyArtifacts] = useState<Artifact[]>([]);
 
     const handleStrategyCheck = async () => {
         setIsStrategyModalOpen(true);
         setStrategyReportHtml('<div style="display:flex;align-items:center;justify-content:center;height:100%;"><h3 style="color:#60a5fa">Generating Strategic Analysis...</h3></div>');
+        setStrategyArtifacts([]);
 
         try {
-            const prompt = `Conduct a comprehensive Strategic Plan Review for our organization's 2024–2029 strategic plan. Focus on national transformation impact, cross-sectoral value creation, and Vision 2030 alignment.
+            const prompt = `Conduct a comprehensive Strategic Plan Review for our organization's 2024–2029 strategic plan.
 
 **Review Scope:**
 - Plan Period: 2024–2029
-- Assessment Period: 2024–2025 actuals vs. 2026–2029 planned targets
+- Assessment Period: Based on ${selectedYear} data snapshot
 - Focus Areas: Economic diversification, employment creation, investment attraction, sectoral transformation
+
+---
+
+**Visualization Requirements:**
+
+Create exactly 3 visualizations using Highcharts format:
+
+1. **Vision 2030 Pillar Performance** (chart id: "vision-pillars")
+   - Type: column chart
+   - Show 3 pillars: Vibrant Society, Thriving Economy, Ambitious Nation
+   - Data: Target % vs Actual % for each
+
+2. **Cross-Sectoral Impact** (chart id: "sector-impact")
+   - Type: column or bar chart
+   - Show top 5 sectors by investment or economic value
+   - Data: SAR amounts or impact scores
+
+3. **Strategic Risk Matrix** (chart id: "risk-matrix")
+   - Type: scatter chart
+   - Show top risks plotted by probability (x-axis) and impact (y-axis)
+   - Data format: [{ x: probability, y: impact, name: "Risk Name" }]
+
+Reference charts inline using: <ui-chart id="chart-id"></ui-chart>
+
+---
 
 **Required Analysis:**
 
@@ -597,7 +682,62 @@ Label each insight: Regional / Sectoral / Cross-cutting / Systemic
 - Use Vision 2030 terminology: "giga-projects," "economic engines," "enabling sectors," "national transformation"
 - Include visual comparisons for Vision 2030 alignment and value chain flows
 - Structure all outputs for executive readability
-- Title your response: "Strategic Plan Review - Vision 2030 Alignment Analysis"`;
+- Include any charts with <ui-chart> tags (not <div class="visualization-placeholder">)
+- Title your response: "Strategic Plan Review - Vision 2030 Alignment Analysis"
+
+**CRITICAL: For visualizations, provide data in Highcharts format:**
+
+After narrative, wrap ALL datasets in this marker:
+[DATASETS_JSON_START]
+{
+  "datasets": {
+    "your-chart-id": {
+      "id": "your-chart-id",
+      "title": "Descriptive Chart Title",
+      "chart": { "type": "column" },
+      "xAxis": {
+        "categories": ["Category 1", "Category 2", "Category 3"],
+        "title": { "text": "X-Axis Label" }
+      },
+      "yAxis": {
+        "title": { "text": "Y-Axis Label" },
+        "min": 0,
+        "max": 100
+      },
+      "series": [{
+        "name": "Series Name",
+        "data": [value1, value2, value3],
+        "color": "#facc15"
+      }]
+    }
+  }
+}
+[DATASETS_JSON_END]
+
+**Required fields (ALL mandatory):**
+- \`id\`: Unique identifier in kebab-case (e.g., "pillar-performance")
+- \`title\`: Descriptive title that explains the insight
+- \`chart.type\`: MUST be one of these 6 ONLY: "column", "bar", "line", "scatter", "bullet", "pie"
+- \`xAxis\`: Object with \`categories\` array OR \`title\` with \`min\`/\`max\` for scatter
+- \`yAxis\`: Object with \`title\` object, optionally \`min\`/\`max\` for bounds
+- \`series\`: Array (at least 1) with \`name\` (string) and \`data\` (array of numbers)
+
+**Special data formats:**
+- **Scatter charts:** \`data\` must be \`[{ "x": 6, "y": 8, "name": "Point Label" }]\`
+- **All others:** \`data\` is simple number array \`[10, 20, 30]\`
+
+**Validation checklist before creating dataset:**
+1. ✓ Chart type is one of the 6 allowed types (not "bar-chart", "columns", etc.)
+2. ✓ id matches the id you use in <ui-chart id="..."> tag
+3. ✓ series is an array, not a single object
+4. ✓ data values are numbers (or x/y objects for scatter)
+
+**Reference charts inline:** <ui-chart id="your-chart-id"></ui-chart>
+
+**Vision 2030 colors (use these):**
+- #facc15 (gold), #10b981 (green), #3b82f6 (blue), #f59e0b (amber)
+
+**Final reminder:** Maximum 10 charts. Each must explain a specific insight. Quality > Quantity.`;
 
             const response = await chatService.sendMessage({
                 query: prompt,
@@ -605,16 +745,28 @@ Label each insight: Regional / Sectoral / Cross-cutting / Systemic
             });
 
             if (response.llm_payload?.answer) {
-                const cleanHtml = response.llm_payload.answer.replace(/```[a-z]*\n?/gi, '').replace(/```/g, '');
-                setStrategyReportHtml(cleanHtml);
+                // Use artifacts already processed by chatService (in processMessagePayload)
+                // chatService extracts datasets, builds artifacts, and stores in metadata
+                const processedArtifacts = response.metadata?.llm_payload?.artifacts ||
+                                          response.llm_payload?.artifacts ||
+                                          [];
+                const cleanAnswer = response.metadata?.llm_payload?.answer ||
+                                   response.llm_payload.answer;
+
+                console.log('[Strategy Report] Using pre-processed artifacts:', processedArtifacts.length);
+
+                setStrategyReportHtml(cleanAnswer);
+                setStrategyArtifacts(processedArtifacts);
                 window.dispatchEvent(new Event('josoor_conversation_update'));
             } else {
                 setStrategyReportHtml('<p style="color:red">Analysis failed: No content received.</p>');
+                setStrategyArtifacts([]);
             }
 
         } catch (error) {
             console.error("Strategy Check Failed", error);
             setStrategyReportHtml(`<p style="color:red">Analysis Error: ${(error as Error).message}</p>`);
+            setStrategyArtifacts([]);
         }
     };
 
@@ -639,6 +791,8 @@ Label each insight: Regional / Sectoral / Cross-cutting / Systemic
 
                         // Pass Aggregated Data
                         policyCounts={policyCounts}
+                        policyNodes={rawPolicyNodes}
+                        selectedYear={selectedYear}
 
                         onBackToNational={() => {
                             setSelectedRegionId(null);
@@ -680,39 +834,70 @@ Label each insight: Regional / Sectoral / Cross-cutting / Systemic
                     boxShadow: ((viewLevel === 'L2' && (selectedRegionId || selectedAsset || hoveredRegion)) || (viewLevel === 'L1' && hoveredRegion)) ? '-4px 0 20px rgba(0,0,0,0.3)' : 'none'
                 }}
             >
-                {viewLevel === 'L2' && (selectedRegionId || selectedAsset || hoveredRegion) ? (
-                    <SectorDetailsPanel
-                        selectedRegion={selectedRegionId}
-                        hoveredRegion={hoveredRegion}
-                        selectedAsset={selectedAsset}
-                        onBackToNational={() => { setSelectedRegionId(null); setSelectedAsset(null); }}
-                        onAssetClick={(asset) => {
-                            if (asset) {
-                                setSelectedAsset(asset);
-                            } else {
-                                setSelectedAsset(null);
-                            }
-                        }}
-                        assets={filteredAssets}
-                        selectedSector={selectedSector}
-                        year={Number(selectedYear)}
-                    />
-                ) : viewLevel === 'L1' && hoveredRegion ? (
-                    <SectorDetailsPanel
-                        selectedRegion={hoveredRegion}
-                        hoveredRegion={hoveredRegion}
-                        selectedAsset={null}
-                        assets={filteredAssets}
-                        selectedSector={selectedSector}
-                        year={Number(selectedYear)}
-                    />
-                ) : (
-                    <SectorSidebar year={selectedYear} quarter={quarter} assets={filteredAssets} />
-                )}
+                <div className="sector-drawer-content">
+                    {viewLevel === 'L2' && (selectedRegionId || selectedAsset || hoveredRegion) ? (
+                        <SectorDetailsPanel
+                            selectedRegion={selectedRegionId}
+                            hoveredRegion={hoveredRegion}
+                            selectedAsset={selectedAsset}
+                            onBackToNational={() => { setSelectedRegionId(null); setSelectedAsset(null); }}
+                            onAssetClick={(asset) => {
+                                if (asset) {
+                                    setSelectedAsset(asset);
+                                } else {
+                                    setSelectedAsset(null);
+                                }
+                            }}
+                            assets={filteredAssets}
+                            selectedSector={selectedSector}
+                            year={Number(selectedYear)}
+                        />
+                    ) : viewLevel === 'L1' && hoveredRegion ? (
+                        <SectorDetailsPanel
+                            selectedRegion={hoveredRegion}
+                            hoveredRegion={hoveredRegion}
+                            selectedAsset={null}
+                            assets={(() => {
+                                // In L1 view, when hovering, show L2 assets for the hovered region
+                                let result = allAssets.filter(asset => {
+                                    // Must have a sector (physical assets)
+                                    if (!asset.sector || asset.sector === 'null' || asset.sector === '') return false;
+                                    // Filter by hovered region
+                                    if (asset.region !== hoveredRegion) return false;
+                                    // Filter by selected year
+                                    const assetYear = String(asset.year || asset.parent_year || '');
+                                    if (selectedYear && assetYear !== selectedYear) return false;
+                                    // Apply timeline filter
+                                    if (timelineFilter !== 'both') {
+                                        const status = (asset.status || '').toLowerCase();
+                                        const isExisting = status === 'existing' || status === 'active' || status === 'operational';
+                                        if (timelineFilter === 'current' && !isExisting) return false;
+                                        if (timelineFilter === 'future' && isExisting) return false;
+                                    }
+                                    // Apply priority filter
+                                    if (priorityFilter !== 'both') {
+                                        const p = (asset.priority || '').toUpperCase();
+                                        const isHigh = p === 'HIGH' || p === 'CRITICAL' || p === 'MAJOR';
+                                        if (priorityFilter === 'major' && !isHigh) return false;
+                                        if (priorityFilter === 'strategic' && isHigh) return false;
+                                    }
+                                    return true;
+                                });
+                                // Show L2 assets (all assets for the region, including L2 children)
+                                return result;
+                            })()}
+                            selectedSector={selectedSector}
+                            year={Number(selectedYear)}
+                        />
+                    ) : (
+                        <SectorSidebar year={selectedYear} quarter={quarter} />
+                    )}
+                </div>
 
                 <div className="sector-details-drawer-footer">
                     <p>
-                        <strong>CONFIDENTIAL</strong> • KSA V2030 COMMAND CENTER
+                        • Publicly available V2030 dataset snapshots<br />
+                        • Non-comprehensive representative simulation
                     </p>
                 </div>
             </div>
@@ -721,6 +906,7 @@ Label each insight: Regional / Sectoral / Cross-cutting / Systemic
                 isOpen={isStrategyModalOpen}
                 onClose={() => setIsStrategyModalOpen(false)}
                 htmlContent={strategyReportHtml}
+                artifacts={strategyArtifacts}
                 onContinueInChat={() => { setIsStrategyModalOpen(false); }}
             />
         </div>

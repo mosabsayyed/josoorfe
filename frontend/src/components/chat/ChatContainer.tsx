@@ -178,7 +178,7 @@ export const ChatContainer = memo(function ChatContainer({
               {title && (
                 <>
                   <div style={{ width: '1px', height: '16px', backgroundColor: 'rgba(255,255,255,0.2)', margin: '0 4px' }} />
-                  <span style={{ color: '#FFD700', fontSize: '14px', fontWeight: 600 }}>{title}</span>
+                  <span style={{ color: 'var(--component-text-accent)', fontSize: '14px', fontWeight: 600 }}>{title}</span>
                 </>
               )}
             </div>
@@ -202,7 +202,7 @@ export const ChatContainer = memo(function ChatContainer({
             <select
               value={quarter}
               onChange={(e) => onQuarterChange?.(e.target.value)}
-              style={{ backgroundColor: 'transparent', color: '#FFD700', border: 'none', fontSize: '14px', fontWeight: 600, cursor: 'pointer', outline: 'none', padding: '2px 8px' }}
+              style={{ backgroundColor: 'transparent', color: 'var(--component-text-accent)', border: 'none', fontSize: '14px', fontWeight: 600, cursor: 'pointer', outline: 'none', padding: '2px 8px' }}
             >
               {['Q1', 'Q2', 'Q3', 'Q4', 'All'].map(q => (
                 <option key={q} value={q} style={{ color: '#000' }}>{q}</option>
@@ -230,7 +230,7 @@ export const ChatContainer = memo(function ChatContainer({
           <button
             onClick={() => window.dispatchEvent(new CustomEvent('start-onboarding'))}
             title={effectiveLanguage === 'ar' ? 'إعادة الجولة التعريفية' : 'Replay Tour'}
-            style={{ background: 'rgba(255,255,255,0.1)', border: 'none', cursor: 'pointer', padding: '4px 8px', borderRadius: '4px', color: '#FFD700', fontSize: '16px', fontWeight: 700, width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            style={{ background: 'rgba(255,255,255,0.1)', border: 'none', cursor: 'pointer', padding: '4px 8px', borderRadius: '4px', color: 'var(--component-text-accent)', fontSize: '16px', fontWeight: 700, width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
           >
             ?
           </button>
@@ -272,13 +272,13 @@ export const ChatContainer = memo(function ChatContainer({
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
-            <button className="clickable" style={{ padding: '4px 12px', borderRadius: '24px', backgroundColor: 'rgba(255,215,0,0.1)', border: '1px solid rgba(255,215,0,0.3)', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }} onClick={() => navigate('/login')}>
+            <button className="clickable" style={{ padding: '4px 12px', borderRadius: '24px', backgroundColor: 'rgba(244,187,48,0.1)', border: '1px solid rgba(244,187,48,0.3)', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }} onClick={() => navigate('/login')}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '24px', height: '24px' }}>
                 <img src="https://cdn.builder.io/api/v1/image/assets%2Fc88de0889c4545b98ff911f5842e062a%2Faa1d3e8edf5b47d1b88df2eb208d3cac" alt="profile" style={{ width: '100%', height: '100%', display: 'block' }} />
               </div>
               <div style={{ textAlign: 'left', lineHeight: 1 }}>
-                <p style={{ margin: 0, fontSize: '12px', fontWeight: 600, color: '#FFD700' }}>{effectiveLanguage === 'ar' ? 'ضيف' : 'Guest'}</p>
-                <p style={{ margin: 0, fontSize: '10px', color: '#FFD700', opacity: 0.8 }}>{effectiveLanguage === 'ar' ? 'سجل للحفظ' : 'Login to save'}</p>
+                <p style={{ margin: 0, fontSize: '12px', fontWeight: 600, color: 'var(--component-text-accent)' }}>{effectiveLanguage === 'ar' ? 'ضيف' : 'Guest'}</p>
+                <p style={{ margin: 0, fontSize: '10px', color: 'var(--component-text-accent)', opacity: 0.8 }}>{effectiveLanguage === 'ar' ? 'سجل للحفظ' : 'Login to save'}</p>
               </div>
             </button>
           )}

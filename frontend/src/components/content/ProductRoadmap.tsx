@@ -20,8 +20,8 @@ export default function ProductRoadmap() {
     fontWeight: '700',
     marginBottom: '16px',
     background: isRTL 
-      ? 'linear-gradient(270deg, #FFFFFF 0%, #FFD700 100%)'
-      : 'linear-gradient(90deg, #FFFFFF 0%, #FFD700 100%)',
+      ? 'linear-gradient(270deg, #FFFFFF 0%, var(--component-text-accent) 100%)'
+      : 'linear-gradient(90deg, #FFFFFF 0%, var(--component-text-accent) 100%)',
     WebkitBackgroundClip: 'text',
     WebkitTextFillColor: 'transparent',
     letterSpacing: isRTL ? '0' : '-0.5px'
@@ -105,7 +105,7 @@ export default function ProductRoadmap() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }}>
             {/* Phase 1 */}
             <div style={{ ...cardStyle, padding: '24px' }}>
-                <div style={{ color: '#FFD700', fontSize: '12px', fontWeight: '700', textTransform: 'uppercase', marginBottom: '8px' }}>
+                <div style={{ color: 'var(--component-text-accent)', fontSize: '12px', fontWeight: '700', textTransform: 'uppercase', marginBottom: '8px' }}>
                   {t(content.phase1.label)}
                 </div>
                 <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '12px', color: '#F9FAFB' }}>
@@ -119,8 +119,8 @@ export default function ProductRoadmap() {
             </div>
 
             {/* Phase 2 (Active) */}
-            <div style={{ ...cardStyle, padding: '24px', border: '1px solid rgba(255, 215, 0, 0.3)', background: 'rgba(255, 215, 0, 0.05)' }}>
-                <div style={{ color: '#FFD700', fontSize: '12px', fontWeight: '700', textTransform: 'uppercase', marginBottom: '8px' }}>
+            <div style={{ ...cardStyle, padding: '24px', border: '1px solid rgba(244, 187, 48, 0.3)', background: 'rgba(244, 187, 48, 0.05)' }}>
+                <div style={{ color: 'var(--component-text-accent)', fontSize: '12px', fontWeight: '700', textTransform: 'uppercase', marginBottom: '8px' }}>
                   {t(content.phase2.label)}
                 </div>
                 <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '12px', color: '#F9FAFB' }}>

@@ -20,7 +20,7 @@ const InternalOutputs: React.FC<InternalOutputsProps> = ({
   error = null,
   onRetry
 }) => {
-  const accent = isDark ? '#FFD700' : '#D97706';
+  const accent = isDark ? 'var(--component-text-accent)' : '#D97706';
   const muted = isDark ? '#9CA3AF' : '#6B7280';
   const danger = '#EF4444';
   const borderColor = isDark ? '#374151' : '#D1D5DB';
