@@ -82,11 +82,33 @@ test_*.py
 check_*.py
 test_*.js
 verify_*.js
+verify_*.py
 *.md
 !README.md
 !docs/**/*.md
 !.agent/workflows/*.md
 !.github/*.md
+
+# Files containing conversation history with embedded credentials
+HISTORY
+chathistory*
+CHATHISTORY*
+openmemory.md
+
+# Scripts with hardcoded credentials (exclude from git)
+aura-proxy.py
+push-to-aura.py
+pull-from-aura*.py
+apply-gap-filling-aura.py
+adaptive-gap-filling.py
+run-gap-filling*.py
+run_diagnostic*.py
+run-diagnostics*.py
+analyze-similarity*.py
+generate-*-embeddings.py
+create-vendor-hierarchy.py
+export-from-aura.py
+restore-from-backup.sh
 
 # Additional sensitive files
 passwords.txt

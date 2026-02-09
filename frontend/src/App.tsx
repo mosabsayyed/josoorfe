@@ -21,6 +21,7 @@ import { EnterpriseDesk } from './components/desks/EnterpriseDesk';
 import { ReportingDesk } from './components/desks/ReportingDesk';
 import { ExplorerDesk } from './components/desks/ExplorerDesk';
 import { ChainTestDesk } from './components/desks/ChainTestDesk';
+import { ChainTestDeskAura } from './components/desks/ChainTestDeskAura';
 
 const KnowledgeSeries = () => <div className="p-10 text-xl">Knowledge Series (Coming Soon)</div>;
 const Roadmap = () => <div className="p-10 text-xl">Roadmap (Coming Soon)</div>;
@@ -88,6 +89,7 @@ function AppContent() {
         <Route path="roadmap" element={<Roadmap />} />
         <Route path="explorer" element={<ExplorerDesk />} />
         <Route path="chain-test" element={<ChainTestDesk />} />
+        <Route path="chain-test-aura" element={<ChainTestDeskAura />} />
         {/* Default redirect inside /desk */}
         <Route index element={<Navigate to="sector" replace />} />
       </Route>
