@@ -331,7 +331,7 @@ export function Sidebar({
           <button
             title="Graph Chat"
             onClick={() =>
-              onQuickAction?.({ id: 'graph-chat', label: { en: 'Graph Chat', ar: 'دردشة الرسم البياني' }, icon: '/icons/chat.png' })
+              onQuickAction?.({ id: 'chat', label: { en: 'Graph Chat', ar: 'دردشة الرسم البياني' }, icon: '/icons/chat.png' })
             }
             className="quickaction-item clickable"
             style={{

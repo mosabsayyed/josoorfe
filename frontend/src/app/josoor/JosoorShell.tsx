@@ -82,8 +82,12 @@ export default function JosoorShell() {
     // Load Conversations (Copied from ChatAppPage)
     const loadConversations = useCallback(async () => {
         try {
-            if (authService.isGuestMode() || !authService.getToken()) {
+            const isGuest = authService.isGuestMode();
+            const token = authService.getToken();
+            console.log('[loadConversations] guest:', isGuest, 'token:', token ? 'yes' : 'no');
+            if (isGuest || !token) {
                 const guestConvos = authService.getGuestConversations();
+                console.log('[loadConversations] guest convos:', guestConvos?.length || 0);
                 const adapted = (guestConvos || []).map((c: any) => ({
                     id: c.id,
                     title: c.title || 'New Chat',
@@ -96,7 +100,9 @@ export default function JosoorShell() {
                 return;
             }
 
+            console.log('[loadConversations] fetching from API...');
             const data = await chatService.getConversations();
+            console.log('[loadConversations] API response:', data);
             const adapted = (data.conversations || []).map((c: any) => ({
                 ...c,
                 title: c.title || "New Chat",
@@ -104,9 +110,10 @@ export default function JosoorShell() {
                 created_at: c.created_at || new Date().toISOString(),
                 updated_at: c.updated_at || new Date().toISOString(),
             }));
+            console.log('[loadConversations] adapted:', adapted.length, 'conversations');
             setConversations(adapted);
         } catch (err) {
-            console.error(err);
+            console.error('[loadConversations] ERROR:', err);
         }
     }, []);
 

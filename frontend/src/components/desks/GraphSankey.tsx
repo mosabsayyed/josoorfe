@@ -21,6 +21,12 @@ interface Node {
     width?: number;
     height?: number;
     column?: number;
+    // Aggregation fields
+    isAggregate?: boolean;
+    aggregateCount?: number;
+    aggregateMembers?: string[]; // original IDs of grouped nodes
+    primaryLabel?: string;
+    level?: string;
 }
 
 interface GraphSankeyProps {
@@ -120,15 +126,16 @@ export function GraphSankey({ data, isDark = true, chain, metadata, isDiagnostic
         return metadata.canonicalPath.filter(step => step.type === 'node');
     }, [metadata]);
 
-    // 2. Process Data & Layout
+    // 2. Process Data & Layout — proper Sankey: node height ∝ throughput, links are thick bands
     const layout = useMemo(() => {
         if (!data?.nodes?.length || columns.length === 0) return null;
 
         const width = containerRef.current?.offsetWidth || 1200;
-        const height = Math.max(680, data.nodes.length * 56);
         const padding = { top: 36, right: 16, bottom: 28, left: 16 };
         const availableWidth = width - padding.left - padding.right;
-        const availableHeight = height - padding.top - padding.bottom;
+        const UNIT_HEIGHT = 4; // height per connection thread — thin for 1, visibly thicker for many
+        const NODE_GAP = 14; // vertical gap between nodes in a column
+        const MIN_NODE_HEIGHT = 28; // minimum node rect height (ensures text fits)
 
         const colCount = Math.max(1, columns.length);
         const cellWidth = availableWidth / colCount;
@@ -263,6 +270,78 @@ export function GraphSankey({ data, isDark = true, chain, metadata, isDiagnostic
             };
         }).filter(n => n.stepIndex !== -1); // Filter nodes not in canonical path
 
+        // --- Client-side node aggregation ---
+        // If backend already sent pre-aggregated nodes (v5 format with nProps.count), skip aggregation.
+        const isPreAggregated = nodes.some(n => n.properties?.count != null && typeof n.properties.count === 'number');
+
+        // Map from original individual node ID → aggregate node ID (used to remap links)
+        const individualToAggregateMap = new Map<string, string>();
+
+        if (!isPreAggregated && nodes.length > 0) {
+            // Group by (primaryLabel, level, stepIndex)
+            const aggGroups = new Map<string, Node[]>();
+            nodes.forEach(n => {
+                const pLabel = n.labels[0] || 'Unknown';
+                const lvl = n.properties?.level || 'none';
+                const key = `${pLabel}__${lvl}__col${n.stepIndex}`;
+                if (!aggGroups.has(key)) aggGroups.set(key, []);
+                aggGroups.get(key)!.push(n);
+            });
+
+            // Only aggregate if there are enough nodes to warrant it (> 3 per group on average)
+            const totalGroups = aggGroups.size;
+            const shouldAggregate = totalGroups > 0 && (nodes.length / totalGroups) > 2;
+
+            if (shouldAggregate) {
+                const aggregatedNodes: Node[] = [];
+                aggGroups.forEach((members, key) => {
+                    const first = members[0];
+                    const pLabel = first.labels[0] || 'Unknown';
+                    const lvl = first.properties?.level || '';
+                    const displayName = pLabel.replace(/^(Sector|Entity)/, '').replace(/([A-Z])/g, ' $1').trim();
+                    const aggId = key; // e.g. "EntityRisk__L3__col4"
+
+                    // Record mapping for each member
+                    members.forEach(m => individualToAggregateMap.set(m.originalId, aggId));
+
+                    // Pick color from first member (all same label → same color)
+                    const hasBroken = members.some(m => m.isBroken);
+                    const hasVirtual = members.some(m => m.isVirtual);
+
+                    // Collect sample IDs for tooltip
+                    const sampleIds = members
+                        .map(m => m.sortIdRaw || m.originalId)
+                        .slice(0, 5);
+
+                    aggregatedNodes.push({
+                        id: aggId,
+                        originalId: aggId,
+                        name: displayName,
+                        nameDisplay: lvl ? `${displayName} (${lvl})` : displayName,
+                        labels: first.labels,
+                        properties: {
+                            level: lvl,
+                            count: members.length,
+                            sampleIds,
+                        },
+                        color: first.color,
+                        isBroken: hasBroken,
+                        isVirtual: hasVirtual,
+                        stepIndex: first.stepIndex,
+                        sortId: first.sortId,
+                        sortIdRaw: first.sortIdRaw,
+                        isAggregate: true,
+                        aggregateCount: members.length,
+                        aggregateMembers: members.map(m => m.originalId),
+                        primaryLabel: pLabel,
+                        level: lvl || undefined,
+                        entityTypeSubHeader: first.entityTypeSubHeader,
+                    });
+                });
+                nodes = aggregatedNodes;
+            }
+        }
+
         // If canonical path loops back to same label, clone last column for visibility
         const firstCol = columns[0];
         const lastCol = columns[columns.length - 1];
@@ -345,84 +424,182 @@ export function GraphSankey({ data, isDark = true, chain, metadata, isDiagnostic
             return a.name.localeCompare(b.name);
         }));
 
-        // Assign X/Y
+        // --- First pass: count connections per node to set height proportional to throughput ---
+        const rawLinks = data.links || [];
+        const nodeMap = new Map<string, Node>();
+        nodes.forEach(n => nodeMap.set(n.originalId, n));
+
+        // Resolve a raw node ID to the correct Node (handles aggregate remapping + clone remapping)
+        const resolveNode = (rawId: string, linkType: string): Node | undefined => {
+            // Direct match (aggregate or non-aggregated node)
+            if (nodeMap.has(rawId)) return nodeMap.get(rawId);
+            // If aggregation happened, map individual ID → aggregate ID
+            const aggId = individualToAggregateMap.get(rawId);
+            if (aggId && nodeMap.has(aggId)) return nodeMap.get(aggId);
+            return undefined;
+        };
+
+        // Assign column index before counting
         nodesByCol.forEach((colNodes, colIndex) => {
-            const x = padding.left + colIndex * (colWidth + colSpacing);
-            // Center vertically? Or top align? Top align is safer for many nodes.
-            // Let's Top Align with scroll capability if needed? No, SVG scales.
-            // Let's squeeze if too many?
-
-            const nodeHeight = Math.min(38, availableHeight / colNodes.length - 10);
-            const gap = 10;
-
-            colNodes.forEach((node, idx) => {
-                node.x = x;
-                node.y = padding.top + idx * (nodeHeight + gap);
-                node.width = colWidth;
-                node.height = nodeHeight;
-                node.column = colIndex;
-            });
+            colNodes.forEach(node => { node.column = colIndex; });
         });
 
-        // Flatten nodes in render order (column -> y)
-        const renderNodes = nodesByCol.flat();
-        nodes = renderNodes;
+        // Tally how many link threads touch each node (outgoing from right side, incoming from left side)
+        const outCount = new Map<string, number>(); // nodeId → outgoing count
+        const inCount = new Map<string, number>();  // nodeId → incoming count
 
-        // Map for Link drawing
-        const nodeMap = new Map(nodes.map(n => [n.originalId, n]));
-
-        // Process Links
-        const rawLinks = data.links || [];
-        const links: any[] = [];
+        // Pre-process valid links to count throughput
+        interface RawLinkInfo { srcNode: Node; tgtNode: Node; isVirtual: boolean; type: string; color: string; weight: number; }
+        const validLinks: RawLinkInfo[] = [];
         rawLinks.forEach((l: any) => {
             const sId = getLinkEndpointId(l.sourceId ?? l.source);
             const tId = getLinkEndpointId(l.targetId ?? l.target);
-
-            const src = nodeMap.get(sId);
             const rawType = l.rType ?? l.type ?? l.relationship ?? l.relType ?? l.label ?? null;
             const linkType = normalizeRelType(rawType);
-            const isClosingEdge = lastEdgeNormalized && linkType === lastEdgeNormalized && cloneMap.has(tId);
-            const targetId = isClosingEdge ? cloneMap.get(tId)! : tId;
-            const tgt = nodeMap.get(targetId);
+
+            // Handle closing edge (clone target for looping chains)
+            // Check both raw ID and aggregate ID against cloneMap
+            const tAggId = individualToAggregateMap.get(tId);
+            const cloneKey = cloneMap.has(tId) ? tId : (tAggId && cloneMap.has(tAggId) ? tAggId : null);
+            const isClosingEdge = lastEdgeNormalized && linkType === lastEdgeNormalized && cloneKey !== null;
+            const resolvedTargetId = isClosingEdge ? cloneMap.get(cloneKey!)! : tId;
+
+            // Resolve through aggregate mapping
+            const src = resolveNode(sId, linkType);
+            const tgt = resolveNode(resolvedTargetId, linkType);
 
             if (src && tgt && src.column !== undefined && tgt.column !== undefined) {
-                const leftNode = src.column <= tgt.column ? src : tgt;
-                const rightNode = src.column <= tgt.column ? tgt : src;
-                const leftCol = leftNode.column!;
-                const rightCol = rightNode.column!;
-                if (leftCol === rightCol) return;
+                const leftNode = src.column! <= tgt.column! ? src : tgt;
+                const rightNode = src.column! <= tgt.column! ? tgt : src;
+                if (leftNode.column === rightNode.column) return;
                 if (hasEdgeMap) {
-                    if (rightCol - leftCol !== 1) return;
-                    const allowed = edgeMap.get(`${leftCol}->${rightCol}`);
+                    if (rightNode.column! - leftNode.column! !== 1) return;
+                    const allowed = edgeMap.get(`${leftNode.column}->${rightNode.column}`);
                     if (!allowed || !allowed.has(linkType)) return;
                 }
-                links.push({
-                    source: leftNode,
-                    target: rightNode,
-                    color: l.rProps?.virtual ? '#D4AF37' : (isDark ? '#444' : '#ccc'),
-                    isVirtual: l.rProps?.virtual,
-                    type: linkType
+                const w = l.rProps?.weight || 1;
+                outCount.set(leftNode.originalId, (outCount.get(leftNode.originalId) || 0) + w);
+                inCount.set(rightNode.originalId, (inCount.get(rightNode.originalId) || 0) + w);
+                validLinks.push({
+                    srcNode: leftNode,
+                    tgtNode: rightNode,
+                    isVirtual: !!l.rProps?.virtual,
+                    type: linkType,
+                    color: l.rProps?.virtual ? '#D4AF37' : (isDark ? 'rgba(212,175,55,0.35)' : 'rgba(100,100,100,0.3)'),
+                    weight: w
                 });
             }
+        });
+
+        // Node height: for aggregate nodes use sqrt scale to prevent oversized rects;
+        // for individual nodes use linear UNIT_HEIGHT as before.
+        const hasAggregates = nodes.some(n => n.isAggregate);
+        nodes.forEach(n => {
+            const throughput = Math.max(outCount.get(n.originalId) || 0, inCount.get(n.originalId) || 0, 1);
+            if (hasAggregates) {
+                // Sqrt scale: keeps proportional but caps growth for large throughput (50-300+)
+                n.height = Math.max(MIN_NODE_HEIGHT, Math.sqrt(throughput) * 10);
+            } else {
+                n.height = Math.max(MIN_NODE_HEIGHT, throughput * UNIT_HEIGHT);
+            }
+        });
+
+        // --- Assign X/Y positions ---
+        nodesByCol.forEach((colNodes, colIndex) => {
+            const x = padding.left + colIndex * (colWidth + colSpacing);
+            let y = padding.top;
+            colNodes.forEach(node => {
+                node.x = x;
+                node.y = y;
+                node.width = colWidth;
+                y += node.height! + NODE_GAP;
+            });
+        });
+
+        // Flatten nodes in render order
+        nodes = nodesByCol.flat();
+
+        // Compute total height from tallest column
+        const maxColHeight = nodesByCol.reduce((max, col) => {
+            if (col.length === 0) return max;
+            const last = col[col.length - 1];
+            return Math.max(max, last.y! + last.height! + padding.bottom);
+        }, 680);
+        const height = Math.max(680, maxColHeight);
+
+        // --- Aggregate links into bands between (sourceNode, targetNode) pairs ---
+        const bandKey = (src: Node, tgt: Node) => `${src.originalId}::${tgt.originalId}`;
+        const bandMap = new Map<string, { source: Node; target: Node; value: number; isVirtual: boolean; types: Set<string>; color: string }>();
+        validLinks.forEach(vl => {
+            const key = bandKey(vl.srcNode, vl.tgtNode);
+            if (!bandMap.has(key)) {
+                bandMap.set(key, { source: vl.srcNode, target: vl.tgtNode, value: 0, isVirtual: vl.isVirtual, types: new Set(), color: vl.color });
+            }
+            const band = bandMap.get(key)!;
+            band.value += vl.weight;
+            band.types.add(vl.type);
+        });
+
+        // Assign vertical port offsets so bands stack on each node side
+        // Source side: bands leave from right edge, stacked top-to-bottom
+        // Target side: bands arrive at left edge, stacked top-to-bottom
+        const srcPortOffset = new Map<string, number>(); // nodeId → next available y offset from node top
+        const tgtPortOffset = new Map<string, number>();
+        nodes.forEach(n => { srcPortOffset.set(n.originalId, 0); tgtPortOffset.set(n.originalId, 0); });
+
+        const links: any[] = [];
+        // Sort bands for consistent stacking (by source column, then source y, then target y)
+        const sortedBands = Array.from(bandMap.values()).sort((a, b) => {
+            if (a.source.column !== b.source.column) return a.source.column! - b.source.column!;
+            if (a.source.y !== b.source.y) return a.source.y! - b.source.y!;
+            return a.target.y! - b.target.y!;
+        });
+
+        sortedBands.forEach(band => {
+            // For aggregate data, use log scale to prevent huge bands from dominating
+            const bandHeight = hasAggregates
+                ? Math.max(2, Math.log2(band.value + 1) * 8)
+                : band.value * UNIT_HEIGHT;
+            const srcOff = srcPortOffset.get(band.source.originalId) || 0;
+            const tgtOff = tgtPortOffset.get(band.target.originalId) || 0;
+
+            links.push({
+                source: band.source,
+                target: band.target,
+                value: band.value,
+                bandHeight,
+                srcY: band.source.y! + srcOff,
+                tgtY: band.target.y! + tgtOff,
+                color: band.color,
+                isVirtual: band.isVirtual,
+                types: Array.from(band.types),
+            });
+
+            srcPortOffset.set(band.source.originalId, srcOff + bandHeight);
+            tgtPortOffset.set(band.target.originalId, tgtOff + bandHeight);
         });
 
         return { nodes, links, width, height, colWidth };
     }, [data, columns, isDark, isDiagnostic, metadata?.canonicalPath]);
 
-    // Render Sigmoid Path
-    const getPath = (link: any) => {
-        const s = link.source;
-        const t = link.target;
+    // Render a thick Sankey band as a filled <path> between two vertical ranges
+    const getBandPath = (link: any) => {
+        const sx = link.source.x! + link.source.width!; // right edge of source
+        const tx = link.target.x!;                        // left edge of target
+        const sy0 = link.srcY;                            // top of band at source
+        const sy1 = link.srcY + link.bandHeight;          // bottom of band at source
+        const ty0 = link.tgtY;                            // top of band at target
+        const ty1 = link.tgtY + link.bandHeight;          // bottom of band at target
 
-        const sx = s.x! + s.width!;
-        const sy = s.y! + s.height! / 2;
-        const tx = t.x!;
-        const ty = t.y! + t.height! / 2;
+        const dx = (tx - sx) * 0.5;
 
-        const deltaX = tx - sx;
-        const controlX = deltaX * 0.5;
-
-        return `M ${sx} ${sy} C ${sx + controlX} ${sy}, ${tx - controlX} ${ty}, ${tx} ${ty}`;
+        // Top curve: source-top → target-top (cubic bezier)
+        // Bottom curve: target-bottom → source-bottom (cubic bezier, reversed)
+        return `M ${sx} ${sy0}
+                C ${sx + dx} ${sy0}, ${tx - dx} ${ty0}, ${tx} ${ty0}
+                L ${tx} ${ty1}
+                C ${tx - dx} ${ty1}, ${sx + dx} ${sy1}, ${sx} ${sy1}
+                Z`;
     };
 
     if (!layout || layout.nodes.length === 0) {
@@ -528,36 +705,49 @@ export function GraphSankey({ data, isDark = true, chain, metadata, isDiagnostic
                         );
                     })}
 
-                    {/* Links */}
+                    {/* Links — thick Sankey bands */}
                     {layout.links.map((link, i) => (
                         <motion.path
                             key={`link-${i}`}
-                            d={getPath(link)}
-                            fill="none"
-                            stroke={link.color}
-                            strokeWidth="2"
+                            d={getBandPath(link)}
+                            fill={link.color}
+                            stroke="none"
                             strokeDasharray={link.isVirtual ? "5,5" : "none"}
-                            initial={{ pathLength: 0, opacity: 0 }}
-                            animate={{ pathLength: 1, opacity: 0.6 }}
-                            transition={{ duration: 0.8, delay: 0.1 * i }}
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 0.55 }}
+                            transition={{ duration: 0.6, delay: 0.05 * Math.min(i, 10) }}
                             onMouseEnter={(e) => {
                                 if (tooltipTimeoutRef.current) clearTimeout(tooltipTimeoutRef.current);
-                                (e.target as SVGElement).setAttribute('stroke-opacity', '1');
+                                (e.target as SVGElement).setAttribute('opacity', '0.85');
+                                const srcDisplay = link.source.isAggregate
+                                    ? link.source.nameDisplay
+                                    : link.source.nameDisplay;
+                                const tgtDisplay = link.target.isAggregate
+                                    ? link.target.nameDisplay
+                                    : link.target.nameDisplay;
                                 setTooltip({
                                     x: e.clientX,
                                     y: e.clientY,
                                     content: (
-                                        <div className="text-xs">
-                                            <span style={{ color: '#888' }}>{link.source.nameDisplay}</span>
-                                            {' -> '}
-                                            <span style={{ color: '#fff' }}>{link.target.nameDisplay}</span>
-                                            {link.isVirtual && <div className="text-gold italic mt-1">AI Recommendation</div>}
+                                        <div style={{ fontSize: '12px' }}>
+                                            <div>
+                                                <span style={{ color: isDark ? '#888' : '#666' }}>{srcDisplay}</span>
+                                                {' \u2192 '}
+                                                <span style={{ color: isDark ? '#fff' : '#000' }}>{tgtDisplay}</span>
+                                            </div>
+                                            <div style={{ marginTop: '4px', color: '#D4AF37', fontWeight: 600 }}>
+                                                {link.value} connection{link.value > 1 ? 's' : ''}
+                                            </div>
+                                            <div style={{ marginTop: '2px', color: isDark ? '#888' : '#666', fontSize: '10px' }}>
+                                                via {link.types.join(', ')}
+                                            </div>
+                                            {link.isVirtual && <div style={{ color: '#D4AF37', fontStyle: 'italic', marginTop: '4px' }}>AI Recommendation</div>}
                                         </div>
                                     )
                                 });
                             }}
                             onMouseLeave={(e) => {
-                                (e.target as SVGElement).setAttribute('stroke-opacity', '0.6');
+                                (e.target as SVGElement).setAttribute('opacity', '0.55');
                                 if (tooltipTimeoutRef.current) clearTimeout(tooltipTimeoutRef.current);
                                 tooltipTimeoutRef.current = setTimeout(() => setTooltip(null), 200);
                             }}
@@ -573,7 +763,34 @@ export function GraphSankey({ data, isDark = true, chain, metadata, isDiagnostic
                                 setTooltip({
                                     x: e.clientX,
                                     y: e.clientY,
-                                    content: (
+                                    content: node.isAggregate ? (
+                                        <div style={{ maxWidth: '320px', maxHeight: '400px', overflowY: 'auto' }}>
+                                            <div style={{ fontWeight: 'bold', fontSize: '14px', marginBottom: '4px' }}>
+                                                {node.nameDisplay}
+                                            </div>
+                                            <div style={{ fontSize: '12px', color: '#D4AF37', fontWeight: 600, marginBottom: '8px' }}>
+                                                {node.aggregateCount} nodes
+                                            </div>
+                                            <div style={{ fontSize: '12px', opacity: 0.8, borderTop: `1px solid ${isDark ? '#555' : '#ddd'}`, paddingTop: '8px' }}>
+                                                <div style={{ fontWeight: '600', marginBottom: '4px' }}>Labels:</div>
+                                                <div style={{ marginLeft: '8px', marginBottom: '8px' }}>{node.labels.join(', ')}</div>
+                                            </div>
+                                            {node.properties?.sampleIds?.length > 0 && (
+                                                <div style={{ fontSize: '11px', opacity: 0.7, borderTop: `1px solid ${isDark ? '#555' : '#ddd'}`, paddingTop: '6px' }}>
+                                                    <div style={{ fontWeight: '600', marginBottom: '4px' }}>Sample IDs:</div>
+                                                    <div style={{ marginLeft: '8px' }}>
+                                                        {node.properties.sampleIds.join(', ')}
+                                                        {node.aggregateCount! > 5 && <span style={{ opacity: 0.5 }}> ... +{node.aggregateCount! - 5} more</span>}
+                                                    </div>
+                                                </div>
+                                            )}
+                                            {node.isBroken && (
+                                                <div style={{ color: '#ff4444', fontWeight: 'bold', marginTop: '12px', fontSize: '12px' }}>
+                                                    GAP DETECTED
+                                                </div>
+                                            )}
+                                        </div>
+                                    ) : (
                                         <div style={{ maxWidth: '320px', maxHeight: '400px', overflowY: 'auto' }}>
                                             <div style={{ fontWeight: 'bold', fontSize: '14px', marginBottom: '8px' }}>
                                                 {node.nameDisplay}
@@ -597,12 +814,12 @@ export function GraphSankey({ data, isDark = true, chain, metadata, isDiagnostic
                                             </div>
                                             {node.isBroken && (
                                                 <div style={{ color: '#ff4444', fontWeight: 'bold', marginTop: '12px', fontSize: '12px' }}>
-                                                    ⚠️ GAP DETECTED
+                                                    GAP DETECTED
                                                 </div>
                                             )}
                                             {node.isVirtual && (
                                                 <div style={{ color: '#ffaa00', fontWeight: 'bold', marginTop: '12px', fontSize: '12px' }}>
-                                                    ✨ VIRTUAL
+                                                    VIRTUAL
                                                 </div>
                                             )}
                                         </div>
@@ -661,9 +878,44 @@ export function GraphSankey({ data, isDark = true, chain, metadata, isDiagnostic
                                 dominantBaseline="hanging"
                             >
                                 {(() => {
-                                    const padding = 10;
+                                    const pad = 10;
                                     const charWidth = 5.5;
-                                    const maxChars = Math.max(4, Math.floor(((node.width ?? 80) - padding) / charWidth));
+                                    const maxChars = Math.max(4, Math.floor(((node.width ?? 80) - pad) / charWidth));
+
+                                    // For aggregate nodes: show "Label (Level)" + count line
+                                    if (node.isAggregate && node.aggregateCount) {
+                                        const labelLine = node.nameDisplay;
+                                        const countLine = `\u00D7 ${node.aggregateCount}`;
+                                        const wrapText = (text: string, max: number): string[] => {
+                                            const words = text.split(' ');
+                                            const result: string[] = [];
+                                            let cur = '';
+                                            for (const w of words) {
+                                                if ((cur + ' ' + w).trim().length > max) {
+                                                    if (cur) result.push(cur.trim());
+                                                    cur = w;
+                                                } else { cur += ' ' + w; }
+                                            }
+                                            if (cur) result.push(cur.trim());
+                                            return result;
+                                        };
+                                        const nameLines = wrapText(labelLine, maxChars);
+                                        return [...nameLines, countLine].map((line, idx) => (
+                                            <tspan
+                                                key={idx}
+                                                x={node.x! + 5}
+                                                y={node.y! + 6 + idx * 12}
+                                                fontSize={idx < nameLines.length ? '9' : '8'}
+                                                fontWeight={idx < nameLines.length ? '500' : '700'}
+                                                fill={idx < nameLines.length ? '#fff' : '#D4AF37'}
+                                                dominantBaseline="hanging"
+                                            >
+                                                {line}
+                                            </tspan>
+                                        ));
+                                    }
+
+                                    // Non-aggregate: original word-wrap logic
                                     const words = node.nameDisplay.split(' ');
                                     const lines: string[] = [];
                                     let current = '';

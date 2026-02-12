@@ -1023,11 +1023,10 @@ const SectorMap: React.FC<SectorMapProps> = ({
       </Map>
 
       {/* --- OVERLAYS (Structured Layout) --- */}
-      {/* Container to align Controls and Panel side-by-side (Horizontal) */}
-      <div className="map-top-left-section" style={{ position: 'absolute', top: '20px', left: '20px', display: 'flex', flexDirection: 'row', alignItems: 'flex-start', gap: '20px', zIndex: 50, pointerEvents: 'none' }}>
-
-        {/* 1. Left Group: Zoom Out Button (L2 only) */}
-        {selectedRegion && (
+      
+      {/* Zoom Out Button - Moved to Bottom to avoid conflict with policy tools drawer */}
+      {selectedRegion && (
+        <div className="map-bottom-left-section" style={{ position: 'absolute', bottom: '20px', left: '20px', zIndex: 50, pointerEvents: 'none' }}>
           <div className="controls-group" style={{ display: 'flex', flexDirection: 'column', gap: '12px', pointerEvents: 'auto' }}>
             <button
               className="control-btn zoom-out-btn"
@@ -1049,11 +1048,8 @@ const SectorMap: React.FC<SectorMapProps> = ({
               Zoom Out to National View
             </button>
           </div>
-        )}
-
-        {/* Asset Panel REMOVED - Data now appears in right drawer panel */}
-
-      </div>
+        </div>
+      )}
 
       {/* LEGEND REMOVED - Now redundant with header sector icons */}
     </div>

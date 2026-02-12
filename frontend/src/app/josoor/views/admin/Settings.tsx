@@ -5,9 +5,7 @@ import {
     AlertCircle,
     Check,
     Plus,
-    X,
-    ChevronDown,
-    ChevronUp
+    X
 } from 'lucide-react';
 import { useAuth } from '../../../../contexts/AuthContext';
 import {
@@ -33,13 +31,6 @@ export default function AdminSettings() {
     const [systemSettings, setSystemSettings] = useState<any>(null);
     const [systemDraft, setSystemDraft] = useState<any>(null);
 
-    // UI state
-    const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
-        provider_basic: true,
-        provider_advanced: false,
-        mcp: true,
-        graphrag: true
-    });
 
     // Load providers
     const loadProviders = async () => {
@@ -168,9 +159,6 @@ export default function AdminSettings() {
         }
     };
 
-    const toggleSection = (section: string) => {
-        setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }));
-    };
 
     // MCP endpoint management
     const addMcpEndpoint = () => {
@@ -264,113 +252,87 @@ export default function AdminSettings() {
 
                         {providerDraft && (
                             <>
-                                {/* Basic Settings */}
-                                <div className="section-divider">
-                                    <button
-                                        className="section-toggle"
-                                        onClick={() => toggleSection('provider_basic')}
-                                    >
-                                        Basic Settings
-                                        {expandedSections.provider_basic ? <ChevronUp className="icon-sm" /> : <ChevronDown className="icon-sm" />}
-                                    </button>
+                                <div className="form-grid">
+                                    <div className="form-group">
+                                        <label>Display Name</label>
+                                        <input
+                                            type="text"
+                                            value={providerDraft.display_name || ''}
+                                            onChange={(e) => updateProviderField('display_name', e.target.value)}
+                                            className="form-input"
+                                        />
+                                    </div>
+
+                                    <div className="form-group">
+                                        <label>Base URL</label>
+                                        <input
+                                            type="url"
+                                            value={providerDraft.base_url || ''}
+                                            onChange={(e) => updateProviderField('base_url', e.target.value)}
+                                            className="form-input"
+                                        />
+                                    </div>
+
+                                    <div className="form-group">
+                                        <label>Endpoint Path</label>
+                                        <input
+                                            type="text"
+                                            value={providerDraft.endpoint_path_template || ''}
+                                            onChange={(e) => updateProviderField('endpoint_path_template', e.target.value)}
+                                            className="form-input"
+                                        />
+                                    </div>
+
+                                    <div className="form-group">
+                                        <label>Default Model</label>
+                                        <select
+                                            value={providerDraft.default_model || ''}
+                                            onChange={(e) => updateProviderField('default_model', e.target.value)}
+                                            className="form-select"
+                                        >
+                                            {(providerDraft.supported_models || []).map((m: string) => (
+                                                <option key={m} value={m}>{m}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    <div className="form-group">
+                                        <label>Timeout (seconds)</label>
+                                        <input
+                                            type="number"
+                                            value={providerDraft.timeout || 120}
+                                            onChange={(e) => updateProviderField('timeout', Number(e.target.value))}
+                                            className="form-input"
+                                        />
+                                    </div>
                                 </div>
 
-                                {expandedSections.provider_basic && (
-                                    <div className="form-grid">
-                                        <div className="form-group">
-                                            <label>Display Name</label>
-                                            <input
-                                                type="text"
-                                                value={providerDraft.display_name || ''}
-                                                onChange={(e) => updateProviderField('display_name', e.target.value)}
-                                                className="form-input"
-                                            />
-                                        </div>
-
-                                        <div className="form-group">
-                                            <label>Base URL</label>
-                                            <input
-                                                type="url"
-                                                value={providerDraft.base_url || ''}
-                                                onChange={(e) => updateProviderField('base_url', e.target.value)}
-                                                className="form-input"
-                                            />
-                                        </div>
-
-                                        <div className="form-group">
-                                            <label>Endpoint Path</label>
-                                            <input
-                                                type="text"
-                                                value={providerDraft.endpoint_path_template || ''}
-                                                onChange={(e) => updateProviderField('endpoint_path_template', e.target.value)}
-                                                className="form-input"
-                                            />
-                                        </div>
-
-                                        <div className="form-group">
-                                            <label>Default Model</label>
-                                            <select
-                                                value={providerDraft.default_model || ''}
-                                                onChange={(e) => updateProviderField('default_model', e.target.value)}
-                                                className="form-select"
-                                            >
-                                                {(providerDraft.supported_models || []).map((m: string) => (
-                                                    <option key={m} value={m}>{m}</option>
-                                                ))}
-                                            </select>
-                                        </div>
-
-                                        <div className="form-group">
-                                            <label>Timeout (seconds)</label>
-                                            <input
-                                                type="number"
-                                                value={providerDraft.timeout || 120}
-                                                onChange={(e) => updateProviderField('timeout', Number(e.target.value))}
-                                                className="form-input"
-                                            />
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Capabilities */}
-                                <div className="section-divider">
-                                    <button
-                                        className="section-toggle"
-                                        onClick={() => toggleSection('provider_advanced')}
-                                    >
-                                        Capabilities
-                                        {expandedSections.provider_advanced ? <ChevronUp className="icon-sm" /> : <ChevronDown className="icon-sm" />}
-                                    </button>
+                                <div className="capabilities-grid">
+                                    <label className="checkbox-label">
+                                        <input
+                                            type="checkbox"
+                                            checked={providerDraft.supports_streaming || false}
+                                            onChange={(e) => updateProviderField('supports_streaming', e.target.checked)}
+                                        />
+                                        <span>Streaming</span>
+                                    </label>
+                                    <label className="checkbox-label">
+                                        <input
+                                            type="checkbox"
+                                            checked={providerDraft.supports_tool_calling || false}
+                                            onChange={(e) => updateProviderField('supports_tool_calling', e.target.checked)}
+                                        />
+                                        <span>Tool Calling</span>
+                                    </label>
+                                    <label className="checkbox-label">
+                                        <input
+                                            type="checkbox"
+                                            checked={providerDraft.supports_reasoning || false}
+                                            onChange={(e) => updateProviderField('supports_reasoning', e.target.checked)}
+                                        />
+                                        <span>Reasoning</span>
+                                    </label>
                                 </div>
-
-                                {expandedSections.provider_advanced && (
-                                    <div className="capabilities-grid">
-                                        <label className="checkbox-label">
-                                            <input
-                                                type="checkbox"
-                                                checked={providerDraft.supports_streaming || false}
-                                                onChange={(e) => updateProviderField('supports_streaming', e.target.checked)}
-                                            />
-                                            <span>Streaming</span>
-                                        </label>
-                                        <label className="checkbox-label">
-                                            <input
-                                                type="checkbox"
-                                                checked={providerDraft.supports_tool_calling || false}
-                                                onChange={(e) => updateProviderField('supports_tool_calling', e.target.checked)}
-                                            />
-                                            <span>Tool Calling</span>
-                                        </label>
-                                        <label className="checkbox-label">
-                                            <input
-                                                type="checkbox"
-                                                checked={providerDraft.supports_reasoning || false}
-                                                onChange={(e) => updateProviderField('supports_reasoning', e.target.checked)}
-                                            />
-                                            <span>Reasoning</span>
-                                        </label>
-                                    </div>
-                                )}
 
                                 <div className="action-row">
                                     <button

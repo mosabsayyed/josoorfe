@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { NeoGraph } from '../dashboards/NeoGraph';
 import { ExplorerFilters } from './ExplorerFilters';
 import { GraphSankey } from './GraphSankey';
@@ -12,36 +12,59 @@ import './ExplorerDesk.css';
 
 const GRAPH_SERVER_URL = (import.meta as any).env?.VITE_GRAPH_SERVER_URL || (import.meta as any).env?.REACT_APP_GRAPH_SERVER_URL || '';
 
+const LABEL_COLORS: Record<string, string> = {
+    SectorObjective: '#3b82f6', SectorPolicyTool: '#8b5cf6', SectorAdminRecord: '#06b6d4',
+    SectorBusiness: '#f59e0b', SectorCitizen: '#10b981', SectorGovEntity: '#ef4444',
+    SectorDataTransaction: '#ec4899', SectorPerformance: '#f97316',
+    EntityCapability: '#6366f1', EntityOrgUnit: '#14b8a6', EntityProcess: '#a855f7',
+    EntityITSystem: '#0ea5e9', EntityProject: '#84cc16', EntityChangeAdoption: '#e879f9',
+    EntityRisk: '#f43f5e', EntityCultureHealth: '#22d3ee', EntityVendor: '#fb923c',
+};
 
+const LEGEND_CONFIG = { colors: LABEL_COLORS };
 
-const CHAIN_MAPPINGS: Record<string, { labels: string[], relationships: string[] }> = {
+const CHAIN_MAPPINGS: Record<string, { name: string, labels: string[], relationships: string[], startLabels: string[], endLabels: string[] }> = {
     'sector_value_chain': {
-        labels: ['SectorObjective', 'SectorPolicyTool', 'SectorAdminRecord', 'SectorCitizen', 'SectorGovEntity', 'SectorBusiness', 'SectorDataTransaction', 'SectorPerformance'],
-        relationships: ['REALIZED_VIA', 'REFERS_TO', 'APPLIED_ON', 'TRIGGERS_EVENT', 'MEASURED_BY', 'AGGREGATES_TO']
+        name: 'Sector Value Chain',
+        labels: ['SectorObjective', 'SectorPolicyTool', 'SectorAdminRecord', 'SectorBusiness', 'SectorCitizen', 'SectorGovEntity', 'SectorDataTransaction', 'SectorPerformance'],
+        relationships: ['REALIZED_VIA', 'REFERS_TO', 'APPLIED_ON', 'TRIGGERS_EVENT', 'MEASURED_BY', 'AGGREGATES_TO'],
+        startLabels: ['SectorObjective'], endLabels: ['SectorPerformance']
     },
     'setting_strategic_initiatives': {
+        name: 'Strategic Initiatives',
         labels: ['SectorObjective', 'SectorPolicyTool', 'EntityCapability', 'EntityOrgUnit', 'EntityProcess', 'EntityITSystem', 'EntityProject', 'EntityChangeAdoption'],
-        relationships: ['REALIZED_VIA', 'SETS_PRIORITIES', 'ROLE_GAPS', 'KNOWLEDGE_GAPS', 'AUTOMATION_GAPS', 'GAPS_SCOPE', 'ADOPTION_RISKS']
+        relationships: ['REALIZED_VIA', 'PARENT_OF', 'SETS_PRIORITIES', 'ROLE_GAPS', 'KNOWLEDGE_GAPS', 'AUTOMATION_GAPS', 'GAPS_SCOPE', 'ADOPTION_RISKS'],
+        startLabels: ['SectorObjective'], endLabels: ['EntityChangeAdoption']
     },
     'setting_strategic_priorities': {
+        name: 'Strategic Priorities',
         labels: ['SectorObjective', 'SectorPerformance', 'EntityCapability', 'EntityOrgUnit', 'EntityProcess', 'EntityITSystem'],
-        relationships: ['CASCADED_VIA', 'SETS_TARGETS', 'ROLE_GAPS', 'KNOWLEDGE_GAPS', 'AUTOMATION_GAPS']
+        relationships: ['CASCADED_VIA', 'PARENT_OF', 'SETS_TARGETS', 'ROLE_GAPS', 'KNOWLEDGE_GAPS', 'AUTOMATION_GAPS'],
+        startLabels: ['SectorObjective'], endLabels: ['EntityOrgUnit', 'EntityProcess', 'EntityITSystem']
     },
     'build_oversight': {
+        name: 'Build Oversight',
         labels: ['EntityChangeAdoption', 'EntityProject', 'EntityOrgUnit', 'EntityProcess', 'EntityITSystem', 'EntityCapability', 'EntityRisk', 'SectorPolicyTool', 'SectorObjective'],
-        relationships: ['INCREASE_ADOPTION', 'CLOSE_GAPS', 'ROLE_GAPS', 'MONITORED_BY', 'INFORMS', 'GOVERNED_BY']
+        relationships: ['INCREASE_ADOPTION', 'CLOSE_GAPS', 'GAP_STATUS', 'MONITORED_BY', 'PARENT_OF', 'INFORMS', 'GOVERNED_BY'],
+        startLabels: ['EntityChangeAdoption'], endLabels: ['SectorObjective']
     },
     'operate_oversight': {
+        name: 'Operate Oversight',
         labels: ['EntityCapability', 'EntityRisk', 'SectorPerformance', 'SectorObjective'],
-        relationships: ['MONITORED_BY', 'INFORMS', 'AGGREGATES_TO']
+        relationships: ['MONITORED_BY', 'PARENT_OF', 'INFORMS', 'AGGREGATES_TO'],
+        startLabels: ['EntityCapability'], endLabels: ['SectorObjective']
     },
     'sustainable_operations': {
+        name: 'Sustainable Operations',
         labels: ['EntityCultureHealth', 'EntityOrgUnit', 'EntityProcess', 'EntityITSystem', 'EntityVendor'],
-        relationships: ['MONITORS_FOR', 'APPLY', 'AUTOMATION', 'DEPENDS_ON']
+        relationships: ['MONITORS_FOR', 'APPLY', 'AUTOMATION', 'DEPENDS_ON'],
+        startLabels: ['EntityCultureHealth'], endLabels: ['EntityVendor']
     },
     'integrated_oversight': {
-        labels: [],
-        relationships: []
+        name: 'Integrated Oversight',
+        labels: ['SectorPolicyTool', 'EntityCapability', 'EntityOrgUnit', 'EntityProcess', 'EntityITSystem', 'EntityRisk', 'SectorPerformance'],
+        relationships: ['SETS_PRIORITIES', 'PARENT_OF', 'ROLE_GAPS', 'KNOWLEDGE_GAPS', 'AUTOMATION_GAPS', 'MONITORED_BY', 'INFORMS'],
+        startLabels: ['SectorPolicyTool'], endLabels: ['SectorPerformance']
     }
 };
 
@@ -49,6 +72,45 @@ interface ExplorerDeskProps {
     year?: string;
     quarter?: string;
 }
+
+/**
+ * Normalize API {nodes, links} into ForceGraph-compatible shape.
+ * API node.id is non-unique (domain ID like "1.0" shared across types).
+ * We use node.elementId (unique Neo4j internal ID) as the graph key.
+ * Link.id = "srcElementId-RELTYPE-tgtElementId" — parsed to resolve source/target.
+ */
+const normalizeGraphData = (data: { nodes: any[], links: any[] }) => {
+    const nodes = data.nodes.map((n: any) => {
+        const eid = n.elementId || n.id;
+        const labels = n.labels || [];
+        const props = n.properties || {};
+        const displayId = props.id || n.id || props.kpi_id || props.code || null;
+        const displayName = props.name || displayId || eid;
+        return {
+            id: eid, elementId: eid, labels, label: labels[0] || 'Unknown',
+            name: displayId ? `${displayId}: ${displayName}` : displayName,
+            properties: props, nProps: props, val: 1,
+        };
+    });
+
+    const nodeSet = new Set(nodes.map((n: any) => n.id));
+    const seen = new Set<string>();
+    const links: any[] = [];
+
+    for (const l of data.links) {
+        const relType = l.type || '';
+        const parts = l.id ? String(l.id).split(`-${relType}-`) : [];
+        const src = parts.length === 2 ? parts[0] : l.source;
+        const tgt = parts.length === 2 ? parts[1] : l.target;
+        const key = `${src}-${relType}-${tgt}`;
+        if (!seen.has(key) && nodeSet.has(src) && nodeSet.has(tgt)) {
+            seen.add(key);
+            links.push({ source: src, sourceId: src, target: tgt, targetId: tgt, type: relType, rType: relType, value: 1 });
+        }
+    }
+
+    return { nodes, links };
+};
 
 function HealthOverlay({ stats, isLoading }: { stats: any, isLoading: boolean }) {
     if (isLoading) return null;
@@ -82,6 +144,7 @@ function HealthOverlay({ stats, isLoading }: { stats: any, isLoading: boolean })
 
 export function ExplorerDesk({ year = '2025', quarter = 'All' }: ExplorerDeskProps) {
     const { token } = useAuth();
+    const contentRef = useRef<HTMLDivElement>(null);
     const [selectedLabels, setSelectedLabels] = useState<string[]>([]);
     const [selectedRelationships, setSelectedRelationships] = useState<string[]>([]);
     const [limit, setLimit] = useState<number>(200);
@@ -234,8 +297,13 @@ export function ExplorerDesk({ year = '2025', quarter = 'All' }: ExplorerDeskPro
                 throw new Error(`Failed to fetch graph data: ${response.statusText}`);
             }
             const data = await response.json();
-            console.log(`[ExplorerDesk] FETCH SUCCESS: ${data.nodes?.length || 0} nodes`);
-            return data;
+            if (!data.nodes || !data.links) {
+                console.warn(`[ExplorerDesk] Unexpected response shape`, Object.keys(data));
+                return { nodes: [], links: [] };
+            }
+            const result = normalizeGraphData(data);
+            console.log(`[ExplorerDesk] ${result.nodes.length} nodes, ${result.links.length} links`);
+            return result;
         },
         enabled: !!activeFetchParams,
         retry: false,
@@ -256,15 +324,18 @@ export function ExplorerDesk({ year = '2025', quarter = 'All' }: ExplorerDeskPro
         });
     };
 
-    // Logic for data display
-    // Logic for data display with Metadata Injection
+    // Scroll chart into view whenever new data arrives
+    useEffect(() => {
+        if (graphData) {
+            contentRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    }, [graphData]);
+
+    // Inject canonical path metadata for Sankey rendering
     const displayData = useMemo(() => {
-        // 1. Determine Base Data
         const baseData: GraphData | null = (graphData as unknown as GraphData);
+        if (!baseData || !baseData.nodes) return null;
 
-        if (!baseData) return null;
-
-        // 2. Always enforce SST 6A canonicalPath for rendering
         if (selectedChain && CANONICAL_PATHS[selectedChain]) {
             const def = CANONICAL_PATHS[selectedChain];
             const canonicalPath: any[] = [];
@@ -284,11 +355,29 @@ export function ExplorerDesk({ year = '2025', quarter = 'All' }: ExplorerDeskPro
             };
         }
 
-        return baseData;
+        return { ...baseData, metadata: baseData.metadata || {} };
     }, [graphData, selectedChain]);
 
-    // Strict Mode: No automatic fallbacks
-    const usingMockFallback = false;
+    const hasCanonicalPath = selectedChain ? (CANONICAL_PATHS[selectedChain]?.steps?.length > 0) : false;
+
+    // Active label colors for current chain (for legend)
+    const activeLabelColors = useMemo(() => {
+        if (!selectedChain || !CHAIN_MAPPINGS[selectedChain]) return LABEL_COLORS;
+        const active: Record<string, string> = {};
+        for (const l of CHAIN_MAPPINGS[selectedChain].labels) {
+            if (LABEL_COLORS[l]) active[l] = LABEL_COLORS[l];
+        }
+        return active;
+    }, [selectedChain]);
+
+    // Node color function matching test page: diagnostic status > label color
+    const getNodeColor = useCallback((node: any) => {
+        const label = node.labels?.[0] || node.label || '';
+        const status = node.properties?.status || node.nProps?.status;
+        if (status === 'critical') return '#ef4444';
+        if (status === 'orphan' || status === 'bastard') return '#f59e0b';
+        return LABEL_COLORS[label] || '#D4AF37';
+    }, []);
 
     return (
         <div className="explorer-container">
@@ -309,10 +398,10 @@ export function ExplorerDesk({ year = '2025', quarter = 'All' }: ExplorerDeskPro
                 isDark={isDark}
             />
 
-            <div className="explorer-content custom-scrollbar">
+            <div ref={contentRef} className="explorer-content custom-scrollbar">
                 <div className="viz-wrapper">
                     {/* Status Overlay */}
-                    {(isLoading || error || usingMockFallback || !displayData) && (
+                    {(isLoading || error || !displayData) && (
                         <div className="status-overlay-container">
                             {isLoading && (
                                 <div className="status-toast status-toast-loading">
@@ -347,24 +436,34 @@ export function ExplorerDesk({ year = '2025', quarter = 'All' }: ExplorerDeskPro
                     )}
 
                     {/* Visualization Switch */}
-                    {displayData && (
-                        vizMode === 'sankey' ? (
-                            <GraphSankey
-                                data={displayData}
-                                isDark={isDark}
-                                chain={selectedChain}
-                                metadata={displayData.metadata}
-                                isDiagnostic={queryType === 'diagnostic'}
-                            />
-                        ) : (
-                            <NeoGraph
-                                data={displayData}
-                                isDark={isDark}
-                                language="en"
-                                year={year}
-                                quarter={quarter}
-                            />
-                        )
+                    {displayData && vizMode === 'sankey' && hasCanonicalPath && (
+                        <GraphSankey
+                            data={displayData}
+                            isDark={isDark}
+                            chain={selectedChain}
+                            metadata={displayData.metadata}
+                            isDiagnostic={queryType === 'diagnostic'}
+                        />
+                    )}
+                    {displayData && vizMode === 'sankey' && !hasCanonicalPath && (
+                        <div className="status-overlay-container">
+                            <div className="empty-state-container">
+                                <p className="text-2xl font-light">Sankey not available</p>
+                                <p className="text-sm">{selectedChain ? CHAIN_MAPPINGS[selectedChain]?.name : 'This chain'} has a branching structure.</p>
+                                <p className="text-xs opacity-50 mt-2">Switch to 3D view for this chain.</p>
+                            </div>
+                        </div>
+                    )}
+                    {displayData && vizMode === '3d' && (
+                        <NeoGraph
+                            data={displayData}
+                            isDark={isDark}
+                            language="en"
+                            year={year}
+                            quarter={quarter}
+                            legendConfig={LEGEND_CONFIG}
+                            nodeColor={getNodeColor}
+                        />
                     )}
 
                     {/* Node Count Badge */}

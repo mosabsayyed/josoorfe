@@ -703,6 +703,40 @@
     border-color: var(--component-text-accent);
 }
 
+/* Details Footer - NEW: For bottom-positioned back button */
+.details-footer {
+    padding: 0.75rem 1rem;
+    border-top: 1px solid var(--component-panel-border);
+    background: var(--component-bg-primary);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.back-to-national-button {
+    font-size: 0.75rem;
+    padding: 0.5rem 1rem;
+    background: var(--component-panel-bg);
+    border: 1px solid var(--component-panel-border);
+    color: var(--component-text-secondary);
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    transition: all 0.2s;
+    border-radius: 4px;
+    font-weight: 500;
+    width: 100%;
+    max-width: 280px;
+}
+
+.back-to-national-button:hover {
+    color: var(--component-text-primary);
+    border-color: var(--component-text-accent);
+    background: var(--component-bg-secondary);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
 /* Details Content */
 .details-content {
     flex: 1;

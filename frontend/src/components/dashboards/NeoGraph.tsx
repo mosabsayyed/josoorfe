@@ -172,7 +172,7 @@ export function NeoGraph({
                 <strong style={{ color: '#D4AF37' }}>Labels:</strong> {hoverNode.labels?.join(', ') || hoverNode.type || 'Unknown'}
               </p>
               <p style={{ margin: 0, fontSize: '0.8rem', lineHeight: 1.5, color: '#fff' }}>
-                <strong style={{ color: '#D4AF37' }}>ID:</strong> <code>{hoverNode.id}</code>
+                <strong style={{ color: '#D4AF37' }}>ID:</strong> <code>{hoverNode.properties?.id || hoverNode.id}</code>
               </p>
             </div>
             {hoverNode.properties && Object.keys(hoverNode.properties).length > 0 && (

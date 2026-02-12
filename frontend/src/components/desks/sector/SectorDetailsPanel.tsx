@@ -828,11 +828,6 @@ const SectorDetailsPanel: React.FC<SectorDetailsPanelProps> = ({
                         </h2>
                         <p className="details-subtitle">Region: {selectedRegion}</p>
                     </div>
-                    {onBackToNational && (
-                        <button onClick={onBackToNational} className="back-button">
-                            ← National
-                        </button>
-                    )}
                 </div>
             </div>
 
@@ -949,6 +944,15 @@ const SectorDetailsPanel: React.FC<SectorDetailsPanelProps> = ({
                     )}
                 </div>
             </div>
+
+            {/* Back to National Button - Moved to Bottom */}
+            {onBackToNational && (
+                <div className="details-footer">
+                    <button onClick={onBackToNational} className="back-to-national-button">
+                        ← Back to National View
+                    </button>
+                </div>
+            )}
         </div>
     );
 };
