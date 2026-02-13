@@ -58,18 +58,18 @@ export function calculateHeatmapColor(l3: L3Capability, overlayType: OverlayType
             break;
     }
 
-    // Convert delta percentage to color using spec thresholds:
-    // GREEN < 35%, AMBER 35-65%, RED > 65%
-    if (deltaPercent < 35) {
+    // Use per-node thresholds from DB if available, else spec defaults
+    // DB thresholds are health-based (green=85 → exposure ≤15% is green)
+    // Already converted to exposure thresholds in enrichWithRiskData
+    const greenMax = (l3 as any)._threshold_green_max ?? 15;  // default: exposure ≤15% = green
+    const amberMax = (l3 as any)._threshold_amber_max ?? 30;  // default: exposure ≤30% = amber
+
+    if (deltaPercent <= greenMax) {
         // GREEN
         return 'rgba(16, 185, 129, 0.6)';
-    } else if (deltaPercent < 65) {
-        // AMBER — interpolate between amber and red
-        const t = (deltaPercent - 35) / 30; // 0 to 1 within amber range
-        const r = Math.round(245 - t * 6);   // 245 → 239
-        const g = Math.round(158 - t * 90);  // 158 → 68
-        const b = Math.round(11 + t * 57);   // 11 → 68
-        return `rgba(${r}, ${g}, ${b}, 0.6)`;
+    } else if (deltaPercent <= amberMax) {
+        // AMBER
+        return 'rgba(245, 158, 11, 0.6)';
     } else {
         // RED
         return 'rgba(239, 68, 68, 0.6)';

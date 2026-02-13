@@ -753,6 +753,14 @@ function enrichWithRiskData(
   if (rawHealth != null) {
     l3Cap.operational_health_score = ((rawHealth - 1) / 4) * 100;
   }
+
+  // Per-node thresholds from DB (health-based: green=85 means health≥85% is green)
+  // Convert to exposure thresholds: exposure = 100 - health
+  // health≥85% green → exposure ≤15% green; health≥70% amber → exposure ≤30% amber
+  if (matchingRisk.threshold_green != null) {
+    l3Cap._threshold_green_max = 100 - matchingRisk.threshold_green;  // e.g. 100-85=15
+    l3Cap._threshold_amber_max = 100 - matchingRisk.threshold_amber;  // e.g. 100-70=30
+  }
 }
 
 /**
