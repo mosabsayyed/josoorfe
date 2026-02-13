@@ -390,11 +390,21 @@
   }
 
   .pyr-inner {
-    min-height: 420px;
+    min-height: 520px;
   }
 
   .pyr-face {
-    min-height: 420px;
+    min-height: 520px;
+    overflow-y: auto;
+  }
+
+  /* Back face content is dense on mobile — allow scroll and tighten spacing */
+  .pyr-back {
+    padding: 0.8rem;
+  }
+
+  .back-h {
+    margin-bottom: 0.3rem;
   }
 
   .py-layers {

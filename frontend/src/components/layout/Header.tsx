@@ -132,6 +132,24 @@ export default function Header() {
           justifyContent: 'center',
           gap: '2rem',
         }}>
+          {/* Landing page section links */}
+          {['Signal', 'Why Us', 'Promise', 'Platform', 'Architecture'].map((label, i) => {
+            const sectionIds = ['nonoise', 'claims', 'promise', 'platform', 'arch'];
+            return (
+              <button
+                key={label}
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  const el = document.getElementById(sectionIds[i]);
+                  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }}
+                style={{ background: 'none', border: 'none', color: 'var(--component-text-muted, #808894)', cursor: 'pointer', fontSize: '18px', fontWeight: 500 }}
+              >
+                {label}
+              </button>
+            );
+          })}
+          <div style={{ height: '1px', width: '60%', background: 'rgba(255,255,255,0.1)', margin: '0.5rem 0' }} />
           <button
             onClick={() => { navigate('/founder-letter'); setMobileMenuOpen(false); }}
             style={{ background: 'none', border: 'none', color: '#F9FAFB', cursor: 'pointer', fontSize: '20px', fontWeight: 600 }}

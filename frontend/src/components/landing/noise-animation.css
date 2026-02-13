@@ -18,7 +18,7 @@
   animation: pulseGlow 2s ease-in-out infinite;
 }
 
-/* Optional: Add subtle dash animation to signal lines */
+/* Dash animation for signal lines */
 @keyframes lineDash {
   0% {
     stroke-dashoffset: 0;
@@ -31,4 +31,14 @@
 .sig-line {
   stroke-dasharray: 5 3;
   animation: lineDash 3s linear infinite;
+}
+
+/* Mobile: boost stroke visibility */
+@media (max-width: 768px) {
+  .sig-line {
+    stroke-width: 2px;
+  }
+  .sig-dot-animated {
+    r: 7;
+  }
 }
