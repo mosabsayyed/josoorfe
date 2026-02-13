@@ -24,11 +24,11 @@ export default function LandingPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
+    
     try {
       const richFullName = `${formData.name} | Org: ${formData.organization} | Role: ${formData.role}`;
 
-      const { data, error } = await supabase
+      const { data, error} = await supabase
         .from('users_pending')
         .insert([
           {
@@ -50,9 +50,9 @@ export default function LandingPage() {
 
     } catch (err: any) {
       console.error('Registration error:', err);
-      alert(language === 'en'
-        ? 'Error submitting request. Please try again.'
-        : 'خطأ في تقديم الطلب. يرجى المحاولة مرة أخرى.');
+      alert(language === 'en' 
+        ? 'Error submitting request. Please try again or contact support.' 
+        : 'خطأ في تقديم الطلب. يرجى المحاولة مرة أخرى أو الاتصال بالدعم.');
     }
   };
 
@@ -80,26 +80,26 @@ export default function LandingPage() {
         : 'ما يجعل جسور مختلفاً بشكل أساسي عن الآخرين في هذا المجال.',
       items: [
         language === 'en'
-          ? 'Built with AIs for humans from the ground up — Every structure is machine-native. Every interface is human-intuitive.'
-          : 'بني مع الذكاء الاصطناعي للبشر من الصفر - كل بنية أصلية للآلة. كل واجهة بديهية للإنسان.',
+          ? '<b><em>Built with AIs</em> for humans from the ground up</b> — Every structure is machine-native. Every interface is human-intuitive.'
+          : '<b><em>بني مع الذكاء الاصطناعي</em> للبشر من الصفر</b> - كل بنية أصلية للآلة. كل واجهة بديهية للإنسان.',
         language === 'en'
-          ? 'Scalable to multi-Sectors and Entities — one Josoor instance adapts to any government entity without rebuilding.'
-          : 'قابل للتوسع إلى قطاعات وكيانات متعددة - نسخة واحدة من جسور تتكيف مع أي كيان حكومي دون إعادة بناء.',
+          ? '<b>Scalable to multi-Sectors and Entities</b> — one Josoor instance adapts to any government entity without rebuilding.'
+          : '<b>قابل للتوسع إلى قطاعات وكيانات متعددة</b> - نسخة واحدة من جسور تتكيف مع أي كيان حكومي دون إعادة بناء.',
         language === 'en'
-          ? "Tailored for the Vision and its objectives/KPIs — national methodologies and sectorial programs are first-class objects, not afterthoughts."
-          : 'مصمم للرؤية وأهدافها/مؤشرات الأداء - المنهجيات الوطنية والبرامج القطاعية هي كائنات من الدرجة الأولى، وليست أفكاراً لاحقة.',
+          ? "<b>Tailored for the Vision and its objectives/KPIs</b> — national methodologies and sectorial programs are first-class objects, not afterthoughts."
+          : '<b>مصمم للرؤية وأهدافها/مؤشرات الأداء</b> - المنهجيات الوطنية والبرامج القطاعية هي كائنات من الدرجة الأولى، وليست أفكاراً لاحقة.',
         language === 'en'
-          ? 'Native Arabic (and soon multi-accent) — built for Arabic-first government context.'
-          : 'عربي أصلي (وقريباً متعدد اللهجات) - مبني لسياق حكومي عربي أولاً.',
+          ? '<b>Native Arabic (and soon multi-accent)</b> — built for Arabic-first government context.'
+          : '<b>عربي أصلي (وقريباً متعدد اللهجات)</b> - مبني لسياق حكومي عربي أولاً.',
         language === 'en'
-          ? 'One definition, one version, one source of Priorities — take opinions out of the dialogue. Everyone sees the same truth.'
-          : 'تعريف واحد، إصدار واحد، مصدر واحد للأولويات - أخرج الآراء من الحوار. الجميع يرى نفس الحقيقة.',
+          ? '<b>One definition, one version, one source of Priorities</b> — take opinions out of the dialogue. Everyone sees the same truth.'
+          : '<b>تعريف واحد، إصدار واحد، مصدر واحد للأولويات</b> - أخرج الآراء من الحوار. الجميع يرى نفس الحقيقة.',
         language === 'en'
-          ? 'Frontier Knowledge Graphing to model complexity — relationships between KPIs, initiatives, risks, and resources are modelled as a living graph, not flat tables.'
-          : 'رسم معرفي حدودي لنمذجة التعقيد - العلاقات بين مؤشرات الأداء والمبادرات والمخاطر والموارد منمذجة كرسم حي، وليس جداول مسطحة.',
+          ? '<b>Frontier Knowledge Graphing to model complexity</b> — relationships between KPIs, initiatives, risks, and resources are modelled as a living graph, not flat tables.'
+          : '<b>رسم معرفي حدودي لنمذجة التعقيد</b> - العلاقات بين مؤشرات الأداء والمبادرات والمخاطر والموارد منمذجة كرسم حي، وليس جداول مسطحة.',
         language === 'en'
-          ? 'KSA Public-Sector\'s first "Ontology" IP — a reusable, scalable knowledge framework that grows smarter via guided AI learning.'
-          : 'أول "أنطولوجيا" للقطاع العام السعودي - إطار معرفي قابل لإعادة الاستخدام والتوسع ينمو بذكاء عبر التعلم الموجه للذكاء الاصطناعي.'
+          ? '<b>KSA Public-Sector\'s first "Ontology" IP</b> — a reusable, scalable knowledge framework that grows smarter via guided AI learning.'
+          : '<b>أول "أنطولوجيا" للقطاع العام السعودي</b> - إطار معرفي قابل لإعادة الاستخدام والتوسع ينمو بذكاء عبر التعلم الموجه للذكاء الاصطناعي.'
       ]
     },
     promise: {
@@ -155,20 +155,20 @@ export default function LandingPage() {
         {
           title: language === 'en' ? 'Watch' : 'راقب',
           desc: language === 'en'
-            ? 'Not just what\'s red — catches what looks green but is quietly declining. Training drops, HR shrugs, Josoor traces the chain to the Minister\'s phone. You find out now, not in 3 months.'
-            : 'ليس فقط ما هو أحمر - يلتقط ما يبدو أخضر لكنه يتراجع بهدوء. التدريب ينخفض، الموارد البشرية تتجاهل، جسور يتتبع السلسلة إلى هاتف الوزير. تكتشف الآن، وليس بعد 3 أشهر.'
+            ? 'Not just what\'s red — catches what <em>looks green but is quietly declining</em>. Training drops, HR shrugs, Josoor traces the chain to the Minister\'s phone. You find out now, not in 3 months.'
+            : 'ليس فقط ما هو أحمر - يلتقط ما <em>يبدو أخضر لكنه يتراجع بهدوء</em>. التدريب ينخفض، الموارد البشرية تتجاهل، جسور يتتبع السلسلة إلى هاتف الوزير. تكتشف الآن، وليس بعد 3 أشهر.'
         },
         {
           title: language === 'en' ? 'Decide' : 'قرر',
           desc: language === 'en'
-            ? 'AI traces root cause and cascading impact across the map. The full chain from failing deliverable to national KPI, plus concrete options with outcomes. No guessing, all math.'
-            : 'الذكاء الاصطناعي يتتبع السبب الجذري والتأثير المتتالي عبر الخريطة. السلسلة الكاملة من التسليم الفاشل إلى مؤشر الأداء الوطني، بالإضافة إلى خيارات ملموسة مع النتائج. لا تخمين، كل رياضيات.'
+            ? 'AI traces root cause and cascading impact across the map. The <em>full chain</em> from failing deliverable to national KPI, plus concrete options with outcomes. No guessing, all math.'
+            : 'الذكاء الاصطناعي يتتبع السبب الجذري والتأثير المتتالي عبر الخريطة. <em>السلسلة الكاملة</em> من التسليم الفاشل إلى مؤشر الأداء الوطني، بالإضافة إلى خيارات ملموسة مع النتائج. لا تخمين، كل رياضيات.'
         },
         {
           title: language === 'en' ? 'Deliver' : 'نفذ',
           desc: language === 'en'
-            ? 'Weekly priorities synced with Strategic Priorities. 4 out of 42 items matter this week — focus. True critical path drives system flags with high confidence'
-            : 'الأولويات الأسبوعية متزامنة مع الأولويات الاستراتيجية. 4 من 42 عنصر مهم هذا الأسبوع - التركيز. المسار الحرج الحقيقي يقود علامات النظام بثقة عالية'
+            ? 'Weekly priorities synced with Strategic Priorities. 4 out of 42 items matter this week — <em>focus</em>. True critical path drives system flags with high confidence'
+            : 'الأولويات الأسبوعية متزامنة مع الأولويات الاستراتيجية. 4 من 42 عنصر مهم هذا الأسبوع - <em>التركيز</em>. المسار الحرج الحقيقي يقود علامات النظام بثقة عالية'
         }
       ]
     },
@@ -176,8 +176,8 @@ export default function LandingPage() {
       tag: language === 'en' ? 'The Architecture' : 'البنية',
       title: language === 'en' ? 'Designed around data you have today' : 'مصمم حول البيانات التي لديك اليوم',
       intro: language === 'en'
-        ? 'No new data lake. No 18-month integration. Josoor is an overlay that builds bridges between your existing systems and stakeholders — a true information superhighway traversed by powerful LLMs, transforming data complexity into strategic insights and siloed stakeholders into an aligned powerhouse.'
-        : 'لا بحيرة بيانات جديدة. لا تكامل لمدة 18 شهراً. جسور عبارة عن طبقة تبني جسور بين أنظمتك وأصحاب المصلحة الحاليين - طريق معلومات سريع حقيقي يسلكه LLMs قوية، محولة تعقيد البيانات إلى رؤى استراتيجية وأصحاب المصلحة المعزولين إلى قوة متماسكة.',
+        ? 'No new data lake. No 18-month integration. Josoor is an <b>overlay</b> that builds bridges between your existing systems and stakeholders — a true information superhighway traversed by powerful LLMs, transforming <b>data complexity into strategic insights</b> and siloed stakeholders into an aligned powerhouse.'
+        : 'لا بحيرة بيانات جديدة. لا تكامل لمدة 18 شهراً. جسور عبارة عن <b>طبقة</b> تبني جسور بين أنظمتك وأصحاب المصلحة الحاليين - طريق معلومات سريع حقيقي يسلكه LLMs قوية، محولة <b>تعقيد البيانات إلى رؤى استراتيجية</b> وأصحاب المصلحة المعزولين إلى قوة متماسكة.',
       layers: [
         { name: language === 'en' ? 'Strategy' : 'الاستراتيجية', desc: language === 'en' ? 'Objectives, KPIs' : 'الأهداف، مؤشرات الأداء' },
         { name: language === 'en' ? 'Sector Operations' : 'عمليات القطاع', desc: language === 'en' ? 'Your value chain' : 'سلسلة القيمة الخاصة بك' },
@@ -188,14 +188,14 @@ export default function LandingPage() {
         {
           title: language === 'en' ? 'BUILD — Are we building on time?' : 'بناء - هل نبني في الوقت المحدد؟',
           desc: language === 'en'
-            ? 'For each capability under construction, checks every project closing its gaps. Calculates build exposure from real dates. No AI opinion — math.'
-            : 'لكل قدرة قيد البناء، يتحقق من كل مشروع يغلق فجواته. يحسب التعرض للبناء من التواريخ الفعلية. لا رأي للذكاء الاصطناعي - رياضيات.'
+            ? 'For each capability under construction, checks every project closing its gaps. Calculates <b>build exposure</b> from real dates. No AI opinion — math.'
+            : 'لكل قدرة قيد البناء، يتحقق من كل مشروع يغلق فجواته. يحسب <b>التعرض للبناء</b> من التواريخ الفعلية. لا رأي للذكاء الاصطناعي - رياضيات.'
         },
         {
           title: language === 'en' ? 'OPERATE — Are we running healthy?' : 'تشغيل - هل نعمل بصحة؟',
           desc: language === 'en'
-            ? 'Scores people + process + tools. Two consecutive drops, even while green? Forced amber. Catches decline before red.'
-            : 'يسجل الناس + العملية + الأدوات. انخفاضان متتاليان، حتى لو كان أخضر؟ عنبر قسري. يلتقط التراجع قبل الأحمر.'
+            ? 'Scores people + process + tools. Two consecutive drops, even while green? <b>Forced amber.</b> Catches decline before red.'
+            : 'يسجل الناس + العملية + الأدوات. انخفاضان متتاليان، حتى لو كان أخضر؟ <b>عنبر قسري.</b> يلتقط التراجع قبل الأحمر.'
         }
       ]
     },
@@ -224,618 +224,405 @@ export default function LandingPage() {
     }
   };
 
-  // Inject CSS
+  // Inject CSS for the landing page
   useEffect(() => {
     const css = `
-      @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700;800&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700;800&display=swap');
-
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Cairo:wght@400;500;600;700&family=Tajawal:wght@400;500;700&display=swap');
+      
       :root {
-        /* Josoor Design System v2.0 */
-        --bg-deep: #0B0F1A;
-        --bg-primary: #111827;
-        --bg-secondary: #1F2937;
-        --bg-elevated: #283548;
-        --bg-surface: #182230;
-        --bg-overlay: rgba(17,24,39,0.88);
-
-        --gold-primary: #F4BB30;
-        --gold-bright: #FFD04A;
-        --gold-hover: #E5AD20;
-        --gold-muted: #C49520;
-        --gold-faint: rgba(244,187,48,0.10);
-        --gold-glow: rgba(244,187,48,0.25);
-        --gold-grad: linear-gradient(135deg, #F4BB30, #FFD04A);
-
-        --teal-primary: #145c80;
-        --teal-light: #1a7aa8;
-        --teal-muted: #0f4a66;
-        --teal-faint: rgba(20,92,128,0.12);
-
-        --text-primary: #f8f8f8;
-        --text-secondary: #dcdcdc;
-        --text-muted: #808894;
-        --text-subtle: #545c68;
-        --text-inverse: #111827;
-
-        --success: #2DD4A8;
-        --warning: #F4BB30;
-        --error: #E8634B;
-        --info: #5B9BD5;
-
-        --border-default: rgba(255,255,255,0.06);
-        --border-subtle: rgba(255,255,255,0.04);
-        --border-strong: rgba(255,255,255,0.12);
-        --border-gold: rgba(244,187,48,0.30);
-
-        --font-primary: 'Inter', sans-serif;
-        --font-heading: 'IBM Plex Sans', sans-serif;
-        --font-mono: 'IBM Plex Mono', monospace;
-        --font-arabic: 'IBM Plex Sans Arabic', sans-serif;
-
-        --radius-md: 8px;
-        --radius-lg: 12px;
-        --radius-xl: 16px;
-        --radius-2xl: 24px;
-
-        --shadow-md: 0 4px 12px rgba(0,0,0,0.25);
-        --shadow-lg: 0 8px 24px rgba(0,0,0,0.3);
-        --shadow-xl: 0 16px 48px rgba(0,0,0,0.35);
-        --shadow-gold: 0 0 20px rgba(244,187,48,0.15);
+        --component-bg-primary: #111827;
+        --component-panel-bg: rgba(31, 41, 55, 0.6); /* Glass effect increased */
+        --component-panel-border: rgba(255, 255, 255, 0.1);
+        --component-text-primary: #F9FAFB;
+        --component-text-secondary: #D1D5DB;
+        --component-text-muted: #9CA3AF;
+        --component-text-accent: var(--component-text-accent);
+        --component-text-on-accent: #111827;
       }
 
-      * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-      }
-
-      html {
-        scroll-behavior: smooth;
-      }
-
-      body {
-        font-family: var(--font-primary);
-        background: var(--bg-deep);
-        color: var(--text-secondary);
-        line-height: 1.7;
-        overflow-x: hidden;
-        -webkit-font-smoothing: antialiased;
+      html, body {
+        overflow-y: auto !important; /* FORCE SCROLLING */
+        height: auto !important;
+        min-height: 100vh;
       }
 
       .landing-page {
-        background: var(--bg-deep);
-        color: var(--text-primary);
+        background: var(--component-bg-primary);
+        color: var(--component-text-primary);
+        font-family: "Inter", sans-serif;
         overflow-x: hidden;
+        overflow-y: auto;
+        line-height: 1.5;
+        min-height: 100vh;
+        position: relative;
+      }
+      
+      .landing-page * {
+        box-sizing: border-box;
       }
 
-      .container {
-        max-width: 1100px;
-        margin: 0 auto;
-        padding: 0 2rem;
+      /* HERO SECTION */
+      .hero-section {
+        position: relative;
+        width: 100%;
+        font-weight: 400;
+        justify-content: center;
+        overflow-y: auto;
+        padding-bottom: 60px;
+        flex-direction: row;
+        margin-bottom: 0px;
+      }
+
+      .hero-background-video {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        z-index: 0;
+        /* Fallback gradient if video fails */
+        background: radial-gradient(circle at center, #1f2937 0%, #111827 100%);
+      }
+      
+      .hero-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(17, 24, 39, 0.5); /* Dimming overlay */
+        z-index: 1;
+      }
+
+      .hero-content {
+        position: relative;
+        z-index: 2;
+        max-width: 800px;
+        text-align: left;
+        margin-left: 40px;
+        display: flex;
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: flex-start;
+        align-items: flex-start;
+        padding: 0 20px;
+      }
+
+      .hero-title {
+        font: 48px/67.2px "Inter", sans-serif;
+        color: #FFFFFF;
+        margin-bottom: 24px;
+        text-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        width: auto;
+        align-self: start;
+        text-align: left;
+      }
+
+      .hero-subtitle {
+        font: 400 20px/1.5 "Inter", sans-serif;
+        color: #E5E7EB;
+        margin-bottom: 40px;
+        text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+      }
+
+      .scroll-indicator {
+        position: absolute;
+        bottom: 40px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 2;
+        animation: bounce 2s infinite;
+        opacity: 0.7;
+      }
+
+      @keyframes bounce {
+        0%, 20%, 50%, 80%, 100% {transform: translateX(-50%) translateY(0);}
+        40% {transform: translateX(-50%) translateY(-10px);}
+        60% {transform: translateX(-50%) translateY(-5px);}
+      }
+
+      #background-image {
+        position: absolute;
+        top: 85vh; /* Push vector down below hero */
+        left: 50%;
+        transform: translateX(-50%);
+        width: 1278px;
+        pointer-events: none;
+        z-index: 0;
+        display: block;
+        opacity: 0.3;
+      }
+
+      #main-content {
+        position: relative;
+        z-index: 1;
+        padding-top: 0;
       }
 
       section {
-        padding: 6rem 0;
+        padding: 100px 40px; /* Increased padding */
         position: relative;
+        background: transparent;
       }
 
-      .stag {
-        font-family: var(--font-mono);
-        font-size: 10px;
-        letter-spacing: 0.2em;
-        text-transform: uppercase;
-        color: var(--gold-muted);
-        margin-bottom: 0.8rem;
+      section.content-centered {
+        max-width: 1280px; /* Wider container */
+        margin: 0 auto;
       }
 
-      .stitle {
-        font-family: var(--font-heading);
-        font-size: clamp(30px, 3.8vw, 48px);
-        font-weight: 800;
-        color: var(--text-primary);
-        line-height: 1.15;
-        letter-spacing: -0.02em;
-        margin-bottom: 0.6rem;
+      .section-content-box {
+        background-color: var(--component-panel-bg);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        padding: 40px;
+        border-radius: 16px;
+        border: 1px solid var(--component-panel-border);
+        display: inline-block;
+        width: 100%;
+        transition: transform 0.3s ease;
       }
 
-      .ssub {
-        font-size: 16px;
-        color: var(--text-muted);
-        max-width: 560px;
-        line-height: 1.65;
-      }
-
-      .ssub b {
-        color: var(--text-primary);
-        font-weight: 600;
-      }
-
-      /* HERO */
-      .hero {
-        min-height: 100vh;
-        display: flex;
+      .section-grid {
+        display: grid;
+        gap: 80px; /* Increased gap */
         align-items: center;
-        padding-top: 4rem;
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .landing-page h1 {
+        font: 700 56px/1.2 "Inter", sans-serif;
+        color: var(--component-text-primary);
+        margin-bottom: 24px;
+      }
+
+      .landing-page h2 {
+        font: 700 42px/1.2 "Inter", sans-serif; /* Larger H2 */
+        color: var(--component-text-primary);
+        margin-bottom: 20px;
+      }
+
+      .subtitle {
+        font: 400 18px/28px "Inter", sans-serif;
+        color: var(--component-text-secondary);
+        margin-bottom: 32px;
+        max-width: 700px;
+      }
+
+      .screenshot-container {
         position: relative;
+        border-radius: 12px;
         overflow: hidden;
+        /* Removed background color to ensure transparency */
+        background: transparent; 
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        transition: transform 0.3s ease;
+      }
+      
+      .screenshot-container:hover {
+        transform: translateY(-5px);
       }
 
-      .hero-video {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        min-width: 100%;
-        min-height: 100%;
-        width: auto;
+      .screenshot-container img {
+        width: 100%;
         height: auto;
-        object-fit: cover;
-        z-index: 0;
+        display: block;
       }
 
-      .hero-overlay {
-        position: absolute;
-        inset: 0;
-        z-index: 1;
-        background: radial-gradient(ellipse at center, transparent 0%, var(--bg-deep) 75%), linear-gradient(180deg, transparent 40%, var(--bg-deep) 100%);
+      .microcopy-bullets, .value-bullets {
+        list-style: none;
+        margin-top: 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px; 
       }
 
-      .hero-center {
-        text-align: center;
-        max-width: 760px;
-        margin: 0 auto;
+      .microcopy-bullets li, .value-bullets li {
+        font: 400 16px/24px "Inter", sans-serif; /* Slightly larger text */
+        color: var(--component-text-secondary);
+        padding-left: 28px;
+        padding-right: 0;
         position: relative;
-        z-index: 2;
+      }
+      
+      /* RTL support for bullets */
+      [dir="rtl"] .microcopy-bullets li, [dir="rtl"] .value-bullets li {
+        padding-left: 0;
+        padding-right: 28px;
       }
 
-      .hero-center h1 {
-        font-family: var(--font-heading);
-        font-size: clamp(38px, 5vw, 61px);
-        font-weight: 800;
-        color: var(--text-primary);
-        line-height: 1.1;
-        letter-spacing: -0.03em;
-        margin-bottom: 1.5rem;
-      }
-
-      .hw {
-        background: var(--gold-grad);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-      }
-
-      .hero-brand {
-        display: inline-flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 0.2rem;
-        padding: 1.2rem 3rem;
-        border: 2px solid var(--gold-primary);
-        border-radius: var(--radius-xl);
-        background: linear-gradient(135deg, rgba(244,187,48,0.06), rgba(244,187,48,0.01));
-        box-shadow: 0 0 60px rgba(244,187,48,0.06);
-        margin-top: 2rem;
-      }
-
-      .hb-name {
-        font-family: var(--font-heading);
-        font-size: 30px;
-        font-weight: 800;
-        letter-spacing: 0.35em;
-        text-transform: uppercase;
-        color: var(--gold-bright);
-      }
-
-      .hb-tag {
-        font-size: 14px;
-        font-weight: 500;
-        color: var(--gold-primary);
-        letter-spacing: 0.03em;
-      }
-
-      /* NO NOISE */
-      .nonoise {
-        border-top: 1px solid var(--border-default);
-      }
-
-      .nonoise-inner {
-        text-align: center;
-        max-width: 800px;
-        margin: 0 auto;
-      }
-
-      .hero-swagger {
-        font-family: var(--font-heading);
-        font-size: 26px;
-        font-weight: 800;
-        color: var(--text-primary);
-        margin: 2rem 0;
-      }
-
-      /* CLAIMS */
-      .claims {
-        border-top: 1px solid var(--border-default);
-      }
-
-      .claims-head {
-        text-align: center;
-        margin-bottom: 2.5rem;
-      }
-
-      .claims-list {
-        display: flex;
-        flex-direction: column;
-        gap: 0.6rem;
-        max-width: 800px;
-        margin: 0 auto;
-      }
-
-      .claim-item {
-        display: flex;
-        gap: 1rem;
-        align-items: flex-start;
-        padding: 1rem 1.2rem;
-        background: var(--bg-primary);
-        border: 1px solid var(--border-default);
-        border-radius: var(--radius-md);
-        transition: border-color 0.3s, background 0.3s;
-      }
-
-      .claim-item:hover {
-        border-color: rgba(244,187,48,0.25);
-        background: linear-gradient(135deg, rgba(244,187,48,0.03), transparent);
-      }
-
-      .claim-num {
-        font-family: var(--font-mono);
-        font-size: 11px;
-        font-weight: 700;
-        color: var(--gold-primary);
-        min-width: 1.6rem;
-        height: 1.6rem;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border: 1px solid rgba(244,187,48,0.25);
-        border-radius: 50%;
-        flex-shrink: 0;
-        margin-top: 0.1rem;
-      }
-
-      .claim-text {
-        font-size: 14px;
-        color: var(--text-secondary);
-        line-height: 1.55;
-      }
-
-      .claim-text b, .claim-text em {
-        color: var(--text-primary);
+      .microcopy-bullets li:before {
+        content: "→";
+        position: absolute;
+        left: 0;
+        color: var(--component-text-accent);
         font-weight: 600;
-        font-style: normal;
+        font-size: 18px;
+      }
+      
+      [dir="rtl"] .microcopy-bullets li:before {
+        left: auto;
+        right: 0;
+        content: "←";
       }
 
-      /* PERSONAS */
-      .promise {
-        border-top: 1px solid var(--border-default);
+      .value-bullets li:before {
+        content: "✓";
+        position: absolute;
+        left: 0;
+        color: var(--component-text-accent);
+        font-weight: 600;
+        font-size: 18px;
+      }
+      
+      [dir="rtl"] .value-bullets li:before {
+        left: auto;
+        right: 0;
       }
 
-      .persona-grid {
+      .three-panel-strip {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-        gap: 1.5rem;
-        margin-top: 2rem;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 24px;
+        margin-top: 40px;
       }
 
-      .persona-card {
-        background: var(--bg-primary);
-        border: 1px solid var(--border-default);
-        border-radius: var(--radius-xl);
-        padding: 1.5rem;
-        transition: transform 0.3s, box-shadow 0.3s;
+      .panel {
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        background: transparent;
       }
 
-      .persona-card:hover {
-        transform: translateY(-4px);
-        box-shadow: var(--shadow-lg);
+      .panel img {
+        width: 100%;
+        height: auto;
+        display: block;
       }
 
-      .persona-role {
-        font-family: var(--font-mono);
-        font-size: 10px;
-        color: var(--gold-muted);
-        letter-spacing: 0.06em;
-        margin-bottom: 1rem;
+      .panel-caption {
+        font: 600 14px/20px "Inter", sans-serif;
+        color: var(--component-text-accent);
+        padding: 12px 0;
+        margin-top: 8px;
       }
 
-      .persona-label {
-        font-size: 10px;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        margin-top: 1rem;
-      }
-
-      .persona-label.before {
-        color: var(--error);
-      }
-
-      .persona-label.after {
-        color: var(--success);
-      }
-
-      .persona-text {
-        font-size: 13px;
-        color: var(--text-muted);
-        line-height: 1.45;
-        margin: 0.5rem 0;
-      }
-
-      .persona-divider {
-        height: 1px;
-        background: var(--border-default);
-        margin: 0.8rem 0;
-      }
-
-      /* PLATFORM MODES */
-      .platform {
-        border-top: 1px solid var(--border-default);
-      }
-
-      .mode-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-        gap: 2rem;
-        margin-top: 2rem;
-      }
-
-      .mode-card {
-        background: var(--bg-primary);
-        border: 1px solid var(--border-default);
-        border-radius: var(--radius-xl);
-        padding: 1.5rem;
-      }
-
-      .mode-card h3 {
-        font-family: var(--font-heading);
-        font-size: 24px;
-        font-weight: 800;
-        color: var(--text-primary);
-        margin-bottom: 1rem;
-      }
-
-      .mode-card p {
-        font-size: 15px;
-        color: var(--text-secondary);
+      .panel-description {
+        font: 400 13px/20px "Inter", sans-serif;
+        color: var(--component-text-secondary);
+        margin-top: 6px;
         line-height: 1.6;
       }
 
-      .mode-card em {
-        color: var(--gold-primary);
-        font-style: normal;
-        font-weight: 600;
-      }
-
-      /* ARCHITECTURE */
-      .arch {
-        border-top: 1px solid var(--border-default);
-      }
-
-      .arch-head {
-        text-align: center;
-        margin-bottom: 1rem;
-      }
-
-      .arch-intro {
-        text-align: center;
-        max-width: 650px;
-        margin: 0 auto 2.5rem;
-        font-size: 16px;
-        color: var(--text-secondary);
-        line-height: 1.65;
-      }
-
-      .arch-intro b {
-        color: var(--text-primary);
-      }
-
-      .layer-stack {
-        max-width: 500px;
-        margin: 0 auto 2rem;
-      }
-
-      .layer {
-        padding: 1rem 1.5rem;
-        margin-bottom: 0.5rem;
-        background: var(--bg-secondary);
-        border: 1px solid var(--border-default);
-        border-radius: var(--radius-md);
-        text-align: center;
-      }
-
-      .layer:first-child {
-        background: linear-gradient(180deg, rgba(244,187,48,0.06), var(--bg-secondary));
-      }
-
-      .layer-name {
-        font-family: var(--font-heading);
-        font-size: 15px;
-        font-weight: 700;
-        color: var(--text-primary);
-      }
-
-      .layer-desc {
-        font-size: 12px;
-        color: var(--text-muted);
-        margin-top: 0.3rem;
-      }
-
-      .engine-grid {
+      .architecture-callouts {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-        gap: 1.5rem;
-        max-width: 800px;
-        margin: 2rem auto;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 32px;
+        margin-top: 40px;
       }
 
-      .engine-card {
-        background: var(--bg-primary);
-        border: 1px solid var(--border-default);
-        border-radius: var(--radius-xl);
-        padding: 1.5rem;
+      .callout {
+        padding: 24px;
+        background: rgba(31, 41, 55, 0.5);
+        border-left: 3px solid var(--component-text-accent);
+        border-radius: 6px;
+      }
+      
+      [dir="rtl"] .callout {
+        border-left: none;
+        border-right: 3px solid var(--component-text-accent);
       }
 
-      .engine-card h4 {
-        font-size: 16px;
-        font-weight: 700;
-        margin-bottom: 0.8rem;
+      .callout-label {
+        font: 600 14px/20px "Inter", sans-serif;
+        color: var(--component-text-accent);
+        margin-bottom: 8px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
       }
 
-      .engine-card.build h4 {
-        color: var(--info);
+      .callout-text {
+        font: 400 13px/20px "Inter", sans-serif;
+        color: var(--component-text-secondary);
+        line-height: 1.6;
       }
 
-      .engine-card.operate h4 {
-        color: var(--teal-light);
+      /* Form Styles */
+      .invite-form {
+        background: rgba(31, 41, 55, 0.5);
+        border: 1px solid var(--component-panel-border);
+        border-radius: 12px;
+        padding: 40px;
+        margin-top: 40px;
+        display: grid;
+        gap: 20px;
+        max-width: 700px;
+        margin-left: auto;
+        margin-right: auto;
       }
 
-      .engine-card p {
-        font-size: 14px;
-        color: var(--text-muted);
-        line-height: 1.5;
-      }
-
-      .engine-card p b {
-        color: var(--text-secondary);
-      }
-
-      /* BETA FORM */
-      .beta {
-        text-align: center;
-        border-top: 1px solid var(--border-default);
-        background: radial-gradient(ellipse at 50% 20%, rgba(244,187,48,0.04) 0%, transparent 55%);
-      }
-
-      .beta h2 {
-        font-size: clamp(27px, 3.2vw, 38px);
-        font-weight: 800;
-        color: var(--text-primary);
-        margin-bottom: 0.5rem;
-      }
-
-      .bsub {
-        font-size: 15px;
-        color: var(--text-muted);
-        max-width: 500px;
-        margin: 0 auto 2rem;
-      }
-
-      .bf {
-        max-width: 460px;
-        margin: 0 auto;
+      .form-group {
         display: flex;
         flex-direction: column;
-        gap: 0.65rem;
+        text-align: left;
+      }
+      
+      [dir="rtl"] .form-group {
+        text-align: right;
       }
 
-      .bf-r {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 0.65rem;
+      .form-group label {
+        font: 600 13px/18px "Inter", sans-serif;
+        color: var(--component-text-primary);
+        margin-bottom: 8px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
       }
 
-      @media(max-width: 500px) {
-        .bf-r {
-          grid-template-columns: 1fr;
-        }
+      .form-group input, .form-group select {
+        padding: 12px 16px;
+        background: rgba(17, 24, 39, 0.8);
+        border: 1px solid var(--component-panel-border);
+        border-radius: 6px;
+        color: var(--component-text-primary);
+        font: 400 14px/20px "Inter", sans-serif;
+        transition: all 0.2s ease;
       }
 
-      .bf input,
-      .bf select,
-      .bf textarea {
-        width: 100%;
-        padding: 0.7rem 0.9rem;
-        border: 1px solid var(--border-default);
-        border-radius: var(--radius-md);
-        background: var(--bg-primary);
-        color: var(--text-primary);
-        font-family: var(--font-primary);
-        font-size: 14px;
-        transition: border-color 0.2s;
+      .form-group input:focus, .form-group select:focus {
         outline: none;
+        border-color: var(--component-text-accent);
+        background: rgba(31, 41, 55, 0.9);
+        box-shadow: 0 0 12px rgba(244, 187, 48, 0.2);
       }
 
-      .bf input:focus,
-      .bf select:focus,
-      .bf textarea:focus {
-        border-color: var(--gold-muted);
-      }
-
-      .bf input::placeholder,
-      .bf textarea::placeholder {
-        color: var(--text-muted);
-      }
-
-      .bf select {
-        color: var(--text-muted);
-        -webkit-appearance: none;
+      .button-primary {
+        display: inline-block;
+        padding: 14px 32px;
+        background: var(--component-text-accent);
+        color: var(--component-text-on-accent);
+        border: none;
+        border-radius: 6px;
+        font: 600 16px/20px "Inter", sans-serif;
         cursor: pointer;
-      }
-
-      .bf textarea {
-        resize: vertical;
-        min-height: 72px;
-      }
-
-      .bf-submit {
-        padding: 0.8rem 2rem;
-        border: 2px solid var(--gold-primary);
-        border-radius: 999px;
-        background: transparent;
-        color: var(--gold-primary);
-        font-size: 15px;
-        font-weight: 700;
-        cursor: pointer;
-        transition: all 0.25s;
-        font-family: var(--font-primary);
-      }
-
-      .bf-submit:hover {
-        background: var(--gold-faint);
-        box-shadow: 0 0 30px rgba(244,187,48,0.12);
-      }
-
-      .bf-note {
-        font-size: 11px;
-        color: var(--text-muted);
-        margin-top: 0.8rem;
-      }
-
-      footer {
+        transition: all 0.3s ease;
+        text-decoration: none;
+        width: 100%;
         text-align: center;
-        padding: 1.5rem;
-        font-size: 11px;
-        color: var(--text-muted);
-        border-top: 1px solid var(--border-default);
       }
 
-      footer span {
-        color: var(--gold-muted);
+      .button-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 24px rgba(244, 187, 48, 0.3);
       }
 
-      @media (max-width: 768px) {
-        .container {
-          padding: 0 1rem;
-        }
-
-        section {
-          padding: 4rem 0;
-        }
-
-        .persona-grid,
-        .mode-grid {
+      @media (max-width: 1024px) {
+        .section-grid, .three-panel-strip, .architecture-callouts {
           grid-template-columns: 1fr;
         }
+        h1 { font-size: 40px; line-height: 48px; }
+        h2 { font-size: 32px; line-height: 40px; }
+        .hero-title { font-size: 40px; }
       }
     `;
     const style = document.createElement('style');
@@ -849,161 +636,386 @@ export default function LandingPage() {
   return (
     <div className="landing-page" dir={isRTL ? 'rtl' : 'ltr'}>
       <Header />
-
-      {/* HERO */}
-      <section className="hero">
-        <video className="hero-video" autoPlay muted loop playsInline>
-          <source src="/att/josoor-hero-bg.mp4" type="video/mp4" />
+      
+      {/* 
+        HERO SECTION (NEW IN COMPREHENSIVE ROADMAP)
+        Video disabled for now, using gradient placeholder 
+        TODO: User to upload /public/att/hero.mp4
+      */}
+      <section className="hero-section" style={{ paddingTop: '120px' }}>
+        <video
+          className="hero-background-video"
+          autoPlay
+          muted
+          loop
+          playsInline
+          poster="/att/landing-screenshots/Vector.svg"
+        >
+          {/* <source src="/att/hero.mp4" type="video/mp4" /> */}
+          {/* Using a placeholder gradient effect via CSS class for now */}
         </video>
         <div className="hero-overlay"></div>
-        <div className="container" style={{ position: 'relative', zIndex: 2 }}>
-          <div className="hero-center">
-            <h1>
-              <span className="hw">{t.hero.title}</span>
-              <br />
-              {t.hero.subtitle}
-            </h1>
-            <div className="hero-brand">
-              <div className="hb-name">{t.hero.badge}</div>
-              <div className="hb-tag">(replace with josoor logo)</div>
+        <div className="hero-content">
+          <div className="hero-badge" style={{
+            display: 'inline-block',
+            padding: '8px 16px',
+            marginBottom: '20px',
+            background: 'rgba(255, 255, 255, 0.1)',
+            borderRadius: '20px',
+            fontSize: '14px',
+            fontWeight: '500',
+            letterSpacing: '0.5px'
+          }}>
+            {t.hero.badge}
+          </div>
+          <h1 className="hero-title">{t.hero.title}</h1>
+          <p className="hero-subtitle">{t.hero.subtitle}</p>
+        </div>
+        <div className="scroll-indicator">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M7 13L12 18L17 13" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M7 6L12 11L17 6" stroke="rgba(255,255,255,0.5)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </div>
+      </section>
+
+      <img id="background-image" src="/att/landing-screenshots/Vector.svg" alt="" />
+      
+      <div id="main-content">
+        {/* SECTION 1: NO NOISE */}
+        <section className="content-centered">
+          <div className="section-content-box" style={{ textAlign: 'center', maxWidth: '900px', margin: '0 auto' }}>
+            <h2>{t.noNoise.title}</h2>
+            <p className="subtitle">{t.noNoise.subtitle}</p>
+
+            {/* SVG Signal Animation */}
+            <div style={{ margin: '60px 0', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+              <svg width="600" height="200" viewBox="0 0 600 200" style={{ maxWidth: '100%' }}>
+                {/* 7 signal lines converging to 1 */}
+                <line x1="50" y1="20" x2="500" y2="100" stroke="var(--component-text-accent)" strokeWidth="2" opacity="0.6">
+                  <animate attributeName="opacity" values="0.3;1;0.3" dur="2s" repeatCount="indefinite" />
+                </line>
+                <line x1="50" y1="50" x2="500" y2="100" stroke="var(--component-text-accent)" strokeWidth="2" opacity="0.6">
+                  <animate attributeName="opacity" values="0.3;1;0.3" dur="2s" begin="0.3s" repeatCount="indefinite" />
+                </line>
+                <line x1="50" y1="80" x2="500" y2="100" stroke="var(--component-text-accent)" strokeWidth="2" opacity="0.6">
+                  <animate attributeName="opacity" values="0.3;1;0.3" dur="2s" begin="0.6s" repeatCount="indefinite" />
+                </line>
+                <line x1="50" y1="110" x2="500" y2="100" stroke="var(--component-text-accent)" strokeWidth="2" opacity="0.6">
+                  <animate attributeName="opacity" values="0.3;1;0.3" dur="2s" begin="0.9s" repeatCount="indefinite" />
+                </line>
+                <line x1="50" y1="140" x2="500" y2="100" stroke="var(--component-text-accent)" strokeWidth="2" opacity="0.6">
+                  <animate attributeName="opacity" values="0.3;1;0.3" dur="2s" begin="1.2s" repeatCount="indefinite" />
+                </line>
+                <line x1="50" y1="170" x2="500" y2="100" stroke="var(--component-text-accent)" strokeWidth="2" opacity="0.6">
+                  <animate attributeName="opacity" values="0.3;1;0.3" dur="2s" begin="1.5s" repeatCount="indefinite" />
+                </line>
+                <line x1="50" y1="200" x2="500" y2="100" stroke="var(--component-text-accent)" strokeWidth="2" opacity="0.6">
+                  <animate attributeName="opacity" values="0.3;1;0.3" dur="2s" begin="1.8s" repeatCount="indefinite" />
+                </line>
+                {/* Single output line */}
+                <line x1="500" y1="100" x2="580" y2="100" stroke="var(--component-text-accent)" strokeWidth="3" />
+                <circle cx="580" cy="100" r="5" fill="var(--component-text-accent)" />
+              </svg>
+            </div>
+
+            <p style={{ fontSize: '18px', lineHeight: '1.8', marginTop: '40px' }}>{t.noNoise.swagger}</p>
+            <p className="subtitle" style={{ marginTop: '30px' }}>{t.noNoise.closing}</p>
+          </div>
+        </section>
+
+        {/* SECTION 2: CLAIMS - 7 UNIQUE DIFFERENTIATORS */}
+        <section className="content-centered">
+          <div className="section-content-box">
+            <div style={{ textAlign: 'center', marginBottom: '60px' }}>
+              <div style={{
+                display: 'inline-block',
+                padding: '6px 16px',
+                background: 'var(--component-panel-bg)',
+                borderRadius: '20px',
+                fontSize: '13px',
+                fontWeight: '600',
+                letterSpacing: '1px',
+                marginBottom: '20px'
+              }}>
+                {t.claims.tag}
+              </div>
+              <h2>{t.claims.title}</h2>
+              <p className="subtitle">{t.claims.subtitle}</p>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '30px' }}>
+              {t.claims.items.map((claim, i) => (
+                <div key={i} style={{
+                  padding: '30px',
+                  background: 'var(--component-panel-bg)',
+                  borderRadius: '12px',
+                  border: '1px solid rgba(255, 255, 255, 0.1)'
+                }}>
+                  <div style={{
+                    fontSize: '32px',
+                    fontWeight: '700',
+                    color: 'var(--component-text-accent)',
+                    marginBottom: '15px'
+                  }}>
+                    {String(i + 1).padStart(2, '0')}
+                  </div>
+                  <p style={{ fontSize: '16px', lineHeight: '1.6' }} dangerouslySetInnerHTML={{ __html: claim }} />
+                </div>
+              ))}
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* NO NOISE - Simplified (no animation) */}
-      <section className="nonoise">
-        <div className="container">
-          <div className="nonoise-inner">
-            <div className="stitle">{t.noNoise.title}</div>
-            <div className="ssub" style={{ margin: '0 auto 2.5rem' }}>
-              <span className="hw">{t.noNoise.subtitle}</span>
+        {/* SECTION 3: PROMISE - PERSONAS */}
+        <section className="content-centered">
+          <div className="section-content-box">
+            <div style={{ textAlign: 'center', marginBottom: '60px' }}>
+              <div style={{
+                display: 'inline-block',
+                padding: '6px 16px',
+                background: 'var(--component-panel-bg)',
+                borderRadius: '20px',
+                fontSize: '13px',
+                fontWeight: '600',
+                letterSpacing: '1px',
+                marginBottom: '20px'
+              }}>
+                {t.promise.tag}
+              </div>
+              <h2>{t.promise.title}</h2>
+              <p className="subtitle">{t.promise.subtitle}</p>
             </div>
-            <div className="hero-swagger">{t.noNoise.swagger}</div>
-            <div className="hero-swagger">{t.noNoise.closing}</div>
-          </div>
-        </div>
-      </section>
 
-      {/* CLAIMS - TODO: User needs to tweak these */}
-      <section className="claims">
-        <div className="container">
-          <div className="claims-head">
-            <div className="stag">{t.claims.tag}</div>
-            <div className="stitle">{t.claims.title}</div>
-            <div className="ssub" style={{ margin: '0 auto' }}>{t.claims.subtitle}</div>
-          </div>
-          <div className="claims-list">
-            {t.claims.items.map((item, i) => (
-              <div className="claim-item" key={i}>
-                <div className="claim-num">{i + 1}</div>
-                <div className="claim-text" dangerouslySetInnerHTML={{ __html: item }} />
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* PROMISE - Personas */}
-      <section className="promise">
-        <div className="container">
-          <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-            <div className="stag">{t.promise.tag}</div>
-            <div className="stitle">{t.promise.title}</div>
-            <div className="ssub" style={{ margin: '0 auto' }}>{t.promise.subtitle}</div>
-          </div>
-          <div className="persona-grid">
-            {t.promise.personas.map((persona, i) => (
-              <div className="persona-card" key={i}>
-                <div className="persona-role">{persona.role}</div>
-                <div className="persona-label before">{language === 'en' ? 'Before' : 'قبل'}</div>
-                <div className="persona-text">{persona.before}</div>
-                <div className="persona-divider"></div>
-                <div className="persona-label after">{language === 'en' ? 'With Josoor' : 'مع جسور'}</div>
-                <div className="persona-text">{persona.after}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* PLATFORM - Three Modes */}
-      <section className="platform">
-        <div className="container">
-          <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-            <div className="stag">{t.platform.tag}</div>
-            <div className="stitle">{t.platform.title}</div>
-            <div className="ssub" style={{ margin: '0 auto' }}>{t.platform.subtitle}</div>
-          </div>
-          <div className="mode-grid">
-            {t.platform.modes.map((mode, i) => (
-              <div className="mode-card" key={i}>
-                <h3>{mode.title}</h3>
-                <p dangerouslySetInnerHTML={{ __html: mode.desc }} />
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ARCHITECTURE */}
-      <section className="arch">
-        <div className="container">
-          <div className="arch-head">
-            <div className="stag">{t.architecture.tag}</div>
-            <div className="stitle">{t.architecture.title}</div>
-          </div>
-          <div className="arch-intro" dangerouslySetInnerHTML={{ __html: t.architecture.intro }} />
-
-          <div className="layer-stack">
-            {t.architecture.layers.map((layer, i) => (
-              <div className="layer" key={i}>
-                <div className="layer-name">{layer.name}</div>
-                <div className="layer-desc">{layer.desc}</div>
-              </div>
-            ))}
-          </div>
-
-          <div className="engine-grid">
-            {t.architecture.engines.map((engine, i) => (
-              <div className={`engine-card ${i === 0 ? 'build' : 'operate'}`} key={i}>
-                <h4>{engine.title}</h4>
-                <p dangerouslySetInnerHTML={{ __html: engine.desc }} />
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* BETA FORM */}
-      <section className="beta">
-        <div className="container">
-          <div className="stag">{t.beta.tag}</div>
-          <h2>{t.beta.title}</h2>
-          <p className="bsub">{t.beta.subtitle}</p>
-          <form className="bf" onSubmit={handleSubmit}>
-            <div className="bf-r">
-              <input type="text" name="name" placeholder={t.beta.form.name} value={formData.name} onChange={handleInputChange} required />
-              <input type="email" name="email" placeholder={t.beta.form.email} value={formData.email} onChange={handleInputChange} required />
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '40px' }}>
+              {t.promise.personas.map((persona, i) => (
+                <div key={i} style={{
+                  padding: '40px',
+                  background: 'var(--component-panel-bg)',
+                  borderRadius: '12px',
+                  border: '1px solid rgba(255, 255, 255, 0.1)'
+                }}>
+                  <h3 style={{
+                    fontSize: '20px',
+                    fontWeight: '600',
+                    marginBottom: '25px',
+                    color: 'var(--component-text-accent)'
+                  }}>
+                    {persona.role}
+                  </h3>
+                  <div style={{ marginBottom: '20px' }}>
+                    <div style={{
+                      fontSize: '13px',
+                      fontWeight: '600',
+                      color: 'rgba(255, 255, 255, 0.5)',
+                      marginBottom: '10px'
+                    }}>
+                      BEFORE
+                    </div>
+                    <p style={{ fontSize: '15px', lineHeight: '1.6', opacity: 0.7 }}>
+                      {persona.before}
+                    </p>
+                  </div>
+                  <div>
+                    <div style={{
+                      fontSize: '13px',
+                      fontWeight: '600',
+                      color: 'var(--component-text-accent)',
+                      marginBottom: '10px'
+                    }}>
+                      AFTER
+                    </div>
+                    <p style={{ fontSize: '15px', lineHeight: '1.6' }}>
+                      {persona.after}
+                    </p>
+                  </div>
+                </div>
+              ))}
             </div>
-            <div className="bf-r">
-              <input type="text" name="organization" placeholder={t.beta.form.org} value={formData.organization} onChange={handleInputChange} />
-              <select name="role" value={formData.role} onChange={handleInputChange}>
-                <option value="" disabled>{t.beta.form.role}</option>
-                {t.beta.form.roleOptions.map((opt, i) => (
-                  <option key={i} value={opt}>{opt}</option>
+          </div>
+        </section>
+
+        {/* SECTION 4: PLATFORM - 3 MODES */}
+        <section className="content-centered">
+          <div className="section-content-box">
+            <div style={{ textAlign: 'center', marginBottom: '60px' }}>
+              <div style={{
+                display: 'inline-block',
+                padding: '6px 16px',
+                background: 'var(--component-panel-bg)',
+                borderRadius: '20px',
+                fontSize: '13px',
+                fontWeight: '600',
+                letterSpacing: '1px',
+                marginBottom: '20px'
+              }}>
+                {t.platform.tag}
+              </div>
+              <h2>{t.platform.title}</h2>
+              <p className="subtitle">{t.platform.subtitle}</p>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '40px' }}>
+              {t.platform.modes.map((mode, i) => (
+                <div key={i} style={{
+                  padding: '50px 40px',
+                  background: 'var(--component-panel-bg)',
+                  borderRadius: '12px',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  textAlign: 'center'
+                }}>
+                  <h3 style={{
+                    fontSize: '28px',
+                    fontWeight: '700',
+                    marginBottom: '20px',
+                    color: 'var(--component-text-accent)'
+                  }}>
+                    {mode.title}
+                  </h3>
+                  <p style={{ fontSize: '16px', lineHeight: '1.7' }} dangerouslySetInnerHTML={{ __html: mode.desc }} />
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* SECTION 5: ARCHITECTURE */}
+        <section className="content-centered">
+          <div className="section-content-box">
+            <div style={{ textAlign: 'center', marginBottom: '60px' }}>
+              <div style={{
+                display: 'inline-block',
+                padding: '6px 16px',
+                background: 'var(--component-panel-bg)',
+                borderRadius: '20px',
+                fontSize: '13px',
+                fontWeight: '600',
+                letterSpacing: '1px',
+                marginBottom: '20px'
+              }}>
+                {t.architecture.tag}
+              </div>
+              <h2>{t.architecture.title}</h2>
+              <p className="subtitle" style={{ maxWidth: '800px', margin: '0 auto' }} dangerouslySetInnerHTML={{ __html: t.architecture.intro }} />
+            </div>
+
+            {/* Layers */}
+            <div style={{ marginBottom: '60px' }}>
+              <h3 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '30px', textAlign: 'center' }}>
+                {language === 'en' ? 'Four Layers' : 'أربع طبقات'}
+              </h3>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px' }}>
+                {t.architecture.layers.map((layer, i) => (
+                  <div key={i} style={{
+                    padding: '25px',
+                    background: 'var(--component-panel-bg)',
+                    borderRadius: '8px',
+                    border: '1px solid rgba(255, 255, 255, 0.1)'
+                  }}>
+                    <div style={{
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      color: 'var(--component-text-accent)',
+                      marginBottom: '10px'
+                    }}>
+                      L{i + 1}: {layer.name}
+                    </div>
+                    <p style={{ fontSize: '14px', opacity: 0.7 }}>{layer.desc}</p>
+                  </div>
                 ))}
-              </select>
+              </div>
             </div>
-            <button type="submit" className="bf-submit">{t.beta.form.submit}</button>
-          </form>
-          <div className="bf-note">{t.beta.note}</div>
-        </div>
-      </section>
 
-      <footer>
-        <span>{t.footer.rights}</span>
-      </footer>
+            {/* Engines */}
+            <div>
+              <h3 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '30px', textAlign: 'center' }}>
+                {language === 'en' ? 'Twin Engines' : 'محركات التوأم'}
+              </h3>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '30px' }}>
+                {t.architecture.engines.map((engine, i) => (
+                  <div key={i} style={{
+                    padding: '40px',
+                    background: 'var(--component-panel-bg)',
+                    borderRadius: '12px',
+                    border: '2px solid var(--component-text-accent)'
+                  }}>
+                    <h4 style={{
+                      fontSize: '18px',
+                      fontWeight: '700',
+                      color: 'var(--component-text-accent)',
+                      marginBottom: '15px'
+                    }}>
+                      {engine.title}
+                    </h4>
+                    <p style={{ fontSize: '15px', lineHeight: '1.6' }} dangerouslySetInnerHTML={{ __html: engine.desc }} />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* SECTION 6: BETA SIGNUP */}
+        <section className="content-centered" id="section-invite">
+          <div className="section-content-box" style={{ textAlign: 'center', maxWidth: '700px', margin: '0 auto' }}>
+            <div style={{
+              display: 'inline-block',
+              padding: '6px 16px',
+              background: 'var(--component-panel-bg)',
+              borderRadius: '20px',
+              fontSize: '13px',
+              fontWeight: '600',
+              letterSpacing: '1px',
+              marginBottom: '20px'
+            }}>
+              {t.beta.tag}
+            </div>
+            <h2>{t.beta.title}</h2>
+            <p className="subtitle">{t.beta.subtitle}</p>
+
+            <form className="invite-form" onSubmit={handleSubmit} style={{ marginTop: '50px' }}>
+              <div className="form-group">
+                <label htmlFor="name">{t.beta.form.name}</label>
+                <input type="text" id="name" name="name" value={formData.name} onChange={handleInputChange} required />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="email">{t.beta.form.email}</label>
+                <input type="email" id="email" name="email" value={formData.email} onChange={handleInputChange} required />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="organization">{t.beta.form.org}</label>
+                <input type="text" id="organization" name="organization" value={formData.organization} onChange={handleInputChange} required />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="role">{t.beta.form.role}</label>
+                <input type="text" id="role" name="role" value={formData.role} onChange={handleInputChange} required placeholder="e.g., VP Strategy, CTO, PMO Director" />
+              </div>
+
+              <button type="submit" className="button-primary" style={{ marginTop: '30px' }}>
+                {t.beta.form.submit}
+              </button>
+            </form>
+
+            <p style={{
+              marginTop: '30px',
+              fontSize: '13px',
+              color: 'rgba(255, 255, 255, 0.5)',
+              lineHeight: '1.6'
+            }}>
+              {t.beta.note}
+            </p>
+          </div>
+        </section>
+
+        {/* FOOTER */}
+        <footer style={{ padding: '40px', textAlign: 'center', color: 'var(--component-text-muted)', fontSize: '14px' }}>
+          <p>{t.footer.rights}</p>
+        </footer>
+
+      </div>
     </div>
   );
 }
