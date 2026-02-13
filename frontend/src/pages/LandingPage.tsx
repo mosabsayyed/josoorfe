@@ -287,6 +287,12 @@ export default function LandingPage() {
         font-family: var(--component-font-heading-ar);
       }
 
+      /* Arabic: letter-spacing breaks ligatures (connected letters appear broken) */
+      .landing-page[dir="rtl"] * {
+        letter-spacing: 0 !important;
+        text-transform: none !important;
+      }
+
       .landing-page * {
         box-sizing: border-box;
       }
