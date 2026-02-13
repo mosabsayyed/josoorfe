@@ -58,8 +58,8 @@ export default function Header() {
       alignItems: 'center',
       justifyContent: 'space-between',
       padding: isMobile ? '12px 16px' : '16px 40px',
-      background: 'rgba(17, 24, 39, 0.6)',
-      backdropFilter: 'blur(20px)',
+      background: isMobile ? '#111827' : 'rgba(17, 24, 39, 0.6)',
+      backdropFilter: isMobile ? 'none' : 'blur(20px)',
       borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
       color: '#F9FAFB',
     }}>
