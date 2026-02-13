@@ -88,7 +88,7 @@
 /* Layer text styling - ENLARGED */
 .py-n {
   font-family: var(--component-font-heading);
-  font-size: 20px;
+  font-size: clamp(14px, 2.5vw, 20px);
   font-weight: 700;
   color: var(--component-text-primary);
 }
@@ -129,7 +129,7 @@
 
 /* ═══ BACK FACE: Ontology Mapping ═══ */
 .back-h {
-  font-size: 22px;
+  font-size: clamp(16px, 3vw, 22px);
   font-weight: 700;
   color: var(--component-text-accent);
   text-align: center;
@@ -390,12 +390,13 @@
   }
 
   .pyr-inner {
-    min-height: 520px;
+    min-height: 480px;
   }
 
   .pyr-face {
-    min-height: 520px;
+    min-height: 480px;
     overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   /* Back face content is dense on mobile — allow scroll and tighten spacing */

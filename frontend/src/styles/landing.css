@@ -480,6 +480,17 @@
   text-transform: uppercase;
 }
 
+/* ═══ Beta Form Rows — Mobile-First ═══ */
+.bf-r {
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 480px) {
+  .bf-r {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
 /* ═══════════════════════════════
    MOBILE RESPONSIVE — Landing Page
    ═══════════════════════════════ */
@@ -589,6 +600,19 @@
   .mc-mock {
     border-left: none !important;
     border-top: 1px solid rgba(255, 255, 255, 0.06);
+    max-height: 200px;
+    overflow-y: auto;
+  }
+
+  /* Carousel controls - 44px touch target */
+  .cc-btn {
+    width: 44px !important;
+    height: 44px !important;
+  }
+
+  .cc-dot {
+    min-height: 10px;
+    min-width: 10px;
   }
 
   /* Watch mockup */
@@ -608,8 +632,7 @@
   }
 
   /* Claims flex items */
-  .claim-item-hover,
-  .bf-r {
+  .claim-item-hover {
     grid-template-columns: 1fr !important;
   }
 }

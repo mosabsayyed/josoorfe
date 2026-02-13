@@ -8,7 +8,7 @@ interface NoNoiseProps {
 
 export default function NoNoise({ content }: NoNoiseProps) {
   return (
-    <section className="content-centered">
+    <section className="content-centered" id="nonoise">
       <div style={{ textAlign: 'center', maxWidth: '800px', margin: '0 auto' }}>
         {/* Title - matching v10 style */}
         <h2 style={{
@@ -39,7 +39,7 @@ export default function NoNoise({ content }: NoNoiseProps) {
           height: '200px',
           margin: '0 auto'
         }}>
-          <svg width="100%" height="100%" viewBox="0 0 600 180" preserveAspectRatio="xMidYMid meet">
+          <svg width="100%" height="100%" viewBox="0 0 660 180" preserveAspectRatio="xMidYMid meet">
             {/* Left label - enforcing 14px minimum */}
             <text x="18" y="20" style={{
               fontFamily: 'var(--font-mono)',

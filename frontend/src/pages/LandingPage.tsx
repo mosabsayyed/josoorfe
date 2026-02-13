@@ -258,7 +258,7 @@ export default function LandingPage() {
       html, body {
         overflow-y: auto !important; /* FORCE SCROLLING */
         height: auto !important;
-        min-height: 100vh;
+        min-height: 100dvh;
       }
 
       .landing-page {
@@ -268,7 +268,7 @@ export default function LandingPage() {
         overflow-x: hidden;
         overflow-y: auto;
         line-height: 1.5;
-        min-height: 100vh;
+        min-height: 100dvh;
         position: relative;
       }
 

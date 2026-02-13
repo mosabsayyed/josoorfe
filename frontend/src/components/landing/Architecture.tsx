@@ -15,7 +15,7 @@ export default function Architecture({ content, language }: ArchitectureProps) {
   };
 
   return (
-    <section className="content-centered">
+    <section className="content-centered" id="arch">
       <div className="section-content-box">
         <div style={{ textAlign: 'center', marginBottom: '24px' }}>
           <div style={{

@@ -19,7 +19,7 @@ export default function Platform({ content }: PlatformProps) {
   ];
 
   return (
-    <section className="content-centered">
+    <section className="content-centered" id="platform">
       <div className="section-content-box">
         <div style={{ textAlign: 'center', marginBottom: '12px' }}>
           <div style={{

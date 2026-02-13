@@ -106,7 +106,6 @@ export default function BetaForm({ content, language }: BetaFormProps) {
             className="bf-r"
             style={{
               display: 'grid',
-              gridTemplateColumns: '1fr 1fr',
               gap: '10px'
             }}
           >
@@ -161,7 +160,6 @@ export default function BetaForm({ content, language }: BetaFormProps) {
             className="bf-r"
             style={{
               display: 'grid',
-              gridTemplateColumns: '1fr 1fr',
               gap: '10px'
             }}
           >

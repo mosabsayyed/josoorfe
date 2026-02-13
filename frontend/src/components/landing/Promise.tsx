@@ -188,7 +188,7 @@ export default function Promise({ content }: PromiseProps) {
   };
 
   return (
-    <section className="content-centered">
+    <section className="content-centered" id="promise">
       <div className="section-content-box">
         <div style={{ textAlign: 'center', marginBottom: '12px' }}>
           <div style={{

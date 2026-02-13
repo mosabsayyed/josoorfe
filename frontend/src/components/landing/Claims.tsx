@@ -8,7 +8,7 @@ interface ClaimsProps {
 
 export default function Claims({ content }: ClaimsProps) {
   return (
-    <section className="content-centered">
+    <section className="content-centered" id="claims">
       <div className="section-content-box">
         <div style={{ textAlign: 'center', marginBottom: '12px' }}>
           <div style={{
