@@ -58,19 +58,22 @@ export function calculateHeatmapColor(l3: L3Capability, overlayType: OverlayType
             break;
     }
 
-    // Convert delta percentage to intensity (0-1 scale)
-    let intensity = 0;
-    if (deltaPercent < 5) {
-        intensity = 0; // Green
-    } else if (deltaPercent < 15) {
-        intensity = (deltaPercent - 5) / 10 * 0.5 + 0.25;
+    // Convert delta percentage to color using spec thresholds:
+    // GREEN < 35%, AMBER 35-65%, RED > 65%
+    if (deltaPercent < 35) {
+        // GREEN
+        return 'rgba(16, 185, 129, 0.6)';
+    } else if (deltaPercent < 65) {
+        // AMBER — interpolate between amber and red
+        const t = (deltaPercent - 35) / 30; // 0 to 1 within amber range
+        const r = Math.round(245 - t * 6);   // 245 → 239
+        const g = Math.round(158 - t * 90);  // 158 → 68
+        const b = Math.round(11 + t * 57);   // 11 → 68
+        return `rgba(${r}, ${g}, ${b}, 0.6)`;
     } else {
-        intensity = Math.min((deltaPercent - 15) / 35 * 0.5 + 0.75, 1);
+        // RED
+        return 'rgba(239, 68, 68, 0.6)';
     }
-
-    const red = Math.round(intensity * 239);
-    const green = Math.round((1 - intensity) * 185);
-    return `rgba(${red}, ${green}, 68, 0.6)`;
 }
 
 // Get overlay content to display on L3 cell
