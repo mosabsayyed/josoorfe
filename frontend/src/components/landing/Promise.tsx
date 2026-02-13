@@ -229,23 +229,24 @@ export default function Promise({ content }: PromiseProps) {
                   style={getCardStyles(pos)}
                   onClick={() => handleCardClick(pos)}
                 >
-                  {/* Persona Photo Placeholder */}
-                  <div
+                  {/* Persona Photo */}
+                  <img
+                    src={`/att/personas/${
+                      i === 0 ? 'scenario_vice_minister_v3.png' :
+                      i === 1 ? 'scenario_stakeholder_v2.png' :
+                      i === 2 ? 'scenario_strategy_manager_v2.png' :
+                      'scenario_pmo_director_v4.png'
+                    }`}
+                    alt={persona.role}
                     style={{
                       width: '100%',
                       height: '260px',
-                      background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02))',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: '14px',
-                      color: 'var(--text-muted, rgba(255, 255, 255, 0.5))',
+                      objectFit: 'cover',
+                      objectPosition: 'center 20%',
                       filter: pos === 0 ? 'brightness(0.95) saturate(1)' : 'brightness(0.85) saturate(0.9)',
                       transition: 'filter 0.4s',
                     }}
-                  >
-                    Photo: {persona.role}
-                  </div>
+                  />
 
                   {/* Card Body */}
                   <div style={{ padding: '1.1rem 1.3rem' }}>

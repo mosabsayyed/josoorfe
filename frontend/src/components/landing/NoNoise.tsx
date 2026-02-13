@@ -102,10 +102,22 @@ export default function NoNoise({ content }: NoNoiseProps) {
               r="5"
               fill="var(--component-text-accent)"
               style={{
-                filter: 'drop-shadow(0 0 8px rgba(244,187,48,0.6))',
-                animation: 'pulseGlow 2s ease-in-out infinite'
+                filter: 'drop-shadow(0 0 8px rgba(244,187,48,0.6))'
               }}
-            />
+            >
+              <animate
+                attributeName="r"
+                values="5;8;5"
+                dur="2s"
+                repeatCount="indefinite"
+              />
+              <animate
+                attributeName="opacity"
+                values="1;0.6;1"
+                dur="2s"
+                repeatCount="indefinite"
+              />
+            </circle>
 
             {/* Right label */}
             <text x="580" y="82" style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', fill: 'var(--component-text-accent)', textAnchor: 'start', fontWeight: 600 }}>
@@ -113,19 +125,6 @@ export default function NoNoise({ content }: NoNoiseProps) {
             </text>
           </svg>
         </div>
-
-        <style>{`
-          @keyframes pulseGlow {
-            0%, 100% {
-              r: 5;
-              opacity: 1;
-            }
-            50% {
-              r: 8;
-              opacity: 0.6;
-            }
-          }
-        `}</style>
 
         <p style={{ fontSize: '18px', lineHeight: '1.8', marginTop: '40px' }}>{content.swagger}</p>
         <p className="subtitle" style={{ marginTop: '30px' }}>{content.closing}</p>

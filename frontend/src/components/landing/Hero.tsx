@@ -1,5 +1,6 @@
 import React from 'react';
 import { HeroContent } from './types';
+import Sparkle from './Sparkle';
 
 interface HeroProps {
   content: HeroContent;
@@ -12,32 +13,12 @@ export default function Hero({ content, language }: HeroProps) {
       minHeight: '100vh',
       display: 'flex',
       alignItems: 'center',
-      paddingTop: '4rem',
+      paddingTop: '6rem',
       position: 'relative',
       overflow: 'hidden'
     }}>
-      {/* Background video - exact v10 structure */}
-      <video
-        className="hero-video"
-        autoPlay
-        muted
-        loop
-        playsInline
-        style={{
-          position: 'absolute',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          minWidth: '100%',
-          minHeight: '100%',
-          width: 'auto',
-          height: 'auto',
-          objectFit: 'cover',
-          zIndex: 0
-        }}
-      >
-        {/* <source src="josoor-hero-bg.mp4" type="video/mp4" /> */}
-      </video>
+      {/* Sparkle background with hero image */}
+      <Sparkle imageSrc="/att/hero-bg.jpg" dotCount={600} />
 
       {/* Overlay - exact v10 gradients */}
       <div className="hero-overlay" style={{
