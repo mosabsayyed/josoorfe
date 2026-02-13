@@ -90,24 +90,11 @@ export function getOverlayContent(l3: L3Capability, overlayType: OverlayType): s
             return null;
 
         case 'footprint-stress':
-            const org = l3.org_gap || 0;
-            const process = l3.process_gap || 0;
-            const it = l3.it_gap || 0;
-            let dominant = '';
-            let severity = 0;
-
-            if (org >= process && org >= it) {
-                dominant = 'O';
-                severity = Math.floor(org / 25);
-            } else if (process >= org && process >= it) {
-                dominant = 'P';
-                severity = Math.floor(process / 25);
-            } else {
-                dominant = 'T';
-                severity = Math.floor(it / 25);
-            }
-
-            return `${dominant}${Math.max(1, severity)}`;
+            // Use pre-calculated dominant dimension and severity from enterpriseService
+            const dominant = (l3 as any)._stress_dominant || '';
+            const severity = (l3 as any)._stress_severity || 0;
+            if (!dominant || severity === 0) return null;
+            return `${dominant}${severity}`;
 
         case 'change-saturation':
             const loadBand =

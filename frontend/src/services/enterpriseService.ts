@@ -692,60 +692,67 @@ function enrichWithRiskData(
   riskNodes: NeoGraphNode[],
   mode: 'build' | 'execute' | null
 ): void {
-  // Step 1: Find matching risk using composite key
-  // Business ID + year must match. Quarter matching is relaxed (pick closest).
-  const riskBusinessId = (r: NeoGraphNode) => (r as any).businessId || r.id;
+  // Helper: normalize quarter to integer for comparison
+  // Risk nodes have quarter as string "1", capabilities as int 1 or Neo4j {low,high}
+  const normalizeQuarter = (q: any): number => {
+    if (q == null) return 0;
+    if (typeof q === 'string') return parseInt(q) || 0;
+    if (typeof q === 'number') return q;
+    if (typeof q === 'object' && 'low' in q) return q.low;
+    return 0;
+  };
+
+  const normalizeYear = (y: any): number => {
+    if (y == null) return 0;
+    if (typeof y === 'number') return y;
+    if (typeof y === 'object' && 'low' in y) return y.low;
+    return parseInt(String(y)) || 0;
+  };
+
+  const getRiskBizId = (r: NeoGraphNode) => (r as any).businessId || r.id;
+  const l3Year = l3Cap.year;
   const l3Quarter = typeof l3Cap.quarter === 'string' ? parseInt(l3Cap.quarter.replace('Q', '')) : l3Cap.quarter;
 
-  // Try exact match first (id + year + quarter)
+  // Step 1: Find matching risk — exact match (id + year + quarter)
   let matchingRisk = riskNodes.find(risk =>
-    riskBusinessId(risk) === l3Cap.id &&
-    getNeo4jInt(risk.year) === l3Cap.year &&
-    getNeo4jInt(risk.quarter) === l3Quarter
+    getRiskBizId(risk) === l3Cap.id &&
+    normalizeYear(risk.year) === l3Year &&
+    normalizeQuarter(risk.quarter) === l3Quarter
   );
 
-  // Fall back to id + year match (ignore quarter — some risks may not have quarter set)
+  // Fall back: id + year (quarter may differ or be missing)
   if (!matchingRisk) {
     matchingRisk = riskNodes.find(risk =>
-      riskBusinessId(risk) === l3Cap.id &&
-      getNeo4jInt(risk.year) === l3Cap.year
+      getRiskBizId(risk) === l3Cap.id &&
+      normalizeYear(risk.year) === l3Year
     );
   }
 
-  // Last resort: just match by id (for cumulative view)
+  // Last resort: just id (cumulative view)
   if (!matchingRisk) {
     matchingRisk = riskNodes.find(risk =>
-      riskBusinessId(risk) === l3Cap.id
+      getRiskBizId(risk) === l3Cap.id
     );
   }
 
-  if (!matchingRisk) {
-    // No matching risk data - gracefully skip enrichment
-    return;
+  if (!matchingRisk) return;
+
+  // Step 2: Always populate raw scores (used by multiple overlays)
+  l3Cap.people_score = matchingRisk.people_score;
+  l3Cap.process_score = matchingRisk.process_score;
+  l3Cap.tools_score = matchingRisk.tools_score;
+  l3Cap.likelihood_of_delay = matchingRisk.likelihood_of_delay;
+
+  // risk_score in DB = expected_delay_days (likelihood_of_delay × delay_days)
+  l3Cap.expected_delay_days = Math.round(matchingRisk.risk_score || 0);
+  l3Cap._raw_delay_days = normalizeYear(matchingRisk.delay_days); // reuse normalizer for ints
+
+  // operational_health_score in DB is 1-5 scale (average of people/process/tools)
+  // We need it as percentage for overlays
+  const rawHealth = matchingRisk.operational_health_score;
+  if (rawHealth != null) {
+    l3Cap.operational_health_score = ((rawHealth - 1) / 4) * 100;
   }
-
-  // Step 2: Populate mode-specific fields
-
-  if (mode === 'build') {
-    // BUILD MODE: Delay/exposure during implementation phase
-    l3Cap.exposure_percent = matchingRisk.build_exposure_pct || undefined;
-    l3Cap.expected_delay_days = getNeo4jInt(matchingRisk.expected_delay_days) || getNeo4jInt(matchingRisk.risk_score);
-    l3Cap.likelihood_of_delay = matchingRisk.likelihood_of_delay;
-    // Raw component data for deeper analysis
-    l3Cap._raw_delay_days = getNeo4jInt(matchingRisk.delay_days);
-  } else if (mode === 'execute') {
-    // EXECUTE MODE: Operational health and performance metrics
-    l3Cap.exposure_percent = matchingRisk.operate_exposure_pct_effective || matchingRisk.operate_exposure_pct || undefined;
-    l3Cap.operational_health_score = matchingRisk.operational_health_score;
-    l3Cap.people_score = matchingRisk.people_score;
-    l3Cap.process_score = matchingRisk.process_score;
-    l3Cap.tools_score = matchingRisk.tools_score;
-  }
-
-  // Both modes: store raw scores for footprint stress overlay
-  if (!l3Cap.people_score && matchingRisk.people_score) l3Cap.people_score = matchingRisk.people_score;
-  if (!l3Cap.process_score && matchingRisk.process_score) l3Cap.process_score = matchingRisk.process_score;
-  if (!l3Cap.tools_score && matchingRisk.tools_score) l3Cap.tools_score = matchingRisk.tools_score;
 }
 
 /**
@@ -754,63 +761,49 @@ function enrichWithRiskData(
  */
 function calculateOverlayFields(l3Cap: any, mode: 'build' | 'execute' | null): void {
   // ── Overlay 1: Risk Exposure ──
+  // Spec: BUILD → build_exposure_pct = clamp01(risk_score / red_delay_days) × 100
+  //        EXECUTE → operate_exposure = 100 - operational_health_pct
+
+  const RED_DELAY_DAYS = 72; // from RISK_LOGIC_SPEC.md
+
   if (mode === 'build') {
-    // BUILD: build_exposure_pct = clamp01(expected_delay_days / red_delay_days) × 100
-    const likelihoodOfDelay = l3Cap.likelihood_of_delay || 0;
-    const delayDays = l3Cap.expected_delay_days || 0;
-    // If expected_delay_days wasn't set but we have raw likelihood + delay, calculate it
-    if (!l3Cap.expected_delay_days && likelihoodOfDelay > 0) {
-      l3Cap.expected_delay_days = Math.round(likelihoodOfDelay * delayDays);
-    }
-    // Use risk_score as expected_delay_days if available (spec: risk_score = likelihood × delay)
-    if (!l3Cap.exposure_percent) {
-      const redDelayDays = 72; // from spec default
-      const expectedDelay = l3Cap.expected_delay_days || 0;
-      l3Cap.exposure_percent = Math.min(100, Math.max(0, (expectedDelay / redDelayDays) * 100));
-    }
+    // risk_score = expected_delay_days = likelihood_of_delay × delay_days (already stored)
+    const expectedDelay = l3Cap.expected_delay_days || 0;
+    l3Cap.exposure_percent = Math.min(100, Math.max(0, (expectedDelay / RED_DELAY_DAYS) * 100));
   } else if (mode === 'execute') {
-    // EXECUTE: operate_exposure = 100 - operational_health
-    // operational_health = avg of people/process/tools as percentages
-    const ps = l3Cap.people_score;
-    const prs = l3Cap.process_score;
-    const ts = l3Cap.tools_score;
-
-    if (ps != null && prs != null && ts != null) {
-      const peoplePct = ((ps - 1) / 4) * 100;
-      const processPct = ((prs - 1) / 4) * 100;
-      const toolsPct = ((ts - 1) / 4) * 100;
-      const healthPct = (peoplePct + processPct + toolsPct) / 3;
-
-      l3Cap.operational_health_score = healthPct;
-      if (!l3Cap.exposure_percent) {
-        l3Cap.exposure_percent = Math.max(0, 100 - healthPct);
-      }
-
-      // Exposure trend
-      if (l3Cap.health_history && l3Cap.health_history.length >= 3) {
-        const h = l3Cap.health_history;
-        if (h[0] > h[1] && h[1] > h[2]) {
-          l3Cap.exposure_trend = 'declining';
-        } else if (h[0] < h[1] && h[1] < h[2]) {
-          l3Cap.exposure_trend = 'improving';
-        } else {
-          l3Cap.exposure_trend = 'stable';
-        }
-      }
+    // operational_health_score is already converted to 0-100 in enrichWithRiskData
+    const healthPct = l3Cap.operational_health_score;
+    if (healthPct != null) {
+      l3Cap.exposure_percent = Math.max(0, 100 - healthPct);
     }
   }
 
   // ── Overlay 3: Footprint Stress (imbalance across People/Process/Tools) ──
+  // Spec: range / 4 × 100, where 4 is max possible range on 1-5 scale
   const ps = l3Cap.people_score;
   const prs = l3Cap.process_score;
   const ts = l3Cap.tools_score;
 
   if (ps != null && prs != null && ts != null) {
+    const maxScore = Math.max(ps, prs, ts);
+    const minScore = Math.min(ps, prs, ts);
+    const range = maxScore - minScore;
+    const stressPct = (range / 4) * 100; // 4 = max possible range (5-1)
+
     const mean = (ps + prs + ts) / 3;
-    // Convert gaps to percentage of max range (4 = max range on 1-5 scale)
-    l3Cap.org_gap = (Math.abs(ps - mean) / 4) * 100;
-    l3Cap.process_gap = (Math.abs(prs - mean) / 4) * 100;
-    l3Cap.it_gap = (Math.abs(ts - mean) / 4) * 100;
+    l3Cap.org_gap = stressPct; // Use stress_pct for color intensity
+    l3Cap.process_gap = stressPct;
+    l3Cap.it_gap = stressPct;
+
+    // Identify which dimension is the outlier (for display label)
+    const orgGap = Math.abs(ps - mean);
+    const processGap = Math.abs(prs - mean);
+    const itGap = Math.abs(ts - mean);
+
+    // Store individual gaps for tooltip display
+    l3Cap._stress_dominant = orgGap >= processGap && orgGap >= itGap ? 'O' :
+      processGap >= orgGap && processGap >= itGap ? 'P' : 'T';
+    l3Cap._stress_severity = Math.ceil(range);
   }
 }
 
