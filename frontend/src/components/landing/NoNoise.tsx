@@ -9,15 +9,44 @@ interface NoNoiseProps {
 export default function NoNoise({ content }: NoNoiseProps) {
   return (
     <section className="content-centered">
-      <div className="section-content-box" style={{ textAlign: 'center', maxWidth: '800px', margin: '0 auto' }}>
-        <h2 style={{ marginBottom: '8px', fontSize: '48px', fontWeight: 800 }}>{content.title}</h2>
-        <p className="subtitle" style={{ margin: '0 auto 32px', fontSize: '16px', lineHeight: '1.65' }}>{content.subtitle}</p>
+      <div style={{ textAlign: 'center', maxWidth: '800px', margin: '0 auto' }}>
+        {/* Title - matching v10 style */}
+        <h2 style={{
+          fontFamily: 'var(--font-heading, "IBM Plex Sans")',
+          fontSize: '48px',
+          fontWeight: 800,
+          marginBottom: '16px'
+        }}>
+          {content.title}
+        </h2>
+
+        {/* Subtitle - proper spacing */}
+        <p style={{
+          fontSize: '16px',
+          lineHeight: '1.65',
+          margin: '0 auto 40px',
+          maxWidth: '700px',
+          color: 'var(--component-text-secondary)'
+        }}>
+          {content.subtitle}
+        </p>
 
         {/* Signal convergence animation - from v10 */}
-        <div style={{ margin: '0 auto', display: 'flex', justifyContent: 'center', alignItems: 'center', maxWidth: '600px', height: '200px' }}>
-          <svg width="600" height="180" viewBox="0 0 600 180" style={{ maxWidth: '100%' }} preserveAspectRatio="xMidYMid meet">
-            {/* Left label */}
-            <text x="18" y="18" style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', fill: 'var(--component-text-muted)', textAnchor: 'start' }}>
+        <div style={{
+          position: 'relative',
+          width: '100%',
+          maxWidth: '600px',
+          height: '200px',
+          margin: '0 auto'
+        }}>
+          <svg width="100%" height="100%" viewBox="0 0 600 180" preserveAspectRatio="xMidYMid meet">
+            {/* Left label - enforcing 14px minimum */}
+            <text x="18" y="20" style={{
+              fontFamily: 'var(--font-mono)',
+              fontSize: '14px',
+              fill: 'var(--component-text-muted)',
+              textAnchor: 'start'
+            }}>
               scattered inputs
             </text>
 
@@ -108,15 +137,40 @@ export default function NoNoise({ content }: NoNoiseProps) {
               }}
             />
 
-            {/* Right label */}
-            <text x="580" y="82" style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', fill: 'var(--component-text-accent)', textAnchor: 'start', fontWeight: 600 }}>
+            {/* Right label - enforcing 14px minimum */}
+            <text x="580" y="86" style={{
+              fontFamily: 'var(--font-mono)',
+              fontSize: '14px',
+              fill: 'var(--component-text-accent)',
+              textAnchor: 'start',
+              fontWeight: 600
+            }}>
               one signal
             </text>
           </svg>
         </div>
 
-        <p style={{ fontSize: '26px', fontWeight: 800, lineHeight: '1.3', marginTop: '32px', fontFamily: 'var(--font-heading, "IBM Plex Sans")' }}>{content.swagger}</p>
-        <p className="subtitle" style={{ marginTop: '32px', fontSize: '16px' }}>{content.closing}</p>
+        {/* Swagger text - v10 style */}
+        <p style={{
+          fontSize: '28px',
+          fontWeight: 800,
+          lineHeight: '1.3',
+          marginTop: '48px',
+          fontFamily: 'var(--font-heading, "IBM Plex Sans")',
+          color: 'var(--component-text-primary)'
+        }}>
+          {content.swagger}
+        </p>
+
+        {/* Closing text */}
+        <p style={{
+          marginTop: '32px',
+          fontSize: '16px',
+          lineHeight: '1.65',
+          color: 'var(--component-text-secondary)'
+        }}>
+          {content.closing}
+        </p>
       </div>
     </section>
   );

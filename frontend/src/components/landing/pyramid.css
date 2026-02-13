@@ -2,19 +2,19 @@
    3D FLIPPABLE PYRAMID
    ═══════════════════════════════ */
 
-/* Pyramid container with 3D perspective */
+/* Pyramid container with 3D perspective - ENLARGED */
 .pyr-flip {
-  perspective: 1300px;
-  max-width: 680px;
+  perspective: 1500px;
+  max-width: 880px;
   margin: 0 auto;
   cursor: pointer;
 }
 
-/* Inner container with 3D transform */
+/* Inner container with 3D transform - ENLARGED */
 .pyr-inner {
   position: relative;
   width: 100%;
-  min-height: 420px;
+  min-height: 540px;
   transform-style: preserve-3d;
   transition: transform 0.85s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -24,11 +24,11 @@
   transform: rotateY(180deg);
 }
 
-/* Both faces (front and back) */
+/* Both faces (front and back) - ENLARGED */
 .pyr-face {
   position: absolute;
   width: 100%;
-  min-height: 420px;
+  min-height: 540px;
   backface-visibility: hidden;
   border-radius: 16px;
   border: 1px solid rgba(255, 255, 255, 0.06);
@@ -85,32 +85,32 @@
 .py-3 { width: 75%; }
 .py-4 { width: 100%; }
 
-/* Layer text styling */
+/* Layer text styling - ENLARGED */
 .py-n {
   font-family: var(--component-font-heading);
-  font-size: 16px;
+  font-size: 20px;
   font-weight: 700;
   color: var(--component-text-primary);
 }
 
 .py-d {
-  font-size: 14px;
+  font-size: 16px;
   color: var(--component-text-muted);
 }
 
-/* Node badges inside layers */
+/* Node badges inside layers - ENLARGED */
 .py-nodes {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.15rem;
+  gap: 0.25rem;
   justify-content: center;
-  margin-top: 0.15rem;
+  margin-top: 0.35rem;
 }
 
 .py-node {
-  font-size: 14px;
-  padding: 0.12rem 0.3rem;
-  border-radius: 3px;
+  font-size: 15px;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
   background: rgba(91, 155, 213, 0.06);
   color: #5B9BD5;
   border: 1px solid rgba(91, 155, 213, 0.1);
@@ -129,11 +129,11 @@
 
 /* ═══ BACK FACE: Ontology Mapping ═══ */
 .back-h {
-  font-size: 18px;
+  font-size: 22px;
   font-weight: 700;
   color: var(--component-text-accent);
   text-align: center;
-  margin-bottom: 0.6rem;
+  margin-bottom: 0.8rem;
 }
 
 /* Ontology row container */
@@ -153,12 +153,12 @@
   background: linear-gradient(180deg, rgba(244, 187, 48, 0.05), var(--component-bg-secondary));
 }
 
-/* Row label above each ontology row */
+/* Row label above each ontology row - ENLARGED */
 .ont-row-label {
-  font-size: 12px;
+  font-size: 14px;
   color: var(--component-text-muted);
   text-align: center;
-  margin-bottom: 0.05rem;
+  margin-bottom: 0.15rem;
   font-family: var(--component-font-mono);
   letter-spacing: 0.03em;
 }
@@ -187,11 +187,11 @@
   color: var(--component-text-accent);
 }
 
-/* Ontology node badges */
+/* Ontology node badges - ENLARGED */
 .on {
-  font-size: 12px;
-  padding: 0.15rem 0.35rem;
-  border-radius: 3px;
+  font-size: 14px;
+  padding: 0.3rem 0.6rem;
+  border-radius: 4px;
   text-align: center;
   border: 1px solid;
   display: inline-block;

@@ -370,7 +370,7 @@ export default function LandingPage() {
       }
 
       section {
-        padding: 0.75rem 2rem;
+        padding: 2rem 2rem;
         position: relative;
         background: transparent;
       }
@@ -659,8 +659,14 @@ export default function LandingPage() {
         <BetaForm content={t.beta} language={language} />
 
         {/* FOOTER */}
-        <footer style={{ padding: '40px', textAlign: 'center', color: 'var(--component-text-muted)', fontSize: '14px' }}>
-          <p>{t.footer.rights}</p>
+        <footer style={{
+          padding: '24px 16px',
+          textAlign: 'center',
+          color: 'var(--component-text-muted)',
+          fontSize: '14px',
+          marginTop: '0'
+        }}>
+          <p style={{ margin: 0 }}>{t.footer.rights}</p>
         </footer>
       </div>
     </div>

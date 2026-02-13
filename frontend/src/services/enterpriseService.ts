@@ -754,9 +754,8 @@ function enrichWithRiskData(
     l3Cap.operational_health_score = ((rawHealth - 1) / 4) * 100;
   }
 
-  // Per-node thresholds from DB: achievement % thresholds
-  // threshold_green=85 means achievement ≥85% of target → green
-  // threshold_amber=70 means achievement ≥70% of target → amber
+  // Per-node thresholds from DB (Enterprise_Ontology_SST_v1.2 Section 5.4):
+  // Override default band_green_max_pct=35 / band_amber_max_pct=65 if populated
   if (matchingRisk.threshold_green != null) {
     l3Cap._threshold_green = matchingRisk.threshold_green;
     l3Cap._threshold_amber = matchingRisk.threshold_amber;

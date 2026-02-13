@@ -51,6 +51,31 @@ export default function Sparkle({ imageSrc, dotCount = 600 }: SparkleProps) {
         );
       };
 
+      // Extract map contour for border drawing
+      const getMapContour = (): { x: number; y: number }[] => {
+        const contour: { x: number; y: number }[] = [];
+        const step = 4; // Sample every 4 pixels for performance
+
+        // Scan image bounds to find edge pixels
+        for (let y = Math.floor(oy); y < Math.floor(oy + ih); y += step) {
+          for (let x = Math.floor(ox); x < Math.floor(ox + iw); x += step) {
+            if (isDark(x, y)) {
+              // Check if this is an edge pixel (has at least one non-dark neighbor)
+              const isEdge =
+                !isDark(x - step, y) || !isDark(x + step, y) ||
+                !isDark(x, y - step) || !isDark(x, y + step);
+
+              if (isEdge) {
+                contour.push({ x, y });
+              }
+            }
+          }
+        }
+        return contour;
+      };
+
+      const mapContour = getMapContour();
+
       // Generate sparkle dots at dark pixel locations
       interface Dot {
         x: number;
@@ -104,17 +129,34 @@ export default function Sparkle({ imageSrc, dotCount = 600 }: SparkleProps) {
         ctx.globalAlpha = 0.55;
         ctx.drawImage(img, ox, oy, iw, ih);
 
-        // Draw subtle border
-        ctx.globalAlpha = 0.3;
-        ctx.strokeStyle = 'rgba(244, 187, 48, 0.4)';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(ox, oy, iw, ih);
+        // Draw border along actual map contour
+        if (mapContour.length > 0) {
+          ctx.globalAlpha = 0.5;
+          ctx.strokeStyle = 'rgba(244, 187, 48, 0.6)';
+          ctx.lineWidth = 3;
+          ctx.lineCap = 'round';
+          ctx.lineJoin = 'round';
 
-        // Apply subtle edge fade gradient
-        ctx.globalCompositeOperation = 'destination-out';
-        ctx.fillStyle = gradient;
-        ctx.fillRect(0, 0, W, H);
-        ctx.globalCompositeOperation = 'source-over';
+          // Draw contour as connected path
+          ctx.beginPath();
+          ctx.moveTo(mapContour[0].x, mapContour[0].y);
+          for (let i = 1; i < mapContour.length; i++) {
+            ctx.lineTo(mapContour[i].x, mapContour[i].y);
+          }
+          ctx.stroke();
+
+          // Apply blur effect around the map contour
+          ctx.globalAlpha = 0.15;
+          ctx.lineWidth = 8;
+          ctx.filter = 'blur(6px)';
+          ctx.beginPath();
+          ctx.moveTo(mapContour[0].x, mapContour[0].y);
+          for (let i = 1; i < mapContour.length; i++) {
+            ctx.lineTo(mapContour[i].x, mapContour[i].y);
+          }
+          ctx.stroke();
+          ctx.filter = 'none';
+        }
 
         ctx.restore();
 

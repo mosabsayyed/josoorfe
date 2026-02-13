@@ -59,20 +59,24 @@ export function calculateHeatmapColor(l3: L3Capability, overlayType: OverlayType
     }
 
     if (overlayType === 'risk-exposure') {
-        // Per ENTERPRISE_DESK_OVERLAY_SPECIFICATION.md:
-        // exposure_percent is calculated from risk data (delay-based for BUILD, health-based for EXECUTE)
-        // Thresholds: <5% GREEN, 5-15% AMBER, ≥15% RED
+        // Per Enterprise_Ontology_SST_v1.2.md Section 5.4:
+        // Bands: band_green_max_pct=35, band_amber_max_pct=65
+        // EntityRisk.threshold_green/amber/red may override if populated
         const exposure = l3.exposure_percent ?? deltaPercent;
-        if (exposure < 5) {
+        // TODO: Use per-entity thresholds once risk engine seeds correct band values
+        // Current DB values (85/70) are from old interpretation — ignore for now
+        const greenMax = 35;  // SST default: band_green_max_pct
+        const amberMax = 65;  // SST default: band_amber_max_pct
+        if (exposure < greenMax) {
             return 'rgba(16, 185, 129, 0.6)';  // GREEN
-        } else if (exposure < 15) {
+        } else if (exposure < amberMax) {
             return 'rgba(245, 158, 11, 0.6)';  // AMBER
         } else {
             return 'rgba(239, 68, 68, 0.6)';   // RED
         }
     }
 
-    // For other overlays: use deltaPercent with spec default bands
+    // For other overlays: use deltaPercent with SST default bands
     // band_green_max_pct: 35, band_amber_max_pct: 65
     if (deltaPercent < 35) {
         return 'rgba(16, 185, 129, 0.6)';  // GREEN

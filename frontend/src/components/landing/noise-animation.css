@@ -2,20 +2,33 @@
    NoNoise Section Animations
    ================================= */
 
-/* Pulse animation for convergence point */
-@keyframes sigDotPulse {
+/* Pulse animation for convergence point - v10 style */
+@keyframes pulseGlow {
   0%, 100% {
-    transform: scale(1);
     opacity: 1;
+    filter: drop-shadow(0 0 8px rgba(244, 187, 48, 0.6));
   }
   50% {
-    transform: scale(1.6);
     opacity: 0.6;
+    filter: drop-shadow(0 0 12px rgba(244, 187, 48, 1));
   }
 }
 
 .sig-dot-animated {
-  animation: sigDotPulse 2s ease-in-out infinite;
-  transform-origin: center;
-  transform-box: fill-box;
+  animation: pulseGlow 2s ease-in-out infinite;
+}
+
+/* Optional: Add subtle dash animation to signal lines */
+@keyframes lineDash {
+  0% {
+    stroke-dashoffset: 0;
+  }
+  100% {
+    stroke-dashoffset: -20;
+  }
+}
+
+.sig-line {
+  stroke-dasharray: 5 3;
+  animation: lineDash 3s linear infinite;
 }

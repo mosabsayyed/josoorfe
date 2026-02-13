@@ -40,25 +40,33 @@ export default function Claims({ content }: ClaimsProps) {
               alignItems: 'flex-start',
               padding: '16px 20px',
               background: 'var(--component-panel-bg)',
-              border: '1px solid var(--component-border)',
+              border: '1px solid rgba(244, 187, 48, 0.4)',
               borderRadius: '8px',
               transition: 'border-color 0.3s, background 0.3s'
             }}
-            className="claim-item-hover">
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = 'rgba(244, 187, 48, 0.6)';
+              e.currentTarget.style.background = 'linear-gradient(135deg, rgba(244,187,48,0.06), transparent)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = 'rgba(244, 187, 48, 0.4)';
+              e.currentTarget.style.background = 'var(--component-panel-bg)';
+            }}>
               <div style={{
                 fontFamily: 'var(--font-mono, monospace)',
-                fontSize: '11px',
+                fontSize: '14px',
                 fontWeight: '700',
                 color: 'var(--component-text-accent)',
-                minWidth: '26px',
-                height: '26px',
+                minWidth: '28px',
+                height: '28px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                border: '1px solid rgba(244, 187, 48, 0.25)',
+                border: '2px solid rgba(244, 187, 48, 0.7)',
                 borderRadius: '50%',
                 flexShrink: 0,
-                marginTop: '2px'
+                marginTop: '2px',
+                boxShadow: '0 0 12px rgba(244, 187, 48, 0.2)'
               }}>
                 {i + 1}
               </div>

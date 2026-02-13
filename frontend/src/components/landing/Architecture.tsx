@@ -17,51 +17,36 @@ export default function Architecture({ content, language }: ArchitectureProps) {
   return (
     <section className="content-centered">
       <div className="section-content-box">
-        <div style={{ textAlign: 'center', marginBottom: '12px' }}>
+        <div style={{ textAlign: 'center', marginBottom: '24px' }}>
           <div style={{
             display: 'inline-block',
             padding: '6px 16px',
             background: 'var(--component-panel-bg)',
             borderRadius: '20px',
-            fontSize: '13px',
+            fontSize: '14px',
             fontWeight: '600',
             letterSpacing: '1px',
-            marginBottom: '10px'
+            marginBottom: '12px'
           }}>
             {content.tag}
           </div>
-          <h2>{content.title}</h2>
-          <p className="subtitle" style={{ maxWidth: '800px', margin: '0 auto' }} dangerouslySetInnerHTML={{ __html: content.intro }} />
+          <h2 style={{
+            fontSize: '48px',
+            fontWeight: 800,
+            marginBottom: '12px',
+            fontFamily: 'var(--font-heading, "IBM Plex Sans")'
+          }}>
+            {content.title}
+          </h2>
+          <p className="subtitle" style={{
+            maxWidth: '800px',
+            margin: '0 auto',
+            fontSize: '16px',
+            lineHeight: '1.65'
+          }} dangerouslySetInnerHTML={{ __html: content.intro }} />
         </div>
 
-        {/* Layers */}
-        <div style={{ marginBottom: '12px' }}>
-          <h3 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '15px', textAlign: 'center' }}>
-            {language === 'en' ? 'Four Layers' : 'أربع طبقات'}
-          </h3>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px' }}>
-            {content.layers.map((layer, i) => (
-              <div key={i} style={{
-                padding: '25px',
-                background: 'var(--component-panel-bg)',
-                borderRadius: '8px',
-                border: '1px solid rgba(255, 255, 255, 0.1)'
-              }}>
-                <div style={{
-                  fontSize: '14px',
-                  fontWeight: '600',
-                  color: 'var(--component-text-accent)',
-                  marginBottom: '10px'
-                }}>
-                  L{i + 1}: {layer.name}
-                </div>
-                <p style={{ fontSize: '14px', opacity: 0.7 }}>{layer.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* 3D Flippable Pyramid */}
+        {/* 3D Flippable Pyramid - this IS the four layers visualization */}
         <div style={{ marginBottom: '12px' }}>
           <div className={`pyr-flip ${isFlipped ? 'flipped' : ''}`} onClick={handleFlip}>
             <div className="pyr-inner">
