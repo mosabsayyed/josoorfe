@@ -17,7 +17,7 @@ export default function Architecture({ content, language }: ArchitectureProps) {
   return (
     <section className="content-centered">
       <div className="section-content-box">
-        <div style={{ textAlign: 'center', marginBottom: '60px' }}>
+        <div style={{ textAlign: 'center', marginBottom: '12px' }}>
           <div style={{
             display: 'inline-block',
             padding: '6px 16px',
@@ -26,7 +26,7 @@ export default function Architecture({ content, language }: ArchitectureProps) {
             fontSize: '13px',
             fontWeight: '600',
             letterSpacing: '1px',
-            marginBottom: '20px'
+            marginBottom: '10px'
           }}>
             {content.tag}
           </div>
@@ -35,8 +35,8 @@ export default function Architecture({ content, language }: ArchitectureProps) {
         </div>
 
         {/* Layers */}
-        <div style={{ marginBottom: '60px' }}>
-          <h3 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '30px', textAlign: 'center' }}>
+        <div style={{ marginBottom: '12px' }}>
+          <h3 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '15px', textAlign: 'center' }}>
             {language === 'en' ? 'Four Layers' : 'أربع طبقات'}
           </h3>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px' }}>
@@ -62,7 +62,7 @@ export default function Architecture({ content, language }: ArchitectureProps) {
         </div>
 
         {/* 3D Flippable Pyramid */}
-        <div style={{ marginBottom: '60px' }}>
+        <div style={{ marginBottom: '12px' }}>
           <div className={`pyr-flip ${isFlipped ? 'flipped' : ''}`} onClick={handleFlip}>
             <div className="pyr-inner">
               {/* FRONT FACE - 4-layer pyramid */}
@@ -239,8 +239,8 @@ export default function Architecture({ content, language }: ArchitectureProps) {
         </div>
 
         {/* Engines */}
-        <div style={{ marginBottom: '60px' }}>
-          <h3 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '30px', textAlign: 'center' }}>
+        <div style={{ marginBottom: '12px' }}>
+          <h3 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '15px', textAlign: 'center' }}>
             {language === 'en' ? 'Twin Engines' : 'محركات التوأم'}
           </h3>
           <div className="eng-row">

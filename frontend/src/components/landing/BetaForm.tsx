@@ -14,8 +14,9 @@ export default function BetaForm({ content, language }: BetaFormProps) {
     organization: '',
     role: ''
   });
+  const [isSubmitted, setIsSubmitted] = useState(false);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
@@ -40,10 +41,7 @@ export default function BetaForm({ content, language }: BetaFormProps) {
 
       if (error) throw error;
 
-      alert(language === 'en'
-        ? 'Application submitted! We will review and contact you within 48 hours.'
-        : 'تم تقديم الطلب! سنقوم بالمراجعة والتواصل معك خلال 48 ساعة.');
-
+      setIsSubmitted(true);
       setFormData({ name: '', email: '', organization: '', role: '' });
 
     } catch (err: any) {
@@ -55,57 +53,213 @@ export default function BetaForm({ content, language }: BetaFormProps) {
   };
 
   return (
-    <section className="content-centered" id="section-invite">
-      <div className="section-content-box" style={{ textAlign: 'center', maxWidth: '700px', margin: '0 auto' }}>
+    <section className="content-centered" id="beta">
+      <div style={{ textAlign: 'center', maxWidth: '700px', margin: '0 auto' }}>
+        {/* Tag */}
         <div style={{
-          display: 'inline-block',
-          padding: '6px 16px',
-          background: 'var(--component-panel-bg)',
-          borderRadius: '20px',
-          fontSize: '13px',
-          fontWeight: '600',
-          letterSpacing: '1px',
-          marginBottom: '20px'
+          fontFamily: 'var(--font-mono, monospace)',
+          fontSize: '14px',
+          letterSpacing: '0.2em',
+          textTransform: 'uppercase',
+          color: 'var(--gold-muted, rgba(196, 149, 32, 1))',
+          marginBottom: '6px'
         }}>
           {content.tag}
         </div>
-        <h2>{content.title}</h2>
-        <p className="subtitle">{content.subtitle}</p>
 
-        <form className="invite-form" onSubmit={handleSubmit} style={{ marginTop: '50px' }}>
-          <div className="form-group">
-            <label htmlFor="name">{content.form.name}</label>
-            <input type="text" id="name" name="name" value={formData.name} onChange={handleInputChange} required />
+        {/* Title */}
+        <h2 style={{
+          fontSize: '48px',
+          fontWeight: 800,
+          marginBottom: '10px',
+          fontFamily: 'var(--font-heading, "IBM Plex Sans")',
+          color: 'var(--text-primary, #f8f8f8)'
+        }}>
+          {content.title}
+        </h2>
+
+        {/* Subtitle */}
+        <p style={{
+          fontSize: '15px',
+          color: 'var(--text-muted, #808894)',
+          maxWidth: '500px',
+          margin: '0 auto 32px',
+          lineHeight: '1.65'
+        }}>
+          {content.subtitle}
+        </p>
+
+        {/* Form - matching v10 exactly */}
+        <form
+          className="bf"
+          onSubmit={handleSubmit}
+          style={{
+            maxWidth: '460px',
+            margin: '0 auto',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '10px'
+          }}
+        >
+          {/* Row 1: Name + Email */}
+          <div
+            className="bf-r"
+            style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
+              gap: '10px'
+            }}
+          >
+            <input
+              type="text"
+              name="name"
+              placeholder={content.form.name}
+              value={formData.name}
+              onChange={handleInputChange}
+              required
+              style={{
+                width: '100%',
+                padding: '11px 14px',
+                border: '1px solid rgba(255, 255, 255, 0.06)',
+                borderRadius: '8px',
+                background: 'var(--bg-primary, #111827)',
+                color: 'var(--text-primary, #f8f8f8)',
+                fontFamily: 'var(--font-primary, Inter)',
+                fontSize: '14px',
+                outline: 'none',
+                transition: 'border-color 0.2s'
+              }}
+              onFocus={(e) => e.currentTarget.style.borderColor = 'var(--gold-muted, rgba(196, 149, 32, 1))'}
+              onBlur={(e) => e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.06)'}
+            />
+            <input
+              type="email"
+              name="email"
+              placeholder={content.form.email}
+              value={formData.email}
+              onChange={handleInputChange}
+              required
+              style={{
+                width: '100%',
+                padding: '11px 14px',
+                border: '1px solid rgba(255, 255, 255, 0.06)',
+                borderRadius: '8px',
+                background: 'var(--bg-primary, #111827)',
+                color: 'var(--text-primary, #f8f8f8)',
+                fontFamily: 'var(--font-primary, Inter)',
+                fontSize: '14px',
+                outline: 'none',
+                transition: 'border-color 0.2s'
+              }}
+              onFocus={(e) => e.currentTarget.style.borderColor = 'var(--gold-muted, rgba(196, 149, 32, 1))'}
+              onBlur={(e) => e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.06)'}
+            />
           </div>
 
-          <div className="form-group">
-            <label htmlFor="email">{content.form.email}</label>
-            <input type="email" id="email" name="email" value={formData.email} onChange={handleInputChange} required />
+          {/* Row 2: Organization + Role */}
+          <div
+            className="bf-r"
+            style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
+              gap: '10px'
+            }}
+          >
+            <input
+              type="text"
+              name="organization"
+              placeholder={content.form.org}
+              value={formData.organization}
+              onChange={handleInputChange}
+              style={{
+                width: '100%',
+                padding: '11px 14px',
+                border: '1px solid rgba(255, 255, 255, 0.06)',
+                borderRadius: '8px',
+                background: 'var(--bg-primary, #111827)',
+                color: 'var(--text-primary, #f8f8f8)',
+                fontFamily: 'var(--font-primary, Inter)',
+                fontSize: '14px',
+                outline: 'none',
+                transition: 'border-color 0.2s'
+              }}
+              onFocus={(e) => e.currentTarget.style.borderColor = 'var(--gold-muted, rgba(196, 149, 32, 1))'}
+              onBlur={(e) => e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.06)'}
+            />
+            <select
+              name="role"
+              value={formData.role}
+              onChange={handleInputChange}
+              style={{
+                width: '100%',
+                padding: '11px 14px',
+                border: '1px solid rgba(255, 255, 255, 0.06)',
+                borderRadius: '8px',
+                background: 'var(--bg-primary, #111827)',
+                color: formData.role ? 'var(--text-primary, #f8f8f8)' : 'var(--text-muted, #808894)',
+                fontFamily: 'var(--font-primary, Inter)',
+                fontSize: '14px',
+                outline: 'none',
+                cursor: 'pointer',
+                transition: 'border-color 0.2s',
+                WebkitAppearance: 'none',
+                appearance: 'none'
+              }}
+              onFocus={(e) => e.currentTarget.style.borderColor = 'var(--gold-muted, rgba(196, 149, 32, 1))'}
+              onBlur={(e) => e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.06)'}
+            >
+              <option value="" disabled>
+                {content.form.role}
+              </option>
+              {content.form.roleOptions.map((option: string, i: number) => (
+                <option key={i} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
           </div>
 
-          <div className="form-group">
-            <label htmlFor="organization">{content.form.org}</label>
-            <input type="text" id="organization" name="organization" value={formData.organization} onChange={handleInputChange} required />
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="role">{content.form.role}</label>
-            <input type="text" id="role" name="role" value={formData.role} onChange={handleInputChange} required placeholder="e.g., VP Strategy, CTO, PMO Director" />
-          </div>
-
-          <button type="submit" className="button-primary" style={{ marginTop: '30px' }}>
-            {content.form.submit}
+          {/* Submit Button - matching v10 exactly */}
+          <button
+            type="submit"
+            disabled={isSubmitted}
+            style={{
+              padding: '13px 32px',
+              border: `2px solid ${isSubmitted ? 'var(--success, #2DD4A8)' : 'var(--gold-primary, #F4BB30)'}`,
+              borderRadius: '999px',
+              background: 'transparent',
+              color: isSubmitted ? 'var(--success, #2DD4A8)' : 'var(--gold-primary, #F4BB30)',
+              fontSize: '15px',
+              fontWeight: 700,
+              cursor: isSubmitted ? 'default' : 'pointer',
+              transition: 'all 0.25s',
+              fontFamily: 'var(--font-primary, Inter)'
+            }}
+            onMouseEnter={(e) => {
+              if (!isSubmitted) {
+                e.currentTarget.style.background = 'rgba(244, 187, 48, 0.10)';
+                e.currentTarget.style.boxShadow = '0 0 30px rgba(244, 187, 48, 0.12)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!isSubmitted) {
+                e.currentTarget.style.background = 'transparent';
+                e.currentTarget.style.boxShadow = 'none';
+              }
+            }}
+          >
+            {isSubmitted ? 'Application submitted' : content.form.submit}
           </button>
         </form>
 
-        <p style={{
-          marginTop: '30px',
-          fontSize: '13px',
-          color: 'rgba(255, 255, 255, 0.5)',
-          lineHeight: '1.6'
+        {/* Note */}
+        <div style={{
+          fontSize: '11px',
+          color: 'var(--text-muted, #808894)',
+          marginTop: '13px'
         }}>
           {content.note}
-        </p>
+        </div>
       </div>
     </section>
   );

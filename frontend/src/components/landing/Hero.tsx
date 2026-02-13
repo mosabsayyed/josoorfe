@@ -13,19 +13,20 @@ export default function Hero({ content, language }: HeroProps) {
       minHeight: '100vh',
       display: 'flex',
       alignItems: 'center',
-      paddingTop: '6rem',
+      justifyContent: 'center',
+      paddingTop: '4rem',
       position: 'relative',
       overflow: 'hidden'
     }}>
       {/* Sparkle background with hero image */}
-      <Sparkle imageSrc="/att/hero-bg.jpg" dotCount={600} />
+      <Sparkle imageSrc="/att/ksa_mpbackgd.png" dotCount={600} />
 
-      {/* Overlay - exact v10 gradients */}
+      {/* Overlay - matching overall page style */}
       <div className="hero-overlay" style={{
         position: 'absolute',
         inset: 0,
         zIndex: 1,
-        background: 'radial-gradient(ellipse at center, transparent 0%, var(--bg-deep, #0B0F1A) 75%), linear-gradient(180deg, transparent 40%, var(--bg-deep, #0B0F1A) 100%)'
+        background: 'radial-gradient(ellipse at center, transparent 0%, var(--component-bg-primary, #111827) 75%), linear-gradient(180deg, transparent 40%, var(--component-bg-primary, #111827) 100%)'
       }}></div>
 
       {/* Container - exact v10 structure */}
@@ -63,35 +64,42 @@ export default function Hero({ content, language }: HeroProps) {
             {content.subtitle}
           </h1>
 
-          {/* Brand box - exact v10 structure */}
+          {/* Brand box - logo first, text below */}
           <div className="hero-brand" style={{
             display: 'inline-flex',
             flexDirection: 'column',
             alignItems: 'center',
-            gap: '0.2rem',
+            gap: '0.5rem',
             padding: '1.2rem 3rem',
             border: '2px solid var(--gold-primary, #F4BB30)',
             borderRadius: 'var(--radius-xl, 16px)',
             background: 'linear-gradient(135deg, rgba(244,187,48,0.06), rgba(244,187,48,0.01))',
             boxShadow: '0 0 60px rgba(244,187,48,0.06)'
           }}>
+            <div className="hb-logo" style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <img
+                src="/icons/josoor.png"
+                alt="Josoor"
+                style={{
+                  height: '80px',
+                  width: 'auto',
+                  filter: 'brightness(1.1)'
+                }}
+              />
+            </div>
             <div className="hb-name" style={{
               fontFamily: 'var(--font-heading, "Inter")',
-              fontSize: '30px',
+              fontSize: '20px',
               fontWeight: '800',
               letterSpacing: '0.35em',
               textTransform: 'uppercase',
               color: 'var(--gold-bright, #FFD04A)'
             }}>
               {content.badge}
-            </div>
-            <div className="hb-tag" style={{
-              fontSize: '14px',
-              fontWeight: '500',
-              color: 'var(--gold-primary, #F4BB30)',
-              letterSpacing: '0.03em'
-            }}>
-              (replace with josoor logo)
             </div>
           </div>
         </div>

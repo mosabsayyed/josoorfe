@@ -58,26 +58,14 @@ export function calculateHeatmapColor(l3: L3Capability, overlayType: OverlayType
             break;
     }
 
-    // Thresholds represent achievement % (actual/target):
-    //   threshold_green=85 → achievement ≥85% of target = green
-    //   threshold_amber=70 → achievement ≥70% of target = amber
-    //   below amber threshold = red
-    // 
-    // For risk-exposure overlay: use maturity achievement % against thresholds
-    // For other overlays: use the computed deltaPercent against spec bands
-    const thresholdGreen = (l3 as any)._threshold_green ?? 85;
-    const thresholdAmber = (l3 as any)._threshold_amber ?? 70;
-
-    // Achievement = maturity_level / target_maturity_level * 100
-    const achievement = l3.target_maturity_level > 0
-        ? (l3.maturity_level / l3.target_maturity_level) * 100
-        : 0;
-
     if (overlayType === 'risk-exposure') {
-        // Use achievement vs thresholds
-        if (achievement >= thresholdGreen) {
+        // Per ENTERPRISE_DESK_OVERLAY_SPECIFICATION.md:
+        // exposure_percent is calculated from risk data (delay-based for BUILD, health-based for EXECUTE)
+        // Thresholds: <5% GREEN, 5-15% AMBER, ≥15% RED
+        const exposure = l3.exposure_percent ?? deltaPercent;
+        if (exposure < 5) {
             return 'rgba(16, 185, 129, 0.6)';  // GREEN
-        } else if (achievement >= thresholdAmber) {
+        } else if (exposure < 15) {
             return 'rgba(245, 158, 11, 0.6)';  // AMBER
         } else {
             return 'rgba(239, 68, 68, 0.6)';   // RED

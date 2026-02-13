@@ -190,25 +190,23 @@ export default function Promise({ content }: PromiseProps) {
   return (
     <section className="content-centered">
       <div className="section-content-box">
-        <div style={{ textAlign: 'center', marginBottom: '60px' }}>
+        <div style={{ textAlign: 'center', marginBottom: '12px' }}>
           <div style={{
-            display: 'inline-block',
-            padding: '6px 16px',
-            background: 'var(--component-panel-bg)',
-            borderRadius: '20px',
-            fontSize: '13px',
-            fontWeight: '600',
-            letterSpacing: '1px',
-            marginBottom: '20px'
+            fontFamily: 'var(--font-mono, monospace)',
+            fontSize: '14px',
+            letterSpacing: '0.2em',
+            textTransform: 'uppercase',
+            color: 'var(--gold-muted, rgba(196, 149, 32, 1))',
+            marginBottom: '12px'
           }}>
             {content.tag}
           </div>
-          <h2>{content.title}</h2>
-          <p className="subtitle">{content.subtitle}</p>
+          <h2 style={{ fontSize: '48px', fontWeight: 800, marginBottom: '10px', fontFamily: 'var(--font-heading, "IBM Plex Sans")' }}>{content.title}</h2>
+          <p className="subtitle" style={{ fontSize: '16px', maxWidth: '560px', margin: '0 auto', lineHeight: '1.65' }}>{content.subtitle}</p>
         </div>
 
-        {/* 3D Concave Carousel */}
-        <div style={{ position: 'relative', width: '100%', overflow: 'hidden', padding: '2rem 0' }}>
+        {/* 3D Concave Carousel - matching v10 spacing */}
+        <div style={{ position: 'relative', width: '100%', overflow: 'hidden', padding: '0' }}>
           <div
             style={{
               display: 'flex',
@@ -253,7 +251,7 @@ export default function Promise({ content }: PromiseProps) {
                     <div
                       style={{
                         fontFamily: 'var(--font-mono, monospace)',
-                        fontSize: '10px',
+                        fontSize: '12px',
                         color: 'var(--gold-muted, #D4AF37)',
                         letterSpacing: '0.06em',
                         marginBottom: '0.5rem',
@@ -264,7 +262,7 @@ export default function Promise({ content }: PromiseProps) {
 
                     <div
                       style={{
-                        fontSize: '10px',
+                        fontSize: '12px',
                         fontWeight: 700,
                         textTransform: 'uppercase',
                         letterSpacing: '0.05em',
@@ -294,7 +292,7 @@ export default function Promise({ content }: PromiseProps) {
 
                     <div
                       style={{
-                        fontSize: '10px',
+                        fontSize: '12px',
                         fontWeight: 700,
                         textTransform: 'uppercase',
                         letterSpacing: '0.05em',

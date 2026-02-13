@@ -91,15 +91,36 @@ export default function Sparkle({ imageSrc, dotCount = 600 }: SparkleProps) {
         ctx.fillStyle = '#06080f';
         ctx.fillRect(0, 0, W, H);
 
-        // Draw faint image
+        // Draw image with subtle border
         ctx.save();
-        ctx.globalAlpha = 0.12;
+
+        // Create lighter radial gradient for subtle edge fade
+        const gradient = ctx.createRadialGradient(W / 2, H / 2, 0, W / 2, H / 2, Math.max(W, H) * 0.6);
+        gradient.addColorStop(0, 'rgba(0, 0, 0, 0)');
+        gradient.addColorStop(0.85, 'rgba(0, 0, 0, 0)');
+        gradient.addColorStop(1, 'rgba(0, 0, 0, 0.3)');
+
+        // Draw more visible image
+        ctx.globalAlpha = 0.55;
         ctx.drawImage(img, ox, oy, iw, ih);
+
+        // Draw subtle border
+        ctx.globalAlpha = 0.3;
+        ctx.strokeStyle = 'rgba(244, 187, 48, 0.4)';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(ox, oy, iw, ih);
+
+        // Apply subtle edge fade gradient
+        ctx.globalCompositeOperation = 'destination-out';
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, W, H);
+        ctx.globalCompositeOperation = 'source-over';
+
         ctx.restore();
 
-        // Draw sparkle dots
+        // Draw brighter sparkle dots
         for (const dot of dots) {
-          const alpha = (Math.sin(t * dot.speed + dot.phase) * 0.5 + 0.5) * 0.7;
+          const alpha = (Math.sin(t * dot.speed + dot.phase) * 0.5 + 0.5) * 0.95;
           if (alpha < 0.02) continue;
 
           ctx.beginPath();

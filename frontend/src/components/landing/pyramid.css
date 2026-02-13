@@ -51,7 +51,7 @@
 .pyr-front-lbl {
   text-align: center;
   padding: 1rem 0 0.5rem;
-  font-size: 10px;
+  font-size: 14px;
   color: var(--component-text-muted);
 }
 
@@ -88,13 +88,13 @@
 /* Layer text styling */
 .py-n {
   font-family: var(--component-font-heading);
-  font-size: 13px;
+  font-size: 16px;
   font-weight: 700;
   color: var(--component-text-primary);
 }
 
 .py-d {
-  font-size: 10px;
+  font-size: 14px;
   color: var(--component-text-muted);
 }
 
@@ -108,9 +108,9 @@
 }
 
 .py-node {
-  font-size: 8px;
-  padding: 0.08rem 0.25rem;
-  border-radius: 2px;
+  font-size: 14px;
+  padding: 0.12rem 0.3rem;
+  border-radius: 3px;
   background: rgba(91, 155, 213, 0.06);
   color: #5B9BD5;
   border: 1px solid rgba(91, 155, 213, 0.1);
@@ -121,7 +121,7 @@
   display: flex;
   justify-content: space-between;
   padding: 0.4rem 2.5rem 0;
-  font-size: 10px;
+  font-size: 14px;
   color: var(--component-text-muted);
   max-width: 82%;
   margin: 0 auto;
@@ -129,7 +129,7 @@
 
 /* ═══ BACK FACE: Ontology Mapping ═══ */
 .back-h {
-  font-size: 15px;
+  font-size: 18px;
   font-weight: 700;
   color: var(--component-text-accent);
   text-align: center;
@@ -155,7 +155,7 @@
 
 /* Row label above each ontology row */
 .ont-row-label {
-  font-size: 7px;
+  font-size: 12px;
   color: var(--component-text-muted);
   text-align: center;
   margin-bottom: 0.05rem;
@@ -183,14 +183,14 @@
 }
 
 .ont-mid-line {
-  font-size: 7px;
+  font-size: 12px;
   color: var(--component-text-accent);
 }
 
 /* Ontology node badges */
 .on {
-  font-size: 8px;
-  padding: 0.12rem 0.3rem;
+  font-size: 12px;
+  padding: 0.15rem 0.35rem;
   border-radius: 3px;
   text-align: center;
   border: 1px solid;
@@ -241,7 +241,7 @@
   position: absolute;
   top: -0.6rem;
   left: 0.5rem;
-  font-size: 7px;
+  font-size: 12px;
   color: var(--component-text-accent);
   font-family: var(--component-font-mono);
   letter-spacing: 0.06em;
@@ -267,7 +267,7 @@
 }
 
 .sig-n {
-  font-size: 8px;
+  font-size: 12px;
   color: var(--component-text-muted);
 }
 
@@ -379,7 +379,7 @@
 }
 
 .ksa-d {
-  font-size: 10px;
+  font-size: 12px;
   color: var(--component-text-muted);
 }
 

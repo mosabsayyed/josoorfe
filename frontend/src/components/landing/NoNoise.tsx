@@ -1,5 +1,6 @@
 import React from 'react';
 import { NoNoiseContent } from './types';
+import './noise-animation.css';
 
 interface NoNoiseProps {
   content: NoNoiseContent;
@@ -8,12 +9,12 @@ interface NoNoiseProps {
 export default function NoNoise({ content }: NoNoiseProps) {
   return (
     <section className="content-centered">
-      <div className="section-content-box" style={{ textAlign: 'center', maxWidth: '900px', margin: '0 auto' }}>
-        <h2>{content.title}</h2>
-        <p className="subtitle">{content.subtitle}</p>
+      <div className="section-content-box" style={{ textAlign: 'center', maxWidth: '800px', margin: '0 auto' }}>
+        <h2 style={{ marginBottom: '8px', fontSize: '48px', fontWeight: 800 }}>{content.title}</h2>
+        <p className="subtitle" style={{ margin: '0 auto 32px', fontSize: '16px', lineHeight: '1.65' }}>{content.subtitle}</p>
 
         {/* Signal convergence animation - from v10 */}
-        <div style={{ margin: '60px 0', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+        <div style={{ margin: '0 auto', display: 'flex', justifyContent: 'center', alignItems: 'center', maxWidth: '600px', height: '200px' }}>
           <svg width="600" height="180" viewBox="0 0 600 180" style={{ maxWidth: '100%' }} preserveAspectRatio="xMidYMid meet">
             {/* Left label */}
             <text x="18" y="18" style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', fill: 'var(--component-text-muted)', textAnchor: 'start' }}>
@@ -97,6 +98,7 @@ export default function NoNoise({ content }: NoNoiseProps) {
 
             {/* Convergence point with pulsing animation */}
             <circle
+              className="sig-dot-animated"
               cx="470"
               cy="90"
               r="5"
@@ -104,20 +106,7 @@ export default function NoNoise({ content }: NoNoiseProps) {
               style={{
                 filter: 'drop-shadow(0 0 8px rgba(244,187,48,0.6))'
               }}
-            >
-              <animate
-                attributeName="r"
-                values="5;8;5"
-                dur="2s"
-                repeatCount="indefinite"
-              />
-              <animate
-                attributeName="opacity"
-                values="1;0.6;1"
-                dur="2s"
-                repeatCount="indefinite"
-              />
-            </circle>
+            />
 
             {/* Right label */}
             <text x="580" y="82" style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', fill: 'var(--component-text-accent)', textAnchor: 'start', fontWeight: 600 }}>
@@ -126,8 +115,8 @@ export default function NoNoise({ content }: NoNoiseProps) {
           </svg>
         </div>
 
-        <p style={{ fontSize: '18px', lineHeight: '1.8', marginTop: '40px' }}>{content.swagger}</p>
-        <p className="subtitle" style={{ marginTop: '30px' }}>{content.closing}</p>
+        <p style={{ fontSize: '26px', fontWeight: 800, lineHeight: '1.3', marginTop: '32px', fontFamily: 'var(--font-heading, "IBM Plex Sans")' }}>{content.swagger}</p>
+        <p className="subtitle" style={{ marginTop: '32px', fontSize: '16px' }}>{content.closing}</p>
       </div>
     </section>
   );

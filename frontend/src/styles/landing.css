@@ -146,7 +146,7 @@
 /* ═══ Mode card content ═══ */
 .mc-inner {
   display: grid;
-  grid-template-columns: 1fr 1.4fr;
+  grid-template-columns: 1fr 2fr;
   gap: 1rem;
   height: 100%;
 }
@@ -219,7 +219,7 @@
 
 .mk-label {
   font-family: var(--component-font-mono);
-  font-size: 8px;
+  font-size: 12px;
   color: var(--component-text-muted);
   margin-left: 0.3rem;
 }
@@ -244,7 +244,7 @@
 }
 
 .wm-lbl {
-  font-size: 8px;
+  font-size: 12px;
   color: var(--component-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -256,7 +256,7 @@
 }
 
 .wm-sub {
-  font-size: 8px;
+  font-size: 12px;
   color: var(--component-text-muted);
 }
 
@@ -284,7 +284,7 @@
 
 .wm-badge {
   font-family: var(--component-font-mono);
-  font-size: 7px;
+  font-size: 12px;
   font-weight: 700;
   padding: 0.06rem 0.25rem;
   border-radius: 2px;
@@ -308,7 +308,7 @@
 }
 
 .wm-txt {
-  font-size: 10px;
+  font-size: 12px;
   color: var(--component-text-muted);
   line-height: 1.3;
 }
@@ -318,7 +318,7 @@
 }
 
 .wm-chain {
-  font-size: 8px;
+  font-size: 12px;
   color: var(--component-text-muted);
   opacity: 0.6;
   margin-top: 0.1rem;
@@ -339,7 +339,7 @@
 }
 
 .dm-lbl {
-  font-size: 7px;
+  font-size: 12px;
   color: rgba(244, 187, 48, 0.6);
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -369,7 +369,7 @@
 }
 
 .dm-oh {
-  font-size: 8px;
+  font-size: 12px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.03em;
@@ -400,7 +400,7 @@
 /* Deliver mini */
 .dlm-h {
   font-family: var(--component-font-heading);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 700;
   color: var(--component-text-primary);
   margin-bottom: 0.35rem;
@@ -425,7 +425,7 @@
 }
 
 .dlm-b {
-  font-size: 7px;
+  font-size: 12px;
   font-weight: 600;
   padding: 0.07rem 0.3rem;
   border-radius: 2px;
@@ -473,7 +473,7 @@
 }
 
 .dlm-sl {
-  font-size: 7px;
+  font-size: 12px;
   color: var(--component-text-muted);
   text-transform: uppercase;
 }

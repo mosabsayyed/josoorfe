@@ -370,7 +370,7 @@ export default function LandingPage() {
       }
 
       section {
-        padding: 3rem 2rem;
+        padding: 0.75rem 2rem;
         position: relative;
         background: transparent;
       }
@@ -384,7 +384,7 @@ export default function LandingPage() {
         background-color: var(--component-panel-bg);
         backdrop-filter: blur(20px);
         -webkit-backdrop-filter: blur(20px);
-        padding: 40px;
+        padding: 12px;
         border-radius: 16px;
         border: 1px solid var(--component-panel-border);
         display: inline-block;
@@ -394,7 +394,7 @@ export default function LandingPage() {
 
       .section-grid {
         display: grid;
-        gap: 80px; /* Increased gap */
+        gap: 16px;
         align-items: center;
         grid-template-columns: 1fr 1fr;
       }
