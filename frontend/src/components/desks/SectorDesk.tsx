@@ -566,124 +566,90 @@ export const SectorDesk: React.FC<SectorDeskProps> = ({ year: propYear, quarter:
         try {
             const prompt = `Conduct a comprehensive Strategic Plan Review for our organization's 2024–2029 strategic plan.
 
-**Review Scope:**
+Review Scope:
 - Plan Period: 2024–2029
 - Assessment Period: Based on ${selectedYear} data snapshot
 - Focus Areas: Economic diversification, employment creation, investment attraction, sectoral transformation
 
----
-
-**Visualization Requirements:**
+Visualization Requirements:
 
 Create exactly 3 visualizations using Highcharts format:
 
-1. **Vision 2030 Pillar Performance** (chart id: "vision-pillars")
+1. Vision 2030 Pillar Performance (chart id: "vision-pillars")
    - Type: column chart
    - Show 3 pillars: Vibrant Society, Thriving Economy, Ambitious Nation
    - Data: Target % vs Actual % for each
 
-2. **Cross-Sectoral Impact** (chart id: "sector-impact")
+2. Cross-Sectoral Impact (chart id: "sector-impact")
    - Type: column or bar chart
    - Show top 5 sectors by investment or economic value
    - Data: SAR amounts or impact scores
 
-3. **Strategic Risk Matrix** (chart id: "risk-matrix")
+3. Strategic Risk Matrix (chart id: "risk-matrix")
    - Type: scatter chart
    - Show top risks plotted by probability (x-axis) and impact (y-axis)
    - Data format: [{ x: probability, y: impact, name: "Risk Name" }]
 
-Reference charts inline using: <ui-chart id="chart-id"></ui-chart>
+Required Content Sections:
 
----
-
-**Required Analysis:**
-
-### 1. Executive Summary
+1. Executive Summary
 Provide an overall assessment of plan performance with your top 3 strategic findings. Quantify each finding with specific metrics (percentages, SAR amounts, timeline impacts). Make a clear recommendation: stay the course, adjust priorities, or pivot strategy.
 
-### 2. Vision 2030 Alignment
+2. Vision 2030 Alignment
 Compare our plan's performance against national transformation targets across all three pillars:
-- **Vibrant Society:** Quality of life, cultural participation, community engagement
-- **Thriving Economy:** Non-oil GDP growth, economic diversification, private sector expansion, employment
-- **Ambitious Nation:** Government effectiveness, digital transformation, global competitiveness
+- Vibrant Society: Quality of life, cultural participation, community engagement
+- Thriving Economy: Non-oil GDP growth, economic diversification, private sector expansion, employment
+- Ambitious Nation: Government effectiveness, digital transformation, global competitiveness
 
-For each pillar, identify:
-- Our plan's contribution to national targets
-- Current performance against those targets  
-- Gaps or overperformance
-- Strategic implications
+For each pillar, identify our contribution to national targets, current performance, gaps or overperformance, and strategic implications. Show comparison with performance metrics in a table.
 
-Show this comparison in structured format with performance metrics.
+After the pillar comparison, insert: <ui-chart id="vision-pillars"></ui-chart>
 
-### 3. Economic Performance Benchmarking
+3. Economic Performance Benchmarking
 Analyze our initiatives against national economic indicators. Pull latest data on:
-- **GDP:** Total economy size, oil vs non-oil contribution, sectoral breakdowns, growth rates
-- **Employment:** Total jobs created, Saudization progress, women's workforce participation, unemployment rates, sector-specific targets
-- **Foreign Investment:** FDI inflows total and by sector, progress against annual targets, major projects
-- **Local Investment:** Domestic capital deployment, regional headquarters established
-- **Trade:** Export performance, trade balance trends, non-oil export growth
-- **Vision 2030 Progress:** Milestone achievement across transformation programs
+- GDP: Total economy size, oil vs non-oil contribution, sectoral breakdowns, growth rates
+- Employment: Total jobs created, Saudization progress, women's workforce participation, unemployment rates
+- Foreign Investment: FDI inflows total and by sector, progress against annual targets
+- Local Investment: Domestic capital deployment, regional headquarters established
+- Trade: Export performance, trade balance trends, non-oil export growth
+- Vision 2030 Progress: Milestone achievement across transformation programs
 
 Quantify how our initiatives contribute to or fall short of these national benchmarks.
 
-### 4. Value Chain Impact Assessment
-Map how our initiatives create economic multiplier effects across sectors:
-
-Identify our **enabling sector investments** (infrastructure, utilities, logistics) and trace their impact downstream:
+4. Value Chain Impact Assessment
+Map how our initiatives create economic multiplier effects across sectors. Identify enabling sector investments (infrastructure, utilities, logistics) and trace their downstream impact:
 - Which enabling investments unlock growth in manufacturing, petrochemicals, tourism, agriculture?
 - Quantify economic multipliers: for each SAR invested in enabling infrastructure, how much value is created downstream?
-- Identify bottlenecks: which single points of failure could cascade through multiple sectors?
-- Highlight cross-sectoral synergies we're capturing or missing
+- Identify bottlenecks and cross-sectoral synergies
 
-Visualize investment flows from enabling sectors through core industries to economic outcomes (jobs, GDP, exports).
+After the value chain analysis, insert: <ui-chart id="sector-impact"></ui-chart>
 
-### 5. Strategic Recommendations
+5. Strategic Recommendations
 Group recommendations into four categories:
-1. **Accelerate:** Initiatives behind target requiring additional resources or urgency
-2. **Sustain:** On-track initiatives to maintain at current pace
-3. **Optimize:** Ahead-of-target initiatives where resources could be reallocated
-4. **Pivot:** Misaligned initiatives not contributing meaningfully to Vision 2030
+- Accelerate: Initiatives behind target requiring additional resources or urgency
+- Sustain: On-track initiatives to maintain at current pace
+- Optimize: Ahead-of-target initiatives where resources could be reallocated
+- Pivot: Misaligned initiatives not contributing meaningfully to Vision 2030
 
-For each recommendation, provide:
-- Quantified rationale (% below target, months delayed, SAR shortfall)
-- Resource implications (budget adjustments, timeline changes)
-- Dependencies (what must happen first)
-- Expected impact on Vision 2030 KPIs
+For each recommendation, provide quantified rationale, resource implications, dependencies, and expected impact on Vision 2030 KPIs.
 
-### 6. Priority Action Plan
-List 5-8 highest-impact actions required over the next 12-18 months. Bold the top 3 critical path actions.
+6. Priority Action Plan
+List 5-8 highest-impact actions required over the next 12-18 months. For each action specify: clear directive, rationale, owner, dependencies, impact on Vision 2030 targets, and scope (Regional / Sectoral / Cross-cutting).
 
-For each action specify:
-- **Action:** Clear directive (e.g., "Expand desalination capacity in Eastern Province by 500,000 m³/day by Q4 2026")
-- **Rationale:** Why this action matters, backed by analysis above
-- **Owner:** Responsible organization/department
-- **Dependencies:** Prerequisites or blockers to address first
-- **Impact:** Contribution to Vision 2030 targets (jobs created, GDP contribution, FDI attracted)
-- **Scope:** Regional / Sectoral / Cross-cutting classification
+7. Strategic Risks
+Identify the top 3 risks to plan execution, with focus on systemic vulnerabilities. For each: specific risk, quantified downstream effect, mitigation action, and contingency plan.
 
-### 7. Strategic Risks
-Identify the top 3 risks to plan execution, with focus on systemic vulnerabilities:
-- **Risk:** Specific constraint or bottleneck
-- **Impact:** Quantified downstream effect (% reduction in output, jobs at risk, SAR GDP impact)
-- **Mitigation:** Specific action from Priority Action Plan addressing this risk
-- **Contingency:** Backup plan if primary mitigation fails
+After the risk analysis, insert: <ui-chart id="risk-matrix"></ui-chart>
 
-### 8. Strategic Insights
-Highlight 2-3 non-obvious findings from your analysis:
-- Cross-sectoral opportunities not currently captured in the plan
-- Hidden dependencies or systemic bottlenecks
-- High-leverage, low-dependency initiatives we should prioritize
+8. Strategic Insights
+Highlight 2-3 non-obvious findings: cross-sectoral opportunities, hidden dependencies or systemic bottlenecks, high-leverage low-dependency initiatives. Label each: Regional / Sectoral / Cross-cutting / Systemic.
 
-Label each insight: Regional / Sectoral / Cross-cutting / Systemic
-
-**Presentation Guidelines:**
+Presentation Guidelines:
 - Lead with answers, then supporting rationale
-- Quantify everything: use percentages, SAR amounts, specific timelines
+- Quantify everything: percentages, SAR amounts, specific timelines
 - Use Vision 2030 terminology: "giga-projects," "economic engines," "enabling sectors," "national transformation"
-- Include visual comparisons for Vision 2030 alignment and value chain flows
-- Structure all outputs for executive readability
-- Include any charts with <ui-chart> tags (not <div class="visualization-placeholder">)
-- Title your response: "Strategic Plan Review - Vision 2030 Alignment Analysis"
+- Structure for executive readability
+- Title: "Strategic Plan Review - Vision 2030 Alignment Analysis"
 
 **CRITICAL: For visualizations, provide data in Highcharts format:**
 

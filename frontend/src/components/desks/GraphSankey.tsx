@@ -88,21 +88,21 @@ export function GraphSankey({ data, isDark = true, chain, metadata, isDiagnostic
         return rawLabel.replace(/([A-Z])/g, ' $1').trim();
     };
 
-        const getDisplayId = (props: any): string | null => {
-            const raw =
-                props?.id ??
-                props?.ID ??
-                props?.code ??
-                props?.Code ??
+    const getDisplayId = (props: any): string | null => {
+        const raw =
+            props?.id ??
+            props?.ID ??
+            props?.code ??
+            props?.Code ??
             props?.kpi_id ??
             props?.kpiId ??
             props?.node_id ??
             props?.nodeId ??
             null;
-            if (raw === null || raw === undefined) return null;
-            const s = String(raw).trim();
-            return /^\d+(\.\d+)*$/.test(s) ? s : null;
-        };
+        if (raw === null || raw === undefined) return null;
+        const s = String(raw).trim();
+        return /^\d+(\.\d+)*$/.test(s) ? s : null;
+    };
 
     const getLinkEndpointId = (val: any): string => {
         if (val && typeof val === 'object') {
@@ -251,8 +251,8 @@ export function GraphSankey({ data, isDark = true, chain, metadata, isDiagnostic
             // Red = disconnected, Orange = dead-end/orphan, label color = normal
             const nodeColor = isBroken ? '#ef4444'
                 : isOrphanOrBastard ? '#f59e0b'
-                : isVirtual ? '#D4AF37'
-                : baseColor;
+                    : isVirtual ? '#D4AF37'
+                        : baseColor;
 
             return {
                 id,
@@ -268,7 +268,17 @@ export function GraphSankey({ data, isDark = true, chain, metadata, isDiagnostic
                 sortId,
                 sortIdRaw: displayId
             };
-        }).filter(n => n.stepIndex !== -1); // Filter nodes not in canonical path
+        }).filter(n => n.stepIndex !== -1 || n.isBroken); // Include broken nodes even if no step index found
+
+        // Post-process: Assign broken nodes to a "Gap" column (last column + 1) or nearest neighbor
+        const gapColumnIndex = columns.length;
+        nodes.forEach(n => {
+            if (n.stepIndex === -1 && n.isBroken) {
+                n.stepIndex = gapColumnIndex;
+                n.column = gapColumnIndex;
+                n.nameDisplay = `[GAP] ${n.nameDisplay}`;
+            }
+        });
 
         // --- Client-side node aggregation ---
         // If backend already sent pre-aggregated nodes (v5 format with nProps.count), skip aggregation.
@@ -372,7 +382,9 @@ export function GraphSankey({ data, isDark = true, chain, metadata, isDiagnostic
         }
 
         // Group by Column for Y-Calculation
-        const nodesByCol = new Array(columns.length).fill(0).map(() => [] as Node[]);
+        // Use max stepIndex found + 1 to accommodate GAP columns
+        const maxStep = Math.max(columns.length - 1, ...nodes.map(n => n.stepIndex));
+        const nodesByCol = new Array(maxStep + 1).fill(0).map(() => [] as Node[]);
         nodes.forEach(n => nodesByCol[n.stepIndex].push(n));
 
         // Add sub-header markers for operations and stakeholders columns
@@ -613,7 +625,7 @@ export function GraphSankey({ data, isDark = true, chain, metadata, isDiagnostic
     return (
         <div ref={containerRef} className="graph-sankey">
             {/* Header Info */}
-            <div style={{ 
+            <div style={{
                 padding: '0.5rem 0.5rem',
                 borderBottom: `1px solid ${isDark ? '#333' : '#e5e7eb'}`,
                 backgroundColor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)'
@@ -804,13 +816,13 @@ export function GraphSankey({ data, isDark = true, chain, metadata, isDiagnostic
                                                 {Object.entries(node.properties || {})
                                                     .filter(([key]) => !key.toLowerCase().includes('embedding'))
                                                     .map(([key, value]) => (
-                                                    <div key={key} style={{ marginBottom: '4px', marginLeft: '8px', opacity: 0.85 }}>
-                                                        <span style={{ fontWeight: '600', color: isDark ? '#aaa' : '#555' }}>{key}:</span>
-                                                        <span style={{ marginLeft: '6px' }}>
-                                                            {typeof value === 'object' ? JSON.stringify(value, null, 2) : String(value)}
-                                                        </span>
-                                                    </div>
-                                                ))}
+                                                        <div key={key} style={{ marginBottom: '4px', marginLeft: '8px', opacity: 0.85 }}>
+                                                            <span style={{ fontWeight: '600', color: isDark ? '#aaa' : '#555' }}>{key}:</span>
+                                                            <span style={{ marginLeft: '6px' }}>
+                                                                {typeof value === 'object' ? JSON.stringify(value, null, 2) : String(value)}
+                                                            </span>
+                                                        </div>
+                                                    ))}
                                             </div>
                                             {node.isBroken && (
                                                 <div style={{ color: '#ff4444', fontWeight: 'bold', marginTop: '12px', fontSize: '12px' }}>

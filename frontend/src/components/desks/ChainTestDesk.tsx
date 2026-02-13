@@ -1,13 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { NeoGraph } from '../dashboards/NeoGraph';
 import { GraphSankey } from './GraphSankey';
 import { GraphDataTable } from './GraphDataTable';
 import { CANONICAL_PATHS } from '../../data/canonicalPaths';
-import { useQuery } from '@tanstack/react-query';
-// Tooltip now uses createPortal in NeoGraph - no CSS dependency needed
 
-const STAGING_URL = 'http://localhost:7475';
-const STAGING_AUTH = btoa('neo4j:stagingpassword');
+// Tooltip now uses createPortal in NeoGraph - no CSS dependency needed
 
 const LABEL_COLORS: Record<string, string> = {
     SectorObjective: '#3b82f6', SectorPolicyTool: '#8b5cf6', SectorAdminRecord: '#06b6d4',
@@ -20,37 +18,12 @@ const LABEL_COLORS: Record<string, string> = {
 
 const LEGEND_CONFIG = { colors: LABEL_COLORS };
 
-const RET = `elementId(n) AS nId, labels(n) AS nLabels,
-{id: n.id, kpi_id: n.kpi_id, code: n.code, name: n.name, year: n.year, level: n.level} AS nProps,
-type(r) AS rType, {} AS rProps,
-elementId(startNode(r)) AS sourceId, elementId(endNode(r)) AS targetId`;
-
-const DRET = `elementId(n) AS nId, labels(n) AS nLabels,
-{id: n.id, kpi_id: n.kpi_id, code: n.code, name: n.name, year: n.year, level: n.level} AS nProps,
-CASE WHEN r IS NOT NULL THEN type(r) ELSE null END AS rType, {} AS rProps,
-CASE WHEN r IS NOT NULL THEN elementId(n) ELSE null END AS sourceId,
-CASE WHEN r IS NOT NULL THEN elementId(m) ELSE null END AS targetId`;
-
-const YF = `($year = '0' OR toInteger(root.year) = toInteger($year))`;
-const YFN = `($year = '0' OR toInteger(n.year) = toInteger($year))`;
-
 interface ChainDef {
     name: string;
     labels: string[];
-    rels: string[];
-    startLabels: string[];
-    endLabels: string[];
-    narrativeQuery: string;
-    diagnosticQuery?: string;
-}
-
-function autoDiag(c: ChainDef): string {
-    const lf = c.labels.map(l => `n:${l}`).join(' OR ');
-    const tf = c.labels.map(l => `m:${l}`).join(' OR ');
-    const rf = c.rels.map(r => `'${r}'`).join(',');
-    return `MATCH (n) WHERE (${lf}) AND ${YFN}
-OPTIONAL MATCH (n)-[r]->(m) WHERE type(r) IN [${rf}] AND (${tf})
-RETURN DISTINCT ${DRET}`;
+    rels?: string[];
+    startLabels?: string[];
+    endLabels?: string[];
 }
 
 const CHAINS: Record<string, ChainDef> = {
@@ -59,264 +32,43 @@ const CHAINS: Record<string, ChainDef> = {
         labels: ['SectorObjective','SectorPolicyTool','SectorAdminRecord','SectorBusiness','SectorCitizen','SectorGovEntity','SectorDataTransaction','SectorPerformance'],
         rels: ['REALIZED_VIA','REFERS_TO','APPLIED_ON','TRIGGERS_EVENT','MEASURED_BY','AGGREGATES_TO'],
         startLabels: ['SectorObjective'], endLabels: ['SectorPerformance'],
-        narrativeQuery: `MATCH path = (root:SectorObjective {level:'L1'})-[:REALIZED_VIA]->(pol:SectorPolicyTool {level:'L1'})-[:REFERS_TO]->(rec:SectorAdminRecord {level:'L1'})-[:APPLIED_ON]->(stake {level:'L1'})-[:TRIGGERS_EVENT]->(txn:SectorDataTransaction {level:'L1'})-[:MEASURED_BY]->(perf:SectorPerformance {level:'L1'})-[:AGGREGATES_TO]->(root)
-WHERE (stake:SectorBusiness OR stake:SectorCitizen OR stake:SectorGovEntity) AND ${YF}
-UNWIND nodes(path) AS n UNWIND relationships(path) AS r WITH DISTINCT n, r RETURN DISTINCT ${RET}`,
-        diagnosticQuery: `MATCH (n {level: 'L1'})
-WHERE (n:SectorObjective OR n:SectorPolicyTool OR n:SectorAdminRecord OR n:SectorBusiness OR n:SectorCitizen OR n:SectorGovEntity OR n:SectorDataTransaction OR n:SectorPerformance) AND ${YFN}
-OPTIONAL MATCH (n)-[r]->(m {level: 'L1'})
-WHERE type(r) IN ['REALIZED_VIA','REFERS_TO','APPLIED_ON','TRIGGERS_EVENT','MEASURED_BY','AGGREGATES_TO']
-AND (m:SectorObjective OR m:SectorPolicyTool OR m:SectorAdminRecord OR m:SectorBusiness OR m:SectorCitizen OR m:SectorGovEntity OR m:SectorDataTransaction OR m:SectorPerformance)
-RETURN DISTINCT ${DRET}`
     },
     setting_strategic_initiatives: {
         name: 'Strategic Initiatives',
         labels: ['SectorObjective','SectorPolicyTool','EntityCapability','EntityOrgUnit','EntityProcess','EntityITSystem','EntityProject','EntityChangeAdoption'],
         rels: ['REALIZED_VIA','PARENT_OF','SETS_PRIORITIES','ROLE_GAPS','KNOWLEDGE_GAPS','AUTOMATION_GAPS','GAPS_SCOPE','ADOPTION_RISKS'],
         startLabels: ['SectorObjective'], endLabels: ['EntityChangeAdoption'],
-        narrativeQuery: `MATCH path = (root:SectorObjective {level:'L1'})-[:REALIZED_VIA]->(polL1:SectorPolicyTool {level:'L1'})-[:PARENT_OF*0..1]->(polL2:SectorPolicyTool {level:'L2'})-[:SETS_PRIORITIES]->(capL2:EntityCapability {level:'L2'})-[:PARENT_OF*0..1]->(capL3:EntityCapability {level:'L3'})-[:ROLE_GAPS|KNOWLEDGE_GAPS|AUTOMATION_GAPS]->(gap:EntityOrgUnit|EntityProcess|EntityITSystem {level:'L3'})-[:GAPS_SCOPE]->(proj:EntityProject {level:'L3'})-[:ADOPTION_RISKS]->(adopt:EntityChangeAdoption {level:'L3'})
-WHERE ${YF}
-UNWIND nodes(path) AS n UNWIND relationships(path) AS r WITH DISTINCT n, r RETURN DISTINCT ${RET}`,
-        diagnosticQuery: `MATCH (n)
-WHERE (
-    (n:SectorObjective AND n.level = 'L1') OR
-    (n:SectorPolicyTool AND n.level IN ['L1','L2']) OR
-    (n:EntityCapability AND n.level IN ['L2','L3']) OR
-    (n:EntityOrgUnit AND n.level = 'L3') OR
-    (n:EntityProcess AND n.level = 'L3') OR
-    (n:EntityITSystem AND n.level = 'L3') OR
-    (n:EntityProject AND n.level = 'L3') OR
-    (n:EntityChangeAdoption AND n.level = 'L3')
-)
-AND ${YFN}
-OPTIONAL MATCH (n)-[r]->(m)
-WHERE type(r) IN ['REALIZED_VIA','PARENT_OF','SETS_PRIORITIES','ROLE_GAPS','KNOWLEDGE_GAPS','AUTOMATION_GAPS','GAPS_SCOPE','ADOPTION_RISKS']
-AND (
-    (m:SectorObjective AND m.level = 'L1') OR
-    (m:SectorPolicyTool AND m.level IN ['L1','L2']) OR
-    (m:EntityCapability AND m.level IN ['L2','L3']) OR
-    (m:EntityOrgUnit AND m.level = 'L3') OR
-    (m:EntityProcess AND m.level = 'L3') OR
-    (m:EntityITSystem AND m.level = 'L3') OR
-    (m:EntityProject AND m.level = 'L3') OR
-    (m:EntityChangeAdoption AND m.level = 'L3')
-)
-RETURN DISTINCT ${DRET}`
     },
     setting_strategic_priorities: {
         name: 'Strategic Priorities',
         labels: ['SectorObjective','SectorPerformance','EntityCapability','EntityOrgUnit','EntityProcess','EntityITSystem'],
         rels: ['CASCADED_VIA','PARENT_OF','SETS_TARGETS','ROLE_GAPS','KNOWLEDGE_GAPS','AUTOMATION_GAPS'],
         startLabels: ['SectorObjective'], endLabels: ['EntityOrgUnit','EntityProcess','EntityITSystem'],
-        narrativeQuery: `MATCH path = (root:SectorObjective {level:'L1'})-[:CASCADED_VIA]->(perfL1:SectorPerformance {level:'L1'})-[:PARENT_OF*0..1]->(perfL2:SectorPerformance {level:'L2'})-[:SETS_TARGETS]->(capL2:EntityCapability {level:'L2'})-[:PARENT_OF*0..1]->(capL3:EntityCapability {level:'L3'})-[:ROLE_GAPS|KNOWLEDGE_GAPS|AUTOMATION_GAPS]->(gap:EntityOrgUnit|EntityProcess|EntityITSystem {level:'L3'})
-WHERE ${YF}
-UNWIND nodes(path) AS n UNWIND relationships(path) AS r WITH DISTINCT n, r RETURN DISTINCT ${RET}`,
-        diagnosticQuery: `MATCH (n)
-WHERE (
-    (n:SectorObjective AND n.level = 'L1') OR
-    (n:SectorPerformance AND n.level IN ['L1','L2']) OR
-    (n:EntityCapability AND n.level IN ['L2','L3']) OR
-    (n:EntityOrgUnit AND n.level = 'L3') OR
-    (n:EntityProcess AND n.level = 'L3') OR
-    (n:EntityITSystem AND n.level = 'L3')
-)
-AND ${YFN}
-OPTIONAL MATCH (n)-[r]->(m)
-WHERE type(r) IN ['CASCADED_VIA','PARENT_OF','SETS_TARGETS','ROLE_GAPS','KNOWLEDGE_GAPS','AUTOMATION_GAPS']
-AND (
-    (m:SectorObjective AND m.level = 'L1') OR
-    (m:SectorPerformance AND m.level IN ['L1','L2']) OR
-    (m:EntityCapability AND m.level IN ['L2','L3']) OR
-    (m:EntityOrgUnit AND m.level = 'L3') OR
-    (m:EntityProcess AND m.level = 'L3') OR
-    (m:EntityITSystem AND m.level = 'L3')
-)
-RETURN DISTINCT ${DRET}`
     },
     build_oversight: {
         name: 'Build Oversight',
         labels: ['EntityChangeAdoption','EntityProject','EntityOrgUnit','EntityProcess','EntityITSystem','EntityCapability','EntityRisk','SectorPolicyTool','SectorObjective'],
         rels: ['INCREASE_ADOPTION','CLOSE_GAPS','GAP_STATUS','MONITORED_BY','PARENT_OF','INFORMS','GOVERNED_BY'],
         startLabels: ['EntityChangeAdoption'], endLabels: ['SectorObjective'],
-        narrativeQuery: `MATCH (root:EntityChangeAdoption {level:'L3'}) WHERE ${YF}
-MATCH path = (root)-[:INCREASE_ADOPTION]->(proj:EntityProject {level:'L3'})-[:CLOSE_GAPS]->(gap:EntityOrgUnit|EntityProcess|EntityITSystem {level:'L3'})-[:GAP_STATUS]->(capL3:EntityCapability {level:'L3'})-[:MONITORED_BY]->(riskL3:EntityRisk {level:'L3'})<-[:PARENT_OF]-(riskL2:EntityRisk {level:'L2'})-[:INFORMS]->(polL2:SectorPolicyTool {level:'L2'})<-[:PARENT_OF*0..1]-(polL1:SectorPolicyTool {level:'L1'})-[:GOVERNED_BY]->(objL1:SectorObjective {level:'L1'})
-UNWIND nodes(path) AS n UNWIND relationships(path) AS r WITH DISTINCT n, r RETURN DISTINCT ${RET}`,
-        diagnosticQuery: `MATCH (n)
-WHERE (
-    (n:EntityChangeAdoption AND n.level = 'L3') OR
-    (n:EntityProject AND n.level = 'L3') OR
-    (n:EntityOrgUnit AND n.level = 'L3') OR
-    (n:EntityProcess AND n.level = 'L3') OR
-    (n:EntityITSystem AND n.level = 'L3') OR
-    (n:EntityCapability AND n.level = 'L3') OR
-    (n:EntityRisk AND n.level IN ['L2','L3']) OR
-    (n:SectorPolicyTool AND n.level IN ['L1','L2']) OR
-    (n:SectorObjective AND n.level = 'L1')
-)
-AND ${YFN}
-OPTIONAL MATCH (n)-[r]->(m)
-WHERE type(r) IN ['INCREASE_ADOPTION','CLOSE_GAPS','GAP_STATUS','MONITORED_BY','PARENT_OF','INFORMS','GOVERNED_BY']
-AND (
-    (m:EntityChangeAdoption AND m.level = 'L3') OR
-    (m:EntityProject AND m.level = 'L3') OR
-    (m:EntityOrgUnit AND m.level = 'L3') OR
-    (m:EntityProcess AND m.level = 'L3') OR
-    (m:EntityITSystem AND m.level = 'L3') OR
-    (m:EntityCapability AND m.level = 'L3') OR
-    (m:EntityRisk AND m.level IN ['L2','L3']) OR
-    (m:SectorPolicyTool AND m.level IN ['L1','L2']) OR
-    (m:SectorObjective AND m.level = 'L1')
-)
-RETURN DISTINCT ${DRET}`
     },
     operate_oversight: {
         name: 'Operate Oversight',
         labels: ['EntityCapability','EntityRisk','SectorPerformance','SectorObjective'],
         rels: ['MONITORED_BY','PARENT_OF','INFORMS','AGGREGATES_TO'],
         startLabels: ['EntityCapability'], endLabels: ['SectorObjective'],
-        narrativeQuery: `MATCH (root:EntityCapability {level:'L3'}) WHERE ${YF}
-MATCH path = (root)-[:MONITORED_BY]->(riskL3:EntityRisk {level:'L3'})<-[:PARENT_OF]-(riskL2:EntityRisk {level:'L2'})-[:INFORMS]->(perfL2:SectorPerformance {level:'L2'})<-[:PARENT_OF]-(perfL1:SectorPerformance {level:'L1'})-[:AGGREGATES_TO]->(objL1:SectorObjective {level:'L1'})
-UNWIND nodes(path) AS n UNWIND relationships(path) AS r WITH DISTINCT n, r RETURN DISTINCT ${RET}`,
-        diagnosticQuery: `MATCH (n)
-WHERE (
-    (n:EntityCapability AND n.level = 'L3') OR
-    (n:EntityRisk AND n.level IN ['L2','L3']) OR
-    (n:SectorPerformance AND n.level IN ['L1','L2']) OR
-    (n:SectorObjective AND n.level = 'L1')
-)
-AND ${YFN}
-OPTIONAL MATCH (n)-[r]->(m)
-WHERE type(r) IN ['MONITORED_BY','PARENT_OF','INFORMS','AGGREGATES_TO']
-AND (
-    (m:EntityCapability AND m.level = 'L3') OR
-    (m:EntityRisk AND m.level IN ['L2','L3']) OR
-    (m:SectorPerformance AND m.level IN ['L1','L2']) OR
-    (m:SectorObjective AND m.level = 'L1')
-)
-RETURN DISTINCT ${DRET}`
     },
     sustainable_operations: {
         name: 'Sustainable Operations',
         labels: ['EntityCultureHealth','EntityOrgUnit','EntityProcess','EntityITSystem','EntityVendor'],
         rels: ['MONITORS_FOR','APPLY','AUTOMATION','DEPENDS_ON'],
         startLabels: ['EntityCultureHealth'], endLabels: ['EntityVendor'],
-        narrativeQuery: `MATCH (root:EntityCultureHealth {level:'L3'}) WHERE ${YF}
-MATCH path = (root)-[:MONITORS_FOR]->(org:EntityOrgUnit {level:'L3'})-[:APPLY]->(proc:EntityProcess {level:'L3'})-[:AUTOMATION]->(sys:EntityITSystem {level:'L3'})-[:DEPENDS_ON]->(vendor:EntityVendor {level:'L3'})
-UNWIND nodes(path) AS n UNWIND relationships(path) AS r WITH DISTINCT n, r RETURN DISTINCT ${RET}`,
-        diagnosticQuery: `MATCH (n)
-WHERE (
-    n:EntityCultureHealth OR
-    n:EntityOrgUnit OR
-    n:EntityProcess OR
-    n:EntityITSystem OR
-    n:EntityVendor
-)
-AND n.level = 'L3'
-AND ${YFN}
-OPTIONAL MATCH (n)-[r]->(m)
-WHERE type(r) IN ['MONITORS_FOR','APPLY','AUTOMATION','DEPENDS_ON']
-AND (
-    m:EntityCultureHealth OR
-    m:EntityOrgUnit OR
-    m:EntityProcess OR
-    m:EntityITSystem OR
-    m:EntityVendor
-)
-AND m.level = 'L3'
-RETURN DISTINCT ${DRET}`
     },
     integrated_oversight: {
         name: 'Integrated Oversight',
         labels: ['SectorPolicyTool','EntityCapability','EntityOrgUnit','EntityProcess','EntityITSystem','EntityRisk','SectorPerformance'],
         rels: ['SETS_PRIORITIES','PARENT_OF','ROLE_GAPS','KNOWLEDGE_GAPS','AUTOMATION_GAPS','MONITORED_BY','INFORMS'],
         startLabels: ['SectorPolicyTool'], endLabels: ['SectorPerformance'],
-        narrativeQuery: `MATCH (root:SectorPolicyTool {level:'L2'}) WHERE ${YF}
-MATCH p1 = (root)-[:SETS_PRIORITIES]->(capL2:EntityCapability {level:'L2'})
-MATCH p2 = (capL2)-[:PARENT_OF*0..1]->(capL3:EntityCapability {level:'L3'})
-MATCH p3 = (capL3)-[:ROLE_GAPS|KNOWLEDGE_GAPS|AUTOMATION_GAPS]->(gap:EntityOrgUnit|EntityProcess|EntityITSystem {level:'L3'})
-MATCH p4 = (capL3)<-[:MONITORED_BY]-(riskL3:EntityRisk {level:'L3'})
-MATCH p5 = (riskL3)<-[:PARENT_OF*0..1]-(riskL2:EntityRisk {level:'L2'})
-MATCH p6 = (riskL2)-[:INFORMS]->(perfL2:SectorPerformance {level:'L2'})
-WITH [p1,p2,p3,p4,p5,p6] AS paths UNWIND paths AS path
-UNWIND nodes(path) AS n UNWIND relationships(path) AS r WITH DISTINCT n, r RETURN DISTINCT ${RET}`,
-        diagnosticQuery: `MATCH (n)
-WHERE (
-    (n:SectorPolicyTool AND n.level = 'L2') OR
-    (n:EntityCapability AND n.level IN ['L2','L3']) OR
-    (n:EntityOrgUnit AND n.level = 'L3') OR
-    (n:EntityProcess AND n.level = 'L3') OR
-    (n:EntityITSystem AND n.level = 'L3') OR
-    (n:EntityRisk AND n.level IN ['L2','L3']) OR
-    (n:SectorPerformance AND n.level = 'L2')
-)
-AND ${YFN}
-OPTIONAL MATCH (n)-[r]->(m)
-WHERE type(r) IN ['SETS_PRIORITIES','PARENT_OF','ROLE_GAPS','KNOWLEDGE_GAPS','AUTOMATION_GAPS','MONITORED_BY','INFORMS']
-AND (
-    (m:SectorPolicyTool AND m.level = 'L2') OR
-    (m:EntityCapability AND m.level IN ['L2','L3']) OR
-    (m:EntityOrgUnit AND m.level = 'L3') OR
-    (m:EntityProcess AND m.level = 'L3') OR
-    (m:EntityITSystem AND m.level = 'L3') OR
-    (m:EntityRisk AND m.level IN ['L2','L3']) OR
-    (m:SectorPerformance AND m.level = 'L2')
-)
-RETURN DISTINCT ${DRET}`
     }
-};
-
-const transformToGraphData = (records: any[], isDiagnostic: boolean, chainKey: string) => {
-    const nodesMap = new Map();
-    const linksSet = new Set<string>();
-    const validLinks: any[] = [];
-    const config = CHAINS[chainKey];
-
-    for (const record of records) {
-        const nId = record.nId;
-        const labels = record.nLabels || [];
-        const props = record.nProps || {};
-        if (nId && !nodesMap.has(nId)) {
-            const displayId = props.id || props.kpi_id || props.code || null;
-            const displayName = props.name || nId;
-            nodesMap.set(nId, {
-                id: nId, nId, labels, nLabels: labels,
-                label: labels[0] || 'Unknown',
-                name: displayId ? `${displayId}: ${displayName}` : displayName,
-                properties: props, nProps: props, val: 1
-            });
-        }
-    }
-
-    for (const record of records) {
-        const { sourceId, targetId, rType } = record;
-        if (sourceId && targetId && rType) {
-            const linkKey = `${sourceId}-${rType}-${targetId}`;
-            if (!linksSet.has(linkKey) && nodesMap.has(sourceId) && nodesMap.has(targetId)) {
-                linksSet.add(linkKey);
-                validLinks.push({ source: sourceId, sourceId, target: targetId, targetId, type: rType, rType, value: 1 });
-            }
-        }
-    }
-
-    const nodes = Array.from(nodesMap.values());
-    const nodeIds = new Set(nodes.map((n: any) => n.id));
-    const safeLinks = validLinks.filter(l => nodeIds.has(l.source) && nodeIds.has(l.target));
-
-    if (isDiagnostic && config) {
-        // Use connection-based check: a node is connected if it appears as source OR target
-        // This avoids false orphans/bastards when relationships are traversed in reverse
-        // (e.g. PARENT_OF goes L2→L3 in data but chain flows L3→L2 visually)
-        const hasAnyConnection = new Set<string>();
-        safeLinks.forEach((l: any) => { hasAnyConnection.add(l.source); hasAnyConnection.add(l.target); });
-        for (const node of nodes) {
-            if (!hasAnyConnection.has(node.id)) {
-                node.nProps = { ...node.nProps, status: 'critical' };
-                node.properties = node.nProps;
-            }
-        }
-    }
-
-    return { nodes, links: safeLinks };
 };
 
 export function ChainTestDesk() {
@@ -344,33 +96,42 @@ export function ChainTestDesk() {
     const chainConfig = CHAINS[selectedChain];
 
     const { data: graphData, isLoading, error } = useQuery({
-        queryKey: ['chain-test-staging', selectedChain, selectedYear, queryType],
+        queryKey: ['chain-api-v1', selectedChain, selectedYear, queryType],
         queryFn: async () => {
             const isDiag = queryType === 'diagnostic';
-            const query = isDiag
-                ? (chainConfig.diagnosticQuery || autoDiag(chainConfig))
-                : chainConfig.narrativeQuery;
+            const API_BASE = process.env.REACT_APP_API_URL || 'https://betaBE.aitwintech.com';
+            const url = `${API_BASE}/api/v1/chains/${selectedChain}?id=L1&year=${selectedYear}&analyzeGaps=${isDiag}`;
 
-            const response = await fetch(`${STAGING_URL}/db/neo4j/tx/commit`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Basic ${STAGING_AUTH}` },
-                body: JSON.stringify({ statements: [{ statement: query, parameters: { year: selectedYear } }] })
-            });
+            const response = await fetch(url);
 
-            if (!response.ok) throw new Error(`Neo4j error: ${response.status}`);
+            if (!response.ok) {
+                if (response.status === 503) {
+                    const errorText = await response.text();
+                    if (errorText.includes('Neo4j unavailable')) {
+                        return { nodes: [], links: [] };
+                    }
+                }
+                throw new Error(`API error: ${response.status} ${response.statusText}`);
+            }
             const result = await response.json();
-            if (result.errors?.length > 0) throw new Error(result.errors[0].message);
 
-            const records = result.results?.[0]?.data?.map((row: any) => {
-                const cols = result.results[0].columns;
-                const record: any = {};
-                cols.forEach((col: string, idx: number) => { record[col] = row.row[idx]; });
-                return record;
-            }) || [];
+            const apiData = result.results?.[0] || { nodes: [], relationships: [] };
 
-            return transformToGraphData(records, isDiag, selectedChain);
+            // Map to expected {nodes, links} format for compatibility
+            return {
+                nodes: apiData.nodes || [],
+                links: (apiData.relationships || []).map((rel: any) => ({
+                    source: rel.sourceId || rel.source,
+                    target: rel.targetId || rel.target,
+                    type: rel.rType || rel.type,
+                    rType: rel.rType || rel.type,
+                    sourceId: rel.sourceId || rel.source,
+                    targetId: rel.targetId || rel.target,
+                    value: rel.value || 1,
+                    ...rel
+                }))
+            };
         },
-        enabled: true,
         refetchOnWindowFocus: false
     });
 
@@ -444,7 +205,7 @@ export function ChainTestDesk() {
                             style={{ padding: '2px 8px', background: 'transparent', color: '#fff', border: '1px solid #444', borderRadius: '4px', cursor: 'pointer', fontSize: '14px' }}>+</button>
                     </div>
 
-                    <span style={{ fontSize: '9px', color: '#d97706', fontWeight: 600, marginLeft: 'auto' }}>LOCAL STAGING</span>
+                    <span style={{ fontSize: '9px', color: '#10b981', fontWeight: 600, marginLeft: 'auto' }}>BACKEND API</span>
 
                     <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginLeft: '8px' }}>
                         {Object.entries(activeLabelColors).map(([label, color]) => (

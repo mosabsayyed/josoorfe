@@ -259,6 +259,7 @@ export function ExplorerDesk({ year = '2025', quarter = 'All' }: ExplorerDeskPro
             const yearParam = Number.isNaN(yearNum) ? '0' : String(yearNum);
             params.append('year', yearParam);
             params.append('analyzeGaps', analyzeGaps.toString());
+            params.append('limit', limit.toString());
             params.append('excludeEmbeddings', 'true');
             const url = `${baseUrl}/api/business-chain/${chain}?${params.toString()}`;
             console.log(`[ExplorerDesk] Chain URL: ${url}`);

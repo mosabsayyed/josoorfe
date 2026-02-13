@@ -72,6 +72,8 @@ export function NeoGraph({
     if (highlightIds && highlightIds.length > 0) {
       return highlightIds.includes(node.id) ? '#EF4444' : (isDark ? 'rgba(75,85,99,0.2)' : 'rgba(200,200,200,0.2)');
     }
+    // Diagnostic Coloring: Critical nodes are RED
+    if (node.properties?.status === 'critical') return '#EF4444';
     if (nodeColor) return nodeColor(node);
     if (legendConfig && legendConfig.colors) {
       const type = node.labels?.[0] || node.type;
@@ -116,6 +118,8 @@ export function NeoGraph({
     nodeLabel: null, // Disable default tooltip to use our custom one
     nodeColor: resolveNodeColor,
     nodeRelSize: 6,
+    // Fix Sphere Rendering: Ensure resolution is high enough or use custom object if needed
+    nodeResolution: 16,
     linkColor: resolveLinkColor,
     linkWidth: resolveLinkWidth,
     linkDirectionalArrowLength: 3,
@@ -126,7 +130,8 @@ export function NeoGraph({
     onNodeHover: setHoverNode,
     onNodeClick: (node: any) => onNodeClick && onNodeClick(node),
     cooldownTicks: 100,
-    onEngineStop: () => { graphRef.current?.zoomToFit(400, 40); },
+    // FIX: Removed onEngineStop which was forcing camera reset on every stabilize
+    // onEngineStop: () => { graphRef.current?.zoomToFit(400, 40); },
     onNodeDragEnd: (node: any) => { node.fx = node.x; node.fy = node.y; node.fz = node.z; },
     linkLineDash: (link: any) => (link.properties?.status === 'critical' || link.properties?.virtual) ? [5, 5] : null,
   };
@@ -161,9 +166,11 @@ export function NeoGraph({
           borderRadius: '0.5rem', boxShadow: '0 20px 40px rgba(0,0,0,0.8), 0 0 10px rgba(212,175,55,0.2)',
           pointerEvents: 'none' as const, zIndex: 9999, color: '#fff'
         }}>
-          <h3 style={{ margin: '0 0 0.75rem 0', fontSize: '1rem', fontWeight: 800, color: '#D4AF37',
+          <h3 style={{
+            margin: '0 0 0.75rem 0', fontSize: '1rem', fontWeight: 800, color: '#D4AF37',
             borderBottom: '1px solid rgba(212,175,55,0.3)', paddingBottom: '0.5rem',
-            textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>
+            textTransform: 'uppercase' as const, letterSpacing: '0.05em'
+          }}>
             {hoverNode.properties?.name || hoverNode.label || hoverNode.id || 'Unnamed Node'}
           </h3>
           <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '0.5rem' }}>

@@ -1,0 +1,133 @@
+/* ═══════════════════════════════════════════════
+   JOSOOR DESIGN TOKENS v2.0
+   Palette: #111827 · #1F2937 · #F4BB30
+   ═══════════════════════════════════════════════ */
+
+:root {
+  /* ─── CORE BACKGROUNDS ─── */
+  --bg-deep:        #0B0F1A;
+  --bg-primary:     #111827;
+  --bg-secondary:   #1F2937;
+  --bg-elevated:    #283548;
+  --bg-surface:     #182230;
+  --bg-overlay:     rgba(17, 24, 39, 0.88);
+
+  /* ─── GOLD ACCENT ─── */
+  --gold-primary:   #F4BB30;
+  --gold-bright:    #FFD04A;
+  --gold-hover:     #E5AD20;
+  --gold-muted:     #C49520;
+  --gold-faint:     rgba(244, 187, 48, 0.10);
+  --gold-glow:      rgba(244, 187, 48, 0.25);
+
+  /* ─── TEAL / STRATEGIC BLUE ─── */
+  --teal-primary:   #145c80;
+  --teal-light:     #1a7aa8;
+  --teal-muted:     #0f4a66;
+  --teal-faint:     rgba(20, 92, 128, 0.12);
+
+  /* ─── TEXT HIERARCHY ─── */
+  --text-primary:   #f8f8f8;
+  --text-secondary: #dcdcdc;
+  --text-muted:     #808894;
+  --text-subtle:    #545c68;
+  --text-inverse:   #111827;
+
+  /* ─── SEMANTIC COLORS (theme-aligned) ─── */
+  --success:        #2DD4A8;   /* teal-green */
+  --success-muted:  rgba(45, 212, 168, 0.12);
+  --warning:        #F4BB30;   /* brand gold */
+  --warning-muted:  rgba(244, 187, 48, 0.12);
+  --error:          #E8634B;   /* warm coral */
+  --error-muted:    rgba(232, 99, 75, 0.12);
+  --info:           #5B9BD5;   /* steel blue */
+  --info-muted:     rgba(91, 155, 213, 0.12);
+
+  /* ─── BORDERS & DIVIDERS ─── */
+  --border-default:  rgba(255, 255, 255, 0.06);
+  --border-subtle:   rgba(255, 255, 255, 0.04);
+  --border-strong:   rgba(255, 255, 255, 0.12);
+  --border-gold:     rgba(244, 187, 48, 0.30);
+
+  /* ─── TYPOGRAPHY ─── */
+  --font-primary:    'Inter', sans-serif;
+  --font-heading:    'IBM Plex Sans', sans-serif;
+  --font-mono:       'IBM Plex Mono', monospace;
+  --font-arabic:     'IBM Plex Sans Arabic', sans-serif;
+
+  --text-xs:    0.75rem;
+  --text-sm:    0.875rem;
+  --text-base:  1rem;
+  --text-md:    1.125rem;
+  --text-lg:    1.25rem;
+  --text-xl:    1.5rem;
+  --text-2xl:   2rem;
+  --text-3xl:   2.5rem;
+  --text-4xl:   3rem;
+  --text-5xl:   3.75rem;
+
+  --leading-tight:   1.2;
+  --leading-snug:    1.35;
+  --leading-normal:  1.5;
+  --leading-relaxed: 1.65;
+
+  --tracking-tight:  -0.02em;
+  --tracking-normal: 0;
+  --tracking-wide:   0.04em;
+  --tracking-wider:  0.08em;
+  --tracking-widest: 0.14em;
+
+  /* ─── SPACING (4px base) ─── */
+  --space-1:  0.25rem;
+  --space-2:  0.5rem;
+  --space-3:  0.75rem;
+  --space-4:  1rem;
+  --space-5:  1.25rem;
+  --space-6:  1.5rem;
+  --space-8:  2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+  --space-20: 5rem;
+  --space-24: 6rem;
+
+  /* ─── RADII ─── */
+  --radius-sm:   4px;
+  --radius-md:   8px;
+  --radius-lg:   12px;
+  --radius-xl:   16px;
+  --radius-2xl:  24px;
+  --radius-full: 9999px;
+
+  /* ─── SHADOWS ─── */
+  --shadow-sm:    0 1px 2px rgba(0,0,0,0.3);
+  --shadow-md:    0 4px 12px rgba(0,0,0,0.25);
+  --shadow-lg:    0 8px 24px rgba(0,0,0,0.3);
+  --shadow-xl:    0 16px 48px rgba(0,0,0,0.35);
+  --shadow-gold:  0 0 20px rgba(244, 187, 48, 0.15);
+  --shadow-inner: inset 0 1px 3px rgba(0,0,0,0.3);
+
+  /* ─── TRANSITIONS ─── */
+  --ease-default:  cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-in:       cubic-bezier(0.4, 0, 1, 1);
+  --ease-out:      cubic-bezier(0, 0, 0.2, 1);
+  --ease-bounce:   cubic-bezier(0.34, 1.56, 0.64, 1);
+  --duration-fast:   150ms;
+  --duration-normal: 250ms;
+  --duration-slow:   400ms;
+
+  /* ─── Z-INDEX ─── */
+  --z-base:      0;
+  --z-dropdown:  10;
+  --z-sticky:    20;
+  --z-modal:     30;
+  --z-toast:     40;
+  --z-tooltip:   50;
+
+  /* ─── LAYOUT ─── */
+  --container-sm:  640px;
+  --container-md:  768px;
+  --container-lg:  1024px;
+  --container-xl:  1280px;
+  --container-2xl: 1440px;
+}

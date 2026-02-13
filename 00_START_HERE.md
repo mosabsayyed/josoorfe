@@ -271,7 +271,7 @@ JOSOOR now includes comprehensive OpenTelemetry tracing for monitoring:
 
 **When you start a task:**
 
-1. **Read the Coding Agent Contract.md** to understand how to conduct yourself
+1. **Read the CODING_AGENT_PROTOCOL.md** to understand how to conduct yourself
 2. **Check the architecture doc** for the layer you're working on:
    - Backend work → `/docs/BACKEND_ARCHITECTURE.md`
    - Frontend work → `/docs/FRONTEND_ARCHITECTURE.md`
