@@ -143,6 +143,7 @@ export default function Header() {
           >
             {t.contact}
           </button>
+          <LanguageToggle />
           {!user && (
             <button
               onClick={() => { navigate('/login'); setMobileMenuOpen(false); }}
