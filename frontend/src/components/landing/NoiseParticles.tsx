@@ -1,23 +1,41 @@
 import React, { useRef, useEffect } from 'react';
 
-interface Particle {
+/**
+ * Elegant noise-to-signal animation:
+ * - Soft glowing dots drift lazily across the left side
+ * - Periodically, a dot gets "captured" and flows smoothly along a curved path into the convergence point
+ * - A thin luminous trail follows the captured dot
+ * - The convergence dot pulses gently with a warm glow
+ * - Clean output line extends right
+ */
+
+interface Dot {
   x: number;
   y: number;
   vx: number;
   vy: number;
   r: number;
   color: string;
+  alpha: number;
+  // Capture state
   captured: boolean;
-  captureProgress: number;
+  t: number; // 0-1 interpolation along capture path
+  startX: number;
+  startY: number;
+  trail: Array<{ x: number; y: number; alpha: number }>;
 }
 
-const COLORS = ['#EF4444', '#F4BB30', '#3B82F6', '#9B7AF7', '#10B981', '#1A7AA8', '#808894'];
-const CONVERGENCE_X = 0.78;
-const CONVERGENCE_Y = 0.5;
+const PALETTE = [
+  'rgba(239, 68, 68, 0.6)',   // red
+  'rgba(244, 187, 48, 0.5)',  // gold
+  'rgba(59, 130, 246, 0.6)',  // blue
+  'rgba(155, 122, 247, 0.5)', // purple
+  'rgba(16, 185, 129, 0.6)',  // green
+  'rgba(26, 122, 168, 0.5)',  // teal
+];
 
 export default function NoiseParticles({ width = 600, height = 200 }: { width?: number; height?: number }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const particlesRef = useRef<Particle[]>([]);
   const frameRef = useRef<number>(0);
 
   useEffect(() => {
@@ -26,161 +44,165 @@ export default function NoiseParticles({ width = 600, height = 200 }: { width?: 
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Scale for retina
     const dpr = window.devicePixelRatio || 1;
     canvas.width = width * dpr;
     canvas.height = height * dpr;
     ctx.scale(dpr, dpr);
 
-    const cx = width * CONVERGENCE_X;
-    const cy = height * CONVERGENCE_Y;
+    const cx = width * 0.78;
+    const cy = height * 0.5;
 
-    // Init particles
-    const particles: Particle[] = [];
-    for (let i = 0; i < 40; i++) {
-      particles.push({
-        x: Math.random() * width * 0.6,
-        y: Math.random() * height,
-        vx: (Math.random() - 0.3) * 1.5,
-        vy: (Math.random() - 0.5) * 1.2,
-        r: 1.5 + Math.random() * 2,
-        color: COLORS[Math.floor(Math.random() * COLORS.length)],
-        captured: false,
-        captureProgress: 0,
-      });
+    // Create dots — gentle drifters
+    const dots: Dot[] = [];
+    for (let i = 0; i < 24; i++) {
+      dots.push(makeDot(width, height));
     }
-    particlesRef.current = particles;
 
     let pulsePhase = 0;
+    let captureTimer = 0;
+
+    function makeDot(w: number, h: number): Dot {
+      return {
+        x: Math.random() * w * 0.55 + 10,
+        y: Math.random() * h,
+        vx: (Math.random() - 0.5) * 0.4,
+        vy: (Math.random() - 0.5) * 0.3,
+        r: 2 + Math.random() * 2.5,
+        color: PALETTE[Math.floor(Math.random() * PALETTE.length)],
+        alpha: 0.3 + Math.random() * 0.4,
+        captured: false,
+        t: 0,
+        startX: 0,
+        startY: 0,
+        trail: [],
+      };
+    }
+
+    // Cubic bezier interpolation for smooth capture path
+    function bezierPoint(t: number, p0: number, p1: number, p2: number, p3: number) {
+      const u = 1 - t;
+      return u * u * u * p0 + 3 * u * u * t * p1 + 3 * u * t * t * p2 + t * t * t * p3;
+    }
 
     const animate = () => {
       ctx.clearRect(0, 0, width, height);
-      pulsePhase += 0.03;
+      pulsePhase += 0.025;
+      captureTimer++;
 
-      // Draw convergence dot (pulsing)
-      const pulseR = 5 + Math.sin(pulsePhase) * 3;
-      const pulseAlpha = 0.7 + Math.sin(pulsePhase) * 0.3;
+      // --- Convergence glow ---
+      const glowR = 12 + Math.sin(pulsePhase) * 4;
+      const gradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, glowR);
+      gradient.addColorStop(0, 'rgba(244, 187, 48, 0.5)');
+      gradient.addColorStop(0.5, 'rgba(244, 187, 48, 0.1)');
+      gradient.addColorStop(1, 'rgba(244, 187, 48, 0)');
       ctx.beginPath();
-      ctx.arc(cx, cy, pulseR + 4, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(244, 187, 48, ${pulseAlpha * 0.2})`;
-      ctx.fill();
-      ctx.beginPath();
-      ctx.arc(cx, cy, pulseR, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(244, 187, 48, ${pulseAlpha})`;
+      ctx.arc(cx, cy, glowR, 0, Math.PI * 2);
+      ctx.fillStyle = gradient;
       ctx.fill();
 
-      // Output line
+      // Core dot
+      const dotR = 4 + Math.sin(pulsePhase) * 1.5;
       ctx.beginPath();
-      ctx.moveTo(cx, cy);
-      ctx.lineTo(width * 0.95, cy);
-      ctx.strokeStyle = 'rgba(244, 187, 48, 0.6)';
-      ctx.lineWidth = 2.5;
-      ctx.shadowColor = 'rgba(244, 187, 48, 0.4)';
-      ctx.shadowBlur = 6;
+      ctx.arc(cx, cy, dotR, 0, Math.PI * 2);
+      ctx.fillStyle = '#F4BB30';
+      ctx.fill();
+
+      // --- Output line ---
+      ctx.beginPath();
+      ctx.moveTo(cx + dotR + 2, cy);
+      ctx.lineTo(width * 0.92, cy);
+      ctx.strokeStyle = 'rgba(244, 187, 48, 0.5)';
+      ctx.lineWidth = 2;
       ctx.stroke();
-      ctx.shadowBlur = 0;
 
-      // "one signal" label
-      ctx.font = '600 11px monospace';
+      // Labels
+      ctx.font = '600 11px "SF Mono", "Fira Code", monospace';
       ctx.fillStyle = '#F4BB30';
       ctx.textAlign = 'left';
-      ctx.fillText('one signal', width * 0.95 + 4 > width - 60 ? width - 60 : width * 0.95 + 4, cy + 4);
+      ctx.fillText('one signal', Math.min(width * 0.92 + 6, width - 62), cy + 4);
 
-      // "scattered inputs" label
-      ctx.font = '11px monospace';
+      ctx.font = '11px "SF Mono", "Fira Code", monospace';
       ctx.fillStyle = '#808894';
       ctx.textAlign = 'left';
       ctx.fillText('scattered inputs', 8, 16);
 
-      for (const p of particles) {
-        const dx = cx - p.x;
-        const dy = cy - p.y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-
-        // Random chance to get "captured" (start streaming toward dot)
-        if (!p.captured && dist < width * 0.45 && Math.random() < 0.003) {
-          p.captured = true;
-          p.captureProgress = 0;
+      // --- Capture one dot every ~120 frames ---
+      if (captureTimer > 90 + Math.random() * 60) {
+        captureTimer = 0;
+        const free = dots.filter(d => !d.captured);
+        if (free.length > 0) {
+          const pick = free[Math.floor(Math.random() * free.length)];
+          pick.captured = true;
+          pick.t = 0;
+          pick.startX = pick.x;
+          pick.startY = pick.y;
+          pick.trail = [];
         }
+      }
 
-        if (p.captured) {
-          // Accelerate toward convergence point
-          p.captureProgress += 0.012;
-          const pull = 0.02 + p.captureProgress * 0.08;
-          p.vx += dx * pull * 0.01;
-          p.vy += dy * pull * 0.01;
+      // --- Update & draw dots ---
+      for (let i = 0; i < dots.length; i++) {
+        const d = dots[i];
 
-          // Draw stretching line from particle toward convergence
-          const lineAlpha = Math.min(1, p.captureProgress * 2);
+        if (d.captured) {
+          d.t += 0.008 + d.t * 0.012; // ease-in: accelerates
+
+          // Bezier control points for a nice curve
+          const cp1x = d.startX + (cx - d.startX) * 0.3;
+          const cp1y = d.startY - 30 + Math.sin(d.startY) * 20;
+          const cp2x = cx - 60;
+          const cp2y = cy;
+
+          const px = bezierPoint(d.t, d.startX, cp1x, cp2x, cx);
+          const py = bezierPoint(d.t, d.startY, cp1y, cp2y, cy);
+
+          // Trail
+          d.trail.push({ x: px, y: py, alpha: 0.6 });
+          if (d.trail.length > 20) d.trail.shift();
+
+          // Draw trail
+          for (let j = 0; j < d.trail.length; j++) {
+            const tp = d.trail[j];
+            tp.alpha *= 0.92;
+            ctx.beginPath();
+            ctx.arc(tp.x, tp.y, d.r * 0.6, 0, Math.PI * 2);
+            ctx.fillStyle = d.color.replace(/[\d.]+\)$/, `${tp.alpha})`);
+            ctx.fill();
+          }
+
+          // Draw dot
           ctx.beginPath();
-          ctx.moveTo(p.x, p.y);
-          // Line stretches toward convergence as particle approaches
-          const lx = p.x + dx * Math.min(0.5, p.captureProgress);
-          const ly = p.y + dy * Math.min(0.5, p.captureProgress);
-          ctx.lineTo(lx, ly);
-          ctx.strokeStyle = p.color.replace(')', `, ${lineAlpha * 0.5})`).replace('rgb', 'rgba').replace('#', '');
-          // Use hex color with alpha via globalAlpha
-          ctx.globalAlpha = lineAlpha * 0.5;
-          ctx.strokeStyle = p.color;
-          ctx.lineWidth = 1;
-          ctx.stroke();
-          ctx.globalAlpha = 1;
+          ctx.arc(px, py, d.r * (1 - d.t * 0.5), 0, Math.PI * 2);
+          ctx.fillStyle = d.color;
+          ctx.fill();
 
-          // Reset when reached
-          if (dist < 8) {
-            p.x = Math.random() * width * 0.3;
-            p.y = Math.random() * height;
-            p.vx = (Math.random() - 0.3) * 1.5;
-            p.vy = (Math.random() - 0.5) * 1.2;
-            p.captured = false;
-            p.captureProgress = 0;
+          d.x = px;
+          d.y = py;
+
+          // Reset when arrived
+          if (d.t >= 1) {
+            Object.assign(d, makeDot(width, height));
           }
         } else {
-          // Random bouncing
-          p.vx += (Math.random() - 0.5) * 0.3;
-          p.vy += (Math.random() - 0.5) * 0.3;
+          // Gentle drift
+          d.vx += (Math.random() - 0.5) * 0.05;
+          d.vy += (Math.random() - 0.5) * 0.05;
+          d.vx *= 0.98;
+          d.vy *= 0.98;
+          d.x += d.vx;
+          d.y += d.vy;
 
-          // Dampen
-          p.vx *= 0.98;
-          p.vy *= 0.98;
-        }
+          // Soft bounds
+          if (d.x < 5) d.vx += 0.1;
+          if (d.x > width * 0.58) d.vx -= 0.1;
+          if (d.y < 5) d.vy += 0.1;
+          if (d.y > height - 5) d.vy -= 0.1;
 
-        // Move
-        p.x += p.vx;
-        p.y += p.vy;
-
-        // Bounds (left 60% for non-captured)
-        if (!p.captured) {
-          if (p.x < 0) { p.x = 0; p.vx *= -1; }
-          if (p.x > width * 0.65) { p.x = width * 0.65; p.vx *= -1; }
-        }
-        if (p.y < 0) { p.y = 0; p.vy *= -1; }
-        if (p.y > height) { p.y = height; p.vy *= -1; }
-
-        // Draw particle
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        ctx.fillStyle = p.color;
-        ctx.globalAlpha = p.captured ? 0.8 : 0.5;
-        ctx.fill();
-        ctx.globalAlpha = 1;
-
-        // Draw connections between nearby particles (collision/proximity)
-        for (const q of particles) {
-          if (p === q) continue;
-          const ddx = p.x - q.x;
-          const ddy = p.y - q.y;
-          const dd = Math.sqrt(ddx * ddx + ddy * ddy);
-          if (dd < 40 && !p.captured && !q.captured) {
-            ctx.beginPath();
-            ctx.moveTo(p.x, p.y);
-            ctx.lineTo(q.x, q.y);
-            ctx.strokeStyle = p.color;
-            ctx.globalAlpha = 0.1 * (1 - dd / 40);
-            ctx.lineWidth = 0.5;
-            ctx.stroke();
-            ctx.globalAlpha = 1;
-          }
+          // Draw dot with soft glow
+          ctx.beginPath();
+          ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
+          ctx.fillStyle = d.color;
+          ctx.fill();
         }
       }
 
