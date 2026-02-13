@@ -184,23 +184,38 @@ export default function NoiseParticles({ width = 600, height = 200 }: { width?: 
             Object.assign(d, makeDot(width, height));
           }
         } else {
-          // Gentle drift
-          d.vx += (Math.random() - 0.5) * 0.05;
-          d.vy += (Math.random() - 0.5) * 0.05;
-          d.vx *= 0.98;
-          d.vy *= 0.98;
+          // Active drift — visible movement with directional wandering
+          d.vx += (Math.random() - 0.5) * 0.15;
+          d.vy += (Math.random() - 0.5) * 0.15;
+          // Occasional bigger nudge to keep things lively
+          if (Math.random() < 0.02) {
+            d.vx += (Math.random() - 0.5) * 1.5;
+            d.vy += (Math.random() - 0.5) * 1.0;
+          }
+          d.vx *= 0.96;
+          d.vy *= 0.96;
           d.x += d.vx;
           d.y += d.vy;
 
           // Soft bounds
-          if (d.x < 5) d.vx += 0.1;
-          if (d.x > width * 0.58) d.vx -= 0.1;
-          if (d.y < 5) d.vy += 0.1;
-          if (d.y > height - 5) d.vy -= 0.1;
+          if (d.x < 5) d.vx += 0.3;
+          if (d.x > width * 0.58) d.vx -= 0.3;
+          if (d.y < 5) d.vy += 0.3;
+          if (d.y > height - 5) d.vy -= 0.3;
 
-          // Draw dot with soft glow
+          // Breathing: gentle size pulse unique to each dot
+          const breathe = Math.sin(pulsePhase * 1.5 + i * 1.7) * 0.8;
+          const drawR = d.r + breathe;
+
+          // Outer glow
           ctx.beginPath();
-          ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
+          ctx.arc(d.x, d.y, drawR + 3, 0, Math.PI * 2);
+          ctx.fillStyle = d.color.replace(/[\d.]+\)$/, '0.08)');
+          ctx.fill();
+
+          // Core dot
+          ctx.beginPath();
+          ctx.arc(d.x, d.y, drawR, 0, Math.PI * 2);
           ctx.fillStyle = d.color;
           ctx.fill();
         }
