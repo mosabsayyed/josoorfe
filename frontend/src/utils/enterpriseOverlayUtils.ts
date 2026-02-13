@@ -58,21 +58,40 @@ export function calculateHeatmapColor(l3: L3Capability, overlayType: OverlayType
             break;
     }
 
-    // Use per-node thresholds from DB if available, else spec defaults
-    // DB thresholds are health-based (green=85 → exposure ≤15% is green)
-    // Already converted to exposure thresholds in enrichWithRiskData
-    const greenMax = (l3 as any)._threshold_green_max ?? 15;  // default: exposure ≤15% = green
-    const amberMax = (l3 as any)._threshold_amber_max ?? 30;  // default: exposure ≤30% = amber
+    // Thresholds represent achievement % (actual/target):
+    //   threshold_green=85 → achievement ≥85% of target = green
+    //   threshold_amber=70 → achievement ≥70% of target = amber
+    //   below amber threshold = red
+    // 
+    // For risk-exposure overlay: use maturity achievement % against thresholds
+    // For other overlays: use the computed deltaPercent against spec bands
+    const thresholdGreen = (l3 as any)._threshold_green ?? 85;
+    const thresholdAmber = (l3 as any)._threshold_amber ?? 70;
 
-    if (deltaPercent <= greenMax) {
-        // GREEN
-        return 'rgba(16, 185, 129, 0.6)';
-    } else if (deltaPercent <= amberMax) {
-        // AMBER
-        return 'rgba(245, 158, 11, 0.6)';
+    // Achievement = maturity_level / target_maturity_level * 100
+    const achievement = l3.target_maturity_level > 0
+        ? (l3.maturity_level / l3.target_maturity_level) * 100
+        : 0;
+
+    if (overlayType === 'risk-exposure') {
+        // Use achievement vs thresholds
+        if (achievement >= thresholdGreen) {
+            return 'rgba(16, 185, 129, 0.6)';  // GREEN
+        } else if (achievement >= thresholdAmber) {
+            return 'rgba(245, 158, 11, 0.6)';  // AMBER
+        } else {
+            return 'rgba(239, 68, 68, 0.6)';   // RED
+        }
+    }
+
+    // For other overlays: use deltaPercent with spec default bands
+    // band_green_max_pct: 35, band_amber_max_pct: 65
+    if (deltaPercent < 35) {
+        return 'rgba(16, 185, 129, 0.6)';  // GREEN
+    } else if (deltaPercent < 65) {
+        return 'rgba(245, 158, 11, 0.6)';  // AMBER
     } else {
-        // RED
-        return 'rgba(239, 68, 68, 0.6)';
+        return 'rgba(239, 68, 68, 0.6)';   // RED
     }
 }
 
