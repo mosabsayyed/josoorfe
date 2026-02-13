@@ -236,8 +236,8 @@ export default function LandingPage() {
   // Inject CSS for the landing page
   useEffect(() => {
     const css = `
-      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Cairo:wght@400;500;600;700&family=Tajawal:wght@400;500;700&display=swap');
-      
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Cairo:wght@400;500;600;700;800&family=Tajawal:wght@400;500;700&display=swap');
+
       :root {
         --component-bg-primary: #111827;
         --component-panel-bg: rgba(31, 41, 55, 0.6); /* Glass effect increased */
@@ -247,6 +247,12 @@ export default function LandingPage() {
         --component-text-muted: #9CA3AF;
         --component-text-accent: var(--component-text-accent);
         --component-text-on-accent: #111827;
+
+        /* Font family variables - matching main site */
+        --component-font-family: 'Inter', sans-serif;
+        --component-font-heading: 'Inter', sans-serif;
+        --component-font-family-ar: 'Tajawal', sans-serif;
+        --component-font-heading-ar: 'Cairo', sans-serif;
       }
 
       html, body {
@@ -258,14 +264,29 @@ export default function LandingPage() {
       .landing-page {
         background: var(--component-bg-primary);
         color: var(--component-text-primary);
-        font-family: "Inter", sans-serif;
+        font-family: var(--component-font-family);
         overflow-x: hidden;
         overflow-y: auto;
         line-height: 1.5;
         min-height: 100vh;
         position: relative;
       }
-      
+
+      /* Arabic font support - matching main site exactly */
+      .landing-page[dir="rtl"],
+      .landing-page[dir="rtl"] * {
+        font-family: var(--component-font-family-ar);
+      }
+
+      .landing-page[dir="rtl"] h1,
+      .landing-page[dir="rtl"] h2,
+      .landing-page[dir="rtl"] h3,
+      .landing-page[dir="rtl"] h4,
+      .landing-page[dir="rtl"] h5,
+      .landing-page[dir="rtl"] h6 {
+        font-family: var(--component-font-heading-ar);
+      }
+
       .landing-page * {
         box-sizing: border-box;
       }
@@ -632,6 +653,44 @@ export default function LandingPage() {
         h1 { font-size: 40px; line-height: 48px; }
         h2 { font-size: 32px; line-height: 40px; }
         .hero-title { font-size: 40px; }
+      }
+
+      @media (max-width: 768px) {
+        section {
+          padding: 1.5rem 1rem !important;
+        }
+
+        section.content-centered {
+          max-width: 100%;
+        }
+
+        .section-content-box {
+          padding: 8px;
+          border-radius: 12px;
+        }
+
+        .landing-page h1 {
+          font-size: 32px;
+          line-height: 1.2;
+        }
+
+        .landing-page h2 {
+          font-size: 28px;
+          line-height: 1.2;
+        }
+
+        .subtitle {
+          font-size: 15px;
+          line-height: 1.5;
+        }
+
+        .invite-form {
+          padding: 20px 16px;
+        }
+
+        #background-image {
+          display: none;
+        }
       }
     `;
     const style = document.createElement('style');

@@ -32,13 +32,13 @@ export default function Platform({ content }: PlatformProps) {
           }}>
             {content.tag}
           </div>
-          <h2 style={{ fontSize: '48px', fontWeight: 800, marginBottom: '10px', fontFamily: 'var(--font-heading, "IBM Plex Sans")' }}>{content.title}</h2>
+          <h2 style={{ fontSize: 'clamp(28px, 6vw, 48px)', fontWeight: 800, marginBottom: '10px', fontFamily: 'var(--font-heading, "IBM Plex Sans")' }}>{content.title}</h2>
           <p className="subtitle" style={{ fontSize: '16px', maxWidth: '560px', margin: '0 auto', lineHeight: '1.65' }}>{content.subtitle}</p>
         </div>
 
         <ConcaveCarousel autoRotateInterval={6000} height="460px">
           {content.modes.map((mode, i) => (
-            <div key={i} className="cc-card" style={{ width: '560px', maxWidth: '90vw' }}>
+            <div key={i} className="cc-card" style={{ maxWidth: '90vw' }}>
               <div className="mc-inner">
                 <div className="mc-text">
                   <h3>{mode.title}</h3>

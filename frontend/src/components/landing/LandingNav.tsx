@@ -1,10 +1,13 @@
-import React from 'react';
+import React, { useState } from 'react';
+import '../../styles/landing.css';
 
 interface LandingNavProps {
   language: string;
 }
 
 export default function LandingNav({ language }: LandingNavProps) {
+  const [mobileOpen, setMobileOpen] = useState(false);
+
   const t = {
     logo: 'Josoor',
     links: language === 'en'
@@ -16,6 +19,7 @@ export default function LandingNav({ language }: LandingNavProps) {
   const sections = ['nonoise', 'claims', 'promise', 'platform', 'arch'];
 
   const scrollToSection = (id: string) => {
+    setMobileOpen(false);
     const element = document.getElementById(id);
     if (element) {
       element.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -47,19 +51,28 @@ export default function LandingNav({ language }: LandingNavProps) {
         {t.logo}
       </div>
 
-      <ul style={{
+      <ul className={`landing-nav-links${mobileOpen ? ' mobile-open' : ''}`} style={{
         display: 'flex',
         gap: '2rem',
         listStyle: 'none',
         margin: 0,
         padding: 0
       }}>
+        {mobileOpen && (
+          <button
+            className="mobile-close-btn"
+            onClick={() => setMobileOpen(false)}
+            aria-label="Close menu"
+          >
+            ✕
+          </button>
+        )}
         {t.links.map((label, i) => (
           <li key={i}>
             <a
               onClick={() => scrollToSection(sections[i])}
               style={{
-                fontSize: '12px',
+                fontSize: '14px',
                 color: 'var(--text-muted, #808894)',
                 textDecoration: 'none',
                 letterSpacing: '0.03em',
@@ -73,9 +86,34 @@ export default function LandingNav({ language }: LandingNavProps) {
             </a>
           </li>
         ))}
+        {mobileOpen && (
+          <li>
+            <a
+              onClick={() => scrollToSection('beta')}
+              style={{
+                fontSize: '20px',
+                color: 'var(--gold-primary, #F4BB30)',
+                textDecoration: 'none',
+                cursor: 'pointer',
+                fontWeight: 700
+              }}
+            >
+              {t.cta}
+            </a>
+          </li>
+        )}
       </ul>
 
+      <button
+        className="hamburger-btn"
+        onClick={() => setMobileOpen(true)}
+        aria-label="Open menu"
+      >
+        ☰
+      </button>
+
       <a
+        className="landing-nav-cta"
         onClick={() => scrollToSection('beta')}
         style={{
           fontSize: '12px',

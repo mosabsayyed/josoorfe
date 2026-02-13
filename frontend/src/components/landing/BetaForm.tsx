@@ -69,7 +69,7 @@ export default function BetaForm({ content, language }: BetaFormProps) {
 
         {/* Title */}
         <h2 style={{
-          fontSize: '48px',
+          fontSize: 'clamp(28px, 6vw, 48px)',
           fontWeight: 800,
           marginBottom: '10px',
           fontFamily: 'var(--font-heading, "IBM Plex Sans")',
@@ -254,7 +254,7 @@ export default function BetaForm({ content, language }: BetaFormProps) {
 
         {/* Note */}
         <div style={{
-          fontSize: '11px',
+          fontSize: '14px',
           color: 'var(--text-muted, #808894)',
           marginTop: '13px'
         }}>

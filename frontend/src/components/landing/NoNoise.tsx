@@ -13,7 +13,7 @@ export default function NoNoise({ content }: NoNoiseProps) {
         {/* Title - matching v10 style */}
         <h2 style={{
           fontFamily: 'var(--font-heading, "IBM Plex Sans")',
-          fontSize: '48px',
+          fontSize: 'clamp(28px, 6vw, 48px)',
           fontWeight: 800,
           marginBottom: '16px'
         }}>
@@ -152,7 +152,7 @@ export default function NoNoise({ content }: NoNoiseProps) {
 
         {/* Swagger text - v10 style */}
         <p style={{
-          fontSize: '28px',
+          fontSize: 'clamp(20px, 4vw, 28px)',
           fontWeight: 800,
           lineHeight: '1.3',
           marginTop: '48px',

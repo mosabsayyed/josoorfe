@@ -183,7 +183,7 @@
 }
 
 .ont-mid-line {
-  font-size: 12px;
+  font-size: 14px;
   color: var(--component-text-accent);
 }
 
@@ -241,7 +241,7 @@
   position: absolute;
   top: -0.6rem;
   left: 0.5rem;
-  font-size: 12px;
+  font-size: 14px;
   color: var(--component-text-accent);
   font-family: var(--component-font-mono);
   letter-spacing: 0.06em;
@@ -267,7 +267,7 @@
 }
 
 .sig-n {
-  font-size: 12px;
+  font-size: 14px;
   color: var(--component-text-muted);
 }
 
@@ -303,7 +303,7 @@
 /* ═══ Flip Hint ═══ */
 .flip-hint {
   text-align: center;
-  font-size: 12px;
+  font-size: 14px;
   color: var(--component-text-accent);
   margin-top: 0.7rem;
   animation: pulse 2s ease-in-out infinite;
@@ -346,7 +346,7 @@
 .eng-c.operate h4 { color: #1A7AA8; }
 
 .eng-c p {
-  font-size: 13px;
+  font-size: 14px;
   color: var(--component-text-muted);
   line-height: 1.5;
 }
@@ -373,33 +373,72 @@
 }
 
 .ksa-n {
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 700;
   color: var(--component-text-primary);
 }
 
 .ksa-d {
-  font-size: 12px;
+  font-size: 14px;
   color: var(--component-text-muted);
 }
 
 /* ═══ Responsive Design ═══ */
 @media (max-width: 768px) {
   .pyr-flip {
-    max-width: 90%;
+    max-width: 95%;
+  }
+
+  .pyr-inner {
+    min-height: 420px;
+  }
+
+  .pyr-face {
+    min-height: 420px;
   }
 
   .py-layers {
-    padding: 0 1rem 0.5rem;
+    padding: 0 0.5rem 0.5rem;
   }
+
+  .py-n {
+    font-size: 15px;
+  }
+
+  .py-d {
+    font-size: 12px;
+  }
+
+  .py-node {
+    font-size: 11px;
+    padding: 0.15rem 0.35rem;
+  }
+
+  .py-1 { width: 50% !important; }
+  .py-2 { width: 70% !important; }
+  .py-3 { width: 85% !important; }
+  .py-4 { width: 100% !important; }
 
   .py-flow {
     font-size: 9px;
     padding: 0.4rem 1rem 0;
   }
 
+  .back-h {
+    font-size: 16px;
+  }
+
+  .on {
+    font-size: 11px;
+    padding: 0.2rem 0.4rem;
+  }
+
   .sig-overlay {
     grid-template-columns: repeat(2, 1fr);
+  }
+
+  .sig-overlay::before {
+    font-size: 10px;
   }
 
   .ont-row {
@@ -414,5 +453,33 @@
 
   .ont-mid {
     transform: rotate(90deg);
+  }
+
+  .eng-row {
+    grid-template-columns: 1fr;
+  }
+
+  .ksa {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.8rem;
+  }
+}
+
+@media (max-width: 375px) {
+  .pyr-inner,
+  .pyr-face {
+    min-height: 380px;
+  }
+
+  .py-1 { width: 60% !important; }
+  .py-2 { width: 75% !important; }
+  .py-3 { width: 90% !important; }
+
+  .sig-overlay {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .sig-overlay::before {
+    font-size: 9px;
   }
 }

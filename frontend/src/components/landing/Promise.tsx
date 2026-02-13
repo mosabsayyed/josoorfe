@@ -42,7 +42,7 @@ export default function Promise({ content }: PromiseProps) {
   const getCardStyles = (pos: number | 'hidden') => {
     const baseStyles: React.CSSProperties = {
       position: 'absolute',
-      width: '380px',
+      width: isMobile ? '300px' : '380px',
       maxWidth: '85vw',
       borderRadius: 'var(--radius-xl, 12px)',
       border: '1px solid var(--border-default, rgba(255, 255, 255, 0.1))',
@@ -201,7 +201,7 @@ export default function Promise({ content }: PromiseProps) {
           }}>
             {content.tag}
           </div>
-          <h2 style={{ fontSize: '48px', fontWeight: 800, marginBottom: '10px', fontFamily: 'var(--font-heading, "IBM Plex Sans")' }}>{content.title}</h2>
+          <h2 style={{ fontSize: 'clamp(28px, 6vw, 48px)', fontWeight: 800, marginBottom: '10px', fontFamily: 'var(--font-heading, "IBM Plex Sans")' }}>{content.title}</h2>
           <p className="subtitle" style={{ fontSize: '16px', maxWidth: '560px', margin: '0 auto', lineHeight: '1.65' }}>{content.subtitle}</p>
         </div>
 
@@ -213,7 +213,7 @@ export default function Promise({ content }: PromiseProps) {
               alignItems: 'center',
               justifyContent: 'center',
               position: 'relative',
-              height: '580px',
+              height: isMobile ? '420px' : '580px',
               perspective: '900px',
             }}
             onMouseEnter={() => setIsPaused(true)}
@@ -238,7 +238,7 @@ export default function Promise({ content }: PromiseProps) {
                     alt={persona.role}
                     style={{
                       width: '100%',
-                      height: '260px',
+                      height: isMobile ? '180px' : '260px',
                       objectFit: 'cover',
                       objectPosition: 'center 20%',
                       filter: pos === 0 ? 'brightness(0.95) saturate(1)' : 'brightness(0.85) saturate(0.9)',
@@ -251,7 +251,7 @@ export default function Promise({ content }: PromiseProps) {
                     <div
                       style={{
                         fontFamily: 'var(--font-mono, monospace)',
-                        fontSize: '12px',
+                        fontSize: '14px',
                         color: 'var(--gold-muted, #D4AF37)',
                         letterSpacing: '0.06em',
                         marginBottom: '0.5rem',
@@ -262,7 +262,7 @@ export default function Promise({ content }: PromiseProps) {
 
                     <div
                       style={{
-                        fontSize: '12px',
+                        fontSize: '14px',
                         fontWeight: 700,
                         textTransform: 'uppercase',
                         letterSpacing: '0.05em',
@@ -273,7 +273,7 @@ export default function Promise({ content }: PromiseProps) {
                     </div>
                     <div
                       style={{
-                        fontSize: '13px',
+                        fontSize: '14px',
                         color: 'var(--text-muted, rgba(255, 255, 255, 0.6))',
                         lineHeight: '1.45',
                         margin: '0.15rem 0 0.4rem',
@@ -292,7 +292,7 @@ export default function Promise({ content }: PromiseProps) {
 
                     <div
                       style={{
-                        fontSize: '12px',
+                        fontSize: '14px',
                         fontWeight: 700,
                         textTransform: 'uppercase',
                         letterSpacing: '0.05em',

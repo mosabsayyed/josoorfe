@@ -70,7 +70,7 @@ export default function Hero({ content, language }: HeroProps) {
             flexDirection: 'column',
             alignItems: 'center',
             gap: '0.5rem',
-            padding: '1.2rem 3rem',
+            padding: '1.2rem 2rem',
             border: '2px solid var(--gold-primary, #F4BB30)',
             borderRadius: 'var(--radius-xl, 16px)',
             background: 'linear-gradient(135deg, rgba(244,187,48,0.06), rgba(244,187,48,0.01))',

@@ -11,6 +11,14 @@ export default function ConcaveCarousel({
   autoRotateInterval = 6000,
   height = '580px'
 }: ConcaveCarouselProps) {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth <= 768);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
   const [current, setCurrent] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const total = children.length;
@@ -61,7 +69,7 @@ export default function ConcaveCarousel({
       <div
         className="cc-track"
         ref={trackRef}
-        style={{ height }}
+        style={{ height: isMobile ? '400px' : height }}
       >
         {React.Children.map(children, (child, index) => {
           const position = getPosition(index);

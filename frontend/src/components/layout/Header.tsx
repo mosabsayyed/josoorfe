@@ -3,10 +3,19 @@ import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../../contexts/LanguageContext';
 import LanguageToggle from '../LanguageToggle';
 import { useAuth } from '../../contexts/AuthContext';
-import { User, LogOut, Settings, LayoutDashboard, ChevronDown } from 'lucide-react';
+import { User, LogOut, Settings, LayoutDashboard, ChevronDown, Menu, X } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 
 export default function Header() {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth <= 768);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
   const navigate = useNavigate();
   const { language } = useLanguage();
   const { user, logout } = useAuth();
@@ -48,7 +57,7 @@ export default function Header() {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'space-between',
-      padding: '16px 40px',
+      padding: isMobile ? '12px 16px' : '16px 40px',
       background: 'rgba(17, 24, 39, 0.6)',
       backdropFilter: 'blur(20px)',
       borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
@@ -67,22 +76,113 @@ export default function Header() {
             style={{ height: '32px', width: 'auto' }}
           />
         </button>
-        <span style={{
-          fontSize: '14px',
-          fontWeight: 600,
-          color: '#D1D5DB',
-          borderLeft: '1px solid #374151',
-          paddingLeft: '24px',
-          height: '24px',
-          display: 'flex',
-          alignItems: 'center'
-        }}>
-          {t.betaText}
-        </span>
+        {!isMobile && (
+          <span style={{
+            fontSize: '14px',
+            fontWeight: 600,
+            color: '#D1D5DB',
+            borderLeft: '1px solid #374151',
+            paddingLeft: '24px',
+            height: '24px',
+            display: 'flex',
+            alignItems: 'center'
+          }}>
+            {t.betaText}
+          </span>
+        )}
       </div>
 
+      {/* Mobile hamburger */}
+      {isMobile && (
+        <button
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          style={{
+            background: 'none',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            borderRadius: '8px',
+            color: 'var(--component-text-accent, #F4BB30)',
+            cursor: 'pointer',
+            padding: '8px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: '44px',
+            height: '44px',
+            zIndex: 1001,
+          }}
+        >
+          {mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
+        </button>
+      )}
+
+      {/* Mobile fullscreen menu */}
+      {isMobile && mobileMenuOpen && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(17, 24, 39, 0.97)',
+          backdropFilter: 'blur(24px)',
+          zIndex: 1000,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '2rem',
+        }}>
+          <button
+            onClick={() => { navigate('/founder-letter'); setMobileMenuOpen(false); }}
+            style={{ background: 'none', border: 'none', color: '#F9FAFB', cursor: 'pointer', fontSize: '20px', fontWeight: 600 }}
+          >
+            {t.founder}
+          </button>
+          <button
+            onClick={() => { navigate('/contact-us'); setMobileMenuOpen(false); }}
+            style={{ background: 'none', border: 'none', color: '#F9FAFB', cursor: 'pointer', fontSize: '20px', fontWeight: 600 }}
+          >
+            {t.contact}
+          </button>
+          {!user && (
+            <button
+              onClick={() => { navigate('/login'); setMobileMenuOpen(false); }}
+              style={{
+                background: 'transparent',
+                border: '2px solid var(--component-text-accent, #F4BB30)',
+                color: 'var(--component-text-accent, #F4BB30)',
+                padding: '12px 32px',
+                borderRadius: '999px',
+                fontSize: '18px',
+                fontWeight: 700,
+                cursor: 'pointer',
+              }}
+            >
+              {t.login}
+            </button>
+          )}
+          {user && (
+            <button
+              onClick={() => { navigate('/josoor'); setMobileMenuOpen(false); }}
+              style={{
+                background: 'transparent',
+                border: '2px solid var(--component-text-accent, #F4BB30)',
+                color: 'var(--component-text-accent, #F4BB30)',
+                padding: '12px 32px',
+                borderRadius: '999px',
+                fontSize: '18px',
+                fontWeight: 700,
+                cursor: 'pointer',
+              }}
+            >
+              {t.dashboard}
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Right: Navigation & Actions */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '32px' }}>
+      <div style={{ display: isMobile ? 'none' : 'flex', alignItems: 'center', gap: '32px' }}>
         <nav style={{ display: 'flex', gap: '24px', fontSize: '14px' }}>
           <button
             onClick={() => navigate('/founder-letter')}
