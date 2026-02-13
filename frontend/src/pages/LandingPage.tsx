@@ -370,13 +370,13 @@ export default function LandingPage() {
       }
 
       section {
-        padding: 100px 40px; /* Increased padding */
+        padding: 3rem 2rem;
         position: relative;
         background: transparent;
       }
 
       section.content-centered {
-        max-width: 1280px; /* Wider container */
+        max-width: 1100px;
         margin: 0 auto;
       }
 
@@ -646,7 +646,7 @@ export default function LandingPage() {
     <div className="landing-page" dir={isRTL ? 'rtl' : 'ltr'}>
       <Header />
 
-      <Hero content={t.hero} />
+      <Hero content={t.hero} language={language} />
 
       <img id="background-image" src="/att/landing-screenshots/Vector.svg" alt="" />
 
