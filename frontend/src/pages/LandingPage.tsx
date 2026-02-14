@@ -280,9 +280,21 @@ export default function LandingPage() {
       }
 
       section {
-        padding: 2rem 2rem;
+        padding: 1rem 1rem;  /* Mobile-first: 320px phones get 288px content */
         position: relative;
         background: transparent;
+      }
+
+      @media (min-width: 480px) {
+        section {
+          padding: 1.5rem 1.5rem;  /* Small tablets: more breathing room */
+        }
+      }
+
+      @media (min-width: 768px) {
+        section {
+          padding: 2rem 2rem;  /* Desktop: full padding */
+        }
       }
 
       section.content-centered {
@@ -545,10 +557,6 @@ export default function LandingPage() {
       }
 
       @media (max-width: 768px) {
-        section {
-          padding: 1.5rem 1rem !important;
-        }
-
         section.content-centered {
           max-width: 100%;
         }

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { NoNoiseContent } from './types';
 import NoiseParticles from './NoiseParticles';
 
@@ -7,6 +7,19 @@ interface NoNoiseProps {
 }
 
 export default function NoNoise({ content }: NoNoiseProps) {
+  const [isMobile, setIsMobile] = useState(
+    typeof window !== 'undefined' ? window.innerWidth <= 768 : false
+  );
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const canvasWidth = isMobile ? 280 : 600;   // 280px fits 320px-480px phones
+  const canvasHeight = isMobile ? 140 : 200;
+
   return (
     <section className="content-centered" id="nonoise">
       <div style={{ textAlign: 'center', maxWidth: '800px', margin: '0 auto' }}>
@@ -32,7 +45,7 @@ export default function NoNoise({ content }: NoNoiseProps) {
         </p>
 
         {/* Particle animation — scattered particles collide and stream into convergence dot */}
-        <NoiseParticles width={600} height={200} />
+        <NoiseParticles width={canvasWidth} height={canvasHeight} />
 
         {/* Swagger text - v10 style */}
         <p style={{

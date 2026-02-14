@@ -15,8 +15,13 @@ export default function Sparkle({ imageSrc, dotCount = 600 }: SparkleProps) {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+    const updateCanvasSize = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    };
+
+    // Initial size
+    updateCanvasSize();
 
     const img = new Image();
     img.crossOrigin = 'anonymous';
@@ -195,16 +200,21 @@ export default function Sparkle({ imageSrc, dotCount = 600 }: SparkleProps) {
 
     img.src = imageSrc;
 
-    // Handle window resize
+    // Listen for resize with debounce
+    let resizeTimer: NodeJS.Timeout;
     const handleResize = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        updateCanvasSize();
+        console.log(`Canvas resized to ${window.innerWidth}x${window.innerHeight}`);
+      }, 100);
     };
 
     window.addEventListener('resize', handleResize);
 
     return () => {
       window.removeEventListener('resize', handleResize);
+      clearTimeout(resizeTimer);
     };
   }, [imageSrc, dotCount]);
 
