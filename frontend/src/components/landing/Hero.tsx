@@ -21,12 +21,14 @@ export default function Hero({ content, language }: HeroProps) {
       {/* Sparkle background with hero image */}
       <Sparkle imageSrc="/att/ksa_mpbackgd.png" dotCount={1000} />
 
-      {/* Overlay - matching overall page style */}
+      {/* Overlay - split into two layers so glass box can blur the real background */}
+      {/* Bottom overlay: edges only, center stays transparent for glass blur */}
       <div className="hero-overlay" style={{
         position: 'absolute',
         inset: 0,
         zIndex: 1,
-        background: 'radial-gradient(ellipse at center, transparent 0%, rgba(17, 24, 39, 0.4) 50%, var(--component-bg-primary, #111827) 85%), linear-gradient(180deg, transparent 50%, var(--component-bg-primary, #111827) 100%)'
+        background: 'radial-gradient(ellipse at center, transparent 0%, transparent 30%, rgba(17, 24, 39, 0.6) 60%, var(--component-bg-primary, #111827) 90%), linear-gradient(180deg, transparent 50%, var(--component-bg-primary, #111827) 100%)',
+        pointerEvents: 'none'
       }}></div>
 
       {/* Container - exact v10 structure */}
@@ -71,12 +73,12 @@ export default function Hero({ content, language }: HeroProps) {
             alignItems: 'center',
             gap: '0.5rem',
             padding: '1.2rem 2rem',
-            border: '1px solid rgba(255, 255, 255, 0.18)',
-            borderRadius: '16px',
-            background: 'rgba(255, 255, 255, 0.08)',
-            backdropFilter: 'blur(24px)',
-            WebkitBackdropFilter: 'blur(24px)',
-            boxShadow: '0 8px 32px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.15), inset 0 -1px 0 rgba(255,255,255,0.05)'
+            border: '1px solid rgba(255, 255, 255, 0.2)',
+            borderRadius: '24px',
+            background: 'rgba(255, 255, 255, 0.12)',
+            backdropFilter: 'blur(40px) saturate(180%)',
+            WebkitBackdropFilter: 'blur(40px) saturate(180%)',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.2), inset 0 -1px 0 rgba(255,255,255,0.05)'
           }}>
             <div className="hb-logo" style={{
               display: 'flex',
