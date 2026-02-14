@@ -393,6 +393,14 @@ export function MessageBubble({
       )}
 
       <div className={`message-content ${isUser ? 'message-content--user' : 'message-content--bot'}`}>
+        {/* Compaction Indicator */}
+        {!isUser && message.metadata?.was_condensed && (
+          <div className="compaction-indicator" title="Previous messages were condensed to stay within context limits">
+            <div className="compaction-indicator-line"></div>
+            <span className="compaction-indicator-text">Context condensed</span>
+            <div className="compaction-indicator-line"></div>
+          </div>
+        )}
         <div className={`message-bubble ${isUser ? 'message-bubble--user' : 'message-bubble--bot'} clickable`}>
           <div className="message-bubble-inner">
             {/* Thinking Process (Reasoning) */}

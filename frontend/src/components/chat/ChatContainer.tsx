@@ -12,6 +12,7 @@ import { useEffect, useRef, useMemo, useState, memo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MessageBubble, ThinkingIndicator } from './MessageBubble';
 import { ChatInput } from './ChatInput';
+import { CondensationIndicator } from './CondensationIndicator';
 import { ScrollArea } from '../ui/scroll-area';
 import { BarChart3, FileText, Table, MessageSquare, LogOut } from 'lucide-react';
 import type { Message as APIMessage } from '../../types/api';
@@ -87,6 +88,8 @@ export const ChatContainer = memo(function ChatContainer({
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(() => getUser());
+  const [showCondensationDetails, setShowCondensationDetails] = useState(false);
+  const [condensationMetadata, setCondensationMetadata] = useState<any>(null);
 
   // Listen for auth changes
   useEffect(() => {
@@ -98,6 +101,29 @@ export const ChatContainer = memo(function ChatContainer({
       window.removeEventListener('josoor_auth_change', onStorage as EventListener);
     };
   }, []);
+
+  // Detect condensation metadata in messages
+  useEffect(() => {
+    // Look for condensation metadata in any message
+    for (const msg of messages) {
+      if (msg.metadata?.condenser_result) {
+        setCondensationMetadata(msg.metadata.condenser_result);
+        break;
+      }
+      // Alternative: look for system messages indicating condensation
+      if (
+        msg.role === 'system' &&
+        msg.content.includes('PRIOR CONTEXT (compressed)')
+      ) {
+        // Extract metadata from the system message if available
+        setCondensationMetadata({
+          found: true,
+          inSystemMessage: true,
+        });
+        break;
+      }
+    }
+  }, [messages]);
   const { language: ctxLanguage } = useLanguage();
   const effectiveLanguage = language ?? ctxLanguage;
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -447,6 +473,18 @@ export const ChatContainer = memo(function ChatContainer({
                       gap: '24px',
                     }}
                   >
+                    {/* Condensation Indicator - Show if condensation detected */}
+                    {condensationMetadata && (
+                      <CondensationIndicator
+                        originalCount={condensationMetadata.original_message_count}
+                        condensedCount={condensationMetadata.condensed_message_count}
+                        tokensSaved={condensationMetadata.tokens_freed}
+                        language={effectiveLanguage}
+                        expanded={showCondensationDetails}
+                        onToggleExpanded={setShowCondensationDetails}
+                      />
+                    )}
+
                     {messages.map((message) => (
                       <MessageBubble
                         key={message.id}

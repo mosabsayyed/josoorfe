@@ -12,3 +12,4 @@ export { CanvasManager } from './CanvasManager';
 export { CanvasPanel } from './CanvasPanel';
 export { CanvasHeader } from './CanvasHeader';
 export { UniversalCanvas } from './UniversalCanvas';
+export { CondensationIndicator } from './CondensationIndicator';
