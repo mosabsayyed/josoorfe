@@ -136,6 +136,19 @@ export function NeoGraph({
     linkLineDash: (link: any) => (link.properties?.status === 'critical' || link.properties?.virtual) ? [5, 5] : null,
   };
 
+  // 3D force-directed physics configuration for sphere layout
+  const physics3DProps = {
+    forceEngine: "d3" as const,
+    d3AlphaDecay: 0.02,
+    d3VelocityDecay: 0.3,
+    cooldownTicks: 200,
+    d3Force: {
+      charge: { strength: -120 },
+      center: { strength: 0.1 },
+      collision: { radius: 5, strength: 0.5 }
+    }
+  };
+
   return (
     <div ref={containerRef} style={{ position: 'relative', width: '100%', height: '100%' }}>
       {/* View Toggle */}
@@ -150,7 +163,7 @@ export function NeoGraph({
       </div>
 
       {(dimensions.width > 0 && dimensions.height > 0) ? (
-        is3D ? <ForceGraph3D {...commonProps} /> : <ForceGraph2D {...commonProps} />
+        is3D ? <ForceGraph3D {...commonProps} {...physics3DProps} /> : <ForceGraph2D {...commonProps} />
       ) : (
         <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           Preparing Canvas...
@@ -182,6 +195,27 @@ export function NeoGraph({
                 <strong style={{ color: '#D4AF37' }}>ID:</strong> <code>{hoverNode.properties?.id || hoverNode.id}</code>
               </p>
             </div>
+            {/* Orphan/Bastard Flags */}
+            {(hoverNode.orphan || hoverNode.bastard) && (
+              <div style={{ 
+                marginTop: '0.75rem', 
+                padding: '0.5rem', 
+                background: 'rgba(239, 68, 68, 0.1)',
+                border: '1px solid rgba(239, 68, 68, 0.3)',
+                borderRadius: '0.25rem'
+              }}>
+                {hoverNode.orphan && (
+                  <p style={{ margin: 0, fontSize: '0.75rem', color: '#EF4444' }}>
+                    🔴 <strong>Orphan:</strong> No outgoing connections
+                  </p>
+                )}
+                {hoverNode.bastard && (
+                  <p style={{ margin: hoverNode.orphan ? '4px 0 0 0' : 0, fontSize: '0.75rem', color: '#EF4444' }}>
+                    🔴 <strong>Bastard:</strong> No incoming connections
+                  </p>
+                )}
+              </div>
+            )}
             {hoverNode.properties && Object.keys(hoverNode.properties).length > 0 && (
               <div>
                 <strong style={{ display: 'block', marginTop: '8px', marginBottom: '4px', color: '#D4AF37' }}>Properties:</strong>
