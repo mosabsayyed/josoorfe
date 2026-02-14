@@ -1,0 +1,171 @@
+{
+  "hero": {
+    "title": "JOSOOR",
+    "subtitle": "Decision Intelligence for Highly Regulated Sectors",
+    "badge": "KSA's Vision 2030 OS"
+  },
+  "noNoise": {
+    "title": "No Noise. All Signal.",
+    "subtitle": "Is your team chasing reports 30hrs a week? Ad-hocs are your norm? No alignment on \"priorities\"? Best people leaving? Change activities failing? Complexity is always one step ahead?",
+    "swagger": "Great!",
+    "closing": "Let's transform Complexity into your most valuable Asset!"
+  },
+  "claims": {
+    "tag": "Heard It Before?",
+    "title": "See the difference.",
+    "subtitle": "What makes Josoor fundamentally different from others in this space.",
+    "items": [
+      "<b><em>Built with AIs</em> for humans from the ground up</b> — Every structure is machine-native. Every interface is human-intuitive.",
+      "<b>Scalable to multi-Sectors and Entities</b> — one Josoor instance adapts to any government entity without rebuilding.",
+      "<b>Tailored for the Vision and its objectives/KPIs</b> — national methodologies and sectorial programs are first-class objects, not afterthoughts.",
+      "<b>Native Arabic (and soon multi-accent)</b> — built for Arabic-first government context.",
+      "<b>One definition, one version, one source of Priorities</b> — take opinions out of the dialogue. Everyone sees the same truth.",
+      "<b>Frontier Knowledge Graphing to model complexity</b> — relationships between KPIs, initiatives, risks, and resources are modelled as a living graph, not flat tables.",
+      "<b>KSA Public-Sector's first \"Ontology\" IP</b> — a reusable, scalable knowledge framework that grows smarter via guided AI learning."
+    ]
+  },
+  "promise": {
+    "tag": "The Promise",
+    "title": "Same people. Different reality.",
+    "subtitle": "What changes for each person on your team.",
+    "before": "BEFORE",
+    "withJosoor": "WITH JOSOOR",
+    "personas": [
+      {
+        "role": "Vice Minister — Strategic Leadership",
+        "before": "Forced to micromanage. Problems escalate before they reach him. Surprises in the minister's office.",
+        "after": "Closing deals. Approving directions. Risks surface early with actions ready. The board deck builds itself."
+      },
+      {
+        "role": "Business Manager — Capability Owner",
+        "before": "Juggling strategy priorities vs operational realities. Less time with stakeholders due to weekly reports",
+        "after": "On-site with stakeholders. Status auto-populates. Confirms with one tap on WhatsApp. Done."
+      },
+      {
+        "role": "Strategy Manager — Planning & Performance",
+        "before": "Firefighting. Can't think about next year because this quarter's Adaa submission isn't done.",
+        "after": "Planning new sectors, partnerships, targets. The quarterly report drafts itself. Strategy, not admin."
+      },
+      {
+        "role": "PMO Director — Governance & Delivery",
+        "before": "Reports nobody reads. Blamed for overruns he flagged 3 months ago. Team of 4 is now 3.",
+        "after": "Focused on future risks. AI handles chasing. His team stays because the job finally makes sense."
+      }
+    ]
+  },
+  "platform": {
+    "tag": "The Platform",
+    "title": "Three modes. Always running.",
+    "subtitle": "From national KPIs to individual deliverables — tightly linked.",
+    "modes": [
+      {
+        "title": "Watch",
+        "desc": "Not just what's red — catches what <em>looks green but is quietly declining</em>. Training drops, HR shrugs, Josoor traces the chain to the Minister's phone. You find out now, not in 3 months."
+      },
+      {
+        "title": "Decide",
+        "desc": "AI traces root cause and cascading impact across the map. The <em>full chain</em> from failing deliverable to national KPI, plus concrete options with outcomes. No guessing, all math."
+      },
+      {
+        "title": "Deliver",
+        "desc": "Weekly priorities synced with Strategic Priorities. 4 out of 42 items matter this week — <em>focus</em>. True critical path drives system flags with high confidence"
+      }
+    ]
+  },
+  "architecture": {
+    "tag": "The Architecture",
+    "title": "Designed around data you have today",
+    "intro": "No new data lake. No 18-month integration. Josoor is an <b>overlay</b> that builds bridges between your existing systems and stakeholders — a true information superhighway traversed by powerful LLMs, transforming <b>data complexity into strategic insights</b> and siloed stakeholders into an aligned powerhouse.",
+    "engines": [
+      {
+        "title": "BUILD — Are we building on time?",
+        "desc": "For each capability under construction, checks every project closing its gaps. Calculates <b>build exposure</b> from real dates. No AI opinion — math."
+      },
+      {
+        "title": "OPERATE — Are we running healthy?",
+        "desc": "Scores people + process + tools. Two consecutive drops, even while green? <b>Forced amber.</b> Catches decline before red."
+      }
+    ],
+    "pyramidFrontLabel": "Your organization's data — click to see what Josoor builds behind it",
+    "pyramidFlipHintBack": "Click to see your data layers",
+    "pyramidFlipHintFront": "Click the pyramid to see Josoor's ontology behind it",
+    "twinEngines": "Twin Engines",
+    "vision2030Compatible": "Vision 2030 Compatible",
+    "pyramid": {
+      "strategy": "Strategy",
+      "strategyDesc": "Objectives, KPIs",
+      "sectorOps": "Sector Operations",
+      "sectorOpsDesc": "Your value chain",
+      "sectorNodes": ["Policy Tools", "Performance", "Admin Records", "Data TXNs", "Businesses", "Citizens"],
+      "enterpriseOps": "Enterprise Operations",
+      "enterpriseOpsDesc": "Org, Process, Systems, Vendors",
+      "projects": "Projects Portfolio",
+      "projectsDesc": "Closing capability gaps",
+      "statusFlow": "↑ Status",
+      "directionFlow": "Direction ↓"
+    },
+    "ksa": {
+      "adaa": "Adaa",
+      "adaaDesc": "Quarterly KPIs",
+      "expro": "EXPRO",
+      "exproDesc": "Project Standards",
+      "dga": "DGA",
+      "dgaDesc": "Digital Maturity",
+      "etimad": "Etimad",
+      "etimadDesc": "Budget Tracking",
+      "cog": "CoG",
+      "cogDesc": "KPI cascade"
+    }
+  },
+  "beta": {
+    "tag": "Beta Launch",
+    "title": "Ready to hear more?",
+    "subtitle": "Josoor is in its private limited beta phase. Register your interest now.",
+    "note": "Limited spots. KSA government entities only. We'll respond within 48 hours.",
+    "form": {
+      "name": "Full name",
+      "email": "Work email",
+      "org": "Organization name",
+      "role": "Your role",
+      "roleOptions": ["Vice Minister / Undersecretary", "Strategy & Planning Director", "PMO Director / Manager", "Business / Capability Owner", "IT / Digital Transformation", "Other"],
+      "submit": "Apply for Private Beta →"
+    },
+    "submitSuccess": "Application submitted",
+    "errorSubmit": "Error submitting request. Please try again or contact support.",
+    "alertSuccess": "Application submitted! We will review and contact you within 48 hours."
+  },
+  "header": {
+    "betaText": "Welcome to JOSOOR - Agentic Enterprise Platform - Invite Only for Public Sector",
+    "founder": "Founder Letter",
+    "contact": "Contact Us",
+    "login": "Beta Login",
+    "dashboard": "Dashboard",
+    "settings": "Settings",
+    "logout": "Sign Out",
+    "homeTitle": "Home"
+  },
+  "footer": {
+    "rights": "© 2026 AI Twin Tech"
+  },
+  "founderLetter": {
+    "title": "Founder's Letter: Origins",
+    "paragraphs": [
+      "Just over two years ago was my first introduction to GenAI. What started as a basic ask to ChatGPT to design a training program to teach me \"AI\", continued non-stop over the entire weekend to end with contemplating how unlocking the human potential is not in the pursuit of answers but rather the articulation of the right questions. And from that came the concept of the Living Transformation Network, a semi-sentient network of AIs carrying one mission to improve humanity and life by taking over the complexity of society and daring us to think.",
+      "\"What do we do with all the spare time we will have?\"",
+      "That experience changed me forever. I even published the wild interaction in a LinkedIn article, with the aim of helping other skeptics or on the fence seniors to make the jump and embrace AI.",
+      "Since then, I have been pursuing that specific concept. Which at its core is \"how to make transformation management push back and control the complexity beast?\" I continued to design the model itself. Yet after six months, even with a sound model that took all the complexity and jammed it into a relational database, the AI tech was still not there yet, and a solution then meant investing the old way (licenses, infra., coders etc.).",
+      "So I kept it on a slow burner, refining and tweaking based on real life client setups I encounter.",
+      "Until a few months back. GenAI started to make significant leaps in capabilities, and the AI development tools and communities advanced with more \"no coding\" solutions. Suddenly, the fire power needed to navigate the complex maze of relations was not only available, but remarkably affordable. Not only that, but cloud hosting had also a breakthrough with Azure certified by the government after years of a no-cloud hosting policy.",
+      "I had no choice, no excuse and no regrets in chasing this dream.",
+      "All my career I was a pioneer, but for others' benefit. This was my chance to flip the script and pioneer with no constraints. In fact, part of the fuel behind this was all the bottled up \"red-tape\" frustration. I am pursuing this all the way Inshallah.",
+      "I hope once the concept and its national benefits clicks, you will join me in this journey, whether as an Architect or a Builder, so we give it the best chance of success."
+    ],
+    "signature": "CEO/Founder - Mosab Sayyed"
+  },
+  "contactUs": {
+    "title": "Contact Us",
+    "subtitle": "We are here to help you with your transformation journey.",
+    "emailLabel": "Email Us",
+    "description": "For inquiries, partnerships, or support, please reach out to us directly."
+  }
+}

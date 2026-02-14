@@ -73,6 +73,7 @@ venv-neo4j/
 *.json
 !frontend/package.json
 !frontend/tsconfig.json
+!frontend/src/i18n/*.json
 !backend/package.json
 !backend/tsconfig.json
 *.csv
