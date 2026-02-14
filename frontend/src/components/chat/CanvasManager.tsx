@@ -86,11 +86,13 @@ export function CanvasManager({ isOpen = false, conversationId = null, artifacts
       else if (propArtifacts.length === 1) {
         setCurrentArtifact(propArtifacts[0]);
         setCurrentIndex(0);
+        setMode('expanded');
       }
       // Fallback: If no current artifact or current is not in new list, set first
       else if (!currentArtifact || !propArtifacts.find(a => a.id === currentArtifact.id)) {
         setCurrentArtifact(propArtifacts[0]);
         setCurrentIndex(0);
+        setMode('expanded');
       }
     }
   }, [propArtifacts, initialArtifact]);

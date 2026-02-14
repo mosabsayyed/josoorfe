@@ -309,8 +309,10 @@ export default function ChatAppPage() {
     }
   };
 
-  const handleOpenArtifact = useCallback((artifact: any) => {
-    setCanvasArtifacts([artifact]);
+  const handleOpenArtifact = useCallback((artifact: any, allArtifacts?: any[]) => {
+    const list = allArtifacts && allArtifacts.length > 0 ? allArtifacts : [artifact];
+    setCanvasArtifacts(list);
+    setInitialCanvasIndex(list.indexOf(artifact) >= 0 ? list.indexOf(artifact) : 0);
     setIsCanvasOpen(true);
   }, []);
 
@@ -405,6 +407,7 @@ export default function ChatAppPage() {
             artifacts={canvasArtifacts}
             isOpen={isCanvasOpen}
             onClose={() => setIsCanvasOpen(false)}
+            initialArtifact={canvasArtifacts[initialCanvasIndex] || null}
           />
         </div>
       )}
