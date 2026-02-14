@@ -26,7 +26,7 @@ export default function Hero({ content, language }: HeroProps) {
         position: 'absolute',
         inset: 0,
         zIndex: 1,
-        background: 'radial-gradient(ellipse at center, transparent 0%, var(--component-bg-primary, #111827) 75%), linear-gradient(180deg, transparent 40%, var(--component-bg-primary, #111827) 100%)'
+        background: 'radial-gradient(ellipse at center, transparent 0%, rgba(17, 24, 39, 0.4) 50%, var(--component-bg-primary, #111827) 85%), linear-gradient(180deg, transparent 50%, var(--component-bg-primary, #111827) 100%)'
       }}></div>
 
       {/* Container - exact v10 structure */}
