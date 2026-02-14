@@ -88,39 +88,41 @@ export default function Architecture({ content, language }: ArchitectureProps) {
 
               {/* BACK FACE - Ontology mapping */}
               <div className="pyr-face pyr-back">
-                <div className="back-h">Josoor's Enterprise Ontology — mapped to your layers</div>
+                <div className="back-h">{t('architecture.back.header')}</div>
 
                 {/* Row 1: Strategy */}
-                <div className="ont-row-label">Strategy Layer</div>
+                <div className="ont-row-label">{t('architecture.back.strategyLayer')}</div>
                 <div className="ont-row">
                   <div className="ont-left">
-                    <span className="on on-s">Objectives</span>
-                    <span className="on on-s">KPIs</span>
+                    {(t('architecture.back.strategyLeft', { returnObjects: true }) as string[]).map((item, i) => (
+                      <span key={i} className="on on-s">{item}</span>
+                    ))}
                   </div>
                   <div className="ont-mid">
                     <div className="ont-mid-line">↔</div>
                   </div>
                   <div className="ont-right">
-                    <span className="on on-s">Adaa Targets</span>
-                    <span className="on on-s">V2030 Goals</span>
+                    {(t('architecture.back.strategyRight', { returnObjects: true }) as string[]).map((item, i) => (
+                      <span key={i} className="on on-s">{item}</span>
+                    ))}
                   </div>
                 </div>
 
                 {/* Row 2: Sector */}
-                <div className="ont-row-label">Sector Layer</div>
+                <div className="ont-row-label">{t('architecture.back.sectorLayer')}</div>
                 <div className="ont-row">
                   <div className="ont-left">
-                    <span className="on on-sc">Policy Tools</span>
-                    <span className="on on-sc">Performance</span>
-                    <span className="on on-sc">Admin Records</span>
+                    {(t('architecture.back.sectorLeft', { returnObjects: true }) as string[]).map((item, i) => (
+                      <span key={i} className="on on-sc">{item}</span>
+                    ))}
                   </div>
                   <div className="ont-mid">
                     <div className="ont-mid-line">↔</div>
                   </div>
                   <div className="ont-right">
-                    <span className="on on-sc">Data TXNs</span>
-                    <span className="on on-sc">Businesses</span>
-                    <span className="on on-sc">Citizens</span>
+                    {(t('architecture.back.sectorRight', { returnObjects: true }) as string[]).map((item, i) => (
+                      <span key={i} className="on on-sc">{item}</span>
+                    ))}
                   </div>
                 </div>
 
@@ -136,39 +138,43 @@ export default function Architecture({ content, language }: ArchitectureProps) {
                     borderRadius: '999px',
                     border: '1px solid rgba(244,187,48,0.2)'
                   }}>
-                    ↑ CAPABILITIES ↓ the bridge
+                    {t('architecture.back.capabilitiesBridge')}
                   </span>
                 </div>
 
                 {/* Row 3: Enterprise */}
-                <div className="ont-row-label">Enterprise Layer</div>
+                <div className="ont-row-label">{t('architecture.back.enterpriseLayer')}</div>
                 <div className="ont-row">
                   <div className="ont-left">
-                    <span className="on on-e">Org Units</span>
-                    <span className="on on-e">Processes</span>
+                    {(t('architecture.back.enterpriseLeft', { returnObjects: true }) as string[]).map((item, i) => (
+                      <span key={i} className="on on-e">{item}</span>
+                    ))}
                   </div>
                   <div className="ont-mid">
                     <div className="ont-mid-line">↔</div>
                   </div>
                   <div className="ont-right">
-                    <span className="on on-e">IT Systems</span>
-                    <span className="on on-e">Vendors</span>
+                    {(t('architecture.back.enterpriseRight', { returnObjects: true }) as string[]).map((item, i) => (
+                      <span key={i} className="on on-e">{item}</span>
+                    ))}
                   </div>
                 </div>
 
                 {/* Row 4: Projects */}
-                <div className="ont-row-label">Projects Layer</div>
+                <div className="ont-row-label">{t('architecture.back.projectsLayer')}</div>
                 <div className="ont-row">
                   <div className="ont-left">
-                    <span className="on on-p">Projects</span>
-                    <span className="on on-p">Milestones</span>
+                    {(t('architecture.back.projectsLeft', { returnObjects: true }) as string[]).map((item, i) => (
+                      <span key={i} className="on on-p">{item}</span>
+                    ))}
                   </div>
                   <div className="ont-mid">
                     <div className="ont-mid-line">↔</div>
                   </div>
                   <div className="ont-right">
-                    <span className="on on-p">Risks</span>
-                    <span className="on on-p">Dependencies</span>
+                    {(t('architecture.back.projectsRight', { returnObjects: true }) as string[]).map((item, i) => (
+                      <span key={i} className="on on-p">{item}</span>
+                    ))}
                   </div>
                 </div>
 
@@ -179,8 +185,8 @@ export default function Architecture({ content, language }: ArchitectureProps) {
                       <circle cx="12" cy="12" r="10"/>
                       <polyline points="12 6 12 12 16 14"/>
                     </svg>
-                    <div className="sig-n">Speed</div>
-                    <div className="sig-v">Delivery Velocity</div>
+                    <div className="sig-n">{t('architecture.back.sigSpeed')}</div>
+                    <div className="sig-v">{t('architecture.back.sigSpeedDesc')}</div>
                   </div>
                   <div className="sig sig-risk">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -188,8 +194,8 @@ export default function Architecture({ content, language }: ArchitectureProps) {
                       <line x1="12" y1="9" x2="12" y2="13"/>
                       <line x1="12" y1="17" x2="12.01" y2="17"/>
                     </svg>
-                    <div className="sig-n">Risk</div>
-                    <div className="sig-v">Proactive Foresight</div>
+                    <div className="sig-n">{t('architecture.back.sigRisk')}</div>
+                    <div className="sig-v">{t('architecture.back.sigRiskDesc')}</div>
                   </div>
                   <div className="sig sig-dir">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -197,15 +203,15 @@ export default function Architecture({ content, language }: ArchitectureProps) {
                       <polyline points="16 12 12 8 8 12"/>
                       <line x1="12" y1="16" x2="12" y2="8"/>
                     </svg>
-                    <div className="sig-n">Trend</div>
-                    <div className="sig-v">Early Warning</div>
+                    <div className="sig-n">{t('architecture.back.sigTrend')}</div>
+                    <div className="sig-v">{t('architecture.back.sigTrendDesc')}</div>
                   </div>
                   <div className="sig sig-health">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                       <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
                     </svg>
-                    <div className="sig-n">Health</div>
-                    <div className="sig-v">Culture Pulse</div>
+                    <div className="sig-n">{t('architecture.back.sigHealth')}</div>
+                    <div className="sig-v">{t('architecture.back.sigHealthDesc')}</div>
                   </div>
                 </div>
               </div>

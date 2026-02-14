@@ -115,6 +115,30 @@
       "etimadDesc": "Budget Tracking",
       "cog": "CoG",
       "cogDesc": "KPI cascade"
+    },
+    "back": {
+      "header": "Josoor's Enterprise Ontology — mapped to your layers",
+      "strategyLayer": "Strategy Layer",
+      "strategyLeft": ["Objectives", "KPIs"],
+      "strategyRight": ["Adaa Targets", "V2030 Goals"],
+      "sectorLayer": "Sector Layer",
+      "sectorLeft": ["Policy Tools", "Performance", "Admin Records"],
+      "sectorRight": ["Data TXNs", "Businesses", "Citizens"],
+      "capabilitiesBridge": "↑ CAPABILITIES ↓ the bridge",
+      "enterpriseLayer": "Enterprise Layer",
+      "enterpriseLeft": ["Org Units", "Processes"],
+      "enterpriseRight": ["IT Systems", "Vendors"],
+      "projectsLayer": "Projects Layer",
+      "projectsLeft": ["Projects", "Milestones"],
+      "projectsRight": ["Risks", "Dependencies"],
+      "sigSpeed": "Speed",
+      "sigSpeedDesc": "Delivery Velocity",
+      "sigRisk": "Risk",
+      "sigRiskDesc": "Proactive Foresight",
+      "sigTrend": "Trend",
+      "sigTrendDesc": "Early Warning",
+      "sigHealth": "Health",
+      "sigHealthDesc": "Culture Pulse"
     }
   },
   "beta": {
