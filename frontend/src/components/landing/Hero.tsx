@@ -73,12 +73,12 @@ export default function Hero({ content, language }: HeroProps) {
             alignItems: 'center',
             gap: '0.5rem',
             padding: '1.2rem 2rem',
-            border: '1px solid rgba(255, 255, 255, 0.2)',
+            border: '2px solid red',
             borderRadius: '24px',
-            background: 'rgba(255, 255, 255, 0.12)',
-            backdropFilter: 'blur(40px) saturate(180%)',
-            WebkitBackdropFilter: 'blur(40px) saturate(180%)',
-            boxShadow: '0 8px 32px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.2), inset 0 -1px 0 rgba(255,255,255,0.05)'
+            background: 'transparent',
+            backdropFilter: 'none',
+            WebkitBackdropFilter: 'none',
+            boxShadow: 'none'
           }}>
             <div className="hb-logo" style={{
               display: 'flex',
