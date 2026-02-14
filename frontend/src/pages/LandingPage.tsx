@@ -65,6 +65,8 @@ export default function LandingPage() {
     hero: {
       title: t('hero.title'),
       subtitle: t('hero.subtitle'),
+      subtitleEn: t('hero.subtitleEn'),
+      sectors: t('hero.sectors'),
       badge: t('hero.badge'),
     },
     noNoise: {

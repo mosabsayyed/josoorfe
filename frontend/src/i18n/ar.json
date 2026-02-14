@@ -1,7 +1,9 @@
 {
   "hero": {
     "title": "جسور",
-    "subtitle": "ذكاء القرار للأجهزة العامة والقطاعات الحيوية",
+    "subtitle": "نظام تشغيل صنع القرار المعرفي",
+    "subtitleEn": "Decision Intelligence Operating System",
+    "sectors": "للقطاعات ذات التنظيم العالي",
     "badge": "نظام تشغيل رؤية السعودية 2030"
   },
   "noNoise": {

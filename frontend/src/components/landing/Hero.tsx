@@ -66,6 +66,27 @@ export default function Hero({ content, language }: HeroProps) {
             {content.subtitle}
           </h1>
 
+          {/* English subtitle */}
+          <p style={{
+            fontSize: 'clamp(14px, 2vw, 18px)',
+            color: 'rgba(249, 250, 251, 0.6)',
+            letterSpacing: '0.05em',
+            marginTop: '-0.5rem',
+            marginBottom: '0.5rem'
+          }}>
+            {content.subtitleEn}
+          </p>
+
+          {/* Sectors line */}
+          <p style={{
+            fontSize: 'clamp(16px, 2.5vw, 22px)',
+            fontWeight: 600,
+            color: 'rgba(249, 250, 251, 0.85)',
+            marginBottom: '1.5rem'
+          }}>
+            {content.sectors}
+          </p>
+
           {/* Brand box - logo first, text below */}
           <div className="hero-brand" style={{
             display: 'inline-flex',

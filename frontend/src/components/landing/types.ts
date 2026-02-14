@@ -3,6 +3,8 @@
 export interface HeroContent {
   title: string;
   subtitle: string;
+  subtitleEn: string;
+  sectors: string;
   badge: string;
 }
 
