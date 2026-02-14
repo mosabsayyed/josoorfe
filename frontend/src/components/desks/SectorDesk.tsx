@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { useOutletContext } from 'react-router-dom';
+import { useOutletContext, useNavigate } from 'react-router-dom';
 import SectorHeaderNav from './sector/SectorHeaderNav';
 import SectorMap from './sector/SectorMap';
 import SectorDetailsPanel from './sector/SectorDetailsPanel';
@@ -77,6 +77,7 @@ export const SectorDesk: React.FC<SectorDeskProps> = ({ year: propYear, quarter:
     const [timelineFilter, setTimelineFilter] = useState<'current' | 'future' | 'both'>('both');
     const [priorityFilter, setPriorityFilter] = useState<'major' | 'strategic' | 'both'>('both');
 
+    const navigate = useNavigate();
     const outletContext = useOutletContext<{ year: string; quarter: string } | null>();
     const year = propYear || outletContext?.year;
     const quarter = propQuarter || outletContext?.quarter;
@@ -581,6 +582,7 @@ export const SectorDesk: React.FC<SectorDeskProps> = ({ year: propYear, quarter:
     const [isStrategyModalOpen, setIsStrategyModalOpen] = useState(false);
     const [strategyReportHtml, setStrategyReportHtml] = useState<string>('');
     const [strategyArtifacts, setStrategyArtifacts] = useState<Artifact[]>([]);
+    const [strategyConversationId, setStrategyConversationId] = useState<number | null>(null);
     const [strategyPromptTemplate, setStrategyPromptTemplate] = useState<string | null>(null);
 
     const handleStrategyCheck = async () => {
@@ -616,6 +618,9 @@ export const SectorDesk: React.FC<SectorDeskProps> = ({ year: propYear, quarter:
 
                 setStrategyReportHtml(cleanAnswer);
                 setStrategyArtifacts(processedArtifacts);
+                if (response.conversation_id) {
+                    setStrategyConversationId(response.conversation_id);
+                }
                 window.dispatchEvent(new Event('josoor_conversation_update'));
             } else {
                 setStrategyReportHtml('<p style="color:red">Analysis failed: No content received.</p>');
@@ -766,7 +771,13 @@ export const SectorDesk: React.FC<SectorDeskProps> = ({ year: propYear, quarter:
                 onClose={() => setIsStrategyModalOpen(false)}
                 htmlContent={strategyReportHtml}
                 artifacts={strategyArtifacts}
-                onContinueInChat={() => { setIsStrategyModalOpen(false); }}
+                onContinueInChat={() => {
+                    setIsStrategyModalOpen(false);
+                    const chatPath = strategyConversationId
+                        ? `/chat?conversation_id=${strategyConversationId}`
+                        : '/chat';
+                    navigate(chatPath);
+                }}
             />
         </div>
     );
