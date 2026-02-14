@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion } from 'framer-motion';
+import { ExpandableNodeList } from './GraphSankeyExpanded';
 
 interface Node {
     id: string; // Internal Index
@@ -787,14 +788,12 @@ export function GraphSankey({ data, isDark = true, chain, metadata, isDiagnostic
                                                 <div style={{ fontWeight: '600', marginBottom: '4px' }}>Labels:</div>
                                                 <div style={{ marginLeft: '8px', marginBottom: '8px' }}>{node.labels.join(', ')}</div>
                                             </div>
-                                            {node.properties?.sampleIds?.length > 0 && (
-                                                <div style={{ fontSize: '11px', opacity: 0.7, borderTop: `1px solid ${isDark ? '#555' : '#ddd'}`, paddingTop: '6px' }}>
-                                                    <div style={{ fontWeight: '600', marginBottom: '4px' }}>Sample IDs:</div>
-                                                    <div style={{ marginLeft: '8px' }}>
-                                                        {node.properties.sampleIds.join(', ')}
-                                                        {node.aggregateCount! > 5 && <span style={{ opacity: 0.5 }}> ... +{node.aggregateCount! - 5} more</span>}
-                                                    </div>
-                                                </div>
+                                            {node.properties?.sampleIds?.length > 0 && node.aggregateMembers && (
+                                                <ExpandableNodeList 
+                                                    sampleIds={node.aggregateMembers} 
+                                                    totalCount={node.aggregateCount || 0}
+                                                    isDark={isDark}
+                                                />
                                             )}
                                             {node.isBroken && (
                                                 <div style={{ color: '#ff4444', fontWeight: 'bold', marginTop: '12px', fontSize: '12px' }}>
