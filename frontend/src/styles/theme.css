@@ -50,12 +50,12 @@
   --chat-bubble-bot-text: #F9FAFB;
 
   /* English fonts */
-  --component-font-family: 'IBM Plex Sans', sans-serif;
-  --component-font-heading: 'IBM Plex Sans', sans-serif;
+  --component-font-family: 'Inter', sans-serif;
+  --component-font-heading: 'Inter', sans-serif;
   --component-font-mono: monospace;
 
   /* Arabic fonts */
-  --component-font-family-ar: 'Tajawal', 'IBM Plex Sans Arabic', sans-serif;
+  --component-font-family-ar: 'Tajawal', sans-serif;
   --component-font-heading-ar: 'Cairo', sans-serif;
 
   /* Fix for white flash on dropdowns and native controls */

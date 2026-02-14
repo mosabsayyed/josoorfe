@@ -72,7 +72,7 @@ export default function BetaForm({ content, language }: BetaFormProps) {
           fontSize: 'clamp(28px, 6vw, 48px)',
           fontWeight: 800,
           marginBottom: '10px',
-          fontFamily: 'var(--font-heading, "IBM Plex Sans")',
+          fontFamily: 'var(--font-heading, "Inter")',
           color: 'var(--text-primary, #f8f8f8)'
         }}>
           {content.title}

@@ -34,7 +34,7 @@ export default function Architecture({ content, language }: ArchitectureProps) {
             fontSize: 'clamp(28px, 6vw, 48px)',
             fontWeight: 800,
             marginBottom: '12px',
-            fontFamily: 'var(--font-heading, "IBM Plex Sans")'
+            fontFamily: 'var(--font-heading, "Inter")'
           }}>
             {content.title}
           </h2>

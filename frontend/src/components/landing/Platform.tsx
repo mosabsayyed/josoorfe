@@ -32,7 +32,7 @@ export default function Platform({ content }: PlatformProps) {
           }}>
             {content.tag}
           </div>
-          <h2 style={{ fontSize: 'clamp(28px, 6vw, 48px)', fontWeight: 800, marginBottom: '10px', fontFamily: 'var(--font-heading, "IBM Plex Sans")' }}>{content.title}</h2>
+          <h2 style={{ fontSize: 'clamp(28px, 6vw, 48px)', fontWeight: 800, marginBottom: '10px', fontFamily: 'var(--font-heading, "Inter")' }}>{content.title}</h2>
           <p className="subtitle" style={{ fontSize: '16px', maxWidth: '560px', margin: '0 auto', lineHeight: '1.65' }}>{content.subtitle}</p>
         </div>
 
