@@ -46,7 +46,7 @@ export default function Hero({ content, language }: HeroProps) {
         }}>
           {/* H1 with gold gradient span + subtitle - EXACT v10 structure */}
           <h1 style={{
-            fontFamily: 'var(--font-heading, "Inter")',
+            fontFamily: 'inherit',
             fontSize: 'clamp(38px, 5vw, 60px)',
             fontWeight: 800,
             color: 'var(--text-primary, #f8f8f8)',
@@ -96,7 +96,7 @@ export default function Hero({ content, language }: HeroProps) {
               />
             </div>
             <div className="hb-name" style={{
-              fontFamily: 'var(--font-heading, "Inter")',
+              fontFamily: 'inherit',
               fontSize: 20,
               fontWeight: 800,
               letterSpacing: '0.35em',

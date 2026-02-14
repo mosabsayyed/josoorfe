@@ -12,7 +12,7 @@ export default function NoNoise({ content }: NoNoiseProps) {
       <div style={{ textAlign: 'center', maxWidth: '800px', margin: '0 auto' }}>
         {/* Title - matching v10 style */}
         <h2 style={{
-          fontFamily: 'var(--font-heading, "Inter")',
+          fontFamily: 'inherit',
           fontSize: 'clamp(28px, 6vw, 48px)',
           fontWeight: 800,
           marginBottom: '16px'
@@ -40,7 +40,7 @@ export default function NoNoise({ content }: NoNoiseProps) {
           fontWeight: 800,
           lineHeight: '1.3',
           marginTop: '48px',
-          fontFamily: 'var(--font-heading, "Inter")',
+          fontFamily: 'inherit',
           color: 'var(--component-text-primary)'
         }}>
           {content.swagger}

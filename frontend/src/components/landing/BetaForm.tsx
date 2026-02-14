@@ -72,7 +72,7 @@ export default function BetaForm({ content, language }: BetaFormProps) {
           fontSize: 'clamp(28px, 6vw, 48px)',
           fontWeight: 800,
           marginBottom: '10px',
-          fontFamily: 'var(--font-heading, "Inter")',
+          fontFamily: 'inherit',
           color: 'var(--text-primary, #f8f8f8)'
         }}>
           {content.title}
@@ -123,7 +123,7 @@ export default function BetaForm({ content, language }: BetaFormProps) {
                 borderRadius: '8px',
                 background: 'var(--bg-primary, #111827)',
                 color: 'var(--text-primary, #f8f8f8)',
-                fontFamily: 'var(--font-primary, Inter)',
+                fontFamily: 'inherit',
                 fontSize: '14px',
                 outline: 'none',
                 transition: 'border-color 0.2s'
@@ -145,7 +145,7 @@ export default function BetaForm({ content, language }: BetaFormProps) {
                 borderRadius: '8px',
                 background: 'var(--bg-primary, #111827)',
                 color: 'var(--text-primary, #f8f8f8)',
-                fontFamily: 'var(--font-primary, Inter)',
+                fontFamily: 'inherit',
                 fontSize: '14px',
                 outline: 'none',
                 transition: 'border-color 0.2s'
@@ -176,7 +176,7 @@ export default function BetaForm({ content, language }: BetaFormProps) {
                 borderRadius: '8px',
                 background: 'var(--bg-primary, #111827)',
                 color: 'var(--text-primary, #f8f8f8)',
-                fontFamily: 'var(--font-primary, Inter)',
+                fontFamily: 'inherit',
                 fontSize: '14px',
                 outline: 'none',
                 transition: 'border-color 0.2s'
@@ -195,7 +195,7 @@ export default function BetaForm({ content, language }: BetaFormProps) {
                 borderRadius: '8px',
                 background: 'var(--bg-primary, #111827)',
                 color: formData.role ? 'var(--text-primary, #f8f8f8)' : 'var(--text-muted, #808894)',
-                fontFamily: 'var(--font-primary, Inter)',
+                fontFamily: 'inherit',
                 fontSize: '14px',
                 outline: 'none',
                 cursor: 'pointer',
@@ -231,7 +231,7 @@ export default function BetaForm({ content, language }: BetaFormProps) {
               fontWeight: 700,
               cursor: isSubmitted ? 'default' : 'pointer',
               transition: 'all 0.25s',
-              fontFamily: 'var(--font-primary, Inter)'
+              fontFamily: 'inherit'
             }}
             onMouseEnter={(e) => {
               if (!isSubmitted) {
