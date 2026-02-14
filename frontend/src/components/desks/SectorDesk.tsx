@@ -112,6 +112,30 @@ export const SectorDesk: React.FC<SectorDeskProps> = ({ year: propYear, quarter:
         }
     }, [selectedPillar]);
 
+    // Fetch strategy brief prompt template from backend (Task #7)
+    useEffect(() => {
+        const fetchPromptTemplate = async () => {
+            try {
+                const VITE_ENV: any = (typeof import.meta !== 'undefined' && (import.meta as any).env) ? (import.meta as any).env : undefined;
+                const RAW_API_BASE = VITE_ENV?.VITE_API_URL || '';
+                const API_BASE_URL = RAW_API_BASE ? RAW_API_BASE.replace(/\/+$/g, '') : '';
+                const API_PATH_PREFIX = (API_BASE_URL && API_BASE_URL.endsWith('/api/v1')) ? '' : '/api/v1';
+                const baseUrl = API_BASE_URL || window.location.origin;
+                
+                const response = await fetch(`${baseUrl}${API_PATH_PREFIX}/prompts/sector_desk_strategy_brief`);
+                if (response.ok) {
+                    const data = await response.json();
+                    setStrategyPromptTemplate(data.content);
+                } else {
+                    console.error('Failed to fetch strategy prompt template:', response.statusText);
+                }
+            } catch (error) {
+                console.error('Error fetching strategy prompt template:', error);
+            }
+        };
+        fetchPromptTemplate();
+    }, []);
+
     // Sync View Level
     useEffect(() => {
         if (selectedRegionId) setViewLevel('L2');
@@ -557,6 +581,7 @@ export const SectorDesk: React.FC<SectorDeskProps> = ({ year: propYear, quarter:
     const [isStrategyModalOpen, setIsStrategyModalOpen] = useState(false);
     const [strategyReportHtml, setStrategyReportHtml] = useState<string>('');
     const [strategyArtifacts, setStrategyArtifacts] = useState<Artifact[]>([]);
+    const [strategyPromptTemplate, setStrategyPromptTemplate] = useState<string | null>(null);
 
     const handleStrategyCheck = async () => {
         setIsStrategyModalOpen(true);
@@ -564,146 +589,14 @@ export const SectorDesk: React.FC<SectorDeskProps> = ({ year: propYear, quarter:
         setStrategyArtifacts([]);
 
         try {
-            const prompt = `Conduct a comprehensive Strategic Plan Review for our organization's 2024–2029 strategic plan.
+            // Use fetched prompt template or fallback to loading message
+            if (!strategyPromptTemplate) {
+                setStrategyReportHtml('<div style="display:flex;align-items:center;justify-content:center;height:100%;"><h3 style="color:#ef4444">Error: Strategy prompt template not loaded</h3></div>');
+                return;
+            }
 
-Review Scope:
-- Plan Period: 2024–2029
-- Assessment Period: Based on ${selectedYear} data snapshot
-- Focus Areas: Economic diversification, employment creation, investment attraction, sectoral transformation
-
-Visualization Requirements:
-
-Create exactly 3 visualizations using Highcharts format:
-
-1. Vision 2030 Pillar Performance (chart id: "vision-pillars")
-   - Type: column chart
-   - Show 3 pillars: Vibrant Society, Thriving Economy, Ambitious Nation
-   - Data: Target % vs Actual % for each
-
-2. Cross-Sectoral Impact (chart id: "sector-impact")
-   - Type: column or bar chart
-   - Show top 5 sectors by investment or economic value
-   - Data: SAR amounts or impact scores
-
-3. Strategic Risk Matrix (chart id: "risk-matrix")
-   - Type: scatter chart
-   - Show top risks plotted by probability (x-axis) and impact (y-axis)
-   - Data format: [{ x: probability, y: impact, name: "Risk Name" }]
-
-Required Content Sections:
-
-1. Executive Summary
-Provide an overall assessment of plan performance with your top 3 strategic findings. Quantify each finding with specific metrics (percentages, SAR amounts, timeline impacts). Make a clear recommendation: stay the course, adjust priorities, or pivot strategy.
-
-2. Vision 2030 Alignment
-Compare our plan's performance against national transformation targets across all three pillars:
-- Vibrant Society: Quality of life, cultural participation, community engagement
-- Thriving Economy: Non-oil GDP growth, economic diversification, private sector expansion, employment
-- Ambitious Nation: Government effectiveness, digital transformation, global competitiveness
-
-For each pillar, identify our contribution to national targets, current performance, gaps or overperformance, and strategic implications. Show comparison with performance metrics in a table.
-
-After the pillar comparison, insert: <ui-chart id="vision-pillars"></ui-chart>
-
-3. Economic Performance Benchmarking
-Analyze our initiatives against national economic indicators. Pull latest data on:
-- GDP: Total economy size, oil vs non-oil contribution, sectoral breakdowns, growth rates
-- Employment: Total jobs created, Saudization progress, women's workforce participation, unemployment rates
-- Foreign Investment: FDI inflows total and by sector, progress against annual targets
-- Local Investment: Domestic capital deployment, regional headquarters established
-- Trade: Export performance, trade balance trends, non-oil export growth
-- Vision 2030 Progress: Milestone achievement across transformation programs
-
-Quantify how our initiatives contribute to or fall short of these national benchmarks.
-
-4. Value Chain Impact Assessment
-Map how our initiatives create economic multiplier effects across sectors. Identify enabling sector investments (infrastructure, utilities, logistics) and trace their downstream impact:
-- Which enabling investments unlock growth in manufacturing, petrochemicals, tourism, agriculture?
-- Quantify economic multipliers: for each SAR invested in enabling infrastructure, how much value is created downstream?
-- Identify bottlenecks and cross-sectoral synergies
-
-After the value chain analysis, insert: <ui-chart id="sector-impact"></ui-chart>
-
-5. Strategic Recommendations
-Group recommendations into four categories:
-- Accelerate: Initiatives behind target requiring additional resources or urgency
-- Sustain: On-track initiatives to maintain at current pace
-- Optimize: Ahead-of-target initiatives where resources could be reallocated
-- Pivot: Misaligned initiatives not contributing meaningfully to Vision 2030
-
-For each recommendation, provide quantified rationale, resource implications, dependencies, and expected impact on Vision 2030 KPIs.
-
-6. Priority Action Plan
-List 5-8 highest-impact actions required over the next 12-18 months. For each action specify: clear directive, rationale, owner, dependencies, impact on Vision 2030 targets, and scope (Regional / Sectoral / Cross-cutting).
-
-7. Strategic Risks
-Identify the top 3 risks to plan execution, with focus on systemic vulnerabilities. For each: specific risk, quantified downstream effect, mitigation action, and contingency plan.
-
-After the risk analysis, insert: <ui-chart id="risk-matrix"></ui-chart>
-
-8. Strategic Insights
-Highlight 2-3 non-obvious findings: cross-sectoral opportunities, hidden dependencies or systemic bottlenecks, high-leverage low-dependency initiatives. Label each: Regional / Sectoral / Cross-cutting / Systemic.
-
-Presentation Guidelines:
-- Lead with answers, then supporting rationale
-- Quantify everything: percentages, SAR amounts, specific timelines
-- Use Vision 2030 terminology: "giga-projects," "economic engines," "enabling sectors," "national transformation"
-- Structure for executive readability
-- Title: "Strategic Plan Review - Vision 2030 Alignment Analysis"
-
-**CRITICAL: For visualizations, provide data in Highcharts format:**
-
-After narrative, wrap ALL datasets in this marker:
-[DATASETS_JSON_START]
-{
-  "datasets": {
-    "your-chart-id": {
-      "id": "your-chart-id",
-      "title": "Descriptive Chart Title",
-      "chart": { "type": "column" },
-      "xAxis": {
-        "categories": ["Category 1", "Category 2", "Category 3"],
-        "title": { "text": "X-Axis Label" }
-      },
-      "yAxis": {
-        "title": { "text": "Y-Axis Label" },
-        "min": 0,
-        "max": 100
-      },
-      "series": [{
-        "name": "Series Name",
-        "data": [value1, value2, value3],
-        "color": "#facc15"
-      }]
-    }
-  }
-}
-[DATASETS_JSON_END]
-
-**Required fields (ALL mandatory):**
-- \`id\`: Unique identifier in kebab-case (e.g., "pillar-performance")
-- \`title\`: Descriptive title that explains the insight
-- \`chart.type\`: MUST be one of these 6 ONLY: "column", "bar", "line", "scatter", "bullet", "pie"
-- \`xAxis\`: Object with \`categories\` array OR \`title\` with \`min\`/\`max\` for scatter
-- \`yAxis\`: Object with \`title\` object, optionally \`min\`/\`max\` for bounds
-- \`series\`: Array (at least 1) with \`name\` (string) and \`data\` (array of numbers)
-
-**Special data formats:**
-- **Scatter charts:** \`data\` must be \`[{ "x": 6, "y": 8, "name": "Point Label" }]\`
-- **All others:** \`data\` is simple number array \`[10, 20, 30]\`
-
-**Validation checklist before creating dataset:**
-1. ✓ Chart type is one of the 6 allowed types (not "bar-chart", "columns", etc.)
-2. ✓ id matches the id you use in <ui-chart id="..."> tag
-3. ✓ series is an array, not a single object
-4. ✓ data values are numbers (or x/y objects for scatter)
-
-**Reference charts inline:** <ui-chart id="your-chart-id"></ui-chart>
-
-**Vision 2030 colors (use these):**
-- #facc15 (gold), #10b981 (green), #3b82f6 (blue), #f59e0b (amber)
-
-**Final reminder:** Maximum 10 charts. Each must explain a specific insight. Quality > Quantity.`;
+            // Replace {year} placeholder with actual selectedYear
+            const prompt = strategyPromptTemplate.replace(/{year}/g, selectedYear);
 
             const response = await chatService.sendMessage({
                 query: prompt,
