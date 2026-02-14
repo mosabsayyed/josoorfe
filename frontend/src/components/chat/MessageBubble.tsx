@@ -510,12 +510,46 @@ export function MessageBubble({
 
         {/* Render artifact chips - from metadata.llm_payload.artifacts OR from structuredVisualizationResponse */}
         {(() => {
-          const artifacts = structuredVisualizationResponse?.artifacts || message.metadata?.llm_payload?.artifacts || [];
-          const hasArtifacts = artifacts.length > 0;
-
-          if (!isUser && hasArtifacts) {
-
+          let artifacts = structuredVisualizationResponse?.artifacts || message.metadata?.llm_payload?.artifacts || [];
+          
+          // If we have HTML content but no HTML artifact in the list, create one
+          if (contentIsHTML && htmlCandidate && !isUser) {
+            const hasHtmlArtifact = artifacts.some((a: any) => 
+              (a.artifact_type === 'HTML' || a.artifact_type === 'REPORT' || a.type === 'html' || a.type === 'report')
+            );
+            
+            if (!hasHtmlArtifact) {
+              // Extract title from HTML content or use default
+              let title = 'HTML Report';
+              const titleMatch = htmlCandidate.match(/<title[^>]*>([^<]+)<\/title>/i);
+              if (titleMatch) {
+                title = titleMatch[1].trim();
+              } else {
+                const h1Match = htmlCandidate.match(/<h1[^>]*>([^<]+)<\/h1>/i);
+                if (h1Match) {
+                  title = h1Match[1].trim();
+                }
+              }
+              
+              const htmlArtifact = {
+                id: `html-${message.id}`,
+                artifact_type: 'REPORT',
+                type: 'html',
+                title: title,
+                content: htmlCandidate
+              };
+              
+              artifacts = [...artifacts, htmlArtifact];
+              
+              console.log('[MessageBubble] Created HTML artifact:', {
+                messageId: message.id,
+                title,
+                artifactId: htmlArtifact.id
+              });
+            }
           }
+          
+          const hasArtifacts = artifacts.length > 0;
 
           return !isUser && hasArtifacts && (
             <div className="artifact-list">
