@@ -10,6 +10,8 @@ import { MonitoringDashboard } from './pages/admin/MonitoringDashboard';
 import LandingPage from './pages/LandingPage';
 import ChatAppPage from './pages/ChatAppPage';
 import BuilderPage from './pages/BuilderPage';
+import FounderLetterPage from './pages/FounderLetterPage';
+import ContactUsPage from './pages/ContactUsPage';
 import JosoorShell from './app/josoor/JosoorShell';
 import './index.css';
 
@@ -56,6 +58,8 @@ function AppContent() {
     <Routes>
       <Route path="/" element={<RootRedirect />} />
       <Route path="/landing" element={<LandingPage />} />
+      <Route path="/founder-letter" element={<FounderLetterPage />} />
+      <Route path="/contact-us" element={<ContactUsPage />} />
       <Route path="/login" element={<LoginPage />} />
 
       {/* NEW JOSOOR ROUTE - The unified shell */}

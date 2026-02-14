@@ -78,7 +78,7 @@ export default function Header() {
         </button>
         {!isMobile && (
           <span style={{
-            fontSize: '14px',
+            fontSize: 14,
             fontWeight: 600,
             color: '#D1D5DB',
             borderLeft: '1px solid #374151',
@@ -307,22 +307,23 @@ export default function Header() {
               onClick={() => navigate('/login')}
               style={{
                 background: 'transparent',
-                border: '1px solid var(--component-text-accent)',
-                color: 'var(--component-text-accent)',
-                padding: '8px 16px',
-                borderRadius: '6px',
-                fontSize: '14px',
-                fontWeight: 600,
+                border: '2px solid #F4BB30',
+                color: '#F4BB30',
+                padding: '8px 20px',
+                borderRadius: '8px',
+                fontSize: 14,
+                fontWeight: 700,
                 cursor: 'pointer',
                 transition: 'all 0.2s ease',
+                letterSpacing: '0.02em',
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.background = 'var(--component-text-accent)';
+                e.currentTarget.style.background = '#F4BB30';
                 e.currentTarget.style.color = '#111827';
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.background = 'transparent';
-                e.currentTarget.style.color = 'var(--component-text-accent)';
+                e.currentTarget.style.color = '#F4BB30';
               }}
             >
               {t.login}

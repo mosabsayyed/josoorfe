@@ -19,7 +19,7 @@ export default function Hero({ content, language }: HeroProps) {
       overflow: 'hidden'
     }}>
       {/* Sparkle background with hero image */}
-      <Sparkle imageSrc="/att/ksa_mpbackgd.png" dotCount={600} />
+      <Sparkle imageSrc="/att/ksa_mpbackgd.png" dotCount={1000} />
 
       {/* Overlay - matching overall page style */}
       <div className="hero-overlay" style={{
@@ -44,9 +44,9 @@ export default function Hero({ content, language }: HeroProps) {
         }}>
           {/* H1 with gold gradient span + subtitle - EXACT v10 structure */}
           <h1 style={{
-            fontFamily: 'var(--font-heading, "Inter")',
-            fontSize: 'clamp(38px, 5vw, 61px)',
-            fontWeight: '800',
+            fontFamily: 'var(--font-heading, "IBM Plex Sans")',
+            fontSize: 'clamp(38px, 5vw, 60px)',
+            fontWeight: 800,
             color: 'var(--text-primary, #f8f8f8)',
             lineHeight: '1.1',
             letterSpacing: '-0.03em',
@@ -71,10 +71,12 @@ export default function Hero({ content, language }: HeroProps) {
             alignItems: 'center',
             gap: '0.5rem',
             padding: '1.2rem 2rem',
-            border: '2px solid var(--gold-primary, #F4BB30)',
-            borderRadius: 'var(--radius-xl, 16px)',
-            background: 'linear-gradient(135deg, rgba(244,187,48,0.06), rgba(244,187,48,0.01))',
-            boxShadow: '0 0 60px rgba(244,187,48,0.06)'
+            border: '2px solid rgba(244, 187, 48, 0.5)',
+            borderRadius: '16px',
+            background: 'rgba(17, 24, 39, 0.7)',
+            backdropFilter: 'blur(16px)',
+            WebkitBackdropFilter: 'blur(16px)',
+            boxShadow: '0 0 60px rgba(244,187,48,0.08), inset 0 1px 0 rgba(255,255,255,0.05)'
           }}>
             <div className="hb-logo" style={{
               display: 'flex',
@@ -92,9 +94,9 @@ export default function Hero({ content, language }: HeroProps) {
               />
             </div>
             <div className="hb-name" style={{
-              fontFamily: 'var(--font-heading, "Inter")',
-              fontSize: '20px',
-              fontWeight: '800',
+              fontFamily: 'var(--font-heading, "IBM Plex Sans")',
+              fontSize: 20,
+              fontWeight: 800,
               letterSpacing: '0.35em',
               textTransform: 'uppercase',
               color: 'var(--gold-bright, #FFD04A)'

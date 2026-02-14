@@ -97,9 +97,9 @@ export default function Sparkle({ imageSrc, dotCount = 600 }: SparkleProps) {
           dots.push({
             x: dx,
             y: dy,
-            speed: 0.001 + Math.random() * 0.008,
+            speed: 0.002 + Math.random() * 0.012,
             phase: Math.random() * Math.PI * 2,
-            radius: 0.5 + Math.random() * 1.2,
+            radius: 0.4 + Math.random() * 1.0,
           });
         }
         attempts++;
@@ -160,15 +160,24 @@ export default function Sparkle({ imageSrc, dotCount = 600 }: SparkleProps) {
 
         ctx.restore();
 
-        // Draw brighter sparkle dots
+        // Draw bright white sparkle dots
         for (const dot of dots) {
-          const alpha = (Math.sin(t * dot.speed + dot.phase) * 0.5 + 0.5) * 0.95;
-          if (alpha < 0.02) continue;
+          const alpha = (Math.sin(t * dot.speed + dot.phase) * 0.5 + 0.5) * 1.0;
+          if (alpha < 0.03) continue;
 
+          // Bright white core
           ctx.beginPath();
           ctx.arc(dot.x, dot.y, dot.radius, 0, Math.PI * 2);
           ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
           ctx.fill();
+
+          // Subtle glow around brighter dots
+          if (alpha > 0.6) {
+            ctx.beginPath();
+            ctx.arc(dot.x, dot.y, dot.radius + 1.5, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(255, 255, 255, ${alpha * 0.15})`;
+            ctx.fill();
+          }
         }
 
         animationId = requestAnimationFrame(draw);
