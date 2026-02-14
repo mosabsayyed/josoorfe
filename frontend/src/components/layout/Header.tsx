@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useLanguage } from '../../contexts/LanguageContext';
 import LanguageToggle from '../LanguageToggle';
 import { useAuth } from '../../contexts/AuthContext';
@@ -18,6 +19,7 @@ export default function Header() {
   }, []);
   const navigate = useNavigate();
   const { language } = useLanguage();
+  const { t } = useTranslation();
   const { user, logout } = useAuth();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -34,18 +36,6 @@ export default function Header() {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
-
-  const t = {
-    betaText: language === 'en'
-      ? 'Welcome to JOSOOR - Agentic Enterprise Platform - Invite Only for Public Sector'
-      : 'مرحباً بك في جسور - منصة المؤسسات الوكيلة - دعوة فقط للقطاع العام',
-    founder: language === 'en' ? 'Founder Letter' : 'رسالة المؤسس',
-    contact: language === 'en' ? 'Contact Us' : 'اتصل بنا',
-    login: language === 'en' ? 'Beta Login' : 'تسجيل الدخول',
-    dashboard: language === 'en' ? 'Dashboard' : 'لوحة القيادة',
-    settings: language === 'en' ? 'Settings' : 'الإعدادات',
-    logout: language === 'en' ? 'Sign Out' : 'تسجيل الخروج',
-  };
 
   return (
     <header style={{
@@ -68,7 +58,7 @@ export default function Header() {
         <button
           onClick={() => navigate('/')}
           style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
-          title={language === 'ar' ? 'الصفحة الرئيسية' : 'Home'}
+          title={t('header.homeTitle')}
         >
           <img
             src="/att/cube/logo-aitwintech.svg"
@@ -87,7 +77,7 @@ export default function Header() {
             display: 'flex',
             alignItems: 'center'
           }}>
-            {t.betaText}
+            {t('header.betaText')}
           </span>
         )}
       </div>
@@ -135,13 +125,13 @@ export default function Header() {
             onClick={() => { navigate('/founder-letter'); setMobileMenuOpen(false); }}
             style={{ background: 'none', border: 'none', color: '#F9FAFB', cursor: 'pointer', fontSize: '20px', fontWeight: 600 }}
           >
-            {t.founder}
+            {t('header.founder')}
           </button>
           <button
             onClick={() => { navigate('/contact-us'); setMobileMenuOpen(false); }}
             style={{ background: 'none', border: 'none', color: '#F9FAFB', cursor: 'pointer', fontSize: '20px', fontWeight: 600 }}
           >
-            {t.contact}
+            {t('header.contact')}
           </button>
           <LanguageToggle />
           {!user && (
@@ -158,7 +148,7 @@ export default function Header() {
                 cursor: 'pointer',
               }}
             >
-              {t.login}
+              {t('header.login')}
             </button>
           )}
           {user && (
@@ -175,7 +165,7 @@ export default function Header() {
                 cursor: 'pointer',
               }}
             >
-              {t.dashboard}
+              {t('header.dashboard')}
             </button>
           )}
         </div>
@@ -190,7 +180,7 @@ export default function Header() {
             onMouseEnter={(e) => e.currentTarget.style.color = '#F9FAFB'}
             onMouseLeave={(e) => e.currentTarget.style.color = '#D1D5DB'}
           >
-            {t.founder}
+            {t('header.founder')}
           </button>
           <button
             onClick={() => navigate('/contact-us')}
@@ -198,7 +188,7 @@ export default function Header() {
             onMouseEnter={(e) => e.currentTarget.style.color = '#F9FAFB'}
             onMouseLeave={(e) => e.currentTarget.style.color = '#D1D5DB'}
           >
-            {t.contact}
+            {t('header.contact')}
           </button>
         </nav>
 
@@ -274,7 +264,7 @@ export default function Header() {
                       onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                     >
                       <LayoutDashboard size={16} color="var(--component-text-accent)" />
-                      {t.dashboard}
+                      {t('header.dashboard')}
                     </button>
 
                     <button
@@ -284,7 +274,7 @@ export default function Header() {
                       onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                     >
                       <Settings size={16} color="#9CA3AF" />
-                      {t.settings}
+                      {t('header.settings')}
                     </button>
 
                     <div style={{ height: '1px', background: 'rgba(255, 255, 255, 0.1)', margin: '4px 0' }}></div>
@@ -296,7 +286,7 @@ export default function Header() {
                       onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)'}
                     >
                       <LogOut size={16} />
-                      {t.logout}
+                      {t('header.logout')}
                     </button>
                   </div>
                 </div>
@@ -326,7 +316,7 @@ export default function Header() {
                 e.currentTarget.style.color = '#F4BB30';
               }}
             >
-              {t.login}
+              {t('header.login')}
             </button>
           )}
           <LanguageToggle />

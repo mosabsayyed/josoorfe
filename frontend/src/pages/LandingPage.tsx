@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -16,8 +17,8 @@ import BetaForm from '../components/landing/BetaForm';
 
 export default function LandingPage() {
   const navigate = useNavigate();
-  const { language } = useLanguage();
-  const isRTL = language === 'ar';
+  const { language, isRTL } = useLanguage();
+  const { t } = useTranslation();
 
   const [formData, setFormData] = useState({
     name: '',
@@ -51,186 +52,66 @@ export default function LandingPage() {
 
       if (error) throw error;
 
-      alert(language === 'en'
-        ? 'Application submitted! We will review and contact you within 48 hours.'
-        : 'تم تقديم الطلب! سنقوم بالمراجعة والتواصل معك خلال 48 ساعة.');
-
+      alert(t('beta.alertSuccess'));
       setFormData({ name: '', email: '', organization: '', role: '' });
 
     } catch (err: any) {
       console.error('Registration error:', err);
-      alert(language === 'en' 
-        ? 'Error submitting request. Please try again or contact support.' 
-        : 'خطأ في تقديم الطلب. يرجى المحاولة مرة أخرى أو الاتصال بالدعم.');
+      alert(t('beta.errorSubmit'));
     }
   };
 
-  const t = {
+  const content = {
     hero: {
-      title: language === 'en' ? 'JOSOOR' : 'جسور',
-      subtitle: language === 'en' ? 'Decision Intelligence for Highly Regulated Sectors' : 'ذكاء القرار للقطاعات عالية التنظيم',
-      badge: language === 'en' ? "KSA's Vision 2030 OS" : 'نظام التشغيل لرؤية السعودية 2030'
+      title: t('hero.title'),
+      subtitle: t('hero.subtitle'),
+      badge: t('hero.badge'),
     },
     noNoise: {
-      title: language === 'en' ? 'No Noise. All Signal.' : 'لا ضوضاء. كل إشارة.',
-      subtitle: language === 'en'
-        ? 'Is your team chasing reports 30hrs a week? Ad-hocs are your norm? No alignment on "priorities"? Best people leaving? Change activities failing? Complexity is always one step ahead?'
-        : 'هل يطارد فريقك التقارير 30 ساعة في الأسبوع؟ التقارير المخصصة هي القاعدة؟ لا توافق على "الأولويات"؟ أفضل الناس يغادرون؟ أنشطة التغيير تفشل؟ التعقيد دائماً متقدم بخطوة؟',
-      swagger: language === 'en' ? 'Great!' : 'عظيم!',
-      closing: language === 'en'
-        ? "Let's transform Complexity into your most valuable Asset!"
-        : 'دعنا نحول التعقيد إلى أثمن أصولك!'
+      title: t('noNoise.title'),
+      subtitle: t('noNoise.subtitle'),
+      swagger: t('noNoise.swagger'),
+      closing: t('noNoise.closing'),
     },
     claims: {
-      tag: language === 'en' ? 'Heard It Before?' : 'سمعته من قبل؟',
-      title: language === 'en' ? 'See the difference.' : 'انظر الفرق.',
-      subtitle: language === 'en'
-        ? 'What makes Josoor fundamentally different from others in this space.'
-        : 'ما يجعل جسور مختلفاً بشكل أساسي عن الآخرين في هذا المجال.',
-      items: [
-        language === 'en'
-          ? '<b><em>Built with AIs</em> for humans from the ground up</b> — Every structure is machine-native. Every interface is human-intuitive.'
-          : '<b><em>بني مع الذكاء الاصطناعي</em> للبشر من الصفر</b> - كل بنية أصلية للآلة. كل واجهة بديهية للإنسان.',
-        language === 'en'
-          ? '<b>Scalable to multi-Sectors and Entities</b> — one Josoor instance adapts to any government entity without rebuilding.'
-          : '<b>قابل للتوسع إلى قطاعات وكيانات متعددة</b> - نسخة واحدة من جسور تتكيف مع أي كيان حكومي دون إعادة بناء.',
-        language === 'en'
-          ? "<b>Tailored for the Vision and its objectives/KPIs</b> — national methodologies and sectorial programs are first-class objects, not afterthoughts."
-          : '<b>مصمم للرؤية وأهدافها/مؤشرات الأداء</b> - المنهجيات الوطنية والبرامج القطاعية هي كائنات من الدرجة الأولى، وليست أفكاراً لاحقة.',
-        language === 'en'
-          ? '<b>Native Arabic (and soon multi-accent)</b> — built for Arabic-first government context.'
-          : '<b>عربي أصلي (وقريباً متعدد اللهجات)</b> - مبني لسياق حكومي عربي أولاً.',
-        language === 'en'
-          ? '<b>One definition, one version, one source of Priorities</b> — take opinions out of the dialogue. Everyone sees the same truth.'
-          : '<b>تعريف واحد، إصدار واحد، مصدر واحد للأولويات</b> - أخرج الآراء من الحوار. الجميع يرى نفس الحقيقة.',
-        language === 'en'
-          ? '<b>Frontier Knowledge Graphing to model complexity</b> — relationships between KPIs, initiatives, risks, and resources are modelled as a living graph, not flat tables.'
-          : '<b>رسم معرفي حدودي لنمذجة التعقيد</b> - العلاقات بين مؤشرات الأداء والمبادرات والمخاطر والموارد منمذجة كرسم حي، وليس جداول مسطحة.',
-        language === 'en'
-          ? '<b>KSA Public-Sector\'s first "Ontology" IP</b> — a reusable, scalable knowledge framework that grows smarter via guided AI learning.'
-          : '<b>أول "أنطولوجيا" للقطاع العام السعودي</b> - إطار معرفي قابل لإعادة الاستخدام والتوسع ينمو بذكاء عبر التعلم الموجه للذكاء الاصطناعي.'
-      ]
+      tag: t('claims.tag'),
+      title: t('claims.title'),
+      subtitle: t('claims.subtitle'),
+      items: (t('claims.items', { returnObjects: true }) as string[]),
     },
     promise: {
-      tag: language === 'en' ? 'The Promise' : 'الوعد',
-      title: language === 'en' ? 'Same people. Different reality.' : 'نفس الناس. واقع مختلف.',
-      subtitle: language === 'en' ? 'What changes for each person on your team.' : 'ما يتغير لكل شخص في فريقك.',
-      personas: [
-        {
-          role: language === 'en' ? 'Vice Minister — Strategic Leadership' : 'نائب الوزير - القيادة الاستراتيجية',
-          before: language === 'en'
-            ? 'Forced to micromanage. Problems escalate before they reach him. Surprises in the minister\'s office.'
-            : 'مجبر على الإدارة الدقيقة. المشاكل تتصاعد قبل أن تصل إليه. مفاجآت في مكتب الوزير.',
-          after: language === 'en'
-            ? 'Closing deals. Approving directions. Risks surface early with actions ready. The board deck builds itself.'
-            : 'إغلاق الصفقات. الموافقة على الاتجاهات. المخاطر تظهر مبكراً مع الإجراءات جاهزة. عرض المجلس يبني نفسه.'
-        },
-        {
-          role: language === 'en' ? 'Business Manager — Capability Owner' : 'مدير الأعمال - مالك القدرة',
-          before: language === 'en'
-            ? 'Juggling strategy priorities vs operational realities. Less time with stakeholders due to weekly reports'
-            : 'التوفيق بين أولويات الاستراتيجية والواقع التشغيلي. وقت أقل مع أصحاب المصلحة بسبب التقارير الأسبوعية',
-          after: language === 'en'
-            ? 'On-site with stakeholders. Status auto-populates. Confirms with one tap on WhatsApp. Done.'
-            : 'في الموقع مع أصحاب المصلحة. الحالة تملأ تلقائياً. يؤكد بنقرة واحدة على واتساب. تم.'
-        },
-        {
-          role: language === 'en' ? 'Strategy Manager — Planning & Performance' : 'مدير الاستراتيجية - التخطيط والأداء',
-          before: language === 'en'
-            ? 'Firefighting. Can\'t think about next year because this quarter\'s Adaa submission isn\'t done.'
-            : 'مكافحة الحرائق. لا يمكن التفكير في العام القادم لأن تقديم أداء هذا الربع لم ينته.',
-          after: language === 'en'
-            ? 'Planning new sectors, partnerships, targets. The quarterly report drafts itself. Strategy, not admin.'
-            : 'التخطيط لقطاعات جديدة، شراكات، أهداف. التقرير الربع سنوي يكتب نفسه. استراتيجية، وليس إدارة.'
-        },
-        {
-          role: language === 'en' ? 'PMO Director — Governance & Delivery' : 'مدير PMO - الحوكمة والتسليم',
-          before: language === 'en'
-            ? 'Reports nobody reads. Blamed for overruns he flagged 3 months ago. Team of 4 is now 3.'
-            : 'تقارير لا أحد يقرأها. يُلام على التجاوزات التي أبلغ عنها قبل 3 أشهر. فريق من 4 أصبح 3.',
-          after: language === 'en'
-            ? 'Focused on future risks. AI handles chasing. His team stays because the job finally makes sense.'
-            : 'يركز على المخاطر المستقبلية. الذكاء الاصطناعي يتولى المطاردة. فريقه يبقى لأن الوظيفة أخيراً منطقية.'
-        }
-      ]
+      tag: t('promise.tag'),
+      title: t('promise.title'),
+      subtitle: t('promise.subtitle'),
+      personas: (t('promise.personas', { returnObjects: true }) as Array<{ role: string; before: string; after: string }>),
     },
     platform: {
-      tag: language === 'en' ? 'The Platform' : 'المنصة',
-      title: language === 'en' ? 'Three modes. Always running.' : 'ثلاثة أوضاع. تعمل دائماً.',
-      subtitle: language === 'en'
-        ? 'From national KPIs to individual deliverables — tightly linked.'
-        : 'من مؤشرات الأداء الوطنية إلى التسليمات الفردية - مرتبطة بإحكام.',
-      modes: [
-        {
-          title: language === 'en' ? 'Watch' : 'راقب',
-          desc: language === 'en'
-            ? 'Not just what\'s red — catches what <em>looks green but is quietly declining</em>. Training drops, HR shrugs, Josoor traces the chain to the Minister\'s phone. You find out now, not in 3 months.'
-            : 'ليس فقط ما هو أحمر - يلتقط ما <em>يبدو أخضر لكنه يتراجع بهدوء</em>. التدريب ينخفض، الموارد البشرية تتجاهل، جسور يتتبع السلسلة إلى هاتف الوزير. تكتشف الآن، وليس بعد 3 أشهر.'
-        },
-        {
-          title: language === 'en' ? 'Decide' : 'قرر',
-          desc: language === 'en'
-            ? 'AI traces root cause and cascading impact across the map. The <em>full chain</em> from failing deliverable to national KPI, plus concrete options with outcomes. No guessing, all math.'
-            : 'الذكاء الاصطناعي يتتبع السبب الجذري والتأثير المتتالي عبر الخريطة. <em>السلسلة الكاملة</em> من التسليم الفاشل إلى مؤشر الأداء الوطني، بالإضافة إلى خيارات ملموسة مع النتائج. لا تخمين، كل رياضيات.'
-        },
-        {
-          title: language === 'en' ? 'Deliver' : 'نفذ',
-          desc: language === 'en'
-            ? 'Weekly priorities synced with Strategic Priorities. 4 out of 42 items matter this week — <em>focus</em>. True critical path drives system flags with high confidence'
-            : 'الأولويات الأسبوعية متزامنة مع الأولويات الاستراتيجية. 4 من 42 عنصر مهم هذا الأسبوع - <em>التركيز</em>. المسار الحرج الحقيقي يقود علامات النظام بثقة عالية'
-        }
-      ]
+      tag: t('platform.tag'),
+      title: t('platform.title'),
+      subtitle: t('platform.subtitle'),
+      modes: (t('platform.modes', { returnObjects: true }) as Array<{ title: string; desc: string }>),
     },
     architecture: {
-      tag: language === 'en' ? 'The Architecture' : 'البنية',
-      title: language === 'en' ? 'Designed around data you have today' : 'مصمم حول البيانات التي لديك اليوم',
-      intro: language === 'en'
-        ? 'No new data lake. No 18-month integration. Josoor is an <b>overlay</b> that builds bridges between your existing systems and stakeholders — a true information superhighway traversed by powerful LLMs, transforming <b>data complexity into strategic insights</b> and siloed stakeholders into an aligned powerhouse.'
-        : 'لا بحيرة بيانات جديدة. لا تكامل لمدة 18 شهراً. جسور عبارة عن <b>طبقة</b> تبني جسور بين أنظمتك وأصحاب المصلحة الحاليين - طريق معلومات سريع حقيقي يسلكه LLMs قوية، محولة <b>تعقيد البيانات إلى رؤى استراتيجية</b> وأصحاب المصلحة المعزولين إلى قوة متماسكة.',
-      layers: [
-        { name: language === 'en' ? 'Strategy' : 'الاستراتيجية', desc: language === 'en' ? 'Objectives, KPIs' : 'الأهداف، مؤشرات الأداء' },
-        { name: language === 'en' ? 'Sector Operations' : 'عمليات القطاع', desc: language === 'en' ? 'Your value chain' : 'سلسلة القيمة الخاصة بك' },
-        { name: language === 'en' ? 'Enterprise Operations' : 'عمليات المؤسسة', desc: language === 'en' ? 'Org, Process, Systems, Vendors' : 'المنظمة، العملية، الأنظمة، الموردين' },
-        { name: language === 'en' ? 'Projects Portfolio' : 'محفظة المشاريع', desc: language === 'en' ? 'Closing capability gaps' : 'إغلاق فجوات القدرة' }
-      ],
-      engines: [
-        {
-          title: language === 'en' ? 'BUILD — Are we building on time?' : 'بناء - هل نبني في الوقت المحدد؟',
-          desc: language === 'en'
-            ? 'For each capability under construction, checks every project closing its gaps. Calculates <b>build exposure</b> from real dates. No AI opinion — math.'
-            : 'لكل قدرة قيد البناء، يتحقق من كل مشروع يغلق فجواته. يحسب <b>التعرض للبناء</b> من التواريخ الفعلية. لا رأي للذكاء الاصطناعي - رياضيات.'
-        },
-        {
-          title: language === 'en' ? 'OPERATE — Are we running healthy?' : 'تشغيل - هل نعمل بصحة؟',
-          desc: language === 'en'
-            ? 'Scores people + process + tools. Two consecutive drops, even while green? <b>Forced amber.</b> Catches decline before red.'
-            : 'يسجل الناس + العملية + الأدوات. انخفاضان متتاليان، حتى لو كان أخضر؟ <b>عنبر قسري.</b> يلتقط التراجع قبل الأحمر.'
-        }
-      ]
+      tag: t('architecture.tag'),
+      title: t('architecture.title'),
+      intro: t('architecture.intro'),
+      layers: [],
+      engines: (t('architecture.engines', { returnObjects: true }) as Array<{ title: string; desc: string }>),
     },
     beta: {
-      tag: language === 'en' ? 'Beta Launch' : 'إطلاق تجريبي',
-      title: language === 'en' ? 'Ready to hear more?' : 'جاهز لسماع المزيد؟',
-      subtitle: language === 'en'
-        ? 'Josoor is in its private limited beta phase. Register your interest now.'
-        : 'جسور في مرحلته التجريبية الخاصة المحدودة. سجل اهتمامك الآن.',
+      tag: t('beta.tag'),
+      title: t('beta.title'),
+      subtitle: t('beta.subtitle'),
+      note: t('beta.note'),
       form: {
-        name: language === 'en' ? 'Full name' : 'الاسم الكامل',
-        email: language === 'en' ? 'Work email' : 'بريد العمل',
-        org: language === 'en' ? 'Organization name' : 'اسم المنظمة',
-        role: language === 'en' ? 'Your role' : 'دورك',
-        roleOptions: language === 'en'
-          ? ['Vice Minister / Undersecretary', 'Strategy & Planning Director', 'PMO Director / Manager', 'Business / Capability Owner', 'IT / Digital Transformation', 'Other']
-          : ['نائب وزير / وكيل', 'مدير استراتيجية وتخطيط', 'مدير/مدير PMO', 'مالك عمل/قدرة', 'تقنية معلومات/تحول رقمي', 'آخر'],
-        submit: language === 'en' ? 'Apply for Private Beta →' : 'تقدم للنسخة التجريبية الخاصة ←'
+        name: t('beta.form.name'),
+        email: t('beta.form.email'),
+        org: t('beta.form.org'),
+        role: t('beta.form.role'),
+        roleOptions: (t('beta.form.roleOptions', { returnObjects: true }) as string[]),
+        submit: t('beta.form.submit'),
       },
-      note: language === 'en'
-        ? 'Limited spots. KSA government entities only. We\'ll respond within 48 hours.'
-        : 'أماكن محدودة. كيانات حكومية سعودية فقط. سنرد خلال 48 ساعة.'
     },
-    footer: {
-      rights: language === 'en' ? '© 2026 AI Twin Tech' : '© 2026 AI Twin Tech'
-    }
   };
 
   // Inject CSS for the landing page
@@ -711,17 +592,17 @@ export default function LandingPage() {
     <div className="landing-page" dir={isRTL ? 'rtl' : 'ltr'}>
       <Header />
 
-      <Hero content={t.hero} language={language} />
+      <Hero content={content.hero} language={language} />
 
       <img id="background-image" src="/att/landing-screenshots/Vector.svg" alt="" />
 
       <div id="main-content">
-        <NoNoise content={t.noNoise} />
-        <Claims content={t.claims} />
-        <Promise content={t.promise} />
-        <Platform content={t.platform} />
-        <Architecture content={t.architecture} language={language} />
-        <BetaForm content={t.beta} language={language} />
+        <NoNoise content={content.noNoise} />
+        <Claims content={content.claims} />
+        <Promise content={content.promise} />
+        <Platform content={content.platform} />
+        <Architecture content={content.architecture} language={language} />
+        <BetaForm content={content.beta} language={language} />
 
         {/* FOOTER */}
         <footer style={{
@@ -731,7 +612,7 @@ export default function LandingPage() {
           fontSize: '14px',
           marginTop: '0'
         }}>
-          <p style={{ margin: 0 }}>{t.footer.rights}</p>
+          <p style={{ margin: 0 }}>{t('footer.rights')}</p>
         </footer>
       </div>
     </div>

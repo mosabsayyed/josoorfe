@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '../../lib/supabaseClient';
 import { BetaFormContent } from './types';
 
@@ -8,6 +9,7 @@ interface BetaFormProps {
 }
 
 export default function BetaForm({ content, language }: BetaFormProps) {
+  const { t } = useTranslation();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -46,9 +48,7 @@ export default function BetaForm({ content, language }: BetaFormProps) {
 
     } catch (err: any) {
       console.error('Registration error:', err);
-      alert(language === 'en'
-        ? 'Error submitting request. Please try again or contact support.'
-        : 'خطأ في تقديم الطلب. يرجى المحاولة مرة أخرى أو الاتصال بالدعم.');
+      alert(t('beta.errorSubmit'));
     }
   };
 
@@ -246,7 +246,7 @@ export default function BetaForm({ content, language }: BetaFormProps) {
               }
             }}
           >
-            {isSubmitted ? 'Application submitted' : content.form.submit}
+            {isSubmitted ? t('beta.submitSuccess') : content.form.submit}
           </button>
         </form>
 

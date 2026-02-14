@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { PromiseContent } from './types';
 
 interface PromiseProps {
@@ -6,6 +7,7 @@ interface PromiseProps {
 }
 
 export default function Promise({ content }: PromiseProps) {
+  const { t } = useTranslation();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -269,7 +271,7 @@ export default function Promise({ content }: PromiseProps) {
                         color: 'var(--error, #ff4444)',
                       }}
                     >
-                      BEFORE
+                      {t('promise.before')}
                     </div>
                     <div
                       style={{
@@ -299,7 +301,7 @@ export default function Promise({ content }: PromiseProps) {
                         color: 'var(--success, #44ff44)',
                       }}
                     >
-                      WITH JOSOOR
+                      {t('promise.withJosoor')}
                     </div>
                     <div
                       style={{

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ArchitectureContent } from './types';
 import './pyramid.css';
 
@@ -9,6 +10,7 @@ interface ArchitectureProps {
 
 export default function Architecture({ content, language }: ArchitectureProps) {
   const [isFlipped, setIsFlipped] = useState(false);
+  const { t } = useTranslation();
 
   const handleFlip = () => {
     setIsFlipped(!isFlipped);
@@ -53,39 +55,34 @@ export default function Architecture({ content, language }: ArchitectureProps) {
               {/* FRONT FACE - 4-layer pyramid */}
               <div className="pyr-face pyr-front">
                 <div className="pyr-front-lbl">
-                  {language === 'en'
-                    ? 'Your organization\'s data — click to see what Josoor builds behind it'
-                    : 'بيانات مؤسستك — انقر لترى ما يبنيه جسور خلفها'}
+                  {t('architecture.pyramidFrontLabel')}
                 </div>
                 <div className="py-layers">
                   <div className="py-l py-1">
-                    <div className="py-n">Strategy</div>
-                    <div className="py-d">Objectives, KPIs</div>
+                    <div className="py-n">{t('architecture.pyramid.strategy')}</div>
+                    <div className="py-d">{t('architecture.pyramid.strategyDesc')}</div>
                   </div>
                   <div className="py-l py-2">
-                    <div className="py-n">Sector Operations</div>
-                    <div className="py-d">Your value chain</div>
+                    <div className="py-n">{t('architecture.pyramid.sectorOps')}</div>
+                    <div className="py-d">{t('architecture.pyramid.sectorOpsDesc')}</div>
                     <div className="py-nodes">
-                      <span className="py-node">Policy Tools</span>
-                      <span className="py-node">Performance</span>
-                      <span className="py-node">Admin Records</span>
-                      <span className="py-node">Data TXNs</span>
-                      <span className="py-node">Businesses</span>
-                      <span className="py-node">Citizens</span>
+                      {(t('architecture.pyramid.sectorNodes', { returnObjects: true }) as string[]).map((node, i) => (
+                        <span key={i} className="py-node">{node}</span>
+                      ))}
                     </div>
                   </div>
                   <div className="py-l py-3">
-                    <div className="py-n">Enterprise Operations</div>
-                    <div className="py-d">Org, Process, Systems, Vendors</div>
+                    <div className="py-n">{t('architecture.pyramid.enterpriseOps')}</div>
+                    <div className="py-d">{t('architecture.pyramid.enterpriseOpsDesc')}</div>
                   </div>
                   <div className="py-l py-4">
-                    <div className="py-n">Projects Portfolio</div>
-                    <div className="py-d">Closing capability gaps</div>
+                    <div className="py-n">{t('architecture.pyramid.projects')}</div>
+                    <div className="py-d">{t('architecture.pyramid.projectsDesc')}</div>
                   </div>
                 </div>
                 <div className="py-flow">
-                  <span>↑ Status</span>
-                  <span>Direction ↓</span>
+                  <span>{t('architecture.pyramid.statusFlow')}</span>
+                  <span>{t('architecture.pyramid.directionFlow')}</span>
                 </div>
               </div>
 
@@ -218,15 +215,15 @@ export default function Architecture({ content, language }: ArchitectureProps) {
           {/* Flip hint */}
           <div className="flip-hint">
             {isFlipped
-              ? (language === 'en' ? 'Click to see your data layers' : 'انقر لرؤية طبقات بياناتك')
-              : (language === 'en' ? 'Click the pyramid to see Josoor\'s ontology behind it' : 'انقر على الهرم لرؤية بنية جسور خلفه')}
+              ? t('architecture.pyramidFlipHintBack')
+              : t('architecture.pyramidFlipHintFront')}
           </div>
         </div>
 
         {/* Engines */}
         <div style={{ marginBottom: '12px' }}>
           <h3 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '15px', textAlign: 'center' }}>
-            {language === 'en' ? 'Twin Engines' : 'محركات التوأم'}
+            {t('architecture.twinEngines')}
           </h3>
           <div className="eng-row">
             {content.engines.map((engine, i) => (
@@ -241,27 +238,27 @@ export default function Architecture({ content, language }: ArchitectureProps) {
         {/* KSA Compatibility Badges */}
         <div className="ksa">
           <div style={{ gridColumn: '1 / -1', textAlign: 'center', marginBottom: '1rem', fontSize: '14px', fontWeight: '600' }}>
-            Vision 2030 Compatible
+            {t('architecture.vision2030Compatible')}
           </div>
           <div className="ksa-i">
-            <div className="ksa-n">Adaa</div>
-            <div className="ksa-d">Quarterly KPIs</div>
+            <div className="ksa-n">{t('architecture.ksa.adaa')}</div>
+            <div className="ksa-d">{t('architecture.ksa.adaaDesc')}</div>
           </div>
           <div className="ksa-i">
-            <div className="ksa-n">EXPRO</div>
-            <div className="ksa-d">Project Standards</div>
+            <div className="ksa-n">{t('architecture.ksa.expro')}</div>
+            <div className="ksa-d">{t('architecture.ksa.exproDesc')}</div>
           </div>
           <div className="ksa-i">
-            <div className="ksa-n">DGA</div>
-            <div className="ksa-d">Digital Maturity</div>
+            <div className="ksa-n">{t('architecture.ksa.dga')}</div>
+            <div className="ksa-d">{t('architecture.ksa.dgaDesc')}</div>
           </div>
           <div className="ksa-i">
-            <div className="ksa-n">Etimad</div>
-            <div className="ksa-d">Budget Tracking</div>
+            <div className="ksa-n">{t('architecture.ksa.etimad')}</div>
+            <div className="ksa-d">{t('architecture.ksa.etimadDesc')}</div>
           </div>
           <div className="ksa-i">
-            <div className="ksa-n">CoG</div>
-            <div className="ksa-d">KPI cascade</div>
+            <div className="ksa-n">{t('architecture.ksa.cog')}</div>
+            <div className="ksa-d">{t('architecture.ksa.cogDesc')}</div>
           </div>
         </div>
       </div>

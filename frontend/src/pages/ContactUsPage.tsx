@@ -1,29 +1,13 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import { useLanguage } from '../contexts/LanguageContext';
 import Header from '../components/layout/Header';
 import { Mail } from 'lucide-react';
 
 export default function ContactUsPage() {
-  const { language } = useLanguage();
-
-  const t = {
-    en: {
-      title: 'Contact Us',
-      subtitle: 'We are here to help you with your transformation journey.',
-      emailLabel: 'Email Us',
-      description: 'For inquiries, partnerships, or support, please reach out to us directly.',
-    },
-    ar: {
-      title: 'اتصل بنا',
-      subtitle: 'نحن هنا لمساعدتك في رحلة التحول الخاصة بك.',
-      emailLabel: 'راسلنا عبر البريد الإلكتروني',
-      description: 'للاستفسارات أو الشراكات أو الدعم، يرجى التواصل معنا مباشرة.',
-    }
-  };
-
-  const content = t[language];
-  const isRTL = language === 'ar';
+  const { language, isRTL } = useLanguage();
+  const { t } = useTranslation();
 
   return (
     <div style={{
@@ -68,9 +52,9 @@ export default function ContactUsPage() {
               <Mail size={48} color="#3B82F6" />
             </div>
             
-            <h1 style={{ fontSize: '32px', fontWeight: 700, marginBottom: '16px', fontFamily: isRTL ? '"Tajawal", sans-serif' : 'inherit' }}>{content.title}</h1>
+            <h1 style={{ fontSize: '32px', fontWeight: 700, marginBottom: '16px', fontFamily: isRTL ? '"Tajawal", sans-serif' : 'inherit' }}>{t('contactUs.title')}</h1>
             <p style={{ color: '#9CA3AF', marginBottom: '40px', fontSize: '16px', lineHeight: '1.6' }}>
-              {content.subtitle}
+              {t('contactUs.subtitle')}
             </p>
 
             <div style={{ 
@@ -80,7 +64,7 @@ export default function ContactUsPage() {
               border: '1px solid rgba(255, 255, 255, 0.05)'
             }}>
               <p style={{ fontSize: '14px', color: '#9CA3AF', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '1px' }}>
-                {content.emailLabel}
+                {t('contactUs.emailLabel')}
               </p>
               <a 
                 href="mailto:info@aitwintech.com" 
@@ -99,7 +83,7 @@ export default function ContactUsPage() {
             </div>
 
             <p style={{ marginTop: '32px', color: '#6B7280', fontSize: '14px' }}>
-              {content.description}
+              {t('contactUs.description')}
             </p>
           </div>
         </motion.div>
