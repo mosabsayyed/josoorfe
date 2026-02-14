@@ -544,7 +544,7 @@ export function MessageBubble({
                 artifact_type: 'REPORT',
                 type: 'html',
                 title: title,
-                content: htmlCandidate
+                content: { body: htmlCandidate, format: 'html' }
               };
               
               artifacts = [...artifacts, htmlArtifact];
