@@ -20,32 +20,19 @@ export default function Architecture({ content, language }: ArchitectureProps) {
     <section className="content-centered" id="arch">
       <div className="section-content-box">
         <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-          <div style={{
+          <div className="section-tag" style={{
             display: 'inline-block',
             padding: '6px 16px',
             background: 'var(--component-panel-bg)',
-            borderRadius: '20px',
-            fontSize: '14px',
-            fontWeight: '600',
-            letterSpacing: '1px',
-            marginBottom: '12px'
+            borderRadius: '20px'
           }}>
             {content.tag}
           </div>
-          <h2 style={{
-            fontSize: 'clamp(28px, 6vw, 48px)',
-            fontWeight: 800,
-            marginBottom: '12px',
-            fontFamily: 'inherit'
-          }}>
+          <h2 style={{ marginBottom: '12px' }}>
             {content.title}
           </h2>
-          <p className="subtitle" style={{
-            maxWidth: '800px',
-            margin: '0 auto',
-            fontSize: '16px',
-            lineHeight: '1.65'
-          }} dangerouslySetInnerHTML={{ __html: content.intro }} />
+          <p className="subtitle" style={{ maxWidth: '800px' }}
+            dangerouslySetInnerHTML={{ __html: content.intro }} />
         </div>
 
         {/* 3D Flippable Pyramid - this IS the four layers visualization */}

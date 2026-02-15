@@ -108,7 +108,7 @@
 }
 
 .py-node {
-  font-size: 15px;
+  font-size: 14px;
   padding: 0.25rem 0.5rem;
   border-radius: 4px;
   background: rgba(91, 155, 213, 0.06);
@@ -413,7 +413,7 @@
   }
 
   .py-n {
-    font-size: 15px;
+    font-size: 14px;
   }
 
   .py-d {

@@ -56,36 +56,15 @@ export default function BetaForm({ content, language }: BetaFormProps) {
     <section className="content-centered" id="beta">
       <div style={{ textAlign: 'center', maxWidth: '700px', margin: '0 auto' }}>
         {/* Tag */}
-        <div style={{
-          fontFamily: 'var(--font-mono, monospace)',
-          fontSize: '14px',
-          letterSpacing: '0.2em',
-          textTransform: 'uppercase',
-          color: 'var(--gold-muted, rgba(196, 149, 32, 1))',
-          marginBottom: '6px'
-        }}>
+        <div className="section-tag" style={{ marginBottom: '6px' }}>
           {content.tag}
         </div>
 
         {/* Title */}
-        <h2 style={{
-          fontSize: 'clamp(28px, 6vw, 48px)',
-          fontWeight: 800,
-          marginBottom: '10px',
-          fontFamily: 'inherit',
-          color: 'var(--text-primary, #f8f8f8)'
-        }}>
-          {content.title}
-        </h2>
+        <h2>{content.title}</h2>
 
         {/* Subtitle */}
-        <p style={{
-          fontSize: '15px',
-          color: 'var(--text-muted, #808894)',
-          maxWidth: '500px',
-          margin: '0 auto 32px',
-          lineHeight: '1.65'
-        }}>
+        <p className="subtitle" style={{ maxWidth: '500px', marginBottom: '32px' }}>
           {content.subtitle}
         </p>
 
@@ -227,7 +206,7 @@ export default function BetaForm({ content, language }: BetaFormProps) {
               borderRadius: '999px',
               background: 'transparent',
               color: isSubmitted ? 'var(--success, #2DD4A8)' : 'var(--gold-primary, #F4BB30)',
-              fontSize: '15px',
+              fontSize: '16px',
               fontWeight: 700,
               cursor: isSubmitted ? 'default' : 'pointer',
               transition: 'all 0.25s',

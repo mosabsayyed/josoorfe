@@ -8,17 +8,21 @@ import { supabase } from '../lib/supabaseClient';
 
 // Landing page section components
 import Hero from '../components/landing/Hero';
-import NoNoise from '../components/landing/NoNoise';
+import AItoIA from '../components/landing/AItoIA';
 import Claims from '../components/landing/Claims';
 import Promise from '../components/landing/Promise';
 import Platform from '../components/landing/Platform';
 import Architecture from '../components/landing/Architecture';
 import BetaForm from '../components/landing/BetaForm';
+import useSnapScroll from '../hooks/useSnapScroll';
+
+const SNAP_SECTIONS = ['hero', 'aitoia', 'claims', 'promise', 'platform', 'arch', 'beta'];
 
 export default function LandingPage() {
   const navigate = useNavigate();
   const { language, isRTL } = useLanguage();
   const { t } = useTranslation();
+  useSnapScroll({ sections: SNAP_SECTIONS });
 
   const [formData, setFormData] = useState({
     name: '',
@@ -69,12 +73,6 @@ export default function LandingPage() {
       sectors: t('hero.sectors'),
       badge: t('hero.badge'),
     },
-    noNoise: {
-      title: t('noNoise.title'),
-      subtitle: t('noNoise.subtitle'),
-      swagger: t('noNoise.swagger'),
-      closing: t('noNoise.closing'),
-    },
     claims: {
       tag: t('claims.tag'),
       title: t('claims.title'),
@@ -119,7 +117,24 @@ export default function LandingPage() {
   // Inject CSS for the landing page
   useEffect(() => {
     const css = `
-      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Cairo:wght@400;500;600;700;800&family=Tajawal:wght@400;500;700&display=swap');
+      /*
+       * ============================================================
+       *  FONT-SIZE RULE — EVEN INTEGERS ONLY
+       * ============================================================
+       *  All font-size values in this project MUST be even integers.
+       *  Allowed : 12px, 14px, 16px, 18px, 20px, 22px, 24px …
+       *  Forbidden: 13px, 15px, 17px, 19px or any decimal (14.5px)
+       *
+       *  Section header pattern (unified across all landing sections):
+       *    Tag      — .section-tag  → 20px  (bold, gold, monospace, uppercase)
+       *    Title h2 — .landing-page h2 → 42px  (weight 800)
+       *    Subtitle — .subtitle → 18px  (line-height 1.65)
+       *
+       *  Components MUST use these CSS classes. No inline font overrides.
+       * ============================================================
+       */
+
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Cairo:wght@400;500;600;700;800&display=swap');
 
       :root {
         --component-bg-primary: #111827;
@@ -134,22 +149,14 @@ export default function LandingPage() {
         /* Font family variables - matching main site */
         --component-font-family: 'Inter', sans-serif;
         --component-font-heading: 'Inter', sans-serif;
-        --component-font-family-ar: 'Tajawal', sans-serif;
+        --component-font-family-ar: 'Cairo', sans-serif;
         --component-font-heading-ar: 'Cairo', sans-serif;
-      }
-
-      html, body {
-        overflow-y: auto !important; /* FORCE SCROLLING */
-        height: auto !important;
-        min-height: 100dvh;
       }
 
       .landing-page {
         background: var(--component-bg-primary);
         color: var(--component-text-primary);
         font-family: var(--component-font-family);
-        overflow-x: hidden;
-        overflow-y: auto;
         line-height: 1.5;
         min-height: 100dvh;
         position: relative;
@@ -279,6 +286,160 @@ export default function LandingPage() {
         padding-top: 0;
       }
 
+      /* ── AI → IA scroll animation section ── */
+      .aitoia-timeline {
+        position: relative;
+        height: 300vh;
+      }
+
+      .aitoia-viewer {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        overflow: hidden;
+        display: grid;
+        place-items: center;
+        z-index: 10;
+      }
+
+      .aitoia-canvas {
+        position: absolute;
+        top: 0;
+        left: 0;
+        z-index: 1;
+      }
+
+      .aitoia-glass {
+        position: relative;
+        z-index: 2;
+        width: 85vw;
+        max-width: 900px;
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 24px;
+        box-shadow: 0 30px 60px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.2);
+        display: flex;
+        flex-direction: column;
+        padding: 50px 60px;
+      }
+
+      .aitoia-glass * { margin: 0; padding: 0; }
+
+      /* Grid container for overlapping AI/IA blocks */
+      .aitoia-blocks {
+        display: grid;
+      }
+
+      /* Section header — always visible, matches other landing sections */
+      .aitoia-header {
+        text-align: center;
+        margin-bottom: 24px;
+        position: relative;
+        z-index: 3;
+      }
+      .aitoia-tag {
+        font-family: var(--font-mono, monospace);
+        font-size: 20px;
+        font-weight: 700;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        color: var(--gold-muted, rgba(196, 149, 32, 1));
+        display: block;
+        margin-bottom: 10px;
+      }
+      /* h2 and p inside .aitoia-header are styled by
+         .landing-page h2 and .subtitle — no duplicate rules needed */
+
+      .aitoia-block {
+        grid-area: 1 / 1;
+        opacity: 0;
+        transition: opacity 0.1s ease-out;
+        pointer-events: none;
+      }
+
+      .aitoia-glass .aitoia-block h3 {
+        font-family: var(--component-font-heading);
+        font-size: 2.2rem;
+        line-height: 1.15;
+        font-weight: 300;
+        margin-bottom: 20px;
+      }
+
+      .aitoia-glass .aitoia-block li {
+        font-family: var(--component-font-family);
+        font-size: 1.05rem;
+        line-height: 1.6;
+        font-weight: 400;
+        margin-bottom: 22px;
+        list-style: none;
+      }
+
+      .aitoia-glass .aitoia-block strong {
+        display: block;
+        margin-bottom: 6px;
+        font-size: 1.15rem;
+        font-family: var(--component-font-heading);
+      }
+
+      .aitoia-icon {
+        display: inline-block;
+        margin-inline-end: 8px;
+        font-size: 1.1rem;
+        vertical-align: middle;
+      }
+
+      /* AI text — chaos (muted) */
+      .aitoia-glass .aitoia-ai h3 { color: var(--component-text-secondary); font-weight: 300; }
+      .aitoia-glass .aitoia-ai strong { color: var(--component-text-primary); }
+      .aitoia-glass .aitoia-ai li { color: var(--component-text-muted); border-left: 2px solid var(--component-panel-border); padding-left: 20px; }
+
+      /* IA text — structure (gold accent, monospace) */
+      .aitoia-glass .aitoia-ia h3 { color: var(--component-text-accent); font-family: var(--component-font-mono, monospace); text-transform: uppercase; letter-spacing: -1px; font-weight: 700; }
+      .aitoia-glass .aitoia-ia strong { color: var(--component-text-accent); font-family: var(--component-font-mono, monospace); }
+      .aitoia-glass .aitoia-ia li { color: var(--component-text-primary); border-left: 2px solid var(--component-text-accent); padding-left: 20px; }
+
+      /* RTL support for aitoia */
+      /* h2/p RTL fonts handled by .landing-page[dir="rtl"] * rule */
+      [dir="rtl"] .aitoia-tag { letter-spacing: 0; }
+      [dir="rtl"] .aitoia-glass .aitoia-block h3 { font-family: var(--component-font-heading-ar); }
+      [dir="rtl"] .aitoia-glass .aitoia-block li { font-family: var(--component-font-family-ar); }
+      [dir="rtl"] .aitoia-glass .aitoia-block strong { font-family: var(--component-font-heading-ar); }
+      [dir="rtl"] .aitoia-glass .aitoia-ia h3 { font-family: var(--component-font-heading-ar); text-transform: none; letter-spacing: 0; }
+      [dir="rtl"] .aitoia-glass .aitoia-ia strong { font-family: var(--component-font-heading-ar); }
+
+      [dir="rtl"] .aitoia-glass .aitoia-ai li,
+      [dir="rtl"] .aitoia-glass .aitoia-ia li {
+        border-left: none;
+        padding-left: 0;
+        border-right: 2px solid var(--component-panel-border);
+        padding-right: 20px;
+      }
+      [dir="rtl"] .aitoia-glass .aitoia-ia li {
+        border-right-color: var(--component-text-accent);
+      }
+
+      @media (max-width: 768px) {
+        .aitoia-glass {
+          width: 92vw;
+          padding: 24px 20px;
+        }
+        /* h2 size handled by .landing-page h2 — no override needed */
+        .aitoia-glass .aitoia-block h3 {
+          font-size: 1.4rem;
+        }
+        .aitoia-glass .aitoia-block li {
+          font-size: 0.9rem;
+          margin-bottom: 14px;
+        }
+        .aitoia-glass .aitoia-block strong {
+          font-size: 0.95rem;
+        }
+      }
+
       section {
         padding: 1rem 1rem;  /* Mobile-first: 320px phones get 288px content */
         position: relative;
@@ -327,17 +488,32 @@ export default function LandingPage() {
         margin-bottom: 24px;
       }
 
+      /* ── Section tag (gold monospace label above every section title) ── */
+      .section-tag {
+        font-family: var(--font-mono, monospace);
+        font-size: 20px;
+        font-weight: 700;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        color: var(--gold-muted, rgba(196, 149, 32, 1));
+        margin-bottom: 12px;
+      }
+
       .landing-page h2 {
-        font: 700 42px/1.2 "Inter", sans-serif; /* Larger H2 */
+        font-size: 42px; /* Unified — see FONT-SIZE RULE */
+        font-weight: 800;
+        line-height: 1.2;
         color: var(--component-text-primary);
-        margin-bottom: 20px;
+        margin-bottom: 10px;
       }
 
       .subtitle {
-        font: 400 18px/28px "Inter", sans-serif;
+        font-size: 18px;
+        line-height: 1.65;
+        font-weight: 400;
         color: var(--component-text-secondary);
-        margin-bottom: 32px;
         max-width: 700px;
+        margin: 0 auto;
       }
 
       .screenshot-container {
@@ -552,7 +728,6 @@ export default function LandingPage() {
           grid-template-columns: 1fr;
         }
         h1 { font-size: 40px; line-height: 48px; }
-        h2 { font-size: 32px; line-height: 40px; }
         .hero-title { font-size: 40px; }
       }
 
@@ -571,14 +746,9 @@ export default function LandingPage() {
           line-height: 1.2;
         }
 
-        .landing-page h2 {
-          font-size: 28px;
-          line-height: 1.2;
-        }
-
         .subtitle {
-          font-size: 15px;
-          line-height: 1.5;
+          font-size: 18px;
+          line-height: 1.65;
         }
 
         .invite-form {
@@ -606,8 +776,9 @@ export default function LandingPage() {
 
       <img id="background-image" src="/att/landing-screenshots/Vector.svg" alt="" />
 
+      <AItoIA />
+
       <div id="main-content">
-        <NoNoise content={content.noNoise} />
         <Claims content={content.claims} />
         <Promise content={content.promise} />
         <Platform content={content.platform} />

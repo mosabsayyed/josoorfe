@@ -6,11 +6,48 @@
     "sectors": "for Highly Regulated Sectors",
     "badge": "KSA's Vision 2030"
   },
-  "noNoise": {
-    "title": "No Noise. All Signal.",
-    "subtitle": "Is your team chasing reports 30hrs a week? Ad-hocs are your norm? No alignment on \"priorities\"? Best people leaving? Change activities failing? Complexity is always one step ahead?",
-    "swagger": "Great!",
-    "closing": "Let's transform Complexity into your most valuable Asset!"
+  "aitoia": {
+    "tag": "The Challenge",
+    "title": "Prerequisites Not in Place to Start",
+    "subtitle": "Don't start your AI project before establishing the success factors",
+    "aiTitle": "Artificial Intelligence Solo ...",
+    "aiSubtitle": "Unreliable Decision Inputs",
+    "aiItems": [
+      {
+        "icon": "\u26a0",
+        "strong": "Inputs Not Ready",
+        "desc": "Legacy data landscapes include unstructured data in silos. Solving this is costly and violates Sovereignty Foundations."
+      },
+      {
+        "icon": "\ud83c\udfb2",
+        "strong": "Probabilistic Models",
+        "desc": "Highly Regulated Sectors Require Deterministic Outputs which cannot be left to raw AI to produce."
+      },
+      {
+        "icon": "\ud83d\udca8",
+        "strong": "Reckless Velocity",
+        "desc": "AI's Raw Reasoning can Accelerate your Speed, but without the right architecture, you risk getting nowhere very fast."
+      }
+    ],
+    "iaTitle": "Intelligent Systems Architecture ...",
+    "iaSubtitle": "Accelerated Predictable Outcomes",
+    "iaItems": [
+      {
+        "icon": "\u2705",
+        "strong": "Inputs Ready & Resident",
+        "desc": "Data is kept exactly as it is. A layer of taxonomy and ontology brings Data Context by Design at minimal investments."
+      },
+      {
+        "icon": "\ud83d\udd17",
+        "strong": "AI In The Loop",
+        "desc": "AI operates within a full ecosystem with total Human Observability and Data Governance."
+      },
+      {
+        "icon": "\ud83c\udfd7",
+        "strong": "Scaffolded for Scale",
+        "desc": "An Intelligent Architecture means smart software injected with AI. Investing in the right frameworks on Day 1 ensures purposeful acceleration."
+      }
+    ]
   },
   "claims": {
     "tag": "Heard It Before?",

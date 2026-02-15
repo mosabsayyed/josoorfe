@@ -16,7 +16,7 @@ export default function LandingNav({ language }: LandingNavProps) {
     cta: language === 'en' ? 'Apply for Beta' : 'تقدم للنسخة التجريبية'
   };
 
-  const sections = ['nonoise', 'claims', 'promise', 'platform', 'arch'];
+  const sections = ['aitoia', 'claims', 'promise', 'platform', 'arch'];
 
   const scrollToSection = (id: string) => {
     setMobileOpen(false);
