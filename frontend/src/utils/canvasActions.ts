@@ -6,7 +6,7 @@ import { jsPDF } from 'jspdf';
  */
 
 /**
- * Generate PDF from canvas content
+ * Generate PDF from canvas content (full height, not just visible area)
  */
 export const generatePDF = async (artifact: any): Promise<Blob | null> => {
   const element = document.getElementById('canvas-content-area');
@@ -16,16 +16,45 @@ export const generatePDF = async (artifact: any): Promise<Blob | null> => {
   }
 
   try {
+    // Store original styles
+    const originalOverflow = element.style.overflow;
+    const originalHeight = element.style.height;
+    const originalMaxHeight = element.style.maxHeight;
+
+    // Temporarily expand to full height to capture all content
+    element.style.overflow = 'visible';
+    element.style.height = 'auto';
+    element.style.maxHeight = 'none';
+
+    // Wait for layout to update
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    // Get actual scrollable height
+    const scrollHeight = element.scrollHeight;
+    const scrollWidth = element.scrollWidth;
+
     const canvas = await html2canvas(element, {
       scale: 2, // Higher quality
       useCORS: true,
       logging: false,
-      backgroundColor: '#111827' // Dark background for PDF
+      backgroundColor: '#111827', // Dark background for PDF
+      width: scrollWidth,
+      height: scrollHeight,
+      windowHeight: scrollHeight,
+      windowWidth: scrollWidth
     } as any);
 
+    // Restore original styles
+    element.style.overflow = originalOverflow;
+    element.style.height = originalHeight;
+    element.style.maxHeight = originalMaxHeight;
+
     const imgData = canvas.toDataURL('image/png');
+    
+    // Determine orientation based on aspect ratio
+    const orientation = canvas.width > canvas.height ? 'landscape' : 'portrait';
     const pdf = new jsPDF({
-      orientation: 'landscape',
+      orientation,
       unit: 'px',
       format: [canvas.width, canvas.height]
     });
@@ -83,7 +112,7 @@ export const shareArtifact = async (artifact: any) => {
 };
 
 /**
- * Print the current artifact
+ * Print the current artifact (full height, not just visible area)
  */
 export const printArtifact = async () => {
   const element = document.getElementById('canvas-content-area');
@@ -93,12 +122,38 @@ export const printArtifact = async () => {
   }
 
   try {
+    // Store original styles
+    const originalOverflow = element.style.overflow;
+    const originalHeight = element.style.height;
+    const originalMaxHeight = element.style.maxHeight;
+
+    // Temporarily expand to full height to capture all content
+    element.style.overflow = 'visible';
+    element.style.height = 'auto';
+    element.style.maxHeight = 'none';
+
+    // Wait for layout to update
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    // Get actual scrollable height
+    const scrollHeight = element.scrollHeight;
+    const scrollWidth = element.scrollWidth;
+
     const canvas = await html2canvas(element, {
       scale: 2,
       useCORS: true,
       logging: false,
-      backgroundColor: '#111827' // Match theme
+      backgroundColor: '#111827', // Match theme
+      width: scrollWidth,
+      height: scrollHeight,
+      windowHeight: scrollHeight,
+      windowWidth: scrollWidth
     } as any);
+
+    // Restore original styles
+    element.style.overflow = originalOverflow;
+    element.style.height = originalHeight;
+    element.style.maxHeight = originalMaxHeight;
 
     const imgData = canvas.toDataURL('image/png');
     const printWindow = window.open('', '_blank');
@@ -108,8 +163,12 @@ export const printArtifact = async () => {
           <head>
             <title>Print Artifact</title>
             <style>
-              body { margin: 0; display: flex; justify-content: center; align-items: center; background: #fff; }
-              img { max-width: 100%; height: auto; }
+              @media print {
+                body { margin: 0; padding: 0; }
+                img { max-width: 100%; height: auto; page-break-inside: avoid; }
+              }
+              body { margin: 0; padding: 10px; background: #fff; }
+              img { max-width: 100%; height: auto; display: block; }
             </style>
           </head>
           <body>
