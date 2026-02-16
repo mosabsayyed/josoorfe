@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI to IA - Centered Glassmorphism Graph</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            background-color: #050505; 
+            color: #fff; 
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            padding-bottom: 100vh; 
+        }
+
+        .scroll-timeline { position: relative; height: 300vh; }
+
+        .sticky-viewer {
+            position: sticky;
+            top: 0;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            display: grid;
+            place-items: center; /* Perfectly centers the glass panel */
+        }
+
+        canvas { position: absolute; top: 0; left: 0; z-index: 1; }
+
+        /* The Glassmorphism Container */
+.glass-container {
+    position: relative;
+    z-index: 2;
+    width: 85vw;
+    max-width: 900px;
+    
+    /* 1. THE OPACITY: Set to 0.25 (25%) for high transparency */
+    background: rgba(255, 255, 255, 0.1); 
+    
+    /* 2. THE FROST: Increased blur to 24px for a heavier glass distortion */
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    
+    /* 3. THE LIGHT CATCH: Brighter edges to define the glass shape */
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 24px;
+    
+    /* 4. THE DEPTH: Stronger shadow behind it to separate it from the canvas */
+    box-shadow: 0 30px 60px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.2);
+    
+    display: grid;
+    padding: 50px 60px;
+}
+        .text-block {
+            grid-area: 1 / 1; /* Forces both blocks into the same cell */
+            opacity: 0;
+            transition: opacity 0.1s ease-out;
+            pointer-events: none; /* Let clicks pass through if needed */
+        }
+
+        h2 { font-size: 3.2rem; margin-bottom: 25px; line-height: 1.1; }
+        li { font-size: 1.15rem; margin-bottom: 25px; line-height: 1.6; list-style: none; }
+        strong { display: block; margin-bottom: 6px; font-size: 1.3rem; }
+
+        /* AI Text Styling (Chaos - Light Grey) */
+        .ai-text h2 { color: #e0e0e0; font-style: italic; font-weight: 300; }
+        .ai-text strong { color: #ffffff; font-style: italic; }
+        .ai-text li { color: #aaaaaa; border-left: 2px solid rgba(255, 255, 255, 0.2); padding-left: 20px; }
+
+        /* IA Text Styling (Structure - Dark Gold) */
+        .ia-text h2 { color: #D4AF37; font-family: monospace; text-transform: uppercase; letter-spacing: -1px; }
+        .ia-text strong { color: #D4AF37; font-family: monospace; }
+        .ia-text li { color: #e0e0e0; border-left: 2px solid #D4AF37; padding-left: 20px; }
+
+        .hero-placeholder {
+            height: 100vh; display: flex; align-items: center; justify-content: center;
+            background: #0a0a0a; border-bottom: 1px solid #222; flex-direction: column;
+            z-index: 10; position: relative;
+        }
+        .hero-placeholder h1 { color: #555; font-weight: 300; margin-bottom: 20px;}
+        .scroll-indicator { color: #888; animation: bounce 2s infinite; }
+        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(10px); } }
+
+    </style>
+</head>
+<body>
+
+    <div class="hero-placeholder">
+        <h1>[ Your Hero Section Here ]</h1>
+        <div class="scroll-indicator">Scroll Down ↓</div>
+    </div>
+
+    <div class="scroll-timeline" id="timeline">
+        <div class="sticky-viewer">
+            
+            <canvas id="physicsCanvas"></canvas>
+
+            <div class="glass-container">
+                <div class="text-block ai-text" id="aiContent">
+                    <h2>Raw AI:<br>Outputs Not Trusted</h2>
+                    <ul>
+                        <li><strong>Inputs Not Ready</strong> Legacy data landscapes include unstructured data in silos. Solving this is costly and violates Sovereignty Foundations.</li>
+                        <li><strong>Probabilistic Models</strong> Highly Regulated Sectors Require Deterministic Outputs which cannot be left to raw AI to produce.</li>
+                        <li><strong>Reckless Velocity</strong> AI's Raw Reasoning can Accelerate your Speed, but without the right architecture, you risk getting nowhere very fast.</li>
+                    </ul>
+                </div>
+
+                <div class="text-block ia-text" id="iaContent">
+                    <h2>IA:<br>Outputs Predictable</h2>
+                    <ul>
+                        <li><strong>Inputs Ready & Resident</strong> Data is kept exactly as it is. A layer of taxonomy and ontology brings Data Context by Design at minimal investments.</li>
+                        <li><strong>AI In The Loop</strong> AI operates within a full ecosystem with total Human Observability and Data Governance.</li>
+                        <li><strong>Scaffolded for Scale</strong> An Intelligent Architecture means smart software injected with AI. Investing in the right frameworks on Day 1 ensures purposeful acceleration.</li>
+                    </ul>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+        const timeline = document.getElementById('timeline');
+        const aiContent = document.getElementById('aiContent');
+        const iaContent = document.getElementById('iaContent');
+
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // 1. SETUP GRAPH NODES
+        const numNodes = 140; 
+        const nodes = [];
+
+        for (let i = 0; i < numNodes; i++) {
+            nodes.push({
+                x: Math.random() * window.innerWidth,
+                y: Math.random() * window.innerHeight,
+                baseVx: (Math.random() - 0.5) * 2.5,
+                baseVy: (Math.random() - 0.5) * 2.5,
+                radius: Math.random() * 2 + 2
+            });
+        }
+
+        // 2. SCROLL TRACKING
+        let scrollProgress = 0; 
+        let targetProgress = 0;
+
+        window.addEventListener('scroll', () => {
+            const rect = timeline.getBoundingClientRect();
+            let rawProgress = -rect.top / (rect.height - window.innerHeight);
+            targetProgress = Math.min(Math.max(rawProgress, 0), 1);
+        });
+
+        // 3. ANIMATION LOOP
+        function animate() {
+            scrollProgress += (targetProgress - scrollProgress) * 0.1;
+
+            // Text Fading (Crossfade logic)
+            aiContent.style.opacity = Math.max(1 - (scrollProgress * 2.5), 0);
+            iaContent.style.opacity = Math.max((scrollProgress - 0.6) * 2.5, 0);
+
+            // Dark background wipe
+            ctx.fillStyle = '#050505';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            const speedFactor = Math.max(0, 1 - (scrollProgress * 1.25));
+
+            // A. UPDATE NODE POSITIONS
+            nodes.forEach(n => {
+                n.x += n.baseVx * speedFactor;
+                n.y += n.baseVy * speedFactor;
+                
+                if (n.x < 0 || n.x > canvas.width) n.baseVx *= -1;
+                if (n.y < 0 || n.y > canvas.height) n.baseVy *= -1;
+            });
+
+            // Color Interpolation Math: Light Grey (200,200,200) to Dark Gold (184,134,11)
+            const r = Math.floor(200 + (184 - 200) * scrollProgress);
+            const g = Math.floor(200 + (134 - 200) * scrollProgress);
+            const b = Math.floor(200 + (11 - 200) * scrollProgress);
+
+            // B. DRAW GRAPH RELATIONS (EDGES)
+            if (scrollProgress > 0.1) {
+                for (let i = 0; i < nodes.length; i++) {
+                    let connections = 0;
+                    for (let j = i + 1; j < nodes.length; j++) {
+                        if (connections >= 4) break; 
+
+                        const dx = nodes[i].x - nodes[j].x;
+                        const dy = nodes[i].y - nodes[j].y;
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+
+                        if (distance < 160) {
+                            connections++;
+                            const distanceOpacity = 1 - (distance / 160);
+                            const finalOpacity = distanceOpacity * scrollProgress;
+
+                            ctx.beginPath();
+                            // Lines dynamically match the transitioning color
+                            ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, ${finalOpacity})`;
+                            ctx.lineWidth = 0.5 + (scrollProgress * 1.5); 
+                            ctx.moveTo(nodes[i].x, nodes[i].y);
+                            ctx.lineTo(nodes[j].x, nodes[j].y);
+                            ctx.stroke();
+                        }
+                    }
+                }
+            }
+
+            // C. DRAW NODES
+            nodes.forEach(n => {
+                ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
+                
+                ctx.beginPath();
+                ctx.arc(n.x, n.y, n.radius + (scrollProgress * 1), 0, Math.PI * 2);
+                
+                if (scrollProgress < 0.5) {
+                    // Glowing state (Chaos)
+                    ctx.shadowBlur = 10 * (1 - scrollProgress * 2);
+                    ctx.shadowColor = `rgb(${r}, ${g}, ${b})`;
+                    ctx.fill();
+                    ctx.shadowBlur = 0;
+                } else {
+                    // Solid Node state (Structured Graph)
+                    ctx.fill();
+                    ctx.fillStyle = '#050505';
+                    ctx.beginPath();
+                    ctx.arc(n.x, n.y, n.radius * 0.4, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            });
+
+            requestAnimationFrame(animate);
+        }
+
+        animate();
+    </script>
+</body>
+</html>
