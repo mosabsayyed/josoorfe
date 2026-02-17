@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useOutletContext, useNavigate } from 'react-router-dom';
 import SectorHeaderNav from './sector/SectorHeaderNav';
 import SectorMap from './sector/SectorMap';
@@ -73,6 +73,8 @@ export const SectorDesk: React.FC<SectorDeskProps> = ({ year: propYear, quarter:
     const [focusedAssetId, setFocusedAssetId] = useState<string | null>(null);
     const [selectedAsset, setSelectedAsset] = useState<GraphNode | null>(null);
     const [viewLevel, setViewLevel] = useState<'L1' | 'L2'>('L1');
+
+    const hoverTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const [timelineFilter, setTimelineFilter] = useState<'current' | 'future' | 'both'>('both');
     const [priorityFilter, setPriorityFilter] = useState<'major' | 'strategic' | 'both'>('both');
@@ -559,8 +561,28 @@ export const SectorDesk: React.FC<SectorDeskProps> = ({ year: propYear, quarter:
     }, [rawPolicyNodes, selectedYear, selectedSector]);
 
     // --- EXISTING HANDLERS ---
+    const handleRegionHover = useCallback((regionId: string | null) => {
+        if (hoverTimeoutRef.current) {
+            clearTimeout(hoverTimeoutRef.current);
+            hoverTimeoutRef.current = null;
+        }
+        if (regionId) {
+            setHoveredRegion(regionId);
+        } else {
+            hoverTimeoutRef.current = setTimeout(() => {
+                setHoveredRegion(null);
+            }, 300);
+        }
+    }, []);
+
     const handleAssetSelect = useCallback((asset: GraphNode | null) => {
         setSelectedAsset(asset);
+    }, []);
+
+    useEffect(() => {
+        return () => {
+            if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
+        };
     }, []);
 
     const existingCount = useMemo(() => {
@@ -676,7 +698,7 @@ export const SectorDesk: React.FC<SectorDeskProps> = ({ year: propYear, quarter:
                             setSelectedRegionId(id);
                             setSelectedAsset(null);
                         }}
-                        onRegionHover={(regionId) => setHoveredRegion(regionId)}
+                        onRegionHover={handleRegionHover}
                         focusAssetId={focusedAssetId}
                         assets={filteredAssets}
                         isLoading={loading}
@@ -696,6 +718,12 @@ export const SectorDesk: React.FC<SectorDeskProps> = ({ year: propYear, quarter:
                     width: (viewLevel === 'L2' && (selectedRegionId || selectedAsset || hoveredRegion)) || (viewLevel === 'L1' && hoveredRegion) ? '400px' : '0px',
                     flex: (viewLevel === 'L2' && (selectedRegionId || selectedAsset || hoveredRegion)) || (viewLevel === 'L1' && hoveredRegion) ? '0 0 400px' : '0 0 0px',
                     boxShadow: ((viewLevel === 'L2' && (selectedRegionId || selectedAsset || hoveredRegion)) || (viewLevel === 'L1' && hoveredRegion)) ? '-4px 0 20px rgba(0,0,0,0.3)' : 'none'
+                }}
+                onMouseEnter={() => {
+                    if (hoverTimeoutRef.current) {
+                        clearTimeout(hoverTimeoutRef.current);
+                        hoverTimeoutRef.current = null;
+                    }
                 }}
             >
                 <div className="sector-drawer-content">

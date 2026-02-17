@@ -244,7 +244,7 @@ export default function JosoorShell() {
                 style={{
                     width: isSidebarOpen ? '240px' : '50px',
                     transition: 'width 0.3s ease',
-                    borderRight: '1px solid var(--border-color)',
+                    borderInlineEnd: '1px solid var(--border-color)',
                     flexShrink: 0
                 }}
             >

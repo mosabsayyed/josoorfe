@@ -681,7 +681,7 @@ function JSONCollapsible({
 }
 
 function ArtifactIcon({ type, size = 16, color }: { type: string; size?: number; color?: string }) {
-  const commonStyle = { width: size, height: size, flexShrink: 0, color: color || 'rgba(107,114,128,1)' } as any;
+  const commonStyle = { width: size, height: size, flexShrink: 0, color: color || 'var(--component-text-muted)' } as any;
 
   switch ((type || '').toUpperCase()) { // Convert type to uppercase for case-insensitive matching
     case 'CHART':

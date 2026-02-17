@@ -195,13 +195,16 @@ export function Sidebar({
           display: 'flex',
           flexDirection: 'column',
           gap: '4px',
-          margin: `${marginTop}px ${rightMargin}px ${marginBottom}px 0`,
+          marginTop: `${marginTop}px`,
+          marginBottom: `${marginBottom}px`,
+          marginInlineEnd: `${rightMargin}px`,
+          marginInlineStart: '0',
           padding: '1px',
           border: '1px solid rgba(238, 201, 4, 1)'
         }}
       >
         {!collapsed && (
-        <div className="sidebar-quickactions-title" style={{ fontWeight: "400", paddingLeft: '8px' }}>
+        <div className="sidebar-quickactions-title" style={{ fontWeight: "400", paddingInlineStart: '8px' }}>
           <div style={{
             display: "inline",
             fontWeight: 700,
@@ -232,7 +235,7 @@ export function Sidebar({
               alignItems: "center",
               justifyContent: collapsed ? 'center' : 'flex-start',
               backgroundColor: isActive ? 'var(--component-bg-disconnected)' : "rgba(0, 0, 0, 0)",
-              color: theme === 'light' ? "rgb(55, 65, 81)" : "rgb(243, 244, 246)",
+              color: 'var(--component-text-primary)',
               fontSize: "13px",
               fontWeight: "400",
               gap: collapsed ? '0' : '8px',
@@ -280,7 +283,7 @@ export function Sidebar({
             gap: '8px',
             justifyContent: collapsed ? 'center' : 'flex-start',
             padding: collapsed ? '0' : '0 0 10px 0',
-            marginRight: collapsed ? '0' : '33px'
+            marginInlineEnd: collapsed ? '0' : '33px'
           }}
         >
           <button
@@ -301,7 +304,7 @@ export function Sidebar({
           </button>
 
           {!collapsed && (
-            <div style={{ display: 'block', color: '#eec904', margin: '0 auto', font: '600 18px __Inter_d65c78, sans-serif' }}>
+            <div style={{ display: 'block', color: 'var(--component-text-accent)', margin: '0 auto', font: '600 18px __Inter_d65c78, sans-serif' }}>
               JOSOOR
             </div>
           )}
@@ -320,7 +323,7 @@ export function Sidebar({
             display: 'flex',
             flexDirection: 'column',
             minHeight: 0,
-            marginLeft: '20px',
+            marginInlineStart: '20px',
             maxWidth: '210px',
             padding: '1px',
             border: '1px solid rgba(238, 201, 4, 1)',
@@ -339,7 +342,7 @@ export function Sidebar({
               alignItems: 'center',
               backgroundColor: 'rgba(0, 0, 0, 0)',
               borderRadius: '4px',
-              color: 'rgb(243, 244, 246)',
+              color: 'var(--component-text-primary)',
               gap: '8px',
               justifyContent: 'flex-start',
               width: '100%',
@@ -466,7 +469,7 @@ function ConversationItem({
         </DropdownMenuTrigger>
         <DropdownMenuContent align={isRTL ? 'start' : 'end'} style={{ backgroundColor: 'var(--component-panel-bg)', color: 'var(--component-text-primary)' }}>
           <DropdownMenuItem
-            style={{ color: 'rgb(220, 38, 38)', display: 'flex', alignItems: 'center', gap: '8px' }}
+            style={{ color: 'var(--component-color-danger)', display: 'flex', alignItems: 'center', gap: '8px' }}
             onClick={(e: React.MouseEvent) => {
               e.stopPropagation();
               onDelete();

@@ -190,9 +190,9 @@ export const ChatContainer = memo(function ChatContainer({
 
   return (
     <div className="chat-container-root">
-      <div className="chat-top-controls" style={{ display: "flex", alignItems: "center", fontWeight: "400", justifyContent: "space-between", padding: "8px 16px", gap: "16px", backgroundColor: theme === 'light' ? 'rgba(250, 236, 195, 0.7)' : 'rgba(31, 41, 55, 0.9)', borderBottom: '1px solid rgba(255, 255, 255, 0.1)', height: '60px' }}>
+      <div className="chat-top-controls" style={{ display: "flex", alignItems: "center", fontWeight: "400", justifyContent: "space-between", padding: "8px 16px", gap: "16px", backgroundColor: 'var(--component-panel-bg)', borderBottom: '1px solid rgba(255, 255, 255, 0.1)', height: '60px' }}>
         {/* LEFT: Logo, App Name & Title */}
-        <div dir={effectiveLanguage === 'ar' ? 'rtl' : 'ltr'} style={{ display: "flex", alignItems: "center", gap: "12px", color: theme === 'light' ? '#4B5563' : "white" }}>
+        <div dir={effectiveLanguage === 'ar' ? 'rtl' : 'ltr'} style={{ display: "flex", alignItems: "center", gap: "12px", color: 'var(--component-text-primary)' }}>
           <img
             loading="lazy"
             src="https://cdn.builder.io/api/v1/image/assets%2Fdcb6338cd56942dd9d0d7f3bbd865659%2Fe4fa8a9e49344786befd964c7169a6de"
@@ -200,7 +200,7 @@ export const ChatContainer = memo(function ChatContainer({
           />
           <div style={{ display: 'flex', flexDirection: 'column' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ font: "700 16px __Inter_d65c78, sans-serif", color: theme === 'light' ? '#4B5563' : "white" }}>AI Twin Tech</span>
+              <span style={{ font: "700 16px __Inter_d65c78, sans-serif", color: 'var(--component-text-primary)' }}>AI Twin Tech</span>
               {title && (
                 <>
                   <div style={{ width: '1px', height: '16px', backgroundColor: 'rgba(255,255,255,0.2)', margin: '0 4px' }} />
@@ -218,7 +218,7 @@ export const ChatContainer = memo(function ChatContainer({
             <select
               value={year}
               onChange={(e) => onYearChange?.(e.target.value)}
-              style={{ backgroundColor: 'transparent', color: theme === 'light' ? '#374151' : '#fff', border: 'none', fontSize: '14px', fontWeight: 600, cursor: 'pointer', outline: 'none', padding: '2px 8px' }}
+              style={{ backgroundColor: 'transparent', color: 'var(--component-text-primary)', border: 'none', fontSize: '14px', fontWeight: 600, cursor: 'pointer', outline: 'none', padding: '2px 8px' }}
             >
               {availableYears.map(y => (
                 <option key={y} value={y} style={{ color: '#000' }}>{y}</option>
@@ -273,7 +273,7 @@ export const ChatContainer = memo(function ChatContainer({
                   <div style={{ position: 'relative', background: 'var(--component-color-success)', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '28px', height: '28px', borderRadius: '50%' }}>
                     <img src="https://cdn.builder.io/api/v1/image/assets%2Fc88de0889c4545b98ff911f5842e062a%2Faa1d3e8edf5b47d1b88df2eb208d3cac" alt="profile" style={{ width: '100%', height: '100%', display: 'block', borderRadius: '50%' }} />
                   </div>
-                  <span style={{ fontSize: '13px', fontWeight: 600, color: theme === 'light' ? '#374151' : '#fff', maxWidth: '100px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{currentUser?.user_metadata?.full_name || currentUser?.email || (effectiveLanguage === 'ar' ? 'الحساب' : 'Account')}</span>
+                  <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--component-text-primary)', maxWidth: '100px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{currentUser?.user_metadata?.full_name || currentUser?.email || (effectiveLanguage === 'ar' ? 'الحساب' : 'Account')}</span>
                 </div>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" side="bottom" style={{ width: '240px', backgroundColor: 'var(--component-panel-bg)', color: 'var(--component-text-primary)', border: '1px solid var(--component-panel-border)' }}>
@@ -319,12 +319,12 @@ export const ChatContainer = memo(function ChatContainer({
             <DialogDescription>{effectiveLanguage === 'ar' ? 'الحساب' : 'Account'}</DialogDescription>
           </DialogHeader>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px', padding: '16px 0' }}>
-            <div style={{ height: '96px', width: '96px', borderRadius: '50%', backgroundColor: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+            <div style={{ height: '96px', width: '96px', borderRadius: '50%', backgroundColor: 'var(--component-color-success)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
               <img src="https://cdn.builder.io/api/v1/image/assets%2Fc88de0889c4545b98ff911f5842e062a%2Faa1d3e8edf5b47d1b88df2eb208d3cac" alt="profile" style={{ height: '100%', width: '100%', objectFit: 'cover' }} />
             </div>
             <div style={{ textAlign: 'center' }}>
               <h3 style={{ fontSize: '18px', fontWeight: 600, margin: 0 }}>{currentUser?.user_metadata?.full_name || currentUser?.email || (effectiveLanguage === 'ar' ? 'الحساب' : 'Account')}</h3>
-              <p style={{ fontSize: '14px', color: '#6b7280', margin: 0 }}>{currentUser?.email}</p>
+              <p style={{ fontSize: '14px', color: 'var(--component-text-muted)', margin: 0 }}>{currentUser?.email}</p>
             </div>
           </div>
           <DialogFooter>
