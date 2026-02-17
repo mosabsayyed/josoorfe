@@ -184,27 +184,21 @@ async function fetchEnterpriseViaCypher(year: number | 'all', quarter: number | 
   const cypherQuery = `
     MATCH (cap:EntityCapability)
     ${yearFilter}
-    RETURN 'capability' as nodeType, cap {
+    OPTIONAL MATCH (cap)-[:MONITORED_BY]->(risk:EntityRisk)
+    ${riskYearFilter ? 'AND ' + riskYearFilter.replace('WHERE', '') : ''}
+    RETURN cap {
       .*,
       embedding: null,
       vector: null,
       elementId: elementId(cap),
-      businessId: cap.id
+      businessId: cap.id,
+      _nestedRisk: risk {
+        .*,
+        embedding: null,
+        vector: null
+      }
     } as data
     ORDER BY cap.level, cap.id
-
-    UNION ALL
-
-    MATCH (risk:EntityRisk)
-    ${riskYearFilter}
-    RETURN 'risk' as nodeType, risk {
-      .*,
-      embedding: null,
-      vector: null,
-      elementId: elementId(risk),
-      businessId: risk.id
-    } as data
-    ORDER BY risk.level, risk.id
   `;
 
   console.log('[EnterpriseService] 🚀 Executing Cypher via MCP:', { endpoint, year, querySnippet: cypherQuery.substring(0, 100) });
@@ -309,12 +303,10 @@ async function fetchEnterpriseViaCypher(year: number | 'all', quarter: number | 
     return { nodes: [], links: [] };
   }
 
-  // Transform Cypher response to node arrays (capabilities + risks)
+  // Transform Cypher response to node arrays (capabilities with nested risk)
   const capabilityNodes: NeoGraphNode[] = [];
-  const riskNodes: NeoGraphNode[] = [];
 
   rows.forEach((row: any) => {
-    const nodeType = row.nodeType;
     const data = row.data;
     if (!data) return;
 
@@ -322,21 +314,19 @@ async function fetchEnterpriseViaCypher(year: number | 'all', quarter: number | 
       ...data,
       id: data.businessId || data.id,
       businessId: data.businessId || data.id,
-      group: nodeType === 'capability' ? 'EntityCapability' : 'EntityRisk',
+      group: 'EntityCapability',
       label: data.name || data.id,
       name: data.name || data.id
     };
 
-    if (nodeType === 'capability') {
-      capabilityNodes.push(node);
-    } else if (nodeType === 'risk') {
-      riskNodes.push(node);
-    }
+    capabilityNodes.push(node);
   });
 
-  console.log(`[EnterpriseService] ✅ Fetched ${capabilityNodes.length} capability nodes + ${riskNodes.length} risk nodes (year filter: ${year === 'all' ? 'all' : '<=' + year})`);
+  // Count how many capabilities have nested risk data
+  const withRisk = capabilityNodes.filter(n => (n as any)._nestedRisk != null).length;
+  console.log(`[EnterpriseService] ✅ Fetched ${capabilityNodes.length} capability nodes (${withRisk} with risk data) (year filter: ${year === 'all' ? 'all' : '<=' + year})`);
 
-  return { nodes: capabilityNodes, links: [], riskNodes };
+  return { nodes: capabilityNodes, links: [] };
 }
 
 export async function getCapabilityMatrix(
@@ -351,7 +341,7 @@ export async function getCapabilityMatrix(
     return [];
   }
 
-  const result = transformNeo4jToMatrix(graphData, year, quarter, graphData.riskNodes || []);
+  const result = transformNeo4jToMatrix(graphData, year, quarter);
   return result;
 }
 
@@ -359,7 +349,7 @@ export async function getCapabilityMatrix(
  * Transform flat Neo4j graph data into hierarchical L1→L2→L3 structure
  * Enriches L3 nodes with overlay data from EntityRisk relationships
  */
-function transformNeo4jToMatrix(graphData: NeoGraphData, year: number | 'all', quarter: number | 'all', riskNodes: NeoGraphNode[] = []): L1Capability[] {
+function transformNeo4jToMatrix(graphData: NeoGraphData, year: number | 'all', quarter: number | 'all'): L1Capability[] {
   // All nodes are already EntityCapability (from simplified query)
   // Year filter already applied in Cypher query (accumulative)
   const capabilityNodes = graphData.nodes;
@@ -515,23 +505,7 @@ function transformNeo4jToMatrix(graphData: NeoGraphData, year: number | 'all', q
   // Since we updated parent_id on the *original* nodes (l2Nodes array members), and deduplicatedL2Nodes contains references to those same objects,
   // we can use deduplicatedL2Nodes.
 
-  // Deduplicate risk nodes by (id, year, quarter) - keep most recent
-  const riskByKey = new Map<string, NeoGraphNode>();
-  riskNodes.forEach(risk => {
-    const bizId = risk.businessId || risk.id;
-    const yr = getNeo4jInt(risk.year);
-    const qtr = getNeo4jInt(risk.quarter);
-    const key = `${bizId}_${yr}_${qtr}`;
-    const existing = riskByKey.get(key);
-    if (!existing) {
-      riskByKey.set(key, risk);
-    }
-  });
-  const deduplicatedRiskNodes = Array.from(riskByKey.values());
-
-  console.log('[EnterpriseService] Risk nodes for enrichment:', deduplicatedRiskNodes.length);
-
-  return sortedL1Nodes.map(l1Node => buildL1(l1Node, deduplicatedL2Nodes, deduplicatedL3Nodes, deduplicatedRiskNodes));
+  return sortedL1Nodes.map(l1Node => buildL1(l1Node, deduplicatedL2Nodes, deduplicatedL3Nodes));
 }
 
 /**
@@ -541,8 +515,7 @@ function transformNeo4jToMatrix(graphData: NeoGraphData, year: number | 'all', q
 function buildL1(
   l1Node: NeoGraphNode,
   l2Nodes: NeoGraphNode[],
-  l3Nodes: NeoGraphNode[],
-  riskNodes: NeoGraphNode[] = []
+  l3Nodes: NeoGraphNode[]
 ): L1Capability {
   const l1BusinessId = (l1Node as any).businessId || l1Node.id;
 
@@ -558,7 +531,7 @@ function buildL1(
     description: l1Node.description || '',
     maturity_level: calculateL1Maturity(l2Children, l3Nodes),
     target_maturity_level: calculateL1TargetMaturity(l2Children, l3Nodes),
-    l2: l2Children.map(l2Node => buildL2(l2Node, l3Nodes, riskNodes))
+    l2: l2Children.map(l2Node => buildL2(l2Node, l3Nodes))
   };
 }
 
@@ -566,7 +539,7 @@ function buildL1(
  * Build L2 capability with all L3 children using parent_id + parent_year matching
  * NOTE: L3.parent_id contains L2 BUSINESS ID (not element ID), so match by businessId
  */
-function buildL2(l2Node: NeoGraphNode, l3Nodes: NeoGraphNode[], riskNodes: NeoGraphNode[] = []): L2Capability {
+function buildL2(l2Node: NeoGraphNode, l3Nodes: NeoGraphNode[]): L2Capability {
   const l2BusinessId = (l2Node as any).businessId || l2Node.id;
 
   // Find L3 children: L3.parent_id === L2.businessId
@@ -581,14 +554,14 @@ function buildL2(l2Node: NeoGraphNode, l3Nodes: NeoGraphNode[], riskNodes: NeoGr
     description: l2Node.description || '',
     maturity_level: calculateL2Maturity(l3Children),
     target_maturity_level: calculateL2TargetMaturity(l3Children),
-    l3: l3Children.map(l3Node => buildL3(l3Node, riskNodes))
+    l3: l3Children.map(l3Node => buildL3(l3Node))
   };
 }
 
 /**
  * Build L3 capability with risk data enrichment for overlays
  */
-function buildL3(l3Node: NeoGraphNode, riskNodes: NeoGraphNode[] = []): L3Capability {
+function buildL3(l3Node: NeoGraphNode): L3Capability {
   const l3BusinessId = (l3Node as any).businessId || l3Node.id;
 
   // Determine mode from status
@@ -617,8 +590,8 @@ function buildL3(l3Node: NeoGraphNode, riskNodes: NeoGraphNode[] = []): L3Capabi
     ...(mode === 'execute' && { execute_status: deriveExecuteStatus(l3Node.status) })
   };
 
-  // Enrich with risk data from matching EntityRisk node
-  enrichWithRiskData(l3Cap, riskNodes, mode);
+  // Enrich with risk data from matching EntityRisk node (via _nestedRisk)
+  enrichWithRiskData(l3Cap, l3Node, mode);
 
   // Calculate derived overlay fields from raw risk data
   calculateOverlayFields(l3Cap, mode);
@@ -689,53 +662,21 @@ function deriveExecuteStatus(neoStatus: string): 'ontrack' | 'at-risk' | 'issues
  */
 function enrichWithRiskData(
   l3Cap: any,
-  riskNodes: NeoGraphNode[],
+  l3Node: NeoGraphNode,
   mode: 'build' | 'execute' | null
 ): void {
-  // Helper: normalize quarter to integer for comparison
-  // Risk nodes have quarter as string "1", capabilities as int 1 or Neo4j {low,high}
-  const normalizeQuarter = (q: any): number => {
-    if (q == null) return 0;
-    if (typeof q === 'string') return parseInt(q) || 0;
-    if (typeof q === 'number') return q;
-    if (typeof q === 'object' && 'low' in q) return q.low;
-    return 0;
-  };
+  // Read risk data from _nestedRisk property (joined via MONITORED_BY in Cypher)
+  const matchingRisk = (l3Node as any)._nestedRisk;
 
+  if (!matchingRisk) return;
+
+  // Helper: normalize year/quarter for potential future use
   const normalizeYear = (y: any): number => {
     if (y == null) return 0;
     if (typeof y === 'number') return y;
     if (typeof y === 'object' && 'low' in y) return y.low;
     return parseInt(String(y)) || 0;
   };
-
-  const getRiskBizId = (r: NeoGraphNode) => (r as any).businessId || r.id;
-  const l3Year = l3Cap.year;
-  const l3Quarter = typeof l3Cap.quarter === 'string' ? parseInt(l3Cap.quarter.replace('Q', '')) : l3Cap.quarter;
-
-  // Step 1: Find matching risk — exact match (id + year + quarter)
-  let matchingRisk = riskNodes.find(risk =>
-    getRiskBizId(risk) === l3Cap.id &&
-    normalizeYear(risk.year) === l3Year &&
-    normalizeQuarter(risk.quarter) === l3Quarter
-  );
-
-  // Fall back: id + year (quarter may differ or be missing)
-  if (!matchingRisk) {
-    matchingRisk = riskNodes.find(risk =>
-      getRiskBizId(risk) === l3Cap.id &&
-      normalizeYear(risk.year) === l3Year
-    );
-  }
-
-  // Last resort: just id (cumulative view)
-  if (!matchingRisk) {
-    matchingRisk = riskNodes.find(risk =>
-      getRiskBizId(risk) === l3Cap.id
-    );
-  }
-
-  if (!matchingRisk) return;
 
   // Step 2: Always populate raw scores (used by multiple overlays)
   l3Cap.people_score = matchingRisk.people_score;
