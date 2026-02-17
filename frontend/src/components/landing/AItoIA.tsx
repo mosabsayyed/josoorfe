@@ -1,6 +1,17 @@
 import React, { useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 
+const AI_ICONS = [
+  '/att/icons/icon-inputs-not-ready.png',
+  '/att/icons/icon-probabilistic-models.png',
+  '/att/icons/icon-reckless-velocity.png',
+];
+const IA_ICONS = [
+  '/att/icons/icon-inputs-ready.png',
+  '/att/icons/icon-ai-in-loop.png',
+  '/att/icons/icon-accelerated-certainty.png',
+];
+
 interface Node {
   x: number;
   y: number;
@@ -9,40 +20,46 @@ interface Node {
   radius: number;
 }
 
-const NUM_NODES = 140;
-const BG = '#111827'; // matches --component-bg-primary
+const NUM_NODES_DESKTOP = 140;
+const NUM_NODES_MOBILE = 60; // Reduced for mobile performance
+const BG = '#111827';
 
 export default function AItoIA() {
   const { t } = useTranslation();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const timelineRef = useRef<HTMLDivElement>(null);
   const viewerRef = useRef<HTMLDivElement>(null);
-  const aiRef = useRef<HTMLDivElement>(null);
-  const iaRef = useRef<HTMLDivElement>(null);
+  const challengeRef = useRef<HTMLDivElement>(null);
+  const innovationRef = useRef<HTMLDivElement>(null);
   const nodesRef = useRef<Node[]>([]);
   const scrollRef = useRef(0);
   const targetRef = useRef(0);
   const rafRef = useRef<number>(0);
+  const isMobileRef = useRef(false);
 
   useEffect(() => {
+    // Detect mobile viewport
+    isMobileRef.current = window.innerWidth <= 768;
     const canvas = canvasRef.current;
     const timeline = timelineRef.current;
     const viewer = viewerRef.current;
-    const aiEl = aiRef.current;
-    const iaEl = iaRef.current;
-    if (!canvas || !timeline || !viewer || !aiEl || !iaEl) return;
+    const challengeEl = challengeRef.current;
+    const innovationEl = innovationRef.current;
+    if (!canvas || !timeline || !viewer || !challengeEl || !innovationEl) return;
 
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Initialize particle nodes
+    // Initialize particle nodes (fewer on mobile for performance)
+    const nodeCount = isMobileRef.current ? NUM_NODES_MOBILE : NUM_NODES_DESKTOP;
+    const velocityMultiplier = isMobileRef.current ? 3 : 5; // Slower on mobile
     const nodes: Node[] = [];
-    for (let i = 0; i < NUM_NODES; i++) {
+    for (let i = 0; i < nodeCount; i++) {
       nodes.push({
         x: Math.random() * window.innerWidth,
         y: Math.random() * window.innerHeight,
-        baseVx: (Math.random() - 0.5) * 2.5,
-        baseVy: (Math.random() - 0.5) * 2.5,
+        baseVx: (Math.random() - 0.5) * velocityMultiplier,
+        baseVy: (Math.random() - 0.5) * velocityMultiplier,
         radius: Math.random() * 2 + 2,
       });
     }
@@ -60,7 +77,6 @@ export default function AItoIA() {
       const vh = window.innerHeight;
 
       // ── JS-controlled pinning (replaces CSS position:sticky) ──
-      // This bypasses all CSS scroll-container issues in the SPA
       if (rect.top <= 0 && rect.bottom > vh) {
         // PINNED: timeline is scrolling through viewport
         viewer.style.position = 'fixed';
@@ -84,9 +100,9 @@ export default function AItoIA() {
       scrollRef.current += (targetRef.current - scrollRef.current) * 0.1;
       const sp = scrollRef.current;
 
-      // Crossfade text blocks
-      aiEl.style.opacity = String(Math.max(1 - sp * 2.5, 0));
-      iaEl.style.opacity = String(Math.max((sp - 0.6) * 2.5, 0));
+      // Crossfade entire content blocks (header + bullets)
+      challengeEl.style.opacity = String(Math.max(1 - sp * 2.5, 0));
+      innovationEl.style.opacity = String(Math.max((sp - 0.6) * 2.5, 0));
 
       // Clear
       ctx.fillStyle = BG;
@@ -107,18 +123,21 @@ export default function AItoIA() {
       const g = Math.floor(200 + (187 - 200) * sp);
       const b = Math.floor(200 + (48 - 200) * sp);
 
-      // Draw edges
+      // Draw edges (simpler on mobile for performance)
+      const maxConnections = isMobileRef.current ? 3 : 4;
+      const connectionDistance = isMobileRef.current ? 120 : 160;
+
       if (sp > 0.1) {
         for (let i = 0; i < nodes.length; i++) {
           let conn = 0;
           for (let j = i + 1; j < nodes.length; j++) {
-            if (conn >= 4) break;
+            if (conn >= maxConnections) break;
             const dx = nodes[i].x - nodes[j].x;
             const dy = nodes[i].y - nodes[j].y;
             const dist = Math.sqrt(dx * dx + dy * dy);
-            if (dist < 160) {
+            if (dist < connectionDistance) {
               conn++;
-              const dOp = 1 - dist / 160;
+              const dOp = 1 - dist / connectionDistance;
               ctx.beginPath();
               ctx.strokeStyle = `rgba(${r},${g},${b},${dOp * sp})`;
               ctx.lineWidth = 0.5 + sp * 1.5;
@@ -161,45 +180,70 @@ export default function AItoIA() {
     };
   }, []);
 
+  const aiItems = t('aitoia.aiItems', { returnObjects: true }) as Array<{ icon: string; strong: string; desc: string }>;
+  const iaItems = t('aitoia.iaItems', { returnObjects: true }) as Array<{ icon: string; strong: string; desc: string }>;
+
+  // Helper to highlight Watch/Decide/Deliver in gold
+  const highlightWorkflow = (text: string) => {
+    const words = ['Watch', 'Decide', 'Deliver', 'تراقبها', 'تقرّرها', 'تنفّذها'];
+    let result = text;
+    words.forEach(word => {
+      const regex = new RegExp(`(${word})`, 'g');
+      result = result.replace(regex, `<span style="color: #F4BB30; font-weight: 600;">$1</span>`);
+    });
+    return result;
+  };
+
   return (
     <div className="aitoia-timeline" id="aitoia" ref={timelineRef}>
       <div className="aitoia-viewer" ref={viewerRef}>
         <canvas ref={canvasRef} className="aitoia-canvas" />
 
         <div className="aitoia-glass">
-          {/* Section header — always visible at top */}
-          <div className="aitoia-header">
-            <span className="aitoia-tag">{t('aitoia.tag')}</span>
-            <h2>{t('aitoia.title')}</h2>
-            <p className="subtitle" style={{ maxWidth: '560px' }}>{t('aitoia.subtitle')}</p>
-          </div>
-
-          {/* Blocks overlay each other below the header */}
-          <div className="aitoia-blocks">
-            <div className="aitoia-block aitoia-ai" ref={aiRef}>
-              <h3>{t('aitoia.aiTitle')} {t('aitoia.aiSubtitle')}</h3>
-              <ul>
-                {(t('aitoia.aiItems', { returnObjects: true }) as Array<{ icon: string; strong: string; desc: string }>).map((item, i) => (
-                  <li key={i}>
-                    <span className="aitoia-icon">{item.icon}</span>
-                    <strong>{item.strong}</strong>
-                    {item.desc}
-                  </li>
-                ))}
-              </ul>
+          {/* Overlapping content blocks that crossfade */}
+          <div style={{ display: 'grid' }}>
+            {/* Challenge content — fades out as user scrolls */}
+            <div ref={challengeRef} style={{ gridArea: '1 / 1' }}>
+              <div className="aitoia-header">
+                <span className="aitoia-tag">{t('aitoia.tag')}</span>
+                <h2>{t('aitoia.title')}</h2>
+                <p className="subtitle" style={{ maxWidth: '560px' }}>{t('aitoia.challengeSubtitle')}</p>
+              </div>
+              <div className="aitoia-block aitoia-ai" style={{ opacity: 1, pointerEvents: 'auto' }}>
+                <ul>
+                  {aiItems.map((item, i) => (
+                    <li key={i} style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                      <img src={AI_ICONS[i]} alt="" width={96} height={96} style={{ flexShrink: 0 }} />
+                      <div>
+                        <strong>{item.strong}</strong>
+                        {item.desc}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </div>
 
-            <div className="aitoia-block aitoia-ia" ref={iaRef}>
-              <h3>{t('aitoia.iaTitle')} {t('aitoia.iaSubtitle')}</h3>
-              <ul>
-                {(t('aitoia.iaItems', { returnObjects: true }) as Array<{ icon: string; strong: string; desc: string }>).map((item, i) => (
-                  <li key={i}>
-                    <span className="aitoia-icon">{item.icon}</span>
-                    <strong>{item.strong}</strong>
-                    {item.desc}
-                  </li>
-                ))}
-              </ul>
+            {/* Innovation content — fades in as user scrolls */}
+            <div ref={innovationRef} style={{ gridArea: '1 / 1', opacity: 0 }}>
+              <div className="aitoia-header">
+                <span className="aitoia-tag">{t('aitoia.innovationTag')}</span>
+                <h2>{t('aitoia.innovationTitle')}</h2>
+                <p className="subtitle" style={{ maxWidth: '560px' }}>{t('aitoia.innovationSubtitle')}</p>
+              </div>
+              <div className="aitoia-block aitoia-ia" style={{ opacity: 1, pointerEvents: 'auto' }}>
+                <ul>
+                  {iaItems.map((item, i) => (
+                    <li key={i} style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                      <img src={IA_ICONS[i]} alt="" width={96} height={96} style={{ flexShrink: 0 }} />
+                      <div>
+                        <strong>{item.strong}</strong>
+                        <span dangerouslySetInnerHTML={{ __html: highlightWorkflow(item.desc) }} />
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </div>
           </div>
         </div>

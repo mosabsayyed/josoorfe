@@ -30,11 +30,9 @@ function findScrollContainer(): HTMLElement {
 
 /**
  * Calculates absolute scroll positions for each snap point.
- * AItoIA ('aitoia') produces TWO snap points: AI state and IA state.
  */
 function calcSnapPoints(sections: string[], container: HTMLElement): SnapPoint[] {
   const points: SnapPoint[] = [];
-  const vh = window.innerHeight;
 
   // Measure fixed header height so sections aren't hidden behind it
   const header = document.querySelector('header');
@@ -46,13 +44,12 @@ function calcSnapPoints(sections: string[], container: HTMLElement): SnapPoint[]
 
     const elTop = el.getBoundingClientRect().top + container.scrollTop;
 
-    if (id === 'aitoia') {
-      // AItoIA fills full viewport — no nav offset needed (canvas sits behind nav)
-      points.push({ id: 'aitoia-ai', top: elTop });
-      points.push({ id: 'aitoia-ia', top: elTop + el.offsetHeight - vh });
-    } else if (id === 'hero') {
-      // Hero starts at page top — no offset
+    if (id === 'hero') {
       points.push({ id, top: elTop });
+    } else if (id === 'aitoia') {
+      // 300vh timeline section: two snap points for Challenge → Innovation morph
+      points.push({ id: 'aitoia', top: elTop });
+      points.push({ id: 'aitoia-end', top: elTop + el.offsetHeight - window.innerHeight });
     } else {
       // Regular sections: offset so content starts below the fixed nav
       points.push({ id, top: Math.max(0, elTop - navH) });
@@ -68,12 +65,14 @@ function easeInOutCubic(t: number): number {
     : 1 - Math.pow(-2 * t + 2, 3) / 2;
 }
 
-const SCROLL_DURATION_MS = 1200;
+const SCROLL_DURATION_DESKTOP = 1200;
+const SCROLL_DURATION_MOBILE = 800; // Faster on mobile for better UX
 
 export default function useSnapScroll({
   sections,
   enabled = true,
 }: UseSnapScrollOptions) {
+  const isMobile = () => window.innerWidth <= 768;
   const scrollingRef = useRef(false);
   const animFrameRef = useRef(0);
   const touchStartY = useRef(0);
@@ -135,10 +134,11 @@ export default function useSnapScroll({
     }
 
     const startTime = performance.now();
+    const duration = isMobile() ? SCROLL_DURATION_MOBILE : SCROLL_DURATION_DESKTOP;
 
     const step = (now: number) => {
       const elapsed = now - startTime;
-      const progress = Math.min(elapsed / SCROLL_DURATION_MS, 1);
+      const progress = Math.min(elapsed / duration, 1);
       const eased = easeInOutCubic(progress);
 
       container.scrollTop = startY + distance * eased;
@@ -169,11 +169,7 @@ export default function useSnapScroll({
   const scrollToSection = useCallback((targetId: string) => {
     recalc();
     const points = pointsRef.current;
-    // Match by id or aitoia prefix
-    let idx = points.findIndex((p) => p.id === targetId);
-    if (idx === -1 && targetId === 'aitoia') {
-      idx = points.findIndex((p) => p.id === 'aitoia-ai');
-    }
+    const idx = points.findIndex((p) => p.id === targetId);
     if (idx !== -1) {
       clearCooldown();
       snapTo(idx);
@@ -195,8 +191,28 @@ export default function useSnapScroll({
       }
       // Only snap on meaningful scroll (ignore tiny trackpad noise)
       if (Math.abs(e.deltaY) < 5) return;
+
+      const direction: 1 | -1 = e.deltaY > 0 ? 1 : -1;
+
+      recalc();
+      const nearest = findNearest();
+      const points = pointsRef.current;
+
+      // At the last snap section scrolling down → let browser scroll naturally
+      if (direction === 1 && nearest >= points.length - 1) return;
+
+      // Scrolling up from BELOW the last snap point → snap TO it first, not past it
+      if (direction === -1 && nearest === points.length - 1) {
+        const scrollY = container.scrollTop;
+        if (scrollY > points[nearest].top + 50) {
+          e.preventDefault();
+          snapTo(nearest);
+          return;
+        }
+      }
+
       e.preventDefault();
-      snap(e.deltaY > 0 ? 1 : -1);
+      snap(direction);
     };
 
     // ── Keyboard ──
@@ -207,18 +223,41 @@ export default function useSnapScroll({
 
       switch (e.key) {
         case 'ArrowDown':
-        case 'PageDown':
+        case 'PageDown': {
+          // At last snap section → let browser scroll naturally
+          recalc();
+          const nearest = findNearest();
+          if (nearest >= pointsRef.current.length - 1) break;
           e.preventDefault();
           snap(1);
           break;
+        }
         case 'ArrowUp':
-        case 'PageUp':
+        case 'PageUp': {
           e.preventDefault();
-          snap(-1);
+          // From below last snap point → snap TO it first
+          recalc();
+          const nearestUp = findNearest();
+          const ptsUp = pointsRef.current;
+          if (nearestUp === ptsUp.length - 1 && container.scrollTop > ptsUp[nearestUp].top + 50) {
+            snapTo(nearestUp);
+          } else {
+            snap(-1);
+          }
           break;
+        }
         case ' ':
-          e.preventDefault();
-          snap(e.shiftKey ? -1 : 1);
+          if (e.shiftKey) {
+            e.preventDefault();
+            snap(-1);
+          } else {
+            // At last snap section → let browser scroll naturally
+            recalc();
+            const nearest = findNearest();
+            if (nearest >= pointsRef.current.length - 1) break;
+            e.preventDefault();
+            snap(1);
+          }
           break;
         case 'Home':
           e.preventDefault();
@@ -239,8 +278,25 @@ export default function useSnapScroll({
     };
     const onTouchEnd = (e: TouchEvent) => {
       const dy = touchStartY.current - e.changedTouches[0].clientY;
-      if (Math.abs(dy) < 50) return; // Minimum swipe distance
-      snap(dy > 0 ? 1 : -1);
+      const minSwipeDistance = isMobile() ? 80 : 50; // Larger threshold on mobile
+      if (Math.abs(dy) < minSwipeDistance) return;
+
+      recalc();
+      const nearest = findNearest();
+      const points = pointsRef.current;
+
+      if (dy > 0) {
+        // Swiping down — at last snap section, let browser handle it
+        if (nearest >= points.length - 1) return;
+        snap(1);
+      } else {
+        // Swiping up from below last snap point → snap TO it first
+        if (nearest === points.length - 1 && container.scrollTop > points[nearest].top + 50) {
+          snapTo(nearest);
+          return;
+        }
+        snap(-1);
+      }
     };
 
     // ── Resize ──

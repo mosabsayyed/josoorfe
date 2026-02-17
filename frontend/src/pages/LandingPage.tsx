@@ -16,7 +16,7 @@ import Architecture from '../components/landing/Architecture';
 import BetaForm from '../components/landing/BetaForm';
 import useSnapScroll from '../hooks/useSnapScroll';
 
-const SNAP_SECTIONS = ['hero', 'aitoia', 'claims', 'promise', 'platform', 'arch', 'beta'];
+const SNAP_SECTIONS = ['hero', 'aitoia', 'platform', 'claims', 'promise', 'arch'];
 
 export default function LandingPage() {
   const navigate = useNavigate();
@@ -77,7 +77,9 @@ export default function LandingPage() {
       tag: t('claims.tag'),
       title: t('claims.title'),
       subtitle: t('claims.subtitle'),
-      items: (t('claims.items', { returnObjects: true }) as string[]),
+      canvasLabel: t('claims.canvasLabel'),
+      canvasDesc: t('claims.canvasDesc'),
+      items: (t('claims.items', { returnObjects: true }) as Array<{ punchline: string; desc: string }>),
     },
     promise: {
       tag: t('promise.tag'),
@@ -143,7 +145,7 @@ export default function LandingPage() {
         --component-text-primary: #F9FAFB;
         --component-text-secondary: #D1D5DB;
         --component-text-muted: #9CA3AF;
-        --component-text-accent: var(--component-text-accent);
+        --component-text-accent: #F4BB30;
         --component-text-on-accent: #111827;
 
         /* Font family variables - matching main site */
@@ -233,6 +235,14 @@ export default function LandingPage() {
         justify-content: flex-start;
         align-items: flex-start;
         padding: 0 20px;
+      }
+
+      @media (max-width: 768px) {
+        .hero-content {
+          margin-left: 0;
+          text-align: center;
+          justify-content: center;
+        }
       }
 
       .hero-title {
@@ -394,8 +404,8 @@ export default function LandingPage() {
 
       /* AI text — chaos (muted) */
       .aitoia-glass .aitoia-ai h3 { color: var(--component-text-secondary); font-weight: 300; }
-      .aitoia-glass .aitoia-ai strong { color: var(--component-text-primary); }
-      .aitoia-glass .aitoia-ai li { color: var(--component-text-muted); border-left: 2px solid var(--component-panel-border); padding-left: 20px; }
+      .aitoia-glass .aitoia-ai strong { color: var(--component-text-accent); }
+      .aitoia-glass .aitoia-ai li { color: var(--component-text-primary); border-left: 2px solid var(--component-text-accent); padding-left: 20px; }
 
       /* IA text — structure (gold accent, monospace) */
       .aitoia-glass .aitoia-ia h3 { color: var(--component-text-accent); font-family: var(--component-font-mono, monospace); text-transform: uppercase; letter-spacing: -1px; font-weight: 700; }
@@ -415,7 +425,7 @@ export default function LandingPage() {
       [dir="rtl"] .aitoia-glass .aitoia-ia li {
         border-left: none;
         padding-left: 0;
-        border-right: 2px solid var(--component-panel-border);
+        border-right: 2px solid var(--component-text-accent);
         padding-right: 20px;
       }
       [dir="rtl"] .aitoia-glass .aitoia-ia li {
@@ -731,7 +741,53 @@ export default function LandingPage() {
         .hero-title { font-size: 40px; }
       }
 
+      /* ══════════════════════════════════════════════════════
+         MOBILE RESPONSIVE DESIGN
+         ══════════════════════════════════════════════════════ */
+
+      @media (max-width: 375px) {
+        /* Extra small phones */
+        section {
+          padding: 0.75rem 0.75rem;
+        }
+
+        .landing-page h2 {
+          font-size: 28px;
+        }
+
+        .subtitle {
+          font-size: 16px;
+        }
+
+        .section-tag {
+          font-size: 14px;
+          letter-spacing: 0.1em;
+        }
+
+        .hero-title {
+          font-size: 32px !important;
+        }
+
+        .hero-subtitle {
+          font-size: 16px !important;
+        }
+      }
+
+      @media (max-width: 480px) {
+        /* Small phones */
+        .three-panel-strip {
+          grid-template-columns: 1fr;
+          gap: 16px;
+        }
+
+        .architecture-callouts {
+          grid-template-columns: 1fr;
+          gap: 20px;
+        }
+      }
+
       @media (max-width: 768px) {
+        /* Tablets and large phones */
         section.content-centered {
           max-width: 100%;
         }
@@ -746,9 +802,17 @@ export default function LandingPage() {
           line-height: 1.2;
         }
 
+        .landing-page h2 {
+          font-size: 32px;
+        }
+
         .subtitle {
-          font-size: 18px;
-          line-height: 1.65;
+          font-size: 16px;
+          line-height: 1.6;
+        }
+
+        .section-tag {
+          font-size: 16px;
         }
 
         .invite-form {
@@ -757,6 +821,27 @@ export default function LandingPage() {
 
         #background-image {
           display: none;
+        }
+
+        .three-panel-strip,
+        .architecture-callouts {
+          grid-template-columns: 1fr;
+        }
+
+        .hero-title {
+          font-size: 36px;
+        }
+
+        .hero-subtitle {
+          font-size: 18px;
+        }
+
+        /* Touch targets - minimum 44px */
+        button,
+        .button-primary,
+        a[role="button"] {
+          min-height: 44px;
+          min-width: 44px;
         }
       }
     `;
@@ -779,9 +864,9 @@ export default function LandingPage() {
       <AItoIA />
 
       <div id="main-content">
+        <Platform content={content.platform} />
         <Claims content={content.claims} />
         <Promise content={content.promise} />
-        <Platform content={content.platform} />
         <Architecture content={content.architecture} language={language} />
         <BetaForm content={content.beta} language={language} />
 

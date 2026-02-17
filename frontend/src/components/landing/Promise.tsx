@@ -324,8 +324,8 @@ export default function Promise({ content }: PromiseProps) {
             <button
               onClick={goToPrev}
               style={{
-                width: '40px',
-                height: '40px',
+                width: '44px',
+                height: '44px',
                 borderRadius: '50%',
                 border: '1px solid var(--border-default, rgba(255, 255, 255, 0.1))',
                 background: 'var(--component-panel-bg)',
@@ -371,8 +371,8 @@ export default function Promise({ content }: PromiseProps) {
             <button
               onClick={goToNext}
               style={{
-                width: '40px',
-                height: '40px',
+                width: '44px',
+                height: '44px',
                 borderRadius: '50%',
                 border: '1px solid var(--border-default, rgba(255, 255, 255, 0.1))',
                 background: 'var(--component-panel-bg)',

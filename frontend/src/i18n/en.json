@@ -3,25 +3,31 @@
     "title": "JOSOOR",
     "subtitle": "Decision Intelligence Operating System",
     "subtitleEn": "Decision Intelligence Operating System",
-    "sectors": "for Highly Regulated Sectors",
-    "badge": "KSA's Vision 2030"
+    "sectors": "In the Public Sector",
+    "badge": "Delivery at the Speed of Ambition\nVision 2030"
+  },
+  "nav": {
+    "links": ["Signal", "Platform", "Why Us", "Promise", "Architecture"],
+    "cta": "Apply for Beta",
+    "logo": "Josoor"
   },
   "aitoia": {
     "tag": "The Challenge",
-    "title": "Prerequisites Not in Place to Start",
+    "title": "Why Most AI Transformations Fail",
     "subtitle": "Don't start your AI project before establishing the success factors",
+    "challengeSubtitle": "AI alone produces unreliable decision inputs",
     "aiTitle": "Artificial Intelligence Solo ...",
     "aiSubtitle": "Unreliable Decision Inputs",
     "aiItems": [
       {
         "icon": "\u26a0",
-        "strong": "Inputs Not Ready",
-        "desc": "Legacy data landscapes include unstructured data in silos. Solving this is costly and violates Sovereignty Foundations."
+        "strong": "Data Infrastructure Readiness",
+        "desc": "Legacy Data landscape includes a mix of structured and un-structured sources, most in Silos with diverse taxonomies. This guarantees AI will make mistakes on even the simplest requests. Solving this problem is expensive and requires an impractical timeline with risks of data governance violations"
       },
       {
         "icon": "\ud83c\udfb2",
         "strong": "Probabilistic Models",
-        "desc": "Highly Regulated Sectors Require Deterministic Outputs which cannot be left to raw AI to produce."
+        "desc": "Highly regulated sectors, including the public sector, require deterministic auditable outputs which cannot be left to generative AI with its probabilistic model."
       },
       {
         "icon": "\ud83d\udca8",
@@ -29,44 +35,67 @@
         "desc": "AI's Raw Reasoning can Accelerate your Speed, but without the right architecture, you risk getting nowhere very fast."
       }
     ],
+    "innovationTag": "The Innovation",
+    "innovationTitle": "Writing the Book on Public Sector AI Transformations",
+    "innovationSubtitle": "From AI to Intelligent Architecture: Phase 1 Built to Win",
+    "phaseTag": "JOSOOR Phase 1",
     "iaTitle": "Intelligent Systems Architecture ...",
     "iaSubtitle": "Accelerated Predictable Outcomes",
     "iaItems": [
       {
         "icon": "\u2705",
-        "strong": "Inputs Ready & Resident",
-        "desc": "Data is kept exactly as it is. A layer of taxonomy and ontology brings Data Context by Design at minimal investments."
+        "strong": "Purpose-Built Architecture",
+        "desc": "Saudi Arabia's first unified Ontology for the public sector spawns a knowledge graph that unifies disparate sources. Tailored tools govern AI data access. 4-layer memory retains context."
       },
       {
         "icon": "\ud83d\udd17",
-        "strong": "AI In The Loop",
-        "desc": "AI operates within a full ecosystem with total Human Observability and Data Governance."
+        "strong": "Ecosystem Orchestrated Intelligence",
+        "desc": "Three specialist agents integrate to support your team: Reporting gathers data for you to Watch, Risk analyzes developments and suggests priorities to Decide, Planning converts them into tasks to Deliver"
       },
       {
         "icon": "\ud83c\udfd7",
-        "strong": "Scaffolded for Scale",
-        "desc": "An Intelligent Architecture means smart software injected with AI. Investing in the right frameworks on Day 1 ensures purposeful acceleration."
+        "strong": "Grounded in an Extended Reality",
+        "desc": "Establishes context with a World Model powered by Vision 2030 data (publicly available). AI navigates with a map that mirrors your reality."
       }
     ]
   },
   "claims": {
-    "tag": "Heard It Before?",
-    "title": "See the difference.",
-    "subtitle": "What makes Josoor fundamentally different from others in this space.",
+    "tag": "What Makes Jusur Distinctive?",
+    "title": "See the difference",
+    "subtitle": "What makes Josoor fundamentally different from others in this space",
+    "canvasLabel": "AI-Native, Human-Intuitive",
+    "canvasDesc": "Every structure is machine-native. Every interface is human-intuitive.",
     "items": [
-      "<b><em>Built with AIs</em> for humans from the ground up</b> — Every structure is machine-native. Every interface is human-intuitive.",
-      "<b>Scalable to multi-Sectors and Entities</b> — one Josoor instance adapts to any government entity without rebuilding.",
-      "<b>Tailored for the Vision and its objectives/KPIs</b> — national methodologies and sectorial programs are first-class objects, not afterthoughts.",
-      "<b>Native Arabic (and soon multi-accent)</b> — built for Arabic-first government context.",
-      "<b>One definition, one version, one source of Priorities</b> — take opinions out of the dialogue. Everyone sees the same truth.",
-      "<b>Frontier Knowledge Graphing to model complexity</b> — relationships between KPIs, initiatives, risks, and resources are modelled as a living graph, not flat tables.",
-      "<b>KSA Public-Sector's first \"Ontology\" IP</b> — a reusable, scalable knowledge framework that grows smarter via guided AI learning."
+      {
+        "punchline": "One Instance, Any Entity",
+        "desc": "One Josoor instance adapts to any government entity without rebuilding"
+      },
+      {
+        "punchline": "Vision 2030 KPIs Built In",
+        "desc": "National methodologies and sectorial programs are first-class objects"
+      },
+      {
+        "punchline": "Arabic-First, Context-Aware",
+        "desc": "Built for Arabic-first government context"
+      },
+      {
+        "punchline": "Single Source of Truth",
+        "desc": "One definition, one version. Everyone sees the same truth"
+      },
+      {
+        "punchline": "Living Graph, Not Tables",
+        "desc": "Relationships modelled as a living graph, not flat tables"
+      },
+      {
+        "punchline": "First KSA Ontology IP",
+        "desc": "A reusable knowledge framework that grows smarter via guided AI"
+      }
     ]
   },
   "promise": {
-    "tag": "The Promise",
-    "title": "Same people. Different reality.",
-    "subtitle": "What changes for each person on your team.",
+    "tag": "The Ambition",
+    "title": "Same people. Different reality",
+    "subtitle": "What changes for each person on your team",
     "before": "BEFORE",
     "withJosoor": "WITH JOSOOR",
     "personas": [
@@ -94,8 +123,9 @@
   },
   "platform": {
     "tag": "The Platform",
-    "title": "Three modes. Always running.",
-    "subtitle": "From national KPIs to individual deliverables — tightly linked.",
+    "title": "Three modes. Always running",
+    "subtitle": "From national KPIs to individual deliverables — tightly linked",
+    "dashboard": "Dashboard",
     "modes": [
       {
         "title": "Watch",
@@ -110,6 +140,35 @@
         "desc": "Weekly priorities synced with Strategic Priorities. 4 out of 42 items matter this week — <em>focus</em>. True critical path drives system flags with high confidence"
       }
     ]
+  },
+  "mockups": {
+    "watch": {
+      "adaaKpis": "Adaa KPIs",
+      "capabilities": "Capabilities",
+      "budget": "Budget",
+      "drifting": "drifting",
+      "declining": "declining",
+      "high": "HIGH",
+      "trend": "TREND",
+      "ok": "OK"
+    },
+    "decide": {
+      "impactChain": "Impact chain",
+      "rootCause": "Root cause",
+      "optionA": "A",
+      "optionB": "B",
+      "optionC": "C"
+    },
+    "deliver": {
+      "scanned": "scanned",
+      "needAttention": "need attention",
+      "critical": "Critical",
+      "done": "Done",
+      "attention": "Attention",
+      "skipped": "Skipped",
+      "trend": "Trend",
+      "expiry": "Expiry"
+    }
   },
   "architecture": {
     "tag": "The Architecture",
@@ -183,7 +242,7 @@
   "beta": {
     "tag": "Beta Launch",
     "title": "Ready to hear more?",
-    "subtitle": "Josoor is in its private limited beta phase. Register your interest now.",
+    "subtitle": "Josoor is in its private limited beta phase. Register your interest now",
     "note": "Limited spots. KSA government entities only. We'll respond within 48 hours.",
     "form": {
       "name": "Full name",
@@ -227,7 +286,7 @@
   },
   "contactUs": {
     "title": "Contact Us",
-    "subtitle": "We are here to help you with your transformation journey.",
+    "subtitle": "We are here to help you with your transformation journey",
     "emailLabel": "Email Us",
     "description": "For inquiries, partnerships, or support, please reach out to us directly."
   }
