@@ -522,26 +522,95 @@ export function CanvasManager({ isOpen = false, conversationId = null, artifacts
         padding: 0,
         background: 'var(--component-bg-primary)'
       }} ref={containerRef}>
-        {/* Single Artifact View - Use UniversalCanvas for broader support */}
-        {currentArtifact ? (
-          <div className="clickable" style={{ 
-            // Zero padding for full-bleed artifacts (Twin Knowledge, Dashboards, React components)
-            padding: ['TWIN_KNOWLEDGE', 'GRAPHV001', 'REACT'].includes(currentArtifact.artifact_type) ? '0' : '24px', 
-            height: '100%', 
-            boxSizing: 'border-box', 
-            display: 'flex', 
-            flexDirection: 'column' 
+        {/* Collapsed Mode: Show Artifact List */}
+        {mode === 'collapsed' && (
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '8px',
+            padding: '16px',
+            height: '100%',
+            overflow: 'auto'
           }}>
-            <UniversalCanvas 
-              content={currentArtifact.content} 
-              title={currentArtifact.title}
-              type={currentArtifact.artifact_type}
-              artifact={currentArtifact}
-              onNext={handleNext}
-            />
+            {artifacts.length > 0 ? (
+              artifacts.map((artifact, index) => (
+                <button
+                  key={artifact.id}
+                  onClick={() => loadArtifact(artifact, index)}
+                  style={{
+                    padding: '12px',
+                    backgroundColor: currentArtifact?.id === artifact.id ? 'var(--color-gold-hover)' : 'var(--component-bg-secondary)',
+                    border: currentArtifact?.id === artifact.id ? '1px solid var(--color-gold)' : '1px solid var(--component-panel-border)',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    color: 'var(--component-text-primary)',
+                    fontSize: '13px',
+                    fontWeight: 500,
+                    transition: 'all 0.2s ease',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (currentArtifact?.id !== artifact.id) {
+                      e.currentTarget.style.backgroundColor = 'var(--component-bg-hover)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (currentArtifact?.id !== artifact.id) {
+                      e.currentTarget.style.backgroundColor = 'var(--component-bg-secondary)';
+                    }
+                  }}
+                >
+                  <span>{iconMap[artifact.artifact_type] || '📄'}</span>
+                  <div style={{ flex: 1, overflow: 'hidden' }}>
+                    <div style={{ whiteSpace: 'nowrap', overflow: 'ellipsis', overflow: 'hidden' }}>
+                      {artifact.title || `${artifact.artifact_type} #${index + 1}`}
+                    </div>
+                    <div style={{ fontSize: '11px', color: 'var(--component-text-secondary)' }}>
+                      {artifact.artifact_type}
+                    </div>
+                  </div>
+                </button>
+              ))
+            ) : (
+              <div style={{
+                textAlign: 'center',
+                color: 'var(--component-text-muted)',
+                padding: '32px 16px',
+                fontSize: '13px'
+              }}>
+                No artifacts yet
+              </div>
+            )}
           </div>
-        ) : (
-          <div style={{ textAlign: 'center', color: 'var(--component-text-muted)', padding: '32px 0' }}>No artifact selected</div>
+        )}
+
+        {/* Expanded/Fullscreen Mode: Show Single Artifact View */}
+        {mode !== 'collapsed' && (
+          <>
+            {currentArtifact ? (
+              <div className="clickable" style={{ 
+                // Zero padding for full-bleed artifacts (Twin Knowledge, Dashboards, React components)
+                padding: ['TWIN_KNOWLEDGE', 'GRAPHV001', 'REACT'].includes(currentArtifact.artifact_type) ? '0' : '24px', 
+                height: '100%', 
+                boxSizing: 'border-box', 
+                display: 'flex', 
+                flexDirection: 'column' 
+              }}>
+                <UniversalCanvas 
+                  content={currentArtifact.content} 
+                  title={currentArtifact.title}
+                  type={currentArtifact.artifact_type}
+                  artifact={currentArtifact}
+                  onNext={handleNext}
+                />
+              </div>
+            ) : (
+              <div style={{ textAlign: 'center', color: 'var(--component-text-muted)', padding: '32px 0' }}>No artifact selected</div>
+            )}
+          </>
         )}
       </div>
 
