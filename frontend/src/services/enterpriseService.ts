@@ -78,7 +78,6 @@ interface NeoGraphLink {
 interface NeoGraphData {
   nodes: NeoGraphNode[];
   links: NeoGraphLink[];
-  riskNodes?: NeoGraphNode[];
 }
 
 // Helper to extract number from Neo4j Integer
@@ -176,7 +175,8 @@ async function fetchEnterpriseViaCypher(year: number | 'all', quarter: number | 
   // 3. Return explicit properties (NO EMBEDDINGS)
   // 4. Use COALESCE to prioritize businessId
 
-  // QUERY: Get ALL EntityCapability + EntityRisk nodes with ALL properties (except embeddings)
+  // QUERY: Get ALL EntityCapability nodes with risk data via MONITORED_BY relationship
+  // Per SST v1.2 § 5.8: EntityCapability-[:MONITORED_BY]->EntityRisk
   // Years are accumulative: capabilities from previous years persist
   const yearFilter = year === 'all' ? '' : `WHERE cap.year <= ${year}`;
   const riskYearFilter = year === 'all' ? '' : `WHERE risk.year <= ${year}`;
@@ -184,27 +184,17 @@ async function fetchEnterpriseViaCypher(year: number | 'all', quarter: number | 
   const cypherQuery = `
     MATCH (cap:EntityCapability)
     ${yearFilter}
-    RETURN 'capability' as nodeType, cap {
+    OPTIONAL MATCH (cap)-[:MONITORED_BY]->(risk:EntityRisk)
+    ${riskYearFilter}
+    RETURN cap {
       .*,
       embedding: null,
       vector: null,
       elementId: elementId(cap),
-      businessId: cap.id
+      businessId: cap.id,
+      risk: CASE WHEN risk IS NOT NULL THEN risk {.*, embedding: null, vector: null} ELSE null END
     } as data
     ORDER BY cap.level, cap.id
-
-    UNION ALL
-
-    MATCH (risk:EntityRisk)
-    ${riskYearFilter}
-    RETURN 'risk' as nodeType, risk {
-      .*,
-      embedding: null,
-      vector: null,
-      elementId: elementId(risk),
-      businessId: risk.id
-    } as data
-    ORDER BY risk.level, risk.id
   `;
 
   console.log('[EnterpriseService] 🚀 Executing Cypher via MCP:', { endpoint, year, querySnippet: cypherQuery.substring(0, 100) });
@@ -309,12 +299,10 @@ async function fetchEnterpriseViaCypher(year: number | 'all', quarter: number | 
     return { nodes: [], links: [] };
   }
 
-  // Transform Cypher response to node arrays (capabilities + risks)
+  // Transform Cypher response to capability nodes with nested risk data
   const capabilityNodes: NeoGraphNode[] = [];
-  const riskNodes: NeoGraphNode[] = [];
 
   rows.forEach((row: any) => {
-    const nodeType = row.nodeType;
     const data = row.data;
     if (!data) return;
 
@@ -322,21 +310,19 @@ async function fetchEnterpriseViaCypher(year: number | 'all', quarter: number | 
       ...data,
       id: data.businessId || data.id,
       businessId: data.businessId || data.id,
-      group: nodeType === 'capability' ? 'EntityCapability' : 'EntityRisk',
+      group: 'EntityCapability',
       label: data.name || data.id,
-      name: data.name || data.id
+      name: data.name || data.id,
+      // Keep nested risk object if present
+      risk: data.risk || null
     };
 
-    if (nodeType === 'capability') {
-      capabilityNodes.push(node);
-    } else if (nodeType === 'risk') {
-      riskNodes.push(node);
-    }
+    capabilityNodes.push(node);
   });
 
-  console.log(`[EnterpriseService] ✅ Fetched ${capabilityNodes.length} capability nodes + ${riskNodes.length} risk nodes (year filter: ${year === 'all' ? 'all' : '<=' + year})`);
+  console.log(`[EnterpriseService] ✅ Fetched ${capabilityNodes.length} capability nodes with risk data (year filter: ${year === 'all' ? 'all' : '<=' + year})`);
 
-  return { nodes: capabilityNodes, links: [], riskNodes };
+  return { nodes: capabilityNodes, links: [] };
 }
 
 export async function getCapabilityMatrix(
@@ -351,15 +337,15 @@ export async function getCapabilityMatrix(
     return [];
   }
 
-  const result = transformNeo4jToMatrix(graphData, year, quarter, graphData.riskNodes || []);
+  const result = transformNeo4jToMatrix(graphData, year, quarter);
   return result;
 }
 
 /**
  * Transform flat Neo4j graph data into hierarchical L1→L2→L3 structure
- * Enriches L3 nodes with overlay data from EntityRisk relationships
+ * Risk data is now nested in each capability node via MONITORED_BY relationship
  */
-function transformNeo4jToMatrix(graphData: NeoGraphData, year: number | 'all', quarter: number | 'all', riskNodes: NeoGraphNode[] = []): L1Capability[] {
+function transformNeo4jToMatrix(graphData: NeoGraphData, year: number | 'all', quarter: number | 'all'): L1Capability[] {
   // All nodes are already EntityCapability (from simplified query)
   // Year filter already applied in Cypher query (accumulative)
   const capabilityNodes = graphData.nodes;
@@ -515,23 +501,8 @@ function transformNeo4jToMatrix(graphData: NeoGraphData, year: number | 'all', q
   // Since we updated parent_id on the *original* nodes (l2Nodes array members), and deduplicatedL2Nodes contains references to those same objects,
   // we can use deduplicatedL2Nodes.
 
-  // Deduplicate risk nodes by (id, year, quarter) - keep most recent
-  const riskByKey = new Map<string, NeoGraphNode>();
-  riskNodes.forEach(risk => {
-    const bizId = risk.businessId || risk.id;
-    const yr = getNeo4jInt(risk.year);
-    const qtr = getNeo4jInt(risk.quarter);
-    const key = `${bizId}_${yr}_${qtr}`;
-    const existing = riskByKey.get(key);
-    if (!existing) {
-      riskByKey.set(key, risk);
-    }
-  });
-  const deduplicatedRiskNodes = Array.from(riskByKey.values());
-
-  console.log('[EnterpriseService] Risk nodes for enrichment:', deduplicatedRiskNodes.length);
-
-  return sortedL1Nodes.map(l1Node => buildL1(l1Node, deduplicatedL2Nodes, deduplicatedL3Nodes, deduplicatedRiskNodes));
+  // Risk data is now nested in each capability node (no separate risk array)
+  return sortedL1Nodes.map(l1Node => buildL1(l1Node, deduplicatedL2Nodes, deduplicatedL3Nodes));
 }
 
 /**
@@ -541,8 +512,7 @@ function transformNeo4jToMatrix(graphData: NeoGraphData, year: number | 'all', q
 function buildL1(
   l1Node: NeoGraphNode,
   l2Nodes: NeoGraphNode[],
-  l3Nodes: NeoGraphNode[],
-  riskNodes: NeoGraphNode[] = []
+  l3Nodes: NeoGraphNode[]
 ): L1Capability {
   const l1BusinessId = (l1Node as any).businessId || l1Node.id;
 
@@ -558,7 +528,7 @@ function buildL1(
     description: l1Node.description || '',
     maturity_level: calculateL1Maturity(l2Children, l3Nodes),
     target_maturity_level: calculateL1TargetMaturity(l2Children, l3Nodes),
-    l2: l2Children.map(l2Node => buildL2(l2Node, l3Nodes, riskNodes))
+    l2: l2Children.map(l2Node => buildL2(l2Node, l3Nodes))
   };
 }
 
@@ -566,7 +536,7 @@ function buildL1(
  * Build L2 capability with all L3 children using parent_id + parent_year matching
  * NOTE: L3.parent_id contains L2 BUSINESS ID (not element ID), so match by businessId
  */
-function buildL2(l2Node: NeoGraphNode, l3Nodes: NeoGraphNode[], riskNodes: NeoGraphNode[] = []): L2Capability {
+function buildL2(l2Node: NeoGraphNode, l3Nodes: NeoGraphNode[]): L2Capability {
   const l2BusinessId = (l2Node as any).businessId || l2Node.id;
 
   // Find L3 children: L3.parent_id === L2.businessId
@@ -581,14 +551,15 @@ function buildL2(l2Node: NeoGraphNode, l3Nodes: NeoGraphNode[], riskNodes: NeoGr
     description: l2Node.description || '',
     maturity_level: calculateL2Maturity(l3Children),
     target_maturity_level: calculateL2TargetMaturity(l3Children),
-    l3: l3Children.map(l3Node => buildL3(l3Node, riskNodes))
+    l3: l3Children.map(l3Node => buildL3(l3Node))
   };
 }
 
 /**
- * Build L3 capability with risk data enrichment for overlays
+ * Build L3 capability with risk data from nested MONITORED_BY relationship
+ * Risk bands (Green/Amber/Red) from EntityRisk now determine build/execute status
  */
-function buildL3(l3Node: NeoGraphNode, riskNodes: NeoGraphNode[] = []): L3Capability {
+function buildL3(l3Node: NeoGraphNode): L3Capability {
   const l3BusinessId = (l3Node as any).businessId || l3Node.id;
 
   // Determine mode from status
@@ -610,33 +581,43 @@ function buildL3(l3Node: NeoGraphNode, riskNodes: NeoGraphNode[] = []): L3Capabi
     change_adoption: 75,
     mode,
     year: getNeo4jInt(l3Node.year),
-    quarter: `Q${getNeo4jInt(l3Node.quarter)}` as 'Q1' | 'Q2' | 'Q3' | 'Q4',
-
-    // Build vs Execute status (initial — may be refined after risk enrichment)
-    ...(mode === 'build' && { build_status: deriveBuildStatus(l3Node.status) }),
-    ...(mode === 'execute' && { execute_status: deriveExecuteStatus(l3Node.status) })
+    quarter: `Q${getNeo4jInt(l3Node.quarter)}` as 'Q1' | 'Q2' | 'Q3' | 'Q4'
   };
 
-  // Enrich with risk data from matching EntityRisk node
-  enrichWithRiskData(l3Cap, riskNodes, mode);
+  // Enrich with risk data from nested object (if present)
+  if (l3Node.risk) {
+    enrichWithRiskData(l3Cap, l3Node.risk, mode);
+    calculateOverlayFields(l3Cap, mode);
+  }
 
-  // Calculate derived overlay fields from raw risk data
-  calculateOverlayFields(l3Cap, mode);
-
-  // Refine build/execute status based on risk exposure
-  if (l3Cap.exposure_percent != null) {
-    if (mode === 'build' && l3Cap.build_status?.startsWith('in-progress')) {
-      if (l3Cap.exposure_percent >= 65) {
+  // Derive build/execute status from risk bands (SST v1.2 thresholds: Green≤35%, Amber≤65%, Red>65%)
+  const risk = l3Node.risk;
+  if (risk) {
+    if (mode === 'build') {
+      const band = risk.build_band?.toLowerCase();
+      if (band === 'red') {
         l3Cap.build_status = 'in-progress-issues';
-      } else if (l3Cap.exposure_percent >= 35) {
+      } else if (band === 'amber') {
         l3Cap.build_status = 'in-progress-atrisk';
+      } else {
+        l3Cap.build_status = 'in-progress-ontrack';
       }
     } else if (mode === 'execute') {
-      if (l3Cap.exposure_percent >= 65) {
+      const band = risk.operate_band?.toLowerCase();
+      if (band === 'red') {
         l3Cap.execute_status = 'issues';
-      } else if (l3Cap.exposure_percent >= 35) {
+      } else if (band === 'amber') {
         l3Cap.execute_status = 'at-risk';
+      } else {
+        l3Cap.execute_status = 'ontrack';
       }
+    }
+  } else {
+    // No risk data: default to ontrack/planned
+    if (mode === 'build') {
+      l3Cap.build_status = 'planned';
+    } else {
+      l3Cap.execute_status = 'ontrack';
     }
   }
 
@@ -673,15 +654,8 @@ function deriveExecuteStatus(neoStatus: string): 'ontrack' | 'at-risk' | 'issues
 }
 
 /**
- * Enrich L3 capability with EntityRisk data
- * 
- * MATCHING RULE (CRITICAL):
- * EntityRisk matches EntityCapability via COMPOSITE KEY:
- *   - risk.businessId === capability.id (business ID like "1.1.1")
- *   - risk.year === capability.year
- *   - risk.quarter === capability.quarter
- * 
- * Do NOT match by Neo4j elementId, name, or array position.
+ * Enrich L3 capability with EntityRisk data from nested object
+ * Risk is now joined via MONITORED_BY relationship (SST v1.2 § 5.8)
  * 
  * MODE-AWARE FIELD MAPPING:
  *   BUILD mode: exposure_percent, expected_delay_days, likelihood_of_delay
@@ -689,76 +663,46 @@ function deriveExecuteStatus(neoStatus: string): 'ontrack' | 'at-risk' | 'issues
  */
 function enrichWithRiskData(
   l3Cap: any,
-  riskNodes: NeoGraphNode[],
+  risk: any,
   mode: 'build' | 'execute' | null
 ): void {
-  // Helper: normalize quarter to integer for comparison
-  // Risk nodes have quarter as string "1", capabilities as int 1 or Neo4j {low,high}
-  const normalizeQuarter = (q: any): number => {
-    if (q == null) return 0;
-    if (typeof q === 'string') return parseInt(q) || 0;
-    if (typeof q === 'number') return q;
-    if (typeof q === 'object' && 'low' in q) return q.low;
-    return 0;
+  if (!risk) return;
+
+  // Helper to normalize Neo4j Integer objects
+  const normalizeInt = (val: any): number => {
+    if (val == null) return 0;
+    if (typeof val === 'number') return val;
+    if (typeof val === 'object' && 'low' in val) return val.low;
+    return parseInt(String(val)) || 0;
   };
 
-  const normalizeYear = (y: any): number => {
-    if (y == null) return 0;
-    if (typeof y === 'number') return y;
-    if (typeof y === 'object' && 'low' in y) return y.low;
-    return parseInt(String(y)) || 0;
-  };
+  // Step 1: Always populate raw scores (used by multiple overlays)
+  l3Cap.people_score = risk.people_score;
+  l3Cap.process_score = risk.process_score;
+  l3Cap.tools_score = risk.tools_score;
+  l3Cap.likelihood_of_delay = risk.likelihood_of_delay;
 
-  const getRiskBizId = (r: NeoGraphNode) => (r as any).businessId || r.id;
-  const l3Year = l3Cap.year;
-  const l3Quarter = typeof l3Cap.quarter === 'string' ? parseInt(l3Cap.quarter.replace('Q', '')) : l3Cap.quarter;
+  // expected_delay_days = likelihood_of_delay × delay_days (SST v1.2 § 5.9)
+  l3Cap.expected_delay_days = Math.round(normalizeInt(risk.expected_delay_days) || 0);
+  l3Cap._raw_delay_days = normalizeInt(risk.delay_days);
 
-  // Step 1: Find matching risk — exact match (id + year + quarter)
-  let matchingRisk = riskNodes.find(risk =>
-    getRiskBizId(risk) === l3Cap.id &&
-    normalizeYear(risk.year) === l3Year &&
-    normalizeQuarter(risk.quarter) === l3Quarter
-  );
-
-  // Fall back: id + year (quarter may differ or be missing)
-  if (!matchingRisk) {
-    matchingRisk = riskNodes.find(risk =>
-      getRiskBizId(risk) === l3Cap.id &&
-      normalizeYear(risk.year) === l3Year
-    );
+  // operational_health_pct from DB (already 0-100 scale per SST v1.2)
+  if (risk.operational_health_pct != null) {
+    l3Cap.operational_health_score = risk.operational_health_pct;
   }
 
-  // Last resort: just id (cumulative view)
-  if (!matchingRisk) {
-    matchingRisk = riskNodes.find(risk =>
-      getRiskBizId(risk) === l3Cap.id
-    );
-  }
-
-  if (!matchingRisk) return;
-
-  // Step 2: Always populate raw scores (used by multiple overlays)
-  l3Cap.people_score = matchingRisk.people_score;
-  l3Cap.process_score = matchingRisk.process_score;
-  l3Cap.tools_score = matchingRisk.tools_score;
-  l3Cap.likelihood_of_delay = matchingRisk.likelihood_of_delay;
-
-  // risk_score in DB = expected_delay_days (likelihood_of_delay × delay_days)
-  l3Cap.expected_delay_days = Math.round(matchingRisk.risk_score || 0);
-  l3Cap._raw_delay_days = normalizeYear(matchingRisk.delay_days); // reuse normalizer for ints
-
-  // operational_health_score in DB is 1-5 scale (average of people/process/tools)
-  // We need it as percentage for overlays
-  const rawHealth = matchingRisk.operational_health_score;
-  if (rawHealth != null) {
-    l3Cap.operational_health_score = ((rawHealth - 1) / 4) * 100;
+  // Exposure percentages from risk engine output
+  if (mode === 'build') {
+    l3Cap.exposure_percent = risk.build_exposure_pct;
+  } else if (mode === 'execute') {
+    l3Cap.exposure_percent = risk.operate_exposure_pct_effective;
   }
 
   // Per-node thresholds from DB (Enterprise_Ontology_SST_v1.2 Section 5.4):
   // Override default band_green_max_pct=35 / band_amber_max_pct=65 if populated
-  if (matchingRisk.threshold_green != null) {
-    l3Cap._threshold_green = matchingRisk.threshold_green;
-    l3Cap._threshold_amber = matchingRisk.threshold_amber;
+  if (risk.threshold_green != null) {
+    l3Cap._threshold_green = risk.threshold_green;
+    l3Cap._threshold_amber = risk.threshold_amber;
   }
 }
 
