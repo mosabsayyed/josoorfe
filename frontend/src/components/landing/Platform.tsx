@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { PlatformContent } from './types';
 import ConcaveCarousel from './ConcaveCarousel';
 import MockupChrome from './MockupChrome';
@@ -12,6 +13,7 @@ interface PlatformProps {
 }
 
 export default function Platform({ content }: PlatformProps) {
+  const { t } = useTranslation();
   const mockupComponents = [
     <WatchMockup />,
     <DecideMockup />,
@@ -35,7 +37,7 @@ export default function Platform({ content }: PlatformProps) {
                   <h3>{mode.title}</h3>
                   <p dangerouslySetInnerHTML={{ __html: mode.desc }} />
                 </div>
-                <MockupChrome label={`${mode.title} Dashboard`}>
+                <MockupChrome label={`${mode.title} ${t('platform.dashboard')}`}>
                   {mockupComponents[i]}
                 </MockupChrome>
               </div>

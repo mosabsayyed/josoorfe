@@ -15,11 +15,18 @@ export interface NoNoiseContent {
   closing: string;
 }
 
+export interface ClaimItem {
+  punchline: string;
+  desc: string;
+}
+
 export interface ClaimsContent {
   tag: string;
   title: string;
   subtitle: string;
-  items: string[];
+  canvasLabel: string;
+  canvasDesc: string;
+  items: ClaimItem[];
 }
 
 export interface PersonaContent {

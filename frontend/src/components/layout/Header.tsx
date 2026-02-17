@@ -48,10 +48,10 @@ export default function Header() {
       alignItems: 'center',
       justifyContent: 'space-between',
       padding: isMobile ? '12px 16px' : '16px 40px',
-      background: isMobile ? '#111827' : 'rgba(17, 24, 39, 0.6)',
+      background: isMobile ? 'var(--component-bg-primary)' : 'rgba(17, 24, 39, 0.6)',
       backdropFilter: isMobile ? 'none' : 'blur(20px)',
       borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
-      color: '#F9FAFB',
+      color: 'var(--component-text-primary)',
     }}>
       {/* Left: Logo & Beta Text */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
@@ -70,8 +70,8 @@ export default function Header() {
           <span style={{
             fontSize: 14,
             fontWeight: 600,
-            color: '#D1D5DB',
-            borderLeft: '1px solid #374151',
+            color: 'var(--component-text-secondary)',
+            borderLeft: '1px solid var(--component-panel-border)',
             paddingLeft: '24px',
             height: '24px',
             display: 'flex',
@@ -113,7 +113,7 @@ export default function Header() {
           left: 0,
           right: 0,
           bottom: 0,
-          background: '#111827',
+          background: 'var(--component-bg-primary)',
           zIndex: 1000,
           display: 'flex',
           flexDirection: 'column',
@@ -123,13 +123,13 @@ export default function Header() {
         }}>
           <button
             onClick={() => { navigate('/founder-letter'); setMobileMenuOpen(false); }}
-            style={{ background: 'none', border: 'none', color: '#F9FAFB', cursor: 'pointer', fontSize: '20px', fontWeight: 600 }}
+            style={{ background: 'none', border: 'none', color: 'var(--component-text-primary)', cursor: 'pointer', fontSize: '20px', fontWeight: 600 }}
           >
             {t('header.founder')}
           </button>
           <button
             onClick={() => { navigate('/contact-us'); setMobileMenuOpen(false); }}
-            style={{ background: 'none', border: 'none', color: '#F9FAFB', cursor: 'pointer', fontSize: '20px', fontWeight: 600 }}
+            style={{ background: 'none', border: 'none', color: 'var(--component-text-primary)', cursor: 'pointer', fontSize: '20px', fontWeight: 600 }}
           >
             {t('header.contact')}
           </button>
@@ -176,17 +176,17 @@ export default function Header() {
         <nav style={{ display: 'flex', gap: '24px', fontSize: '14px' }}>
           <button
             onClick={() => navigate('/founder-letter')}
-            style={{ background: 'none', border: 'none', color: '#D1D5DB', cursor: 'pointer', padding: 0, font: 'inherit' }}
-            onMouseEnter={(e) => e.currentTarget.style.color = '#F9FAFB'}
-            onMouseLeave={(e) => e.currentTarget.style.color = '#D1D5DB'}
+            style={{ background: 'none', border: 'none', color: 'var(--component-text-secondary)', cursor: 'pointer', padding: 0, font: 'inherit' }}
+            onMouseEnter={(e) => e.currentTarget.style.color = 'var(--component-text-primary)'}
+            onMouseLeave={(e) => e.currentTarget.style.color = 'var(--component-text-secondary)'}
           >
             {t('header.founder')}
           </button>
           <button
             onClick={() => navigate('/contact-us')}
-            style={{ background: 'none', border: 'none', color: '#D1D5DB', cursor: 'pointer', padding: 0, font: 'inherit' }}
-            onMouseEnter={(e) => e.currentTarget.style.color = '#F9FAFB'}
-            onMouseLeave={(e) => e.currentTarget.style.color = '#D1D5DB'}
+            style={{ background: 'none', border: 'none', color: 'var(--component-text-secondary)', cursor: 'pointer', padding: 0, font: 'inherit' }}
+            onMouseEnter={(e) => e.currentTarget.style.color = 'var(--component-text-primary)'}
+            onMouseLeave={(e) => e.currentTarget.style.color = 'var(--component-text-secondary)'}
           >
             {t('header.contact')}
           </button>
@@ -207,7 +207,7 @@ export default function Header() {
                   borderRadius: '30px',
                   padding: '6px 16px 6px 6px',
                   cursor: 'pointer',
-                  color: '#F9FAFB',
+                  color: 'var(--component-text-primary)',
                   transition: 'background 0.2s',
                 }}
                 onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
@@ -221,7 +221,7 @@ export default function Header() {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  color: '#111827'
+                  color: 'var(--component-text-on-accent)'
                 }}>
                   <User size={16} />
                 </div>
@@ -250,7 +250,7 @@ export default function Header() {
                     <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--component-text-accent)', marginBottom: '4px' }}>
                       {user.full_name?.split('|')[0] || 'Authenticated User'}
                     </div>
-                    <div style={{ fontSize: '12px', color: '#9CA3AF', wordBreak: 'break-all' }}>
+                    <div style={{ fontSize: '12px', color: 'var(--component-text-muted)', wordBreak: 'break-all' }}>
                       {user.email}
                     </div>
                   </div>
@@ -259,7 +259,7 @@ export default function Header() {
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                     <button
                       onClick={() => { navigate('/josoor'); setShowUserMenu(false); }}
-                      style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 12px', borderRadius: '6px', border: 'none', background: 'transparent', color: '#E5E7EB', cursor: 'pointer', textAlign: 'left', fontSize: '14px' }}
+                      style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 12px', borderRadius: '6px', border: 'none', background: 'transparent', color: 'var(--component-text-secondary)', cursor: 'pointer', textAlign: 'left', fontSize: '14px' }}
                       onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)'}
                       onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                     >
@@ -269,11 +269,11 @@ export default function Header() {
 
                     <button
                       onClick={() => { setShowUserMenu(false); }}
-                      style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 12px', borderRadius: '6px', border: 'none', background: 'transparent', color: '#E5E7EB', cursor: 'pointer', textAlign: 'left', fontSize: '14px' }}
+                      style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 12px', borderRadius: '6px', border: 'none', background: 'transparent', color: 'var(--component-text-secondary)', cursor: 'pointer', textAlign: 'left', fontSize: '14px' }}
                       onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)'}
                       onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                     >
-                      <Settings size={16} color="#9CA3AF" />
+                      <Settings size={16} color="var(--component-text-muted)" />
                       {t('header.settings')}
                     </button>
 
@@ -297,23 +297,22 @@ export default function Header() {
               onClick={() => navigate('/login')}
               style={{
                 background: 'transparent',
-                border: '2px solid #F4BB30',
-                color: '#F4BB30',
-                padding: '8px 20px',
-                borderRadius: '8px',
-                fontSize: 14,
+                border: '2px solid var(--component-text-accent, #F4BB30)',
+                color: 'var(--component-text-accent, #F4BB30)',
+                padding: '6px 20px',
+                borderRadius: '999px',
+                fontSize: '14px',
                 fontWeight: 700,
                 cursor: 'pointer',
                 transition: 'all 0.2s ease',
-                letterSpacing: '0.02em',
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.background = '#F4BB30';
-                e.currentTarget.style.color = '#111827';
+                e.currentTarget.style.background = 'var(--component-text-accent)';
+                e.currentTarget.style.color = 'var(--component-text-on-accent, #111827)';
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.background = 'transparent';
-                e.currentTarget.style.color = '#F4BB30';
+                e.currentTarget.style.color = 'var(--component-text-accent, #F4BB30)';
               }}
             >
               {t('header.login')}

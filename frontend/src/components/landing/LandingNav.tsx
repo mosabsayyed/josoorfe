@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import '../../styles/landing.css';
 
 interface LandingNavProps {
@@ -7,16 +8,13 @@ interface LandingNavProps {
 
 export default function LandingNav({ language }: LandingNavProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { t } = useTranslation();
 
-  const t = {
-    logo: 'Josoor',
-    links: language === 'en'
-      ? ['Signal', 'Why Us', 'Promise', 'Platform', 'Architecture']
-      : ['إشارة', 'لماذا نحن', 'الوعد', 'المنصة', 'البنية'],
-    cta: language === 'en' ? 'Apply for Beta' : 'تقدم للنسخة التجريبية'
-  };
+  const links = t('nav.links', { returnObjects: true }) as string[];
+  const cta = t('nav.cta');
+  const logo = t('nav.logo');
 
-  const sections = ['aitoia', 'claims', 'promise', 'platform', 'arch'];
+  const sections = ['challenge', 'claims', 'promise', 'platform', 'arch'];
 
   const scrollToSection = (id: string) => {
     setMobileOpen(false);
@@ -48,7 +46,7 @@ export default function LandingNav({ language }: LandingNavProps) {
         textTransform: 'uppercase',
         color: 'var(--gold-primary, #F4BB30)'
       }}>
-        {t.logo}
+        {logo}
       </div>
 
       <ul className={`landing-nav-links${mobileOpen ? ' mobile-open' : ''}`} style={{
@@ -67,7 +65,7 @@ export default function LandingNav({ language }: LandingNavProps) {
             ✕
           </button>
         )}
-        {t.links.map((label, i) => (
+        {links.map((label, i) => (
           <li key={i}>
             <a
               onClick={() => scrollToSection(sections[i])}
@@ -98,7 +96,7 @@ export default function LandingNav({ language }: LandingNavProps) {
                 fontWeight: 700
               }}
             >
-              {t.cta}
+              {cta}
             </a>
           </li>
         )}
@@ -137,7 +135,7 @@ export default function LandingNav({ language }: LandingNavProps) {
           e.currentTarget.style.boxShadow = 'none';
         }}
       >
-        {t.cta}
+        {cta}
       </a>
     </nav>
   );
