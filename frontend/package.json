@@ -45,7 +45,7 @@
     "@types/react": "^19.2.2",
     "@types/react-dom": "^19.2.2",
     "@types/react-syntax-highlighter": "^15.5.13",
-    "ajv": "^6.12.6",
+    "ajv": "^8.18.0",
     "ajv-keywords": "^3.5.2",
     "axios": "^1.13.2",
     "class-variance-authority": "^0.7.1",
