@@ -207,14 +207,14 @@ export default function AItoIA() {
               <div className="aitoia-header">
                 <span className="aitoia-tag">{t('aitoia.tag')}</span>
                 <h2>{t('aitoia.title')}</h2>
-                <p className="subtitle" style={{ maxWidth: '560px' }}>{t('aitoia.challengeSubtitle')}</p>
+                <p className="subtitle" style={{ maxWidth: '90vw' }}>{t('aitoia.challengeSubtitle')}</p>
               </div>
               <div className="aitoia-block aitoia-ai" style={{ opacity: 1, pointerEvents: 'auto' }}>
                 <ul>
                   {aiItems.map((item, i) => (
                     <li key={i} style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                      <img src={AI_ICONS[i]} alt="" width={96} height={96} style={{ flexShrink: 0 }} />
-                      <div>
+                      <img src={AI_ICONS[i]} alt="" width={96} height={96} style={{ flexShrink: 0 }} className="aitoia-bullet-icon" />
+                      <div style={{ wordWrap: 'break-word', overflowWrap: 'break-word', maxWidth: '100%' }}>
                         <strong>{item.strong}</strong>
                         {item.desc}
                       </div>
@@ -229,14 +229,14 @@ export default function AItoIA() {
               <div className="aitoia-header">
                 <span className="aitoia-tag">{t('aitoia.innovationTag')}</span>
                 <h2>{t('aitoia.innovationTitle')}</h2>
-                <p className="subtitle" style={{ maxWidth: '560px' }}>{t('aitoia.innovationSubtitle')}</p>
+                <p className="subtitle" style={{ maxWidth: '90vw' }}>{t('aitoia.innovationSubtitle')}</p>
               </div>
               <div className="aitoia-block aitoia-ia" style={{ opacity: 1, pointerEvents: 'auto' }}>
                 <ul>
                   {iaItems.map((item, i) => (
                     <li key={i} style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                      <img src={IA_ICONS[i]} alt="" width={96} height={96} style={{ flexShrink: 0 }} />
-                      <div>
+                      <img src={IA_ICONS[i]} alt="" width={96} height={96} style={{ flexShrink: 0 }} className="aitoia-bullet-icon" />
+                      <div style={{ wordWrap: 'break-word', overflowWrap: 'break-word', maxWidth: '100%' }}>
                         <strong>{item.strong}</strong>
                         <span dangerouslySetInnerHTML={{ __html: highlightWorkflow(item.desc) }} />
                       </div>

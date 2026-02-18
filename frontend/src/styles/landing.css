@@ -574,11 +574,12 @@
 
   /* Carousel */
   .cc-track {
-    height: 400px !important;
+    height: auto !important;
+    min-height: 420px;
   }
 
   .cc-card {
-    width: 300px !important;
+    width: 85vw !important;
   }
 
   .mc-inner {
@@ -600,7 +601,7 @@
   .mc-mock {
     border-left: none !important;
     border-top: 1px solid rgba(255, 255, 255, 0.06);
-    max-height: 200px;
+    max-height: 180px;
     overflow-y: auto;
   }
 
@@ -635,6 +636,19 @@
   .claim-item-hover {
     grid-template-columns: 1fr !important;
   }
+
+  .cc-card[data-pos="-1"],
+  .cc-card[data-pos="1"] {
+    transform: translateX(0) scale(0.8) !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+
+  .cc-card[data-pos="-2"],
+  .cc-card[data-pos="2"] {
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
 }
 
 @media (max-width: 375px) {
@@ -643,7 +657,7 @@
   }
 
   .cc-card {
-    width: 260px !important;
+    width: 90vw !important;
   }
 
   .cc-card[data-pos="-1"] {

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { HeroContent } from './types';
 import Sparkle from './Sparkle';
 
@@ -8,13 +8,22 @@ interface HeroProps {
 }
 
 export default function Hero({ content, language }: HeroProps) {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth <= 768);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
+
   return (
     <section className="hero" id="hero" style={{
       minHeight: '100dvh',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      paddingTop: '4rem',
+      paddingTop: isMobile ? 'calc(69px + 2rem)' : '4rem',
       position: 'relative',
       overflow: 'hidden'
     }}>
@@ -42,12 +51,22 @@ export default function Hero({ content, language }: HeroProps) {
         <div className="hero-center" style={{
           textAlign: 'center',
           maxWidth: '760px',
-          margin: '0 auto'
+          margin: '0 auto',
+          ...(isMobile ? {
+            display: 'flex',
+            flexDirection: 'column' as const,
+            alignItems: 'center',
+            minHeight: 'auto',
+            justifyContent: 'center',
+            gap: '2rem',
+          } : {})
         }}>
+          {/* Title group - stays at top of flex column */}
+          <div>
           {/* H1 with gold gradient span + subtitle - EXACT v10 structure */}
           <h1 style={{
             fontFamily: 'inherit',
-            fontSize: 'clamp(38px, 5vw, 60px)',
+            fontSize: 'clamp(26px, 5vw, 60px)',
             fontWeight: 800,
             color: 'var(--text-primary, #f8f8f8)',
             lineHeight: '1.1',
@@ -68,13 +87,14 @@ export default function Hero({ content, language }: HeroProps) {
 
           {/* Sectors line */}
           <p style={{
-            fontSize: 'clamp(16px, 2.5vw, 22px)',
+            fontSize: 'clamp(14px, 2.5vw, 22px)',
             fontWeight: 600,
             color: 'rgba(249, 250, 251, 0.85)',
             marginBottom: '1.5rem'
           }}>
             {content.sectors}
           </p>
+          </div>
 
           {/* Brand box - logo first, text below */}
           <div className="hero-brand" style={{
@@ -82,7 +102,7 @@ export default function Hero({ content, language }: HeroProps) {
             flexDirection: 'column',
             alignItems: 'center',
             gap: '0.5rem',
-            padding: '1.2rem 2rem',
+            padding: 'clamp(0.8rem, 2vw, 1.2rem) clamp(1.2rem, 3vw, 2rem)',
             border: '1px solid rgba(255, 255, 255, 0.2)',
             borderRadius: '24px',
             background: 'rgba(255, 255, 255, 0.05)',
@@ -99,7 +119,7 @@ export default function Hero({ content, language }: HeroProps) {
                 src="/icons/josoor.png"
                 alt="Josoor"
                 style={{
-                  height: '80px',
+                  height: 'clamp(50px, 8vw, 80px)',
                   width: 'auto',
                   filter: 'brightness(1.1)'
                 }}
@@ -107,11 +127,13 @@ export default function Hero({ content, language }: HeroProps) {
             </div>
             <div className="hb-name" style={{
               fontFamily: 'inherit',
-              fontSize: 20,
+              fontSize: 'clamp(14px, 2vw, 20px)',
               fontWeight: 800,
               letterSpacing: '0.35em',
               textTransform: 'uppercase',
-              color: 'var(--gold-bright, #FFD04A)'
+              color: 'var(--gold-bright, #FFD04A)',
+              whiteSpace: 'pre-line',
+              textAlign: 'center'
             }}>
               {content.badge}
             </div>

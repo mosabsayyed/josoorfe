@@ -44,8 +44,8 @@ export default function Promise({ content }: PromiseProps) {
   const getCardStyles = (pos: number | 'hidden') => {
     const baseStyles: React.CSSProperties = {
       position: 'absolute',
-      width: isMobile ? '300px' : '380px',
-      maxWidth: '85vw',
+      width: isMobile ? '85vw' : '380px',
+      maxWidth: isMobile ? '92vw' : '85vw',
       borderRadius: 'var(--radius-xl, 12px)',
       border: '1px solid var(--border-default, rgba(255, 255, 255, 0.1))',
       background: 'var(--component-panel-bg)',
@@ -206,7 +206,7 @@ export default function Promise({ content }: PromiseProps) {
               alignItems: 'center',
               justifyContent: 'center',
               position: 'relative',
-              height: isMobile ? '420px' : '580px',
+              height: isMobile ? '520px' : '580px',
               perspective: '900px',
             }}
             onMouseEnter={() => setIsPaused(true)}
@@ -231,7 +231,7 @@ export default function Promise({ content }: PromiseProps) {
                     alt={persona.role}
                     style={{
                       width: '100%',
-                      height: isMobile ? '180px' : '260px',
+                      height: isMobile ? '240px' : '260px',
                       objectFit: 'cover',
                       objectPosition: 'center 20%',
                       filter: pos === 0 ? 'brightness(0.95) saturate(1)' : 'brightness(0.85) saturate(0.9)',
@@ -240,7 +240,7 @@ export default function Promise({ content }: PromiseProps) {
                   />
 
                   {/* Card Body */}
-                  <div style={{ padding: '1.1rem 1.3rem' }}>
+                  <div style={{ padding: isMobile ? '0.8rem 1rem' : '1.1rem 1.3rem' }}>
                     <div
                       style={{
                         fontFamily: 'var(--font-mono, monospace)',
@@ -270,6 +270,8 @@ export default function Promise({ content }: PromiseProps) {
                         color: 'var(--text-muted, rgba(255, 255, 255, 0.6))',
                         lineHeight: '1.45',
                         margin: '0.15rem 0 0.4rem',
+                        wordWrap: 'break-word',
+                        overflowWrap: 'break-word',
                       }}
                     >
                       {persona.before}
@@ -301,6 +303,8 @@ export default function Promise({ content }: PromiseProps) {
                         fontWeight: 500,
                         lineHeight: '1.45',
                         marginTop: '0.15rem',
+                        wordWrap: 'break-word',
+                        overflowWrap: 'break-word',
                       }}
                     >
                       {persona.after}

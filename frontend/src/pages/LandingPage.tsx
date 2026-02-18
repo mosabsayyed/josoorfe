@@ -162,6 +162,7 @@ export default function LandingPage() {
         line-height: 1.5;
         min-height: 100dvh;
         position: relative;
+        overflow-x: hidden;
       }
 
       /* Arabic font support - matching main site exactly */
@@ -334,7 +335,7 @@ export default function LandingPage() {
         box-shadow: 0 30px 60px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.2);
         display: flex;
         flex-direction: column;
-        padding: 50px 60px;
+        padding: clamp(20px, 4vw, 50px) clamp(16px, 4vw, 60px);
       }
 
       .aitoia-glass * { margin: 0; padding: 0; }
@@ -435,18 +436,33 @@ export default function LandingPage() {
       @media (max-width: 768px) {
         .aitoia-glass {
           width: 92vw;
-          padding: 24px 20px;
+          padding: 20px 16px;
+          /* Reduce glass opacity so canvas animation shows through */
+          background: rgba(255, 255, 255, 0.05);
+          backdrop-filter: blur(4px);
+          -webkit-backdrop-filter: blur(4px);
         }
+
+        /* Hide 96x96px icons on mobile to save space */
+        .aitoia-bullet-icon {
+          display: none !important;
+        }
+
         /* h2 size handled by .landing-page h2 — no override needed */
         .aitoia-glass .aitoia-block h3 {
-          font-size: 1.4rem;
+          font-size: 1.2rem;
         }
         .aitoia-glass .aitoia-block li {
-          font-size: 0.9rem;
-          margin-bottom: 14px;
+          font-size: 0.85rem;
+          margin-bottom: 12px;
+          line-height: 1.5;
         }
         .aitoia-glass .aitoia-block strong {
-          font-size: 0.95rem;
+          font-size: 0.9rem;
+          margin-bottom: 4px;
+        }
+        .aitoia-tag {
+          font-size: 14px;
         }
       }
 
@@ -501,7 +517,7 @@ export default function LandingPage() {
       /* ── Section tag (gold monospace label above every section title) ── */
       .section-tag {
         font-family: var(--font-mono, monospace);
-        font-size: 20px;
+        font-size: clamp(11px, 1.5vw, 16px);
         font-weight: 700;
         letter-spacing: 0.2em;
         text-transform: uppercase;
@@ -510,7 +526,7 @@ export default function LandingPage() {
       }
 
       .landing-page h2 {
-        font-size: 42px; /* Unified — see FONT-SIZE RULE */
+        font-size: clamp(22px, 4vw, 42px); /* Unified — see FONT-SIZE RULE */
         font-weight: 800;
         line-height: 1.2;
         color: var(--component-text-primary);
@@ -518,7 +534,7 @@ export default function LandingPage() {
       }
 
       .subtitle {
-        font-size: 18px;
+        font-size: clamp(13px, 2vw, 18px);
         line-height: 1.65;
         font-weight: 400;
         color: var(--component-text-secondary);
@@ -748,28 +764,61 @@ export default function LandingPage() {
       @media (max-width: 375px) {
         /* Extra small phones */
         section {
-          padding: 0.75rem 0.75rem;
+          padding: 0.75rem 0.5rem;
+        }
+
+        .landing-page h1 {
+          font-size: 24px;
         }
 
         .landing-page h2 {
-          font-size: 28px;
+          font-size: 22px;
         }
 
         .subtitle {
-          font-size: 16px;
+          font-size: 13px;
         }
 
         .section-tag {
-          font-size: 14px;
-          letter-spacing: 0.1em;
+          font-size: 11px;
+          letter-spacing: 0.06em;
         }
 
         .hero-title {
-          font-size: 32px !important;
+          font-size: 28px !important;
         }
 
         .hero-subtitle {
-          font-size: 16px !important;
+          font-size: 14px !important;
+        }
+
+        .hero-brand {
+          padding: 0.8rem 1.2rem !important;
+        }
+
+        .hero-brand img {
+          height: 50px !important;
+        }
+
+        .hb-name {
+          font-size: 14px !important;
+          letter-spacing: 0.25em;
+        }
+
+        .aitoia-tag {
+          font-size: 12px;
+        }
+
+        .aitoia-glass {
+          padding: 16px 12px !important;
+        }
+
+        .aitoia-glass .aitoia-block li {
+          font-size: 0.8rem !important;
+        }
+
+        .aitoia-glass .aitoia-block strong {
+          font-size: 0.85rem !important;
         }
       }
 
@@ -790,6 +839,20 @@ export default function LandingPage() {
         /* Tablets and large phones */
         section.content-centered {
           max-width: 100%;
+          min-height: 100dvh;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          align-items: center;
+          padding: calc(69px + 2rem) 1rem 2rem;
+          box-sizing: border-box;
+          overflow: visible;
+        }
+
+        #arch {
+          min-height: auto;
+          padding-top: calc(69px + 2rem);
+          overflow: visible;
         }
 
         .section-content-box {
@@ -797,22 +860,56 @@ export default function LandingPage() {
           border-radius: 12px;
         }
 
+        /* Global word-wrap to prevent text overflow */
+        .landing-page * {
+          word-wrap: break-word;
+          overflow-wrap: break-word;
+        }
+
         .landing-page h1 {
-          font-size: 32px;
+          font-size: 28px;
           line-height: 1.2;
         }
 
         .landing-page h2 {
-          font-size: 32px;
+          font-size: 22px;
         }
 
         .subtitle {
-          font-size: 16px;
-          line-height: 1.6;
+          font-size: 13px;
+          line-height: 1.5;
         }
 
         .section-tag {
+          font-size: 11px;
+          letter-spacing: 0.08em;
+        }
+
+        /* Hero section mobile adjustments */
+        .hero-overlay {
+          /* Lighter overlay so Sparkle background shows through */
+          background: radial-gradient(ellipse at center, transparent 0%, transparent 40%, rgba(17, 24, 39, 0.4) 70%, var(--component-bg-primary, #111827) 95%), linear-gradient(180deg, transparent 60%, var(--component-bg-primary, #111827) 100%) !important;
+        }
+
+        .hero-title {
+          font-size: 32px;
+        }
+
+        .hero-subtitle {
           font-size: 16px;
+        }
+
+        /* Hero brand box */
+        .hero-brand {
+          padding: 1rem 1.5rem !important;
+        }
+
+        .hero-brand img {
+          height: 60px !important;
+        }
+
+        .hb-name {
+          font-size: 16px !important;
         }
 
         .invite-form {
@@ -828,20 +925,18 @@ export default function LandingPage() {
           grid-template-columns: 1fr;
         }
 
-        .hero-title {
-          font-size: 36px;
-        }
-
-        .hero-subtitle {
-          font-size: 18px;
-        }
-
         /* Touch targets - minimum 44px */
         button,
         .button-primary,
         a[role="button"] {
           min-height: 44px;
           min-width: 44px;
+        }
+
+        .platform-mockup-card {
+          max-height: 400px;
+          overflow-y: auto;
+          -webkit-overflow-scrolling: touch;
         }
       }
     `;

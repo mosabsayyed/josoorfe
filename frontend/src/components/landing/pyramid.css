@@ -402,6 +402,19 @@
   /* Back face content is dense on mobile — allow scroll and tighten spacing */
   .pyr-back {
     padding: 0.8rem;
+    max-height: 480px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .ont-row-label {
+    font-size: 10px;
+    margin-bottom: 0.1rem;
+  }
+
+  .ont-row {
+    padding: 0.25rem 0.3rem;
+    margin-bottom: 0.1rem;
   }
 
   .back-h {
@@ -480,6 +493,10 @@
   .pyr-inner,
   .pyr-face {
     min-height: 380px;
+  }
+
+  .pyr-back {
+    max-height: 380px;
   }
 
   .py-1 { width: 60% !important; }

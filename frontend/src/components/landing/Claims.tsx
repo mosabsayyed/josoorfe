@@ -453,18 +453,18 @@ export default function Claims({ content }: ClaimsProps) {
           .weave-mobile-fallback {
             display: flex;
             flex-direction: column;
-            gap: 12px;
-            margin-top: 2rem;
+            gap: 10px;
+            margin-top: 1rem;
           }
           .weave-mobile-canvas {
-            padding: 16px;
+            padding: 14px 16px;
             border: 2px solid var(--component-text-accent);
-            border-radius: 12px;
+            border-radius: 8px;
             text-align: center;
           }
           .weave-mobile-canvas strong {
             color: var(--component-text-accent);
-            font-size: 16px;
+            font-size: 15px;
           }
           .weave-mobile-canvas p {
             color: var(--component-text-secondary);
@@ -484,7 +484,8 @@ export default function Claims({ content }: ClaimsProps) {
           .weave-mobile-card p {
             color: var(--component-text-secondary);
             font-size: 13px;
-            margin: 4px 0 0;
+            margin: 3px 0 0;
+            line-height: 1.4;
           }
         }
       `}</style>
