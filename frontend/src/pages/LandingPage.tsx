@@ -15,7 +15,6 @@ import Platform from '../components/landing/Platform';
 import Architecture from '../components/landing/Architecture';
 import BetaForm from '../components/landing/BetaForm';
 import useSnapScroll from '../hooks/useSnapScroll';
-import '../styles/tailwind-landing.css';
 
 const SNAP_SECTIONS = ['hero', 'aitoia', 'platform', 'claims', 'promise', 'arch'];
 
