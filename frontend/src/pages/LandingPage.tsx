@@ -15,6 +15,7 @@ import Platform from '../components/landing/Platform';
 import Architecture from '../components/landing/Architecture';
 import BetaForm from '../components/landing/BetaForm';
 import useSnapScroll from '../hooks/useSnapScroll';
+import '../styles/tailwind-landing.css';
 
 const SNAP_SECTIONS = ['hero', 'aitoia', 'platform', 'claims', 'promise', 'arch'];
 
@@ -517,7 +518,7 @@ export default function LandingPage() {
       /* ── Section tag (gold monospace label above every section title) ── */
       .section-tag {
         font-family: var(--font-mono, monospace);
-        font-size: clamp(11px, 1.5vw, 16px);
+        font-size: clamp(14px, 1.5vw, 16px);
         font-weight: 700;
         letter-spacing: 0.2em;
         text-transform: uppercase;
@@ -526,7 +527,7 @@ export default function LandingPage() {
       }
 
       .landing-page h2 {
-        font-size: clamp(22px, 4vw, 42px); /* Unified — see FONT-SIZE RULE */
+        font-size: clamp(28px, 4vw, 42px); /* Unified — see FONT-SIZE RULE */
         font-weight: 800;
         line-height: 1.2;
         color: var(--component-text-primary);
@@ -534,7 +535,7 @@ export default function LandingPage() {
       }
 
       .subtitle {
-        font-size: clamp(13px, 2vw, 18px);
+        font-size: clamp(16px, 2vw, 18px);
         line-height: 1.65;
         font-weight: 400;
         color: var(--component-text-secondary);
@@ -772,15 +773,15 @@ export default function LandingPage() {
         }
 
         .landing-page h2 {
-          font-size: 22px;
+          font-size: 26px;
         }
 
         .subtitle {
-          font-size: 13px;
+          font-size: 15px;
         }
 
         .section-tag {
-          font-size: 11px;
+          font-size: 13px;
           letter-spacing: 0.06em;
         }
 
@@ -844,14 +845,14 @@ export default function LandingPage() {
           flex-direction: column;
           justify-content: center;
           align-items: center;
-          padding: calc(69px + 2rem) 1rem 2rem;
+          padding: 70px 1rem 1rem;
           box-sizing: border-box;
           overflow: visible;
         }
 
         #arch {
           min-height: auto;
-          padding-top: calc(69px + 2rem);
+          padding-top: 70px;
           overflow: visible;
         }
 
@@ -872,16 +873,16 @@ export default function LandingPage() {
         }
 
         .landing-page h2 {
-          font-size: 22px;
+          font-size: 28px;
         }
 
         .subtitle {
-          font-size: 13px;
+          font-size: 16px;
           line-height: 1.5;
         }
 
         .section-tag {
-          font-size: 11px;
+          font-size: 14px;
           letter-spacing: 0.08em;
         }
 

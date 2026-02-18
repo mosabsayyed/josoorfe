@@ -23,7 +23,7 @@ export default function Hero({ content, language }: HeroProps) {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      paddingTop: isMobile ? 'calc(69px + 2rem)' : '4rem',
+      paddingTop: isMobile ? '70px' : '4rem',
       position: 'relative',
       overflow: 'hidden'
     }}>
