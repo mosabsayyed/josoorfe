@@ -11,6 +11,7 @@
 
 import { useState, useMemo } from 'react';
 import { Copy, ThumbsUp, ThumbsDown, CheckCheck, Edit2, Loader2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import type { Message as APIMessage } from '../../types/api';
 import '../../styles/message-bubble.css';
 import ReactMarkdown from 'react-markdown';
@@ -41,6 +42,7 @@ export function MessageBubble({
   language = 'en',
   showAvatar = true,
 }: MessageBubbleProps) {
+  const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
   const [feedback, setFeedback] = useState<'up' | 'down' | null>(null);
   const [showRaw, setShowRaw] = useState(false);
@@ -395,9 +397,9 @@ export function MessageBubble({
       <div className={`message-content ${isUser ? 'message-content--user' : 'message-content--bot'}`}>
         {/* Compaction Indicator */}
         {!isUser && message.metadata?.was_condensed && (
-          <div className="compaction-indicator" title="Previous messages were condensed to stay within context limits">
+          <div className="compaction-indicator" title={t('josoor.chat.contextCondensed')}>
             <div className="compaction-indicator-line"></div>
-            <span className="compaction-indicator-text">Context condensed</span>
+            <span className="compaction-indicator-text">{t('josoor.chat.contextCondensed')}</span>
             <div className="compaction-indicator-line"></div>
           </div>
         )}
@@ -429,8 +431,8 @@ export function MessageBubble({
                     <span style={{ fontSize: '16px' }}>📄</span>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column' }}>
-                    <span style={{ fontWeight: 600, fontSize: '14px' }}>Analysis Request</span>
-                    <span style={{ fontSize: '11px', opacity: 0.7 }}>Click to expand data payload</span>
+                    <span style={{ fontWeight: 600, fontSize: '14px' }}>{t('josoor.chat.analysisRequest')}</span>
+                    <span style={{ fontSize: '11px', opacity: 0.7 }}>{t('josoor.chat.clickToExpand')}</span>
                   </div>
                 </div>
                 {showRaw && (
@@ -590,22 +592,22 @@ export function MessageBubble({
           <span className="message-time">{formatTime(message.created_at)}</span>
 
           <div className={`message-actions ${showActionsHover ? 'visible' : ''}`}>
-            <button onClick={handleCopy} title={language === 'ar' ? 'نسخ' : 'Copy'} className="icon-button">
+            <button onClick={handleCopy} title={t('josoor.chat.copy')} className="icon-button">
               {copied ? <CheckCheck className="icon green" /> : <Copy className="icon" />}
             </button>
 
             {isUser && onEdit && (
-              <button onClick={onEdit} title={language === 'ar' ? 'تعديل' : 'Edit'} className="icon-button">
+              <button onClick={onEdit} title={t('josoor.chat.edit')} className="icon-button">
                 <Edit2 className="icon" />
               </button>
             )}
 
             {!isUser && onFeedback && (
               <>
-                <button onClick={() => handleFeedback(true)} title={language === 'ar' ? 'مفيد' : 'Helpful'} className={`icon-button ${feedback === 'up' ? 'positive' : ''}`}>
+                <button onClick={() => handleFeedback(true)} title={t('josoor.chat.helpful')} className={`icon-button ${feedback === 'up' ? 'positive' : ''}`}>
                   <ThumbsUp className="icon" />
                 </button>
-                <button onClick={() => handleFeedback(false)} title={language === 'ar' ? 'غير مفيد' : 'Not helpful'} className={`icon-button ${feedback === 'down' ? 'negative' : ''}`}>
+                <button onClick={() => handleFeedback(false)} title={t('josoor.chat.notHelpful')} className={`icon-button ${feedback === 'down' ? 'negative' : ''}`}>
                   <ThumbsDown className="icon" />
                 </button>
               </>
@@ -734,7 +736,7 @@ function ArtifactIcon({ type, size = 16, color }: { type: string; size?: number;
  * Shows while AI is processing
  */
 export function ThinkingIndicator({ language = 'en' }: { language?: 'en' | 'ar' }) {
-  const text = language === 'ar' ? 'نور تفكر...' : 'Noor is thinking...';
+  const { t } = useTranslation();
 
   return (
     <div style={{ display: 'flex', gap: 12 }}>
@@ -743,7 +745,7 @@ export function ThinkingIndicator({ language = 'en' }: { language?: 'en' | 'ar' 
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'transparent' }}>
         <Loader2 style={{ width: 16, height: 16, color: 'var(--component-text-secondary)' }} />
-        <span style={{ fontSize: 14, color: 'var(--component-text-secondary)' }}>{text}</span>
+        <span style={{ fontSize: 14, color: 'var(--component-text-secondary)' }}>{t('josoor.chat.noorThinking')}</span>
       </div>
     </div>
   );
@@ -756,6 +758,7 @@ function ReasoningCollapsible({
   reasoning: string;
   language?: 'en' | 'ar';
 }) {
+  const { t } = useTranslation();
   const [expanded, setExpanded] = useState(false);
 
   return (
@@ -782,9 +785,9 @@ function ReasoningCollapsible({
         tabIndex={0}
       >
         <span style={{ fontSize: '1.2em' }}>{expanded ? '🧠' : '💭'}</span>
-        <span>{language === 'ar' ? 'عملية التفكير' : 'Thinking Process'}</span>
+        <span>{t('josoor.chat.thinkingProcess')}</span>
         <span style={{ opacity: 0.6, fontSize: '0.85em', marginLeft: 'auto', fontWeight: 'normal' }}>
-          {expanded ? (language === 'ar' ? 'إخفاء' : 'Hide') : (language === 'ar' ? 'إظهار' : 'Show')}
+          {expanded ? t('josoor.chat.hide') : t('josoor.chat.show')}
         </span>
       </div>
 

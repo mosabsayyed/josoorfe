@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { CheckCircle, AlertCircle, TrendingUp, Clock, FileText, BarChart3, Shield, Building, Calendar, ChevronLeft, ChevronRight, Download } from 'lucide-react';
 import './ReportingDesk.css';
 
 type ReportView = 'control-outcomes' | 'standard-reports';
 
 export function ReportingDesk() {
+  const { t } = useTranslation();
   const [selectedView, setSelectedView] = useState<ReportView>('control-outcomes');
   const [archiveCollapsed, setArchiveCollapsed] = useState(false);
 
@@ -26,16 +28,16 @@ export function ReportingDesk() {
   // }, []);
 
   const viewButtons: { id: ReportView; label: string; description: string }[] = [
-    { id: 'control-outcomes', label: 'Control Outcomes', description: 'Primary projection report' },
-    { id: 'standard-reports', label: 'Standard Reports', description: 'Byproduct PMO views' },
+    { id: 'control-outcomes', label: t('josoor.reporting.controlOutcomes'), description: t('josoor.reporting.primaryProjectionReport') },
+    { id: 'standard-reports', label: t('josoor.reporting.standardReports'), description: t('josoor.reporting.byproductPmoViews') },
   ];
 
   return (
     <div className="reporting-container">
       {/* Header */}
       <div className="reporting-header">
-        <h1 className="reporting-title">Reporting Desk</h1>
-        <p className="reporting-subtitle">Projection outcomes and standard reporting</p>
+        <h1 className="reporting-title">{t('josoor.reporting.title')}</h1>
+        <p className="reporting-subtitle">{t('josoor.reporting.subtitle')}</p>
       </div>
 
       {/* View Selection */}
@@ -74,6 +76,7 @@ export function ReportingDesk() {
 
 // A) Control Outcomes (Primary Report)
 function ControlOutcomes({ archiveCollapsed, setArchiveCollapsed }: { archiveCollapsed: boolean; setArchiveCollapsed: (collapsed: boolean) => void }) {
+  const { t } = useTranslation();
   const [selectedReport, setSelectedReport] = useState('latest');
 
   const previousReports = [
@@ -91,7 +94,7 @@ function ControlOutcomes({ archiveCollapsed, setArchiveCollapsed }: { archiveCol
         <button
           onClick={() => setArchiveCollapsed(!archiveCollapsed)}
           className="collapse-btn"
-          title={archiveCollapsed ? 'Expand Archive' : 'Collapse Archive'}
+          title={archiveCollapsed ? t('josoor.reporting.expandArchive') : t('josoor.reporting.collapseArchive')}
         >
           {archiveCollapsed ? (
             <ChevronRight className="w-3 h-3 text-slate-300" />
@@ -105,7 +108,7 @@ function ControlOutcomes({ archiveCollapsed, setArchiveCollapsed }: { archiveCol
             <div className="archive-header">
               <Calendar className="w-4 h-4 text-slate-500" />
               <h3 className="archive-title">
-                Report Archive
+                {t('josoor.reporting.reportArchive')}
               </h3>
             </div>
             <div className="archive-list">
@@ -168,7 +171,7 @@ function ControlOutcomes({ archiveCollapsed, setArchiveCollapsed }: { archiveCol
         {/* 1. Decision Timeline (compact horizontal) */}
         <div className="section-group">
           <h3 className="section-title">
-            Decision Timeline
+            {t('josoor.reporting.decisionTimeline')}
           </h3>
           <div className="timeline-block">
             <div className="relative">
@@ -182,9 +185,9 @@ function ControlOutcomes({ archiveCollapsed, setArchiveCollapsed }: { archiveCol
                     <CheckCircle className="w-4 h-4 text-white" />
                   </div>
                   <div className="text-center">
-                    <div className="node-label text-green">Intervention Decision</div>
+                    <div className="node-label text-green">{t('josoor.reporting.interventionDecision')}</div>
                     <div className="metric-label">2025-12-15</div>
-                    <div className="text-slate-300 text-8px mt-0.5">Pause Project X</div>
+                    <div className="text-slate-300 text-8px mt-0.5">{t('josoor.reporting.pauseProjectX')}</div>
                   </div>
                 </div>
 
@@ -193,7 +196,7 @@ function ControlOutcomes({ archiveCollapsed, setArchiveCollapsed }: { archiveCol
                     <Clock className="w-4 h-4 text-white" />
                   </div>
                   <div className="text-center">
-                    <div className="node-label text-amber">Execution Window</div>
+                    <div className="node-label text-amber">{t('josoor.reporting.executionWindow')}</div>
                     <div className="metric-label">Q1 2026 • 45 days</div>
                   </div>
                 </div>
@@ -203,7 +206,7 @@ function ControlOutcomes({ archiveCollapsed, setArchiveCollapsed }: { archiveCol
                     <BarChart3 className="w-4 h-4 text-white" />
                   </div>
                   <div className="text-center">
-                    <div className="node-label text-blue">Measurement Point</div>
+                    <div className="node-label text-blue">{t('josoor.reporting.measurementPoint')}</div>
                     <div className="metric-label">2026-03-31 • Q1 Close</div>
                   </div>
                 </div>
@@ -215,42 +218,42 @@ function ControlOutcomes({ archiveCollapsed, setArchiveCollapsed }: { archiveCol
         {/* 2. Before / After Comparison (compact grid) */}
         <div className="section-group">
           <h3 className="section-title">
-            Before / After Comparison
+            {t('josoor.reporting.beforeAfterComparison')}
           </h3>
           <div className="comparison-block">
             <div className="comparison-title">
-              Capability: Plant Operations
+              {t('josoor.reporting.capabilityPlantOperations')}
             </div>
 
             <div className="comparison-grid">
               {/* BEFORE Column */}
               <div>
                 <div className="comparison-col-header">
-                  BEFORE (Dec 2025)
+                  {t('josoor.reporting.before')} (Dec 2025)
                 </div>
                 <div className="metrics-grid">
                   <div className="metric-card">
-                    <div className="metric-label">Risk Exposure</div>
+                    <div className="metric-label">{t('josoor.reporting.riskExposure')}</div>
                     <div className="metric-val-flex">
                       <div className="val-large text-red">62%</div>
                       <div className="badge-sm badge-bg-red">
-                        RED
+                        {t('josoor.reporting.red')}
                       </div>
                     </div>
                   </div>
 
                   <div className="metric-card">
-                    <div className="metric-label">Leakage</div>
+                    <div className="metric-label">{t('josoor.reporting.leakage')}</div>
                     <div className="metric-val-flex">
                       <div className="val-large text-red">30%</div>
                       <div className="badge-sm badge-bg-red">
-                        BROKEN
+                        {t('josoor.reporting.broken')}
                       </div>
                     </div>
                   </div>
 
                   <div className="metric-card">
-                    <div className="metric-label">Load</div>
+                    <div className="metric-label">{t('josoor.reporting.load')}</div>
                     <div className="metric-val-flex">
                       <div className="val-large text-red">5</div>
                       <AlertCircle className="w-3 h-3 text-red" />
@@ -258,9 +261,9 @@ function ControlOutcomes({ archiveCollapsed, setArchiveCollapsed }: { archiveCol
                   </div>
 
                   <div className="metric-card">
-                    <div className="metric-label">Mode</div>
+                    <div className="metric-label">{t('josoor.reporting.mode')}</div>
                     <div className="badge-sm badge-bg-blue text-center">
-                      BUILD
+                      {t('josoor.reporting.build')}
                     </div>
                   </div>
                 </div>
@@ -269,15 +272,15 @@ function ControlOutcomes({ archiveCollapsed, setArchiveCollapsed }: { archiveCol
               {/* AFTER Column */}
               <div>
                 <div className="comparison-col-header header-green">
-                  AFTER (Mar 2026)
+                  {t('josoor.reporting.after')} (Mar 2026)
                 </div>
                 <div className="metrics-grid">
                   <div className="metric-card metric-card-green-border">
-                    <div className="metric-label">Risk Exposure</div>
+                    <div className="metric-label">{t('josoor.reporting.riskExposure')}</div>
                     <div className="metric-val-flex">
                       <div className="val-large text-green">38%</div>
                       <div className="badge-sm badge-bg-amber">
-                        AMBER
+                        {t('josoor.reporting.amber')}
                       </div>
                     </div>
                     <div className="trend-badge text-green">
@@ -287,11 +290,11 @@ function ControlOutcomes({ archiveCollapsed, setArchiveCollapsed }: { archiveCol
                   </div>
 
                   <div className="metric-card metric-card-green-border">
-                    <div className="metric-label">Leakage</div>
+                    <div className="metric-label">{t('josoor.reporting.leakage')}</div>
                     <div className="metric-val-flex">
                       <div className="val-large text-green">12%</div>
                       <div className="badge-sm badge-bg-green">
-                        HEALTHY
+                        {t('josoor.reporting.healthy')}
                       </div>
                     </div>
                     <div className="trend-badge text-green">
@@ -301,7 +304,7 @@ function ControlOutcomes({ archiveCollapsed, setArchiveCollapsed }: { archiveCol
                   </div>
 
                   <div className="metric-card metric-card-green-border">
-                    <div className="metric-label">Load</div>
+                    <div className="metric-label">{t('josoor.reporting.load')}</div>
                     <div className="metric-val-flex">
                       <div className="val-large text-green">3</div>
                       <CheckCircle className="w-3 h-3 text-green" />
@@ -310,9 +313,9 @@ function ControlOutcomes({ archiveCollapsed, setArchiveCollapsed }: { archiveCol
                   </div>
 
                   <div className="metric-card metric-card-green-border">
-                    <div className="metric-label">Mode</div>
+                    <div className="metric-label">{t('josoor.reporting.mode')}</div>
                     <div className="badge-sm badge-bg-green text-center">
-                      OPERATE
+                      {t('josoor.reporting.operate')}
                     </div>
                   </div>
                 </div>
@@ -324,7 +327,7 @@ function ControlOutcomes({ archiveCollapsed, setArchiveCollapsed }: { archiveCol
               <div className="success-box">
                 <CheckCircle className="w-5 h-5 text-green" />
                 <div className="text-green text-10px font-bold">
-                  Did the intervention work? YES - Significant improvement across all metrics
+                  {t('josoor.reporting.interventionResult')}
                 </div>
               </div>
             </div>
@@ -334,24 +337,24 @@ function ControlOutcomes({ archiveCollapsed, setArchiveCollapsed }: { archiveCol
         {/* 3. Residuals & Escalations (compact horizontal) */}
         <div>
           <h3 className="section-title">
-            Residuals & Escalations
+            {t('josoor.reporting.residualsEscalations')}
           </h3>
           <div className="residuals-grid">
             <div className="residual-block">
               <div className="block-header-amber">
-                Remaining Risks
+                {t('josoor.reporting.remainingRisks')}
               </div>
               <div className="residual-list">
                 <div className="residual-item">
                   <div className="dot-amber" />
                   <div className="text-gray text-8px">
-                    Delay risk at 38% (acceptable)
+                    {t('josoor.reporting.delayRiskAcceptable')}
                   </div>
                 </div>
                 <div className="residual-item">
                   <div className="dot-amber" />
                   <div className="text-gray text-8px">
-                    Process gap Medium (monitoring)
+                    {t('josoor.reporting.processGapMonitoring')}
                   </div>
                 </div>
               </div>
@@ -359,19 +362,19 @@ function ControlOutcomes({ archiveCollapsed, setArchiveCollapsed }: { archiveCol
 
             <div className="residual-block">
               <div className="block-header-red">
-                Structural Issues
+                {t('josoor.reporting.structuralIssues')}
               </div>
               <div className="residual-list">
                 <div className="residual-item">
                   <div className="dot-red" />
                   <div className="text-gray text-8px">
-                    Distribution overloaded
+                    {t('josoor.reporting.distributionOverloaded')}
                   </div>
                 </div>
                 <div className="residual-item">
                   <div className="dot-red" />
                   <div className="text-gray text-8px">
-                    PT-03 underperforming
+                    {t('josoor.reporting.pt03Underperforming')}
                   </div>
                 </div>
               </div>
@@ -379,19 +382,19 @@ function ControlOutcomes({ archiveCollapsed, setArchiveCollapsed }: { archiveCol
 
             <div className="residual-block border-red-2">
               <div className="block-header-red">
-                Escalation Required?
+                {t('josoor.reporting.escalationRequired')}
               </div>
               <div className="flex items-center gap-2 mb-2">
                 <div className="escalation-badge">
-                  YES
+                  {t('josoor.reporting.yes')}
                 </div>
               </div>
               <div className="text-gray text-8px leading-relaxed">
-                Distribution requires executive review
+                {t('josoor.reporting.distributionExecutiveReview')}
               </div>
               <div className="mt-2 pt-2 border-t border-[rgba(148,163,184,0.2)]">
                 <div className="text-slate-500 text-7px normal">
-                  Feeds to Control Signals
+                  {t('josoor.reporting.feedsToControlSignals')}
                 </div>
               </div>
             </div>
@@ -404,6 +407,7 @@ function ControlOutcomes({ archiveCollapsed, setArchiveCollapsed }: { archiveCol
 
 // B) Standard Reports (Byproduct Views)
 function StandardReports({ archiveCollapsed, setArchiveCollapsed }: { archiveCollapsed: boolean; setArchiveCollapsed: (collapsed: boolean) => void }) {
+  const { t } = useTranslation();
   const [selectedReportType, setSelectedReportType] = useState('performance');
   const [selectedTimeWindow, setSelectedTimeWindow] = useState('q1-2026');
   const [selectedReport, setSelectedReport] = useState('latest');
@@ -423,7 +427,7 @@ function StandardReports({ archiveCollapsed, setArchiveCollapsed }: { archiveCol
         <button
           onClick={() => setArchiveCollapsed(!archiveCollapsed)}
           className="collapse-btn"
-          title={archiveCollapsed ? 'Expand Archive' : 'Collapse Archive'}
+          title={archiveCollapsed ? t('josoor.reporting.expandArchive') : t('josoor.reporting.collapseArchive')}
         >
           {archiveCollapsed ? (
             <ChevronRight className="w-3 h-3 text-slate-300" />
@@ -437,7 +441,7 @@ function StandardReports({ archiveCollapsed, setArchiveCollapsed }: { archiveCol
             <div className="archive-header">
               <Calendar className="w-4 h-4 text-slate-500" />
               <h3 className="archive-title">
-                Report Archive
+                {t('josoor.reporting.reportArchive')}
               </h3>
             </div>
             <div className="archive-list">
@@ -499,16 +503,16 @@ function StandardReports({ archiveCollapsed, setArchiveCollapsed }: { archiveCol
         <div className="report-builder-bar">
           <div className="builder-header-row">
             <h3 className="section-title">
-              Report Builder
+              {t('josoor.reporting.reportBuilder')}
             </h3>
             <div className="action-btn-group">
               <button className="btn-secondary">
                 <Download className="w-3 h-3" />
-                Export PDF
+                {t('josoor.reporting.exportPdf')}
               </button>
               <button className="btn-primary">
                 <FileText className="w-3 h-3" />
-                Generate Report
+                {t('josoor.reporting.generateReport')}
               </button>
             </div>
           </div>
@@ -517,22 +521,22 @@ function StandardReports({ archiveCollapsed, setArchiveCollapsed }: { archiveCol
           <div className="builder-controls">
             {/* Report Type */}
             <div>
-              <div className="control-label">Report Type</div>
+              <div className="control-label">{t('josoor.reporting.reportType')}</div>
               <select
                 value={selectedReportType}
                 onChange={(e) => setSelectedReportType(e.target.value)}
                 className="control-input"
               >
-                <option value="performance">📊 Performance</option>
-                <option value="risk">🛡️ Risk Assessment</option>
-                <option value="portfolio">🏢 Portfolio Status</option>
-                <option value="ministerial">📄 Ministerial Brief</option>
+                <option value="performance">{t('josoor.reporting.performance')}</option>
+                <option value="risk">{t('josoor.reporting.riskAssessment')}</option>
+                <option value="portfolio">{t('josoor.reporting.portfolioStatus')}</option>
+                <option value="ministerial">{t('josoor.reporting.ministerialBrief')}</option>
               </select>
             </div>
 
             {/* Time Window */}
             <div>
-              <div className="control-label">Time Window</div>
+              <div className="control-label">{t('josoor.reporting.timeWindow')}</div>
               <select
                 value={selectedTimeWindow}
                 onChange={(e) => setSelectedTimeWindow(e.target.value)}
@@ -548,27 +552,27 @@ function StandardReports({ archiveCollapsed, setArchiveCollapsed }: { archiveCol
             {/* Scope Filters */}
             <div className="scope-grid">
               <div>
-                <div className="text-label text-8px mb-1.5">Sector</div>
+                <div className="text-label text-8px mb-1.5">{t('josoor.reporting.sector')}</div>
                 <select className="control-input">
-                  <option>Water</option>
-                  <option>Energy</option>
-                  <option>All</option>
+                  <option>{t('josoor.reporting.water')}</option>
+                  <option>{t('josoor.reporting.energy')}</option>
+                  <option>{t('josoor.common.all')}</option>
                 </select>
               </div>
               <div>
-                <div className="text-label text-8px mb-1.5">Entity</div>
+                <div className="text-label text-8px mb-1.5">{t('josoor.reporting.entity')}</div>
                 <select className="control-input">
-                  <option>All</option>
+                  <option>{t('josoor.common.all')}</option>
                   <option>Desal Corp</option>
-                  <option>Distribution</option>
+                  <option>{t('josoor.reporting.distribution')}</option>
                 </select>
               </div>
               <div>
-                <div className="text-label text-8px mb-1.5">Capability</div>
+                <div className="text-label text-8px mb-1.5">{t('josoor.reporting.capability')}</div>
                 <select className="control-input">
-                  <option>All</option>
-                  <option>Plant Ops</option>
-                  <option>Distribution</option>
+                  <option>{t('josoor.common.all')}</option>
+                  <option>{t('josoor.reporting.plantOps')}</option>
+                  <option>{t('josoor.reporting.distribution')}</option>
                 </select>
               </div>
             </div>
@@ -576,7 +580,7 @@ function StandardReports({ archiveCollapsed, setArchiveCollapsed }: { archiveCol
             {/* Status Badge */}
             <div className="flex items-end">
               <div className="draft-badge">
-                DRAFT
+                {t('josoor.reporting.draft')}
               </div>
             </div>
           </div>
@@ -591,62 +595,59 @@ function StandardReports({ archiveCollapsed, setArchiveCollapsed }: { archiveCol
               <div className="sheet-header">
                 <div>
                   <h2 className="sheet-title">
-                    {selectedReportType === 'performance' && 'Performance Report'}
-                    {selectedReportType === 'risk' && 'Risk Assessment Report'}
-                    {selectedReportType === 'portfolio' && 'Portfolio Status Report'}
-                    {selectedReportType === 'ministerial' && 'Ministerial Brief'}
+                    {selectedReportType === 'performance' && t('josoor.reporting.performanceReport')}
+                    {selectedReportType === 'risk' && t('josoor.reporting.riskAssessmentReport')}
+                    {selectedReportType === 'portfolio' && t('josoor.reporting.portfolioStatusReport')}
+                    {selectedReportType === 'ministerial' && t('josoor.reporting.ministerialBrief')}
                   </h2>
                   <div className="sheet-meta">
-                    Period: {selectedTimeWindow.toUpperCase()} • Generated: {new Date().toLocaleDateString()}
+                    {t('josoor.reporting.period')}: {selectedTimeWindow.toUpperCase()} • {t('josoor.reporting.generated')}: {new Date().toLocaleDateString()}
                   </div>
                 </div>
                 <div className="sheet-draft-tag">
-                  DRAFT
+                  {t('josoor.reporting.draft')}
                 </div>
               </div>
 
               {/* Executive Summary */}
               <div className="sheet-section">
                 <div className="section-title">
-                  Executive Summary
+                  {t('josoor.reporting.executiveSummary')}
                 </div>
                 <div className="sheet-text">
-                  The water sector demonstrated strong performance in Q1 2026, with 22 of 45
-                  capabilities now stabilized. Risk exposure decreased by 18% following targeted
-                  interventions in Plant Operations and Quality Control. Six chronic risks remain
-                  under active management, requiring continued executive oversight.
+                  {t('josoor.reporting.executiveSummaryText')}
                 </div>
               </div>
 
               {/* Key Metrics Table */}
               <div className="sheet-section">
                 <div className="section-title">
-                  Key Metrics
+                  {t('josoor.reporting.keyMetrics')}
                 </div>
                 <table className="sheet-table">
                   <thead>
                     <tr>
                       <th className="sheet-th">
-                        Metric
+                        {t('josoor.reporting.metric')}
                       </th>
                       <th className="sheet-th sheet-th-right">
-                        Current
+                        {t('josoor.reporting.current')}
                       </th>
                       <th className="sheet-th sheet-th-right">
-                        Target
+                        {t('josoor.reporting.target')}
                       </th>
                       <th className="sheet-th sheet-th-right">
-                        Status
+                        {t('josoor.reporting.status')}
                       </th>
                     </tr>
                   </thead>
                   <tbody>
                     {[
-                      { metric: 'Avg Risk Exposure', current: '42%', target: '35%', status: 'amber' },
-                      { metric: 'Capabilities Stabilized', current: '22/45', target: '30/45', status: 'amber' },
-                      { metric: 'Avg Leakage %', current: '14%', target: '10%', status: 'amber' },
-                      { metric: 'Projects On-Time', current: '78%', target: '85%', status: 'amber' },
-                      { metric: 'Policy Tool Effectiveness', current: '88%', target: '80%', status: 'green' },
+                      { metric: t('josoor.reporting.avgRiskExposure'), current: '42%', target: '35%', status: 'amber' },
+                      { metric: t('josoor.reporting.capabilitiesStabilized'), current: '22/45', target: '30/45', status: 'amber' },
+                      { metric: t('josoor.reporting.avgLeakage'), current: '14%', target: '10%', status: 'amber' },
+                      { metric: t('josoor.reporting.projectsOnTime'), current: '78%', target: '85%', status: 'amber' },
+                      { metric: t('josoor.reporting.policyToolEffectiveness'), current: '88%', target: '80%', status: 'green' },
                     ].map((row, idx) => (
                       <tr key={idx}>
                         <td className="sheet-td">{row.metric}</td>
@@ -675,25 +676,17 @@ function StandardReports({ archiveCollapsed, setArchiveCollapsed }: { archiveCol
               {/* Narrative Section */}
               <div>
                 <div className="section-title">
-                  Analysis Narrative (Agent-Written)
+                  {t('josoor.reporting.analysisNarrative')}
                 </div>
                 <div className="narrative-box">
                   <p>
-                    <strong className="text-slate-200">Performance Trend:</strong> Plant Operations
-                    capability demonstrated significant improvement following the Q4 2025 intervention
-                    to pause Project X. Risk exposure decreased from 62% to 38%, and operational load
-                    reduced from 5 to 3 active projects.
+                    <strong className="text-slate-200">{t('josoor.reporting.performanceTrend')}:</strong> {t('josoor.reporting.performanceTrendText')}
                   </p>
                   <p>
-                    <strong className="text-slate-200">Areas of Concern:</strong> Distribution
-                    Management remains overloaded with persistent process gaps. This structural issue
-                    requires strategic reset consideration in the annual planning cycle.
+                    <strong className="text-slate-200">{t('josoor.reporting.areasOfConcern')}:</strong> {t('josoor.reporting.areasOfConcernText')}
                   </p>
                   <p>
-                    <strong className="text-slate-200">Recommendations:</strong> Continue monitoring
-                    Plant Operations in OPERATE mode. Initiate intervention planning for Distribution
-                    capability before Q2 2026. Escalate Policy Tool PT-03 effectiveness to ministerial
-                    review.
+                    <strong className="text-slate-200">{t('josoor.reporting.recommendations')}:</strong> {t('josoor.reporting.recommendationsText')}
                   </p>
                 </div>
               </div>
@@ -703,12 +696,12 @@ function StandardReports({ archiveCollapsed, setArchiveCollapsed }: { archiveCol
           {/* Evidence & Audit Panel (20%) */}
           <div className="info-sidebar">
             <h3 className="section-title">
-              Evidence & Audit
+              {t('josoor.reporting.evidenceAudit')}
             </h3>
 
             <div className="info-block">
               <div className="block-header-gray">
-                Data Sources
+                {t('josoor.reporting.dataSources')}
               </div>
               <div className="info-list">
                 <div className="info-item">
@@ -746,23 +739,23 @@ function StandardReports({ archiveCollapsed, setArchiveCollapsed }: { archiveCol
 
             <div className="info-block">
               <div className="block-header-gray">
-                Last Updated
+                {t('josoor.reporting.lastUpdated')}
               </div>
               <div className="info-list">
                 <div className="info-row">
-                  <span className="info-label">Capability data:</span>
+                  <span className="info-label">{t('josoor.reporting.capabilityData')}:</span>
                   <span className="info-val">2026-01-08</span>
                 </div>
                 <div className="info-row">
-                  <span className="info-label">Risk assessments:</span>
+                  <span className="info-label">{t('josoor.reporting.riskAssessments')}:</span>
                   <span className="info-val">2026-01-07</span>
                 </div>
                 <div className="info-row">
-                  <span className="info-label">Project status:</span>
+                  <span className="info-label">{t('josoor.reporting.projectStatus')}:</span>
                   <span className="info-val">2026-01-09</span>
                 </div>
                 <div className="info-row">
-                  <span className="info-label">Performance metrics:</span>
+                  <span className="info-label">{t('josoor.reporting.performanceMetrics')}:</span>
                   <span className="info-val-amber">2026-01-05</span>
                 </div>
               </div>
@@ -770,11 +763,11 @@ function StandardReports({ archiveCollapsed, setArchiveCollapsed }: { archiveCol
 
             <div className="info-block">
               <div className="block-header-gray">
-                Confidence Level
+                {t('josoor.reporting.confidenceLevel')}
               </div>
               <div className="mb-3">
                 <div className="info-row mb-1">
-                  <span className="info-label">Overall Confidence</span>
+                  <span className="info-label">{t('josoor.reporting.overallConfidence')}</span>
                   <span className="info-val">87%</span>
                 </div>
                 <div className="confidence-bar-bg">
@@ -782,26 +775,25 @@ function StandardReports({ archiveCollapsed, setArchiveCollapsed }: { archiveCol
                 </div>
               </div>
               <div className="text-gray text-8px leading-relaxed">
-                High confidence. All primary data sources current within 7 days. Performance metrics
-                require refresh.
+                {t('josoor.reporting.confidenceDescription')}
               </div>
             </div>
 
             <div className="missing-block">
               <div className="block-header-red">
-                Missing Inputs
+                {t('josoor.reporting.missingInputs')}
               </div>
               <div className="info-list">
                 <div className="info-item">
                   <AlertCircle className="w-3 h-3 text-red mt-0.5 flex-shrink-0" />
                   <div className="info-text">
-                    3 capabilities missing maturity scores
+                    {t('josoor.reporting.missingMaturityScores')}
                   </div>
                 </div>
                 <div className="info-item">
                   <AlertCircle className="w-3 h-3 text-red mt-0.5 flex-shrink-0" />
                   <div className="info-text">
-                    2 projects without adoption data
+                    {t('josoor.reporting.missingAdoptionData')}
                   </div>
                 </div>
               </div>

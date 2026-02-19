@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Layers, Filter, X, ChevronDown, ChevronUp } from 'lucide-react';
 import {
     strategicAssets,
@@ -123,6 +124,7 @@ type HeatmapType = 'healthcare' | 'education' | 'projects' | 'foodSecurity' | 'd
 type TelcoType = 'mobily' | 'stc' | 'zain';
 
 export function StrategicMap({ year, quarter }: SectorMapProps) {
+    const { t } = useTranslation();
     // View state
     const [selectedAsset, setSelectedAsset] = useState<StrategicAsset | null>(null);
     const [isZoomedIn, setIsZoomedIn] = useState(false);
@@ -462,7 +464,7 @@ export function StrategicMap({ year, quarter }: SectorMapProps) {
                 onClick={() => setShowLayerPanel(!showLayerPanel)}
             >
                 <Layers size={16} />
-                Layers
+                {t('josoor.sector.layers')}
                 {showLayerPanel ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
             </button>
 
@@ -559,7 +561,7 @@ export function StrategicMap({ year, quarter }: SectorMapProps) {
             {isZoomedIn && (
                 <button onClick={zoomOut} className="back-btn">
                     <ArrowLeft className="back-icon" />
-                    RETURN TO KINGDOM VIEW
+                    {t('josoor.sector.returnToKingdom')}
                 </button>
             )}
 
@@ -622,7 +624,7 @@ export function StrategicMap({ year, quarter }: SectorMapProps) {
             <div className="legend-container">
                 <div className="legend-header">
                     <div className="legend-dot" />
-                    Legend
+                    {t('josoor.sector.legend')}
                 </div>
                 <div className="legend-section">
                     <div className="legend-subtitle">Asset Status</div>

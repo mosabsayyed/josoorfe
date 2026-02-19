@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import svgPaths from '@/components/desks/sector/data/svg-ydduxkvvhk';
 import './GaugeCard.css';
 
@@ -16,6 +17,7 @@ interface GaugeCardProps {
 }
 
 export function GaugeCard({ label, value, status, delta, baseValue, qMinus1, qPlus1, endValue, scale = 1, family = '1.0', level = 1 }: GaugeCardProps) {
+  const { t } = useTranslation();
   // Determine gradient colors based on status and family
   const gradientColors = family === '2.0'
     ? (status === 'amber'
@@ -166,11 +168,11 @@ export function GaugeCard({ label, value, status, delta, baseValue, qMinus1, qPl
         className="bottom-labels-container"
         style={{ fontSize: `clamp(${6 * fontScale}px, ${0.64 * fontScale}vw, ${10 * fontScale}px)` }}
       >
-        <p className="bottom-label bl-base">base</p>
+        <p className="bottom-label bl-base">{t('josoor.sector.base')}</p>
         <p className="bottom-label bl-minus">{labelMinus1}</p>
-        <p className="bottom-label bl-actual">Actual</p>
+        <p className="bottom-label bl-actual">{t('josoor.sector.actual')}</p>
         <p className="bottom-label bl-plus">{labelPlus1}</p>
-        <p className="bottom-label bl-end">end</p>
+        <p className="bottom-label bl-end">{t('josoor.sector.end')}</p>
       </div>
     </div>
   );

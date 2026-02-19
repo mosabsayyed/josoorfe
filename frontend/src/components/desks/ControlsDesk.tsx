@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Sankey, Tooltip, ResponsiveContainer } from 'recharts';
 import { AlertTriangle, TrendingUp, TrendingDown, AlertCircle } from 'lucide-react';
 import './ControlsDesk.css';
@@ -205,6 +206,7 @@ const integrityData = {
 };
 
 export function ControlsDesk() {
+  const { t } = useTranslation();
   const [selectedChart, setSelectedChart] = useState<SankeyChart>('steering');
   const [riskMode, setRiskMode] = useState<RiskMode>('build');
 
@@ -226,10 +228,10 @@ export function ControlsDesk() {
   // }, []);
 
   const chartButtons: { id: SankeyChart; label: string }[] = [
-    { id: 'steering', label: '1. Steering Signals' },
-    { id: 'risk', label: '2. Risk Signals' },
-    { id: 'delivery', label: '3. Delivery Signals' },
-    { id: 'integrity', label: '4. Integrity Signals' },
+    { id: 'steering', label: t('josoor.controls.steeringSignals') },
+    { id: 'risk', label: t('josoor.controls.riskSignals') },
+    { id: 'delivery', label: t('josoor.controls.deliverySignals') },
+    { id: 'integrity', label: t('josoor.controls.integritySignals') },
   ];
 
   const renderSankeyChart = () => {
@@ -240,23 +242,23 @@ export function ControlsDesk() {
     switch (selectedChart) {
       case 'steering':
         data = steeringData;
-        title = 'Steering Signals';
-        subtitle = 'Where governance pressure concentrates from Policy/Performance into Capabilities';
+        title = t('josoor.controls.steeringTitle');
+        subtitle = t('josoor.controls.steeringSub');
         break;
       case 'risk':
         data = riskDataBuild;
-        title = `Risk Signals (${riskMode.toUpperCase()} mode)`;
-        subtitle = `Which PolicyTools or KPIs are threatened by ${riskMode.toUpperCase()} risk`;
+        title = t('josoor.controls.riskTitle', { mode: riskMode.toUpperCase() });
+        subtitle = t('josoor.controls.riskSub', { mode: riskMode.toUpperCase() });
         break;
       case 'delivery':
         data = deliveryData;
-        title = 'Delivery Signals';
-        subtitle = 'Build demand feasibility: where load accumulates across Org/Process/IT → Projects → Adoption';
+        title = t('josoor.controls.deliveryTitle');
+        subtitle = t('josoor.controls.deliverySub');
         break;
       case 'integrity':
         data = integrityData;
-        title = 'Integrity Signals';
-        subtitle = 'Where intent or control "dies" by measuring leakage at each node';
+        title = t('josoor.controls.integrityTitle');
+        subtitle = t('josoor.controls.integritySub');
         break;
     }
 
@@ -286,13 +288,13 @@ export function ControlsDesk() {
                 onClick={() => setRiskMode('build')}
                 className={`risk-mode-btn ${riskMode === 'build' ? 'active' : ''}`}
               >
-                BUILD Mode
+                {t('josoor.controls.buildMode')}
               </button>
               <button
                 onClick={() => setRiskMode('operate')}
                 className={`risk-mode-btn ${riskMode === 'operate' ? 'active' : ''}`}
               >
-                OPERATE Mode
+                {t('josoor.controls.operateMode')}
               </button>
             </div>
           )}
@@ -352,33 +354,33 @@ export function ControlsDesk() {
                   return (
                     <div className="custom-tooltip">
                       <div className="tooltip-title">
-                        {data.name || 'Node'}
+                        {data.name || t('josoor.controls.node')}
                       </div>
                       {data.payload && (
                         <>
                           {data.payload.exposure !== undefined && (
                             <div className="tooltip-row">
-                              Exposure: <span className="tooltip-value-green">{data.payload.exposure}%</span>
+                              {t('josoor.controls.exposure')}: <span className="tooltip-value-green">{data.payload.exposure}%</span>
                             </div>
                           )}
                           {data.payload.leakage !== undefined && (
                             <div className="tooltip-row">
-                              Leakage: <span className="tooltip-value-amber">{data.payload.leakage}%</span>
+                              {t('josoor.controls.leakage')}: <span className="tooltip-value-amber">{data.payload.leakage}%</span>
                             </div>
                           )}
                           {data.payload.lateness !== undefined && (
                             <div className="tooltip-row">
-                              Lateness: <span className="tooltip-value-red">{data.payload.lateness} days</span>
+                              {t('josoor.controls.lateness')}: <span className="tooltip-value-red">{data.payload.lateness} {t('josoor.controls.days')}</span>
                             </div>
                           )}
                           {data.payload.resistance !== undefined && (
                             <div className="tooltip-row">
-                              Resistance: <span className="tooltip-value-amber">{data.payload.resistance}%</span>
+                              {t('josoor.controls.resistance')}: <span className="tooltip-value-amber">{data.payload.resistance}%</span>
                             </div>
                           )}
                           {data.value !== undefined && (
                             <div className="tooltip-flow">
-                              Flow: <span className="tooltip-flow-value">{data.value}</span>
+                              {t('josoor.controls.flow')}: <span className="tooltip-flow-value">{data.value}</span>
                             </div>
                           )}
                         </>
@@ -403,26 +405,26 @@ export function ControlsDesk() {
     switch (selectedChart) {
       case 'steering':
         flags.push(
-          { icon: AlertTriangle, message: 'Cap3: Quality Control - OVERLOADED (P90+ inflow)', severity: 'error' },
-          { icon: AlertCircle, message: 'Obj4: Sustainability - UNDER-INSTRUMENTED (<2 links)', severity: 'warning' }
+          { icon: AlertTriangle, message: t('josoor.controls.flagSteeringOverload'), severity: 'error' },
+          { icon: AlertCircle, message: t('josoor.controls.flagSteeringUnder'), severity: 'warning' }
         );
         break;
       case 'risk':
         flags.push(
-          { icon: AlertTriangle, message: 'PT3: Pricing Framework - RISK CONCENTRATION (3+ risks >50%)', severity: 'error' },
-          { icon: AlertCircle, message: 'PT1: Desalination Policy - BROKEN GOVERNANCE (exposure 70%, inactive link)', severity: 'error' }
+          { icon: AlertTriangle, message: t('josoor.controls.flagRiskConcentration'), severity: 'error' },
+          { icon: AlertCircle, message: t('josoor.controls.flagRiskBroken'), severity: 'error' }
         );
         break;
       case 'delivery':
         flags.push(
-          { icon: AlertTriangle, message: 'Cap1: Plant Operations - SATURATION (5+ active projects)', severity: 'warning' },
-          { icon: AlertCircle, message: 'Adopt3: QC Change - ADOPTION BOTTLENECK (3+ projects, <1 adoption)', severity: 'error' }
+          { icon: AlertTriangle, message: t('josoor.controls.flagDeliverySaturation'), severity: 'warning' },
+          { icon: AlertCircle, message: t('josoor.controls.flagDeliveryBottleneck'), severity: 'error' }
         );
         break;
       case 'integrity':
         flags.push(
-          { icon: AlertTriangle, message: 'Obj3: Service Quality - BROKEN CHAIN (30% leakage)', severity: 'error' },
-          { icon: AlertCircle, message: 'Cap2: Distribution - SINK CAPABILITY (35% leakage, high inflow, low outflow)', severity: 'error' }
+          { icon: AlertTriangle, message: t('josoor.controls.flagIntegrityBroken'), severity: 'error' },
+          { icon: AlertCircle, message: t('josoor.controls.flagIntegritySink'), severity: 'error' }
         );
         break;
     }
@@ -431,7 +433,7 @@ export function ControlsDesk() {
 
     return (
       <div className="flags-container">
-        <h4 className="flags-title">Detected Issues</h4>
+        <h4 className="flags-title">{t('josoor.controls.detectedIssues')}</h4>
         {flags.map((flag, idx) => {
           const Icon = flag.icon;
           return (
@@ -454,8 +456,8 @@ export function ControlsDesk() {
     <div className="controls-desk-container">
       {/* Header */}
       <div className="controls-header">
-        <h1 className="controls-title">Control Signals</h1>
-        <p className="controls-subtitle">System integration — is intent flowing end-to-end?</p>
+        <h1 className="controls-title">{t('josoor.controls.title')}</h1>
+        <p className="controls-subtitle">{t('josoor.controls.subtitle')}</p>
       </div>
 
       {/* Chart Selection Buttons */}
@@ -483,19 +485,19 @@ export function ControlsDesk() {
         <div className="legend-items">
           <div className="legend-item">
             <div className="legend-color legend-color-green" />
-            <span className="legend-text">Green: &lt;35% exposure</span>
+            <span className="legend-text">{t('josoor.controls.legendGreen')}</span>
           </div>
           <div className="legend-item">
             <div className="legend-color legend-color-amber" />
-            <span className="legend-text">Amber: 35-65%</span>
+            <span className="legend-text">{t('josoor.controls.legendAmber')}</span>
           </div>
           <div className="legend-item">
             <div className="legend-color legend-color-red" />
-            <span className="legend-text">Red: &gt;65%</span>
+            <span className="legend-text">{t('josoor.controls.legendRed')}</span>
           </div>
           <div className="legend-item">
             <div className="legend-color legend-color-gray" />
-            <span className="legend-text">Gray: missing data</span>
+            <span className="legend-text">{t('josoor.controls.legendGray')}</span>
           </div>
         </div>
       </div>

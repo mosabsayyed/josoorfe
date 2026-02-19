@@ -8,6 +8,7 @@ import { chatService } from "../../services/chatService";
 import * as authService from '../../services/authService';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useTranslation } from 'react-i18next';
 import type {
     ConversationSummary,
     Message as APIMessage,
@@ -76,6 +77,7 @@ export default function JosoorShell() {
 
     const auth = useAuth();
     const { language } = useLanguage();
+    const { t } = useTranslation();
     const location = useLocation();
     const navigate = useNavigate();
 
@@ -90,7 +92,7 @@ export default function JosoorShell() {
                 console.log('[loadConversations] guest convos:', guestConvos?.length || 0);
                 const adapted = (guestConvos || []).map((c: any) => ({
                     id: c.id,
-                    title: c.title || 'New Chat',
+                    title: c.title || t('josoor.common.newChat'),
                     message_count: (c.messages || []).length,
                     created_at: c.created_at || new Date().toISOString(),
                     updated_at: c.updated_at || new Date().toISOString(),
@@ -105,7 +107,7 @@ export default function JosoorShell() {
             console.log('[loadConversations] API response:', data);
             const adapted = (data.conversations || []).map((c: any) => ({
                 ...c,
-                title: c.title || "New Chat",
+                title: c.title || t('josoor.common.newChat'),
                 message_count: Array.isArray(c.messages) ? c.messages.length : (c.message_count || 0),
                 created_at: c.created_at || new Date().toISOString(),
                 updated_at: c.updated_at || new Date().toISOString(),
@@ -115,7 +117,7 @@ export default function JosoorShell() {
         } catch (err) {
             console.error('[loadConversations] ERROR:', err);
         }
-    }, []);
+    }, [t]);
 
     useEffect(() => {
         loadConversations();
@@ -186,11 +188,11 @@ export default function JosoorShell() {
             loadConversations();
         } catch (err) {
             console.error(err);
-            setMessages(prev => [...prev, { id: Date.now(), role: 'assistant', content: 'Error getting response', created_at: new Date().toISOString() }]);
+            setMessages(prev => [...prev, { id: Date.now(), role: 'assistant', content: t('josoor.shell.errorGettingResponse'), created_at: new Date().toISOString() }]);
         } finally {
             setIsLoading(false);
         }
-    }, [activeConversationId, loadConversations]);
+    }, [activeConversationId, loadConversations, t]);
 
     const handleNewChat = useCallback(() => {
         setActiveConversationId(null);
@@ -222,16 +224,19 @@ export default function JosoorShell() {
     // Sync title/subtitle based on activeView
     const getHeaderMeta = () => {
         switch (activeView) {
-            case 'sector-desk': return { title: 'Sector Desk', subtitle: 'Strategic Impact' };
-            case 'controls-desk': return { title: 'Controls Desk', subtitle: 'Signal Ribbons' };
-            case 'planning-desk': return { title: 'Planning Desk', subtitle: 'Intervention Planning' };
-            case 'enterprise-desk': return { title: 'Enterprise Desk', subtitle: 'Capability Matrix' };
-            case 'reporting-desk': return { title: 'Reporting Desk', subtitle: 'AI Insights' };
-            case 'providers': return { title: 'LLM Providers', subtitle: 'Connection & Configuration' };
-            case 'ab-testing': return { title: 'A/B Testing', subtitle: 'Traffic Optimization' };
-            case 'monitoring': return { title: 'System Observability', subtitle: 'Real-time Metrics' };
-            case 'observability': return { title: 'Observability Control Center', subtitle: '' };
-            default: return { title: 'Graph Chat', subtitle: '' };
+            case 'sector-desk': return { title: t('josoor.shell.sectorDesk'), subtitle: t('josoor.shell.sectorDeskSub') };
+            case 'controls-desk': return { title: t('josoor.shell.controlsDesk'), subtitle: t('josoor.shell.controlsDeskSub') };
+            case 'planning-desk': return { title: t('josoor.shell.planningDesk'), subtitle: t('josoor.shell.planningDeskSub') };
+            case 'enterprise-desk': return { title: t('josoor.shell.enterpriseDesk'), subtitle: t('josoor.shell.enterpriseDeskSub') };
+            case 'reporting-desk': return { title: t('josoor.shell.reportingDesk'), subtitle: t('josoor.shell.reportingDeskSub') };
+            case 'knowledge': return { title: t('josoor.shell.tutorials'), subtitle: t('josoor.shell.tutorialsSub') };
+            case 'roadmap': return { title: t('josoor.shell.roadmap'), subtitle: t('josoor.shell.roadmapSub') };
+            case 'explorer': return { title: t('josoor.shell.explorer'), subtitle: t('josoor.shell.explorerSub') };
+            case 'providers': return { title: t('josoor.shell.providers'), subtitle: t('josoor.shell.providersSub') };
+            case 'ab-testing': return { title: t('josoor.shell.abTesting'), subtitle: t('josoor.shell.abTestingSub') };
+            case 'monitoring': return { title: t('josoor.shell.monitoring'), subtitle: t('josoor.shell.monitoringSub') };
+            case 'observability': return { title: t('josoor.shell.observability'), subtitle: '' };
+            default: return { title: t('josoor.shell.graphChat'), subtitle: '' };
         }
     };
 
@@ -290,14 +295,14 @@ export default function JosoorShell() {
                 >
                     {activeView !== 'chat' && (
                         <div style={{ flex: 1, height: '100%', overflow: ['settings', 'providers', 'ab-testing', 'monitoring', 'observability'].includes(activeView) ? 'auto' : 'hidden' }}>
-                            <Suspense fallback={<div style={{ padding: '2rem', color: 'white' }}>Loading view...</div>}>
+                            <Suspense fallback={<div style={{ padding: '2rem', color: 'white' }}>{t('josoor.common.loadingView')}</div>}>
                                 {activeView === 'sector-desk' && <SectorDesk year={year} quarter={quarter} />}
                                 {activeView === 'controls-desk' && <ControlsDesk />}
                                 {activeView === 'planning-desk' && <PlanningDesk />}
                                 {activeView === 'enterprise-desk' && <EnterpriseDesk year={year} quarter={quarter} />}
                                 {activeView === 'reporting-desk' && <ReportingDesk />}
                                 {activeView === 'knowledge' && <TutorialsDesk />}
-                                {activeView === 'roadmap' && <div className="p-10 text-xl" style={{ color: 'white' }}>Roadmap (Coming Soon)</div>}
+                                {activeView === 'roadmap' && <div className="p-10 text-xl" style={{ color: 'white' }}>{t('josoor.shell.roadmapComingSoon')}</div>}
                                 {activeView === 'explorer' && <ExplorerDesk year={year} quarter={quarter} />}
                                 {activeView === 'settings' && <SettingsDesk />}
                                 {activeView === 'providers' && <ProviderManagement />}

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useOutletContext, useNavigate } from 'react-router-dom';
 import SectorHeaderNav from './sector/SectorHeaderNav';
 import SectorMap from './sector/SectorMap';
@@ -63,6 +64,7 @@ interface SectorDeskProps {
 }
 
 export const SectorDesk: React.FC<SectorDeskProps> = ({ year: propYear, quarter: propQuarter }) => {
+    const { t } = useTranslation();
     const [selectedPillar, setSelectedPillar] = useState('economy');
     const [selectedSector, setSelectedSector] = useState('all');
 
@@ -456,7 +458,7 @@ export const SectorDesk: React.FC<SectorDeskProps> = ({ year: propYear, quarter:
             } catch (err: any) {
                 console.error("SectorDesk Data Error:", err);
                 if (isMounted) {
-                    setError("Failed to load sector data");
+                    setError(t('josoor.sector.error'));
                     setLoading(false);
                 }
             }

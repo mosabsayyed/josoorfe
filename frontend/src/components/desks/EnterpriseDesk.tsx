@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { L1Capability, L3Capability } from '../../types/enterprise';
 import type { OverlayType } from '../../utils/enterpriseOverlayUtils';
 import { getCapabilityMatrix } from '../../services/enterpriseService';
@@ -23,6 +24,7 @@ interface EnterpriseDeskProps {
 }
 
 export function EnterpriseDesk({ year = '2025', quarter = 'Q1' }: EnterpriseDeskProps) {
+  const { t } = useTranslation();
   // Filter state (single source of truth)
   const [selectedOverlay, setSelectedOverlay] = useState<OverlayType>('none');
   const [tooltip, setTooltip] = useState<TooltipData | null>(null);
@@ -142,7 +144,7 @@ export function EnterpriseDesk({ year = '2025', quarter = 'Q1' }: EnterpriseDesk
       <div className="enterprise-header-wrapper">
         {/* Title Row: Split into 2 columns matching blocks below */}
         <div className="enterprise-title-row">
-          <h1 className="enterprise-main-title">Capability Controls Signals</h1>
+          <h1 className="enterprise-main-title">{t('josoor.enterprise.title')}</h1>
           <div className="enterprise-insights-title-section">
             <DynamicInsightTitle selectedOverlay={selectedOverlay} />
             <select
@@ -150,9 +152,9 @@ export function EnterpriseDesk({ year = '2025', quarter = 'Q1' }: EnterpriseDesk
               onChange={(e) => setModeFilter(e.target.value as 'all' | 'build' | 'execute')}
               className="insight-mode-filter"
             >
-              <option value="all">All Modes</option>
-              <option value="build">Build</option>
-              <option value="execute">Execute</option>
+              <option value="all">{t('josoor.enterprise.allModes')}</option>
+              <option value="build">{t('josoor.enterprise.build')}</option>
+              <option value="execute">{t('josoor.enterprise.execute')}</option>
             </select>
           </div>
         </div>
@@ -165,37 +167,37 @@ export function EnterpriseDesk({ year = '2025', quarter = 'Q1' }: EnterpriseDesk
               onClick={() => toggleOverlay('none')}
               className={`overlay-btn ${selectedOverlay === 'none' ? 'overlay-btn-active' : 'overlay-btn-inactive'}`}
             >
-              Status Only
+              {t('josoor.enterprise.statusOnly')}
             </button>
             <button
               onClick={() => toggleOverlay('risk-exposure')}
               className={`overlay-btn ${selectedOverlay === 'risk-exposure' ? 'overlay-btn-active' : 'overlay-btn-inactive'}`}
             >
-              ⚠️ Risk Exposure
+              ⚠️ {t('josoor.enterprise.riskExposure')}
             </button>
             <button
               onClick={() => toggleOverlay('external-pressure')}
               className={`overlay-btn ${selectedOverlay === 'external-pressure' ? 'overlay-btn-active' : 'overlay-btn-inactive'}`}
             >
-              🎯 External Pressure
+              🎯 {t('josoor.enterprise.externalPressure')}
             </button>
             <button
               onClick={() => toggleOverlay('footprint-stress')}
               className={`overlay-btn ${selectedOverlay === 'footprint-stress' ? 'overlay-btn-active' : 'overlay-btn-inactive'}`}
             >
-              ⚖️ Footprint Stress
+              ⚖️ {t('josoor.enterprise.footprintStress')}
             </button>
             <button
               onClick={() => toggleOverlay('change-saturation')}
               className={`overlay-btn ${selectedOverlay === 'change-saturation' ? 'overlay-btn-active' : 'overlay-btn-inactive'}`}
             >
-              ⚡ Change Saturation
+              ⚡ {t('josoor.enterprise.changeSaturation')}
             </button>
             <button
               onClick={() => toggleOverlay('trend-warning')}
               className={`overlay-btn ${selectedOverlay === 'trend-warning' ? 'overlay-btn-active' : 'overlay-btn-inactive'}`}
             >
-              📉 Trend Warning
+              📉 {t('josoor.enterprise.trendWarning')}
             </button>
           </div>
 
@@ -210,9 +212,9 @@ export function EnterpriseDesk({ year = '2025', quarter = 'Q1' }: EnterpriseDesk
       {/* Scrollable Matrix Wrapper */}
       <div className="enterprise-matrix-wrapper">
         {isLoading ? (
-          <div className="flex h-64 items-center justify-center text-slate-400">Loading Enterprise Data...</div>
+          <div className="flex h-64 items-center justify-center text-slate-400">{t('josoor.enterprise.loadingEnterprise')}</div>
         ) : error ? (
-          <div className="flex h-64 items-center justify-center text-red-500">Error: {error}</div>
+          <div className="flex h-64 items-center justify-center text-red-500">{t('josoor.enterprise.errorPrefix')}: {error}</div>
         ) : (
           <CapabilityMatrix
             capabilityMatrix={matrixData}

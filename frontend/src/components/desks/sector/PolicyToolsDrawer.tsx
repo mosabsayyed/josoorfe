@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import './PolicyToolsDrawer.css';
 
@@ -25,6 +26,7 @@ export const PolicyToolsDrawer: React.FC<PolicyToolsDrawerProps> = ({
     onClose,
     color
 }) => {
+    const { t } = useTranslation();
     return (
         <AnimatePresence>
             {isOpen && category && (
@@ -43,7 +45,7 @@ export const PolicyToolsDrawer: React.FC<PolicyToolsDrawerProps> = ({
                             <div className="policy-drawer-list">
                                 {tools.length === 0 ? (
                                     <div className="policy-drawer-empty">
-                                        No policy tools found in this category
+                                        {t('josoor.sector.noPolicyTools')}
                                     </div>
                                 ) : (
                                     tools.map((tool, index) => (

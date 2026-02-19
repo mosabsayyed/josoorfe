@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface SectorDetailsPanelProps {
     selectedSector: string;
@@ -193,6 +194,7 @@ const SectorDetailsPanel: React.FC<SectorDetailsPanelProps> = ({
     selectedPriority,
     selectedStatus
 }) => {
+    const { t } = useTranslation();
     const MEGA_REGIONS = [
         { id: 'Northern', name: 'Northern', regions: ['Northern', 'Tabuk', 'Jawf', 'Hail'] },
         { id: 'Western', name: 'Western', regions: ['Western', 'Makkah', 'Madinah', 'Jazan'] },
@@ -458,7 +460,7 @@ const SectorDetailsPanel: React.FC<SectorDetailsPanelProps> = ({
                         {selectedAsset.capacity_metric && (
                             <div>
                                 <div style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--component-text-muted)', marginBottom: '4px', letterSpacing: '0.5px' }}>
-                                    CAPACITY
+                                    {t('josoor.sector.capacity')}
                                 </div>
                                 <div style={{ fontSize: '16px', fontWeight: 600, color: 'var(--component-text-primary)' }}>
                                     {selectedAsset.capacity_metric}
@@ -469,7 +471,7 @@ const SectorDetailsPanel: React.FC<SectorDetailsPanelProps> = ({
                         {selectedAsset.region && (
                             <div>
                                 <div style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--component-text-muted)', marginBottom: '4px', letterSpacing: '0.5px' }}>
-                                    REGION
+                                    {t('josoor.sector.region')}
                                 </div>
                                 <div style={{ fontSize: '16px', fontWeight: 600, color: 'var(--component-text-primary)' }}>
                                     {selectedAsset.region}
@@ -482,7 +484,7 @@ const SectorDetailsPanel: React.FC<SectorDetailsPanelProps> = ({
                     {selectedAsset.investment && (
                         <div style={{ marginBottom: '1.5rem' }}>
                             <div style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--component-text-muted)', marginBottom: '4px', letterSpacing: '0.5px' }}>
-                                INVESTMENT VALUE
+                                {t('josoor.sector.investmentValue')}
                             </div>
                             <div style={{ fontSize: '20px', fontWeight: 700, color: 'var(--component-color-warning)' }}>
                                 {selectedAsset.investment}
@@ -496,7 +498,7 @@ const SectorDetailsPanel: React.FC<SectorDetailsPanelProps> = ({
                             {(selectedAsset.lat || selectedAsset.latitude) && (
                                 <div>
                                     <div style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--component-text-muted)', marginBottom: '4px', letterSpacing: '0.5px' }}>
-                                        LATITUDE
+                                        {t('josoor.sector.latitude')}
                                     </div>
                                     <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--component-text-primary)' }}>
                                         {(selectedAsset.lat || selectedAsset.latitude)?.toFixed(4)}°
@@ -506,7 +508,7 @@ const SectorDetailsPanel: React.FC<SectorDetailsPanelProps> = ({
                             {(selectedAsset.long || selectedAsset.longitude) && (
                                 <div>
                                     <div style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--component-text-muted)', marginBottom: '4px', letterSpacing: '0.5px' }}>
-                                        LONGITUDE
+                                        {t('josoor.sector.longitude')}
                                     </div>
                                     <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--component-text-primary)' }}>
                                         {(selectedAsset.long || selectedAsset.longitude)?.toFixed(4)}°
@@ -625,7 +627,7 @@ const SectorDetailsPanel: React.FC<SectorDetailsPanelProps> = ({
                             {selectedAsset.capacity && selectedAsset.capacity !== selectedAsset.capacity_metric && (
                                 <div style={{ marginBottom: '1.5rem' }}>
                                     <div style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--component-text-muted)', marginBottom: '4px', letterSpacing: '0.5px' }}>
-                                        CAPACITY DETAILS
+                                        {t('josoor.sector.capacity')} DETAILS
                                     </div>
                                     <div style={{ fontSize: '14px', color: 'var(--component-text-secondary)' }}>
                                         {selectedAsset.capacity}
@@ -703,7 +705,7 @@ const SectorDetailsPanel: React.FC<SectorDetailsPanelProps> = ({
                             {(selectedAsset.lat || selectedAsset.latitude) && (
                                 <div>
                                     <div style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--component-text-muted)', marginBottom: '4px', letterSpacing: '0.5px' }}>
-                                        LATITUDE
+                                        {t('josoor.sector.latitude')}
                                     </div>
                                     <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--component-text-primary)' }}>
                                         {(selectedAsset.lat || selectedAsset.latitude)?.toFixed(4)}°
@@ -713,7 +715,7 @@ const SectorDetailsPanel: React.FC<SectorDetailsPanelProps> = ({
                             {(selectedAsset.long || selectedAsset.longitude) && (
                                 <div>
                                     <div style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--component-text-muted)', marginBottom: '4px', letterSpacing: '0.5px' }}>
-                                        LONGITUDE
+                                        {t('josoor.sector.longitude')}
                                     </div>
                                     <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--component-text-primary)' }}>
                                         {(selectedAsset.long || selectedAsset.longitude)?.toFixed(4)}°

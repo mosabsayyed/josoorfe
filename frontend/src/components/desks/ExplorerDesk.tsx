@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { NeoGraph } from '../dashboards/NeoGraph';
 import { ExplorerFilters } from './ExplorerFilters';
 import { GraphSankey } from './GraphSankey';
@@ -113,6 +114,7 @@ const normalizeGraphData = (data: { nodes: any[], links: any[] }) => {
 };
 
 function HealthOverlay({ stats, isLoading }: { stats: any, isLoading: boolean }) {
+    const { t } = useTranslation();
     if (isLoading) return null;
     // Handle both empty object and documented structure
     const hasData = stats && (stats.nodes > 0 || stats.links > 0 || (stats.node_count !== undefined));
@@ -125,16 +127,16 @@ function HealthOverlay({ stats, isLoading }: { stats: any, isLoading: boolean })
     return (
         <div className="health-overlay animate-fadeIn">
             <div className="health-stat">
-                <span className="stat-label">DB Nodes</span>
+                <span className="stat-label">{t('josoor.explorer.dbNodes')}</span>
                 <span className="stat-value">{nodes.toLocaleString()}</span>
             </div>
             <div className="health-stat">
-                <span className="stat-label">DB Links</span>
+                <span className="stat-label">{t('josoor.explorer.dbLinks')}</span>
                 <span className="stat-value">{links.toLocaleString()}</span>
             </div>
             {isolated > 0 && (
                 <div className="health-stat warning">
-                    <span className="stat-label">Isolated</span>
+                    <span className="stat-label">{t('josoor.explorer.isolated')}</span>
                     <span className="stat-value">{isolated}</span>
                 </div>
             )}
@@ -143,6 +145,7 @@ function HealthOverlay({ stats, isLoading }: { stats: any, isLoading: boolean })
 }
 
 export function ExplorerDesk({ year = '2025', quarter = 'All' }: ExplorerDeskProps) {
+    const { t } = useTranslation();
     const { token } = useAuth();
     const contentRef = useRef<HTMLDivElement>(null);
     const [selectedLabels, setSelectedLabels] = useState<string[]>([]);
@@ -406,21 +409,21 @@ export function ExplorerDesk({ year = '2025', quarter = 'All' }: ExplorerDeskPro
                         <div className="status-overlay-container">
                             {isLoading && (
                                 <div className="status-toast status-toast-loading">
-                                    Fetching live graph data...
+                                    {t('josoor.explorer.fetching')}
                                 </div>
                             )}
                             {error && !graphData && (
                                 <div className="status-toast status-toast-fallback">
-                                    <p className="font-bold">❌ Connection Error</p>
-                                    <p className="text-xs opacity-80">Failed to reach Graph Server. Check VPN or server status.</p>
+                                    <p className="font-bold">{t('josoor.explorer.connectionError')}</p>
+                                    <p className="text-xs opacity-80">{t('josoor.explorer.connectionErrorDesc')}</p>
                                     <p className="text-xs opacity-50 mt-2">{String(error)}</p>
                                 </div>
                             )}
                             {!displayData && !isLoading && !error && (
                                 <div className="empty-state-container">
-                                    <p className="text-2xl font-light">Graph Explorer</p>
-                                    <p className="text-sm">Select a Business Chain or customize Nodes/Relationships</p>
-                                    <p className="text-xs opacity-50 mt-2">Click "Fetch Live Graph" to retrieve data from Neo4j</p>
+                                    <p className="text-2xl font-light">{t('josoor.explorer.title')}</p>
+                                    <p className="text-sm">{t('josoor.explorer.subtitle')}</p>
+                                    <p className="text-xs opacity-50 mt-2">{t('josoor.explorer.hint')}</p>
                                 </div>
                             )}
                         </div>
@@ -431,7 +434,7 @@ export function ExplorerDesk({ year = '2025', quarter = 'All' }: ExplorerDeskPro
                     {/* Live Insight Panel */}
                     {liveSummary && (
                         <div className="live-insight-panel animate-fadeIn">
-                            <p className="insight-title">✨ Live Insight</p>
+                            <p className="insight-title">{t('josoor.explorer.liveInsight')}</p>
                             <p className="insight-body">{liveSummary}</p>
                         </div>
                     )}
@@ -449,9 +452,9 @@ export function ExplorerDesk({ year = '2025', quarter = 'All' }: ExplorerDeskPro
                     {displayData && vizMode === 'sankey' && !hasCanonicalPath && (
                         <div className="status-overlay-container">
                             <div className="empty-state-container">
-                                <p className="text-2xl font-light">Sankey not available</p>
-                                <p className="text-sm">{selectedChain ? CHAIN_MAPPINGS[selectedChain]?.name : 'This chain'} has a branching structure.</p>
-                                <p className="text-xs opacity-50 mt-2">Switch to 3D view for this chain.</p>
+                                <p className="text-2xl font-light">{t('josoor.explorer.sankeyNotAvailable')}</p>
+                                <p className="text-sm">{t('josoor.explorer.branchingStructure')}</p>
+                                <p className="text-xs opacity-50 mt-2">{t('josoor.explorer.switchTo3d')}</p>
                             </div>
                         </div>
                     )}
@@ -470,7 +473,7 @@ export function ExplorerDesk({ year = '2025', quarter = 'All' }: ExplorerDeskPro
                     {/* Node Count Badge */}
                     {displayData && (
                         <div className="node-count-badge">
-                            {displayData.nodes.length} nodes, {displayData.links.length} edges
+                            {displayData.nodes.length} {t('josoor.common.nodes')}, {displayData.links.length} {t('josoor.common.edges')}
                             {selectedChain && <span className="chain-label">[{selectedChain}]</span>}
                         </div>
                     )}

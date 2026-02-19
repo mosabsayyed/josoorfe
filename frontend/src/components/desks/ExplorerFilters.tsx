@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
     ChevronDown,
     ChevronUp,
@@ -58,13 +59,13 @@ const SST_RELATIONSHIPS = [
 ];
 
 const BUSINESS_CHAINS = [
-    { id: 'sector_value_chain', name: 'Sector Value Chain' },
-    { id: 'setting_strategic_initiatives', name: 'Setting Strategic Initiatives' },
-    { id: 'setting_strategic_priorities', name: 'Setting Strategic Priorities' },
-    { id: 'build_oversight', name: 'Build Oversight' },
-    { id: 'operate_oversight', name: 'Operate Oversight' },
-    { id: 'sustainable_operations', name: 'Sustainable Operations' },
-    { id: 'integrated_oversight', name: 'Integrated Oversight' }
+    { id: 'sector_value_chain', key: 'sector_value_chain' },
+    { id: 'setting_strategic_initiatives', key: 'setting_strategic_initiatives' },
+    { id: 'setting_strategic_priorities', key: 'setting_strategic_priorities' },
+    { id: 'build_oversight', key: 'build_oversight' },
+    { id: 'operate_oversight', key: 'operate_oversight' },
+    { id: 'sustainable_operations', key: 'sustainable_operations' },
+    { id: 'integrated_oversight', key: 'integrated_oversight' }
 ];
 
 export function ExplorerFilters({
@@ -86,6 +87,7 @@ export function ExplorerFilters({
     availableRelationships = SST_RELATIONSHIPS,
     isDark = true
 }: ExplorerFiltersProps) {
+    const { t } = useTranslation();
     const [isExpanded, setIsExpanded] = useState(true);
 
     const toggleLabel = (label: string) => {
@@ -135,7 +137,7 @@ export function ExplorerFilters({
                 >
                     <div className="filters-header-title">
                         <Filter className={`w-4 h-4 ${isDark ? 'text-gold' : 'text-primary'}`} />
-                        {isExpanded && <span className="text-sm font-semibold">Graph Controls</span>}
+                        {isExpanded && <span className="text-sm font-semibold">{t('josoor.explorerFilters.graphControls')}</span>}
                     </div>
                     {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                 </div>
@@ -145,16 +147,16 @@ export function ExplorerFilters({
                         {/* Business Chains */}
                         <div className="filter-section">
                             <label className="filter-section-label">
-                                <Network className="w-3 h-3" /> Business Chains
+                                <Network className="w-3 h-3" /> {t('josoor.explorerFilters.businessChains')}
                             </label>
                             <select
                                 className="native-select"
                                 value={selectedChain || "custom"}
                                 onChange={(e) => onChainChange(e.target.value === "custom" ? null : e.target.value)}
                             >
-                                <option value="custom">Custom Selection</option>
+                                <option value="custom">{t('josoor.explorerFilters.customSelection')}</option>
                                 {BUSINESS_CHAINS.map(chain => (
-                                    <option key={chain.id} value={chain.id}>{chain.name}</option>
+                                    <option key={chain.id} value={chain.id}>{t(`josoor.explorerFilters.chains.${chain.key}`)}</option>
                                 ))}
                             </select>
                         </div>
@@ -162,20 +164,20 @@ export function ExplorerFilters({
                         {/* Query Mode */}
                         <div className="filter-section">
                             <label className="filter-section-label">
-                                <Activity className="w-3 h-3" /> Query Mode
+                                <Activity className="w-3 h-3" /> {t('josoor.explorerFilters.queryMode')}
                             </label>
                             <div className="mode-toggle-group">
                                 <button
                                     className={`btn-reset mode-toggle-btn ${queryType === 'narrative' ? 'active' : ''}`}
                                     onClick={() => onQueryTypeChange('narrative')}
                                 >
-                                    <FileText className="w-3 h-3 mr-1" /> Narrative
+                                    <FileText className="w-3 h-3 mr-1" /> {t('josoor.explorerFilters.narrative')}
                                 </button>
                                 <button
                                     className={`btn-reset mode-toggle-btn ${queryType === 'diagnostic' ? 'active' : ''}`}
                                     onClick={() => onQueryTypeChange('diagnostic')}
                                 >
-                                    <Activity className="w-3 h-3 mr-1" /> Diagnostic
+                                    <Activity className="w-3 h-3 mr-1" /> {t('josoor.explorerFilters.diagnostic')}
                                 </button>
                             </div>
                         </div>
@@ -183,38 +185,38 @@ export function ExplorerFilters({
                         {/* Visualization Mode */}
                         <div className="filter-section">
                             <label className="filter-section-label">
-                                <Eye className="w-3 h-3" /> Visualization
+                                <Eye className="w-3 h-3" /> {t('josoor.explorerFilters.visualization')}
                             </label>
                             <div className="mode-toggle-group">
                                 <button
                                     className={`btn-reset mode-toggle-btn ${vizMode === '3d' ? 'active' : ''}`}
                                     onClick={() => onVizModeChange('3d')}
                                 >
-                                    3D Force Graph
+                                    {t('josoor.explorerFilters.forceGraph3d')}
                                 </button>
                                 <button
                                     className={`btn-reset mode-toggle-btn ${vizMode === 'sankey' ? 'active' : ''}`}
                                     onClick={() => onVizModeChange('sankey')}
                                 >
-                                    Sankey Flow
+                                    {t('josoor.explorerFilters.sankeyFlow')}
                                 </button>
                             </div>
                         </div>
 
                         {/* Nodes */}
                         <div className="filter-section">
-                            <label className="filter-section-label">Ontology Nodes</label>
+                            <label className="filter-section-label">{t('josoor.explorerFilters.ontologyNodes')}</label>
 
                             <div className="ontology-group">
                                 {sectorLabels.length > 0 && (
                                     <div>
                                         <div className="ontology-subgroup-header">
-                                            <p className="ontology-subgroup-title">Sector Layer</p>
+                                            <p className="ontology-subgroup-title">{t('josoor.explorerFilters.sectorLayer')}</p>
                                             <button
                                                 className="btn-reset select-all-btn"
                                                 onClick={() => selectAllNodesInGroup(sectorLabels)}
                                             >
-                                                {sectorLabels.every(l => selectedLabels.includes(l)) ? 'Deselect All' : 'Select All'}
+                                                {sectorLabels.every(l => selectedLabels.includes(l)) ? t('josoor.explorerFilters.deselectAll') : t('josoor.explorerFilters.selectAll')}
                                             </button>
                                         </div>
                                         <div className="ontology-list">
@@ -237,12 +239,12 @@ export function ExplorerFilters({
                                 {entityLabels.length > 0 && (
                                     <div className="ontology-subgroup">
                                         <div className="ontology-subgroup-header">
-                                            <p className="ontology-subgroup-title">Enterprise Layer</p>
+                                            <p className="ontology-subgroup-title">{t('josoor.explorerFilters.enterpriseLayer')}</p>
                                             <button
                                                 className="btn-reset select-all-btn"
                                                 onClick={() => selectAllNodesInGroup(entityLabels)}
                                             >
-                                                {entityLabels.every(l => selectedLabels.includes(l)) ? 'Deselect All' : 'Select All'}
+                                                {entityLabels.every(l => selectedLabels.includes(l)) ? t('josoor.explorerFilters.deselectAll') : t('josoor.explorerFilters.selectAll')}
                                             </button>
                                         </div>
                                         <div className="ontology-list">
@@ -265,12 +267,12 @@ export function ExplorerFilters({
                                 {otherLabels.length > 0 && (
                                     <div className="ontology-subgroup">
                                         <div className="ontology-subgroup-header">
-                                            <p className="ontology-subgroup-title">Other Nodes</p>
+                                            <p className="ontology-subgroup-title">{t('josoor.explorerFilters.otherNodes')}</p>
                                             <button
                                                 className="btn-reset select-all-btn"
                                                 onClick={() => selectAllNodesInGroup(otherLabels)}
                                             >
-                                                {otherLabels.every(l => selectedLabels.includes(l)) ? 'Deselect All' : 'Select All'}
+                                                {otherLabels.every(l => selectedLabels.includes(l)) ? t('josoor.explorerFilters.deselectAll') : t('josoor.explorerFilters.selectAll')}
                                             </button>
                                         </div>
                                         <div className="ontology-list">
@@ -295,12 +297,12 @@ export function ExplorerFilters({
                         {/* Relationships */}
                         <div className="filter-section">
                             <div className="filter-section-header">
-                                <label className="filter-section-label">Relationships</label>
+                                <label className="filter-section-label">{t('josoor.explorerFilters.relationships')}</label>
                                 <button
                                     className="btn-reset select-all-btn"
                                     onClick={selectAllRels}
                                 >
-                                    {selectedRelationships.length === availableRelationships.length ? 'Deselect All' : 'Select All'}
+                                    {selectedRelationships.length === availableRelationships.length ? t('josoor.explorerFilters.deselectAll') : t('josoor.explorerFilters.selectAll')}
                                 </button>
                             </div>
                             <div className="ontology-list">
@@ -321,7 +323,7 @@ export function ExplorerFilters({
 
                         {/* Limit */}
                         <div className="filter-section">
-                            <label className="filter-section-label">Node Limit: {limit}</label>
+                            <label className="filter-section-label">{t('josoor.explorerFilters.nodeLimit')} {limit}</label>
                             <input
                                 type="range"
                                 min="50"
@@ -342,7 +344,7 @@ export function ExplorerFilters({
                                 }}
                                 className="btn-reset main-action-btn"
                             >
-                                <Play className="w-4 h-4 mr-2" /> Fetch Live Graph
+                                <Play className="w-4 h-4 mr-2" /> {t('josoor.explorerFilters.fetchLiveGraph')}
                             </button>
                         </div>
                     </div>

@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import './SectorReport.css';
 import ReactMarkdown from 'react-markdown';
@@ -23,6 +24,7 @@ const StrategyReportModal: React.FC<StrategyReportModalProps> = ({
     artifacts = [],
     onContinueInChat
 }) => {
+    const { t } = useTranslation();
     // Create artifact lookup map by ID for inline rendering
     const artifactMap = React.useMemo(() => {
         const map: Record<string, Artifact> = {};
@@ -70,7 +72,7 @@ const StrategyReportModal: React.FC<StrategyReportModalProps> = ({
                                     <span style={{ color: 'black', fontWeight: 800, fontSize: '14px' }}>AI</span>
                                 </div>
                                 <h2 style={{ margin: 0, color: 'var(--component-text-primary)', fontSize: '1.25rem', fontWeight: 700, letterSpacing: '-0.02em' }}>
-                                    Strategic Alignment Briefing
+                                    {t('josoor.sector.strategyReport')}
                                 </h2>
                             </div>
                             <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
@@ -97,7 +99,7 @@ const StrategyReportModal: React.FC<StrategyReportModalProps> = ({
                                     <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                                         <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                                     </svg>
-                                    Save MD
+                                    {t('josoor.sector.saveMd')}
                                 </button>
                                 <button
                                     onClick={onClose}
@@ -189,7 +191,7 @@ const StrategyReportModal: React.FC<StrategyReportModalProps> = ({
                                 onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-1px)'}
                                 onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
                             >
-                                <span>Continue exploration in Chat</span>
+                                <span>{t('josoor.sector.continueExploration')}</span>
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
                             </button>
                         </div>

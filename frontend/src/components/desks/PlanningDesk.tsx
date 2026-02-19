@@ -1,24 +1,26 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { AlertTriangle, TrendingDown, TrendingUp, Plus, Pause, ArrowUpDown, Users, Zap } from 'lucide-react';
 import './PlanningDesk.css';
 
 type PlanningMode = 'intervention' | 'strategic-reset' | 'scenario';
 
 export function PlanningDesk() {
+  const { t } = useTranslation();
   const [selectedMode, setSelectedMode] = useState<PlanningMode>('intervention');
 
   const modeButtons: { id: PlanningMode; label: string; description: string }[] = [
-    { id: 'intervention', label: 'Intervention Planning', description: 'In-year tactical adjustments' },
-    { id: 'strategic-reset', label: 'Strategic Reset', description: 'Annual direction setting' },
-    { id: 'scenario', label: 'Scenario Simulation', description: 'What-if analysis' },
+    { id: 'intervention', label: t('josoor.planning.interventionPlanning'), description: t('josoor.planning.inYearTacticalAdjustments') },
+    { id: 'strategic-reset', label: t('josoor.planning.strategicReset'), description: t('josoor.planning.annualDirectionSetting') },
+    { id: 'scenario', label: t('josoor.planning.scenarioSimulation'), description: t('josoor.planning.whatIfAnalysis') },
   ];
 
   return (
     <div className="planning-container">
       {/* Header */}
       <div className="planning-header">
-        <h1 className="planning-title">Planning Desk</h1>
-        <p className="planning-subtitle">Strategic planning, intervention design, and scenario analysis</p>
+        <h1 className="planning-title">{t('josoor.planning.planningDesk')}</h1>
+        <p className="planning-subtitle">{t('josoor.planning.planningSubtitle')}</p>
       </div>
 
       {/* Mode Selection */}
@@ -54,6 +56,7 @@ export function PlanningDesk() {
 
 // A) Intervention Planning (In-Year)
 function InterventionPlanning() {
+  const { t } = useTranslation();
   const [interventions, setInterventions] = useState<any[]>([]);
 
   const addIntervention = (type: string) => {
@@ -75,33 +78,33 @@ function InterventionPlanning() {
       {/* 1. Context Header (locked, non-editable) */}
       <div className="context-header">
         <div className="context-label">
-          Context (Locked)
+          {t('josoor.planning.contextLocked')}
         </div>
         <div className="context-grid">
           <div>
-            <div className="field-label">Capability</div>
-            <div className="field-value">Plant Operations</div>
-            <div className="field-subtext">L2 → L3 expandable</div>
+            <div className="field-label">{t('josoor.planning.capability')}</div>
+            <div className="field-value">{t('josoor.planning.plantOperations')}</div>
+            <div className="field-subtext">{t('josoor.planning.l2L3Expandable')}</div>
           </div>
           <div>
-            <div className="field-label">Mode</div>
+            <div className="field-label">{t('josoor.planning.mode')}</div>
             <div className="flex items-center gap-2">
-              <span className="status-badge-build">BUILD</span>
+              <span className="status-badge-build">{t('josoor.planning.build')}</span>
             </div>
           </div>
           <div>
-            <div className="field-label">Trigger</div>
+            <div className="field-label">{t('josoor.planning.trigger')}</div>
             <div className="space-y-0.5">
               <div className="flex items-center gap-1 text-8px">
                 <div className="w-1.5 h-1.5 rounded-full bg-red" />
-                <span className="text-slate-200">Risk exposure 68% (BUILD)</span>
+                <span className="text-slate-200">{t('josoor.planning.riskExposure68')}</span>
               </div>
               <div className="flex items-center gap-1 text-8px">
                 <div className="w-1.5 h-1.5 rounded-full bg-amber" />
-                <span className="text-slate-200">Saturation: 5 active projects</span>
+                <span className="text-slate-200">{t('josoor.planning.saturation5Active')}</span>
               </div>
               <div className="text-slate-500 text-7px mt-1">
-                Source: Control Signals → Delivery Signals
+                {t('josoor.planning.sourceControlSignals')}
               </div>
             </div>
           </div>
@@ -112,32 +115,32 @@ function InterventionPlanning() {
         {/* 2. Constraint Canvas (center/left) */}
         <div className="canvas-col">
           <h3 className="section-title">
-            Constraint Canvas
+            {t('josoor.planning.constraintCanvas')}
           </h3>
 
           {/* Capability State Block */}
           <div className="planning-block">
             <div className="block-header-green">
-              Capability State
+              {t('josoor.planning.capabilityState')}
             </div>
             <div className="cap-state-grid">
               <div>
-                <div className="field-label">Maturity</div>
+                <div className="field-label">{t('josoor.planning.maturity')}</div>
                 <div className="field-value text-14px">3 / 5</div>
               </div>
               <div>
-                <div className="field-label">Trend</div>
+                <div className="field-label">{t('josoor.planning.trend')}</div>
                 <div className="value-trend-down">
                   <TrendingDown className="w-3 h-3" />
-                  Declining
+                  {t('josoor.planning.declining')}
                 </div>
               </div>
               <div>
-                <div className="field-label">Allowed Load</div>
-                <div className="field-value text-14px">3 projects</div>
+                <div className="field-label">{t('josoor.planning.allowedLoad')}</div>
+                <div className="field-value text-14px">{t('josoor.planning.threeProjects')}</div>
               </div>
               <div>
-                <div className="field-label">Current Load</div>
+                <div className="field-label">{t('josoor.planning.currentLoad')}</div>
                 <div className="value-alert">
                   <span className="value-large-red">5</span>
                   <AlertTriangle className="w-3 h-3 text-red" />
@@ -149,22 +152,22 @@ function InterventionPlanning() {
           {/* Footprint Stress Block */}
           <div className="planning-block">
             <div className="block-header-amber">
-              Footprint Stress
+              {t('josoor.planning.footprintStress')}
             </div>
             <div className="space-y-1.5">
               <div className="stress-row">
-                <span className="stress-label">Org gap</span>
+                <span className="stress-label">{t('josoor.planning.orgGap')}</span>
                 <span className="badge-amber">
-                  Medium
+                  {t('josoor.planning.medium')}
                 </span>
               </div>
               <div className="stress-row">
-                <span className="stress-label">Process gap</span>
-                <span className="badge-red">High</span>
+                <span className="stress-label">{t('josoor.planning.processGap')}</span>
+                <span className="badge-red">{t('josoor.planning.high')}</span>
               </div>
               <div className="stress-row">
-                <span className="stress-label">IT gap</span>
-                <span className="badge-green">Low</span>
+                <span className="stress-label">{t('josoor.planning.itGap')}</span>
+                <span className="badge-green">{t('josoor.planning.low')}</span>
               </div>
             </div>
           </div>
@@ -172,23 +175,23 @@ function InterventionPlanning() {
           {/* Risk Constraints Block */}
           <div className="planning-block">
             <div className="block-header-red">
-              Risk Constraints
+              {t('josoor.planning.riskConstraints')}
             </div>
             <div className="space-y-1.5">
               <div className="risk-row">
-                <div className="field-label mb-0.5">Risk</div>
+                <div className="field-label mb-0.5">{t('josoor.planning.risk')}</div>
                 <div className="risk-value-flex">
                   <div className="dot-red" />
-                  <span className="text-slate-200 text-10px font-bold">Delay – Desalination</span>
+                  <span className="text-slate-200 text-10px font-bold">{t('josoor.planning.delayDesalination')}</span>
                 </div>
               </div>
               <div className="risk-row">
-                <div className="field-label mb-0.5">Affects</div>
-                <div className="text-slate-200 text-9px">Policy Tool PT-01</div>
+                <div className="field-label mb-0.5">{t('josoor.planning.affects')}</div>
+                <div className="text-slate-200 text-9px">{t('josoor.planning.policyToolPT01')}</div>
               </div>
               <div className="risk-row">
-                <div className="field-label mb-0.5">Tolerance Remaining</div>
-                <div className="value-large-red">18 days</div>
+                <div className="field-label mb-0.5">{t('josoor.planning.toleranceRemaining')}</div>
+                <div className="value-large-red">{t('josoor.planning.eighteenDays')}</div>
               </div>
             </div>
           </div>
@@ -198,15 +201,15 @@ function InterventionPlanning() {
         <div className="canvas-col">
           <div className="builder-header">
             <h3 className="section-title">
-              Intervention Builder
+              {t('josoor.planning.interventionBuilder')}
             </h3>
-            <div className="builder-count">{interventions.length} interventions</div>
+            <div className="builder-count">{interventions.length} {t('josoor.planning.interventions')}</div>
           </div>
 
           {/* Add Intervention Buttons */}
           <div className="planning-block">
             <div className="block-header-gray">
-              Add Intervention
+              {t('josoor.planning.addIntervention')}
             </div>
             <div className="add-btn-grid">
               <button
@@ -214,35 +217,35 @@ function InterventionPlanning() {
                 className="btn-add-intervention"
               >
                 <Plus className="w-3 h-3" />
-                Add Project
+                {t('josoor.planning.addProject')}
               </button>
               <button
                 onClick={() => addIntervention('Pause Project')}
                 className="btn-add-intervention"
               >
                 <Pause className="w-3 h-3" />
-                Pause Project
+                {t('josoor.planning.pauseProject')}
               </button>
               <button
                 onClick={() => addIntervention('Resequence')}
                 className="btn-add-intervention"
               >
                 <ArrowUpDown className="w-3 h-3" />
-                Resequence
+                {t('josoor.planning.resequence')}
               </button>
               <button
                 onClick={() => addIntervention('Adjust Adoption')}
                 className="btn-add-intervention"
               >
                 <Users className="w-3 h-3" />
-                Adjust Adoption
+                {t('josoor.planning.adjustAdoption')}
               </button>
               <button
                 onClick={() => addIntervention('Escalate Policy')}
                 className="btn-add-intervention btn-span-2"
               >
                 <Zap className="w-3 h-3" />
-                Escalate Policy / Target
+                {t('josoor.planning.escalatePolicyTarget')}
               </button>
             </div>
           </div>
@@ -256,7 +259,7 @@ function InterventionPlanning() {
               >
                 <div className="card-header">
                   <div className="card-title">
-                    Intervention {idx + 1}
+                    {t('josoor.planning.intervention')} {idx + 1}
                   </div>
                   <button
                     onClick={() =>
@@ -264,21 +267,21 @@ function InterventionPlanning() {
                     }
                     className="card-remove"
                   >
-                    Remove
+                    {t('josoor.planning.remove')}
                   </button>
                 </div>
                 <div className="space-y-1.5">
                   <div>
-                    <div className="field-label mb-0.5">Type</div>
+                    <div className="field-label mb-0.5">{t('josoor.planning.type')}</div>
                     <div className="text-slate-200 text-10px font-bold">{intervention.type}</div>
                   </div>
                   <div className="impact-preview">
                     <div className="block-header-gray block-header-tight">
-                      Impact Preview
+                      {t('josoor.planning.impactPreview')}
                     </div>
                     <div className="impact-grid">
                       <div className="impact-row">
-                        <span className="text-gray">Load:</span>
+                        <span className="text-gray">{t('josoor.planning.load')}:</span>
                         <span
                           className={`impact-val-bold ${intervention.loadImpact > 0 ? 'text-red' : 'text-green'
                             }`}
@@ -288,17 +291,17 @@ function InterventionPlanning() {
                         </span>
                       </div>
                       <div className="impact-row">
-                        <span className="text-gray">Risk:</span>
+                        <span className="text-gray">{t('josoor.planning.risk')}:</span>
                         <span className="text-green impact-val-bold">{intervention.riskImpact}%</span>
                       </div>
                       <div className="impact-row">
-                        <span className="text-gray">Delay:</span>
+                        <span className="text-gray">{t('josoor.planning.delay')}:</span>
                         <span className="text-green impact-val-bold">
                           {intervention.delayImpact}d
                         </span>
                       </div>
                       <div className="impact-row">
-                        <span className="text-gray">Confidence:</span>
+                        <span className="text-gray">{t('josoor.planning.confidence')}:</span>
                         <span className="text-amber impact-val-bold">{intervention.confidence}</span>
                       </div>
                     </div>
@@ -312,22 +315,22 @@ function InterventionPlanning() {
           {interventions.length > 0 && (
             <div className="resulting-state">
               <div className="block-header-green">
-                Resulting State Preview
+                {t('josoor.planning.resultingStatePreview')}
               </div>
               <div>
                 <div className="resulting-row">
-                  <span className="text-gray">New exposure band:</span>
-                  <span className="text-green impact-val-bold">56% (Amber → Amber)</span>
+                  <span className="text-gray">{t('josoor.planning.newExposureBand')}:</span>
+                  <span className="text-green impact-val-bold">{t('josoor.planning.exposureBandValue')}</span>
                 </div>
                 <div className="resulting-row">
-                  <span className="text-gray">New load:</span>
+                  <span className="text-gray">{t('josoor.planning.newLoad')}:</span>
                   <span className="text-green impact-val-bold">
-                    {5 + interventions.reduce((sum, i) => sum + i.loadImpact, 0)} projects
+                    {5 + interventions.reduce((sum, i) => sum + i.loadImpact, 0)} {t('josoor.planning.projects')}
                   </span>
                 </div>
                 <div className="resulting-row">
-                  <span className="text-gray">Residual risk:</span>
-                  <span className="text-amber impact-val-bold">Medium</span>
+                  <span className="text-gray">{t('josoor.planning.residualRisk')}:</span>
+                  <span className="text-amber impact-val-bold">{t('josoor.planning.medium')}</span>
                 </div>
               </div>
             </div>
@@ -340,33 +343,34 @@ function InterventionPlanning() {
 
 // B) Strategic Reset Planning (Annual)
 function StrategicReset() {
+  const { t } = useTranslation();
   return (
     <div className="reset-container">
       {/* 1. Year-End Reality Snapshot (top) */}
       <div className="mb-6">
         <h3 className="section-title">
-          Year-End Reality Snapshot
+          {t('josoor.planning.yearEndRealitySnapshot')}
         </h3>
         <div className="snapshot-grid">
           <div className="snapshot-card">
-            <div className="field-label mb-2">Capabilities Stabilized</div>
+            <div className="field-label mb-2">{t('josoor.planning.capabilitiesStabilized')}</div>
             <div className="snapshot-value text-green">22 / 45</div>
-            <div className="field-subtext mt-1">49% stability rate</div>
+            <div className="field-subtext mt-1">{t('josoor.planning.stabilityRate49')}</div>
           </div>
           <div className="snapshot-card">
-            <div className="field-label mb-2">Chronic Risks</div>
+            <div className="field-label mb-2">{t('josoor.planning.chronicRisks')}</div>
             <div className="snapshot-value text-red">6</div>
-            <div className="field-subtext mt-1">Persistent across quarters</div>
+            <div className="field-subtext mt-1">{t('josoor.planning.persistentAcrossQuarters')}</div>
           </div>
           <div className="snapshot-card">
-            <div className="field-label mb-2">Persistent Leakage Chains</div>
+            <div className="field-label mb-2">{t('josoor.planning.persistentLeakageChains')}</div>
             <div className="snapshot-value text-amber">3</div>
-            <div className="field-subtext mt-1">Intent loss {'>'}25%</div>
+            <div className="field-subtext mt-1">{t('josoor.planning.intentLoss25')}</div>
           </div>
           <div className="snapshot-card">
-            <div className="field-label mb-2">Overbuilt Capabilities</div>
+            <div className="field-label mb-2">{t('josoor.planning.overbuiltCapabilities')}</div>
             <div className="snapshot-value text-blue">4</div>
-            <div className="field-subtext mt-1">Low utilization</div>
+            <div className="field-subtext mt-1">{t('josoor.planning.lowUtilization')}</div>
           </div>
         </div>
       </div>
@@ -374,40 +378,40 @@ function StrategicReset() {
       {/* 2. Pattern Explorer (center) */}
       <div className="mb-6">
         <h3 className="section-title">
-          Pattern Explorer
+          {t('josoor.planning.patternExplorer')}
         </h3>
         <div className="pattern-table-container">
           <table className="pattern-table">
             <thead className="bg-slate-800">
               <tr>
                 <th className="pattern-th">
-                  Capability
+                  {t('josoor.planning.capability')}
                 </th>
                 <th className="pattern-th pattern-th-center">
-                  Avg Risk Exposure
+                  {t('josoor.planning.avgRiskExposure')}
                 </th>
                 <th className="pattern-th pattern-th-center">
-                  Avg Leakage %
+                  {t('josoor.planning.avgLeakage')}
                 </th>
                 <th className="pattern-th pattern-th-center">
-                  Avg Load Util
+                  {t('josoor.planning.avgLoadUtil')}
                 </th>
                 <th className="pattern-th pattern-th-center">
-                  Policy Pressure
+                  {t('josoor.planning.policyPressure')}
                 </th>
                 <th className="pattern-th pattern-th-center">
-                  Perf Pressure
+                  {t('josoor.planning.perfPressure')}
                 </th>
               </tr>
             </thead>
             <tbody>
               {[
-                { name: 'Plant Operations', risk: 72, leakage: 18, load: 95, policy: 8, perf: 12 },
-                { name: 'Distribution Mgmt', risk: 45, leakage: 32, load: 68, policy: 5, perf: 7 },
-                { name: 'Quality Control', risk: 68, leakage: 12, load: 88, policy: 6, perf: 9 },
-                { name: 'Asset Maintenance', risk: 28, leakage: 8, load: 42, policy: 3, perf: 4 },
-                { name: 'Network Planning', risk: 52, leakage: 24, load: 72, policy: 7, perf: 6 },
-                { name: 'Customer Service', risk: 18, leakage: 6, load: 35, policy: 2, perf: 3 },
+                { name: t('josoor.planning.plantOperations'), risk: 72, leakage: 18, load: 95, policy: 8, perf: 12 },
+                { name: t('josoor.planning.distributionMgmt'), risk: 45, leakage: 32, load: 68, policy: 5, perf: 7 },
+                { name: t('josoor.planning.qualityControl'), risk: 68, leakage: 12, load: 88, policy: 6, perf: 9 },
+                { name: t('josoor.planning.assetMaintenance'), risk: 28, leakage: 8, load: 42, policy: 3, perf: 4 },
+                { name: t('josoor.planning.networkPlanning'), risk: 52, leakage: 24, load: 72, policy: 7, perf: 6 },
+                { name: t('josoor.planning.customerService'), risk: 18, leakage: 6, load: 35, policy: 2, perf: 3 },
               ].map((row, idx) => (
                 <tr key={idx} className="pattern-tr">
                   <td className="pattern-td">{row.name}</td>
@@ -464,83 +468,83 @@ function StrategicReset() {
       <div className="reset-layout">
         <div className="planning-block">
           <div className="block-header-gray">
-            Objective Consolidation Candidates
+            {t('josoor.planning.objectiveConsolidationCandidates')}
           </div>
           <div className="recommendation-list">
             <div className="recommendation-item">
-              <div className="text-slate-200 font-bold mb-1">Consider: Merge redundant objectives</div>
-              <div className="text-slate-500 text-8px">3 objectives overlap in scope</div>
+              <div className="text-slate-200 font-bold mb-1">{t('josoor.planning.considerMergeRedundant')}</div>
+              <div className="text-slate-500 text-8px">{t('josoor.planning.threeObjectivesOverlap')}</div>
             </div>
             <div className="recommendation-item">
-              <div className="text-slate-200 font-bold mb-1">Consider: Drop low-impact objectives</div>
-              <div className="text-slate-500 text-8px">2 objectives showing minimal returns</div>
+              <div className="text-slate-200 font-bold mb-1">{t('josoor.planning.considerDropLowImpact')}</div>
+              <div className="text-slate-500 text-8px">{t('josoor.planning.twoObjectivesMinimalReturns')}</div>
             </div>
             <div className="recommendation-item">
-              <div className="text-slate-200 font-bold mb-1">Consider: Elevate critical objectives</div>
-              <div className="text-slate-500 text-8px">Infrastructure requires higher priority</div>
+              <div className="text-slate-200 font-bold mb-1">{t('josoor.planning.considerElevateCritical')}</div>
+              <div className="text-slate-500 text-8px">{t('josoor.planning.infrastructureHigherPriority')}</div>
             </div>
           </div>
         </div>
 
         <div className="planning-block">
           <div className="block-header-gray">
-            Policy Mix Rebalancing Suggestions
+            {t('josoor.planning.policyMixRebalancing')}
           </div>
           <div className="recommendation-list">
             <div className="recommendation-item">
-              <div className="text-slate-200 font-bold mb-1">Recommend: Add new policy tools</div>
-              <div className="text-slate-500 text-8px">Pricing reform could address leakage</div>
+              <div className="text-slate-200 font-bold mb-1">{t('josoor.planning.recommendAddNewPolicy')}</div>
+              <div className="text-slate-500 text-8px">{t('josoor.planning.pricingReformLeakage')}</div>
             </div>
             <div className="recommendation-item">
-              <div className="text-slate-200 font-bold mb-1">Recommend: Retire ineffective tools</div>
-              <div className="text-slate-500 text-8px">2 tools showing no impact</div>
+              <div className="text-slate-200 font-bold mb-1">{t('josoor.planning.recommendRetireIneffective')}</div>
+              <div className="text-slate-500 text-8px">{t('josoor.planning.twoToolsNoImpact')}</div>
             </div>
             <div className="recommendation-item">
-              <div className="text-slate-200 font-bold mb-1">Recommend: Rebalance tool portfolio</div>
-              <div className="text-slate-500 text-8px">Over-reliance on regulatory tools</div>
+              <div className="text-slate-200 font-bold mb-1">{t('josoor.planning.recommendRebalancePortfolio')}</div>
+              <div className="text-slate-500 text-8px">{t('josoor.planning.overRelianceRegulatory')}</div>
             </div>
           </div>
         </div>
 
         <div className="planning-block">
           <div className="block-header-gray">
-            Direction Reset Proposals
+            {t('josoor.planning.directionResetProposals')}
           </div>
           <div className="recommendation-list">
             <div className="recommendation-item">
-              <div className="text-slate-200 font-bold mb-1">Guidance: Tighten ambitious targets</div>
-              <div className="text-slate-500 text-8px">Quality metrics achievable earlier</div>
+              <div className="text-slate-200 font-bold mb-1">{t('josoor.planning.guidanceTightenAmbitious')}</div>
+              <div className="text-slate-500 text-8px">{t('josoor.planning.qualityMetricsAchievable')}</div>
             </div>
             <div className="recommendation-item">
-              <div className="text-slate-200 font-bold mb-1">Guidance: Relax unrealistic targets</div>
-              <div className="text-slate-500 text-8px">Distribution targets unattainable</div>
+              <div className="text-slate-200 font-bold mb-1">{t('josoor.planning.guidanceRelaxUnrealistic')}</div>
+              <div className="text-slate-500 text-8px">{t('josoor.planning.distributionTargetsUnattainable')}</div>
             </div>
             <div className="recommendation-item">
-              <div className="text-slate-200 font-bold mb-1">Guidance: Realign target timelines</div>
-              <div className="text-slate-500 text-8px">Phase infrastructure goals</div>
+              <div className="text-slate-200 font-bold mb-1">{t('josoor.planning.guidanceRealignTimelines')}</div>
+              <div className="text-slate-500 text-8px">{t('josoor.planning.phaseInfrastructureGoals')}</div>
             </div>
           </div>
         </div>
 
         <div className="planning-block">
           <div className="block-header-gray">
-            Capability Intent Recommendations
+            {t('josoor.planning.capabilityIntentRecommendations')}
           </div>
           <div className="recommendation-list">
             <div className="recommendation-item">
-              <div className="text-slate-200 font-bold mb-1">Plant Operations</div>
-              <div className="text-slate-500 text-8px">Suggest: BUILD → OPERATE</div>
-              <div className="text-slate-500 text-8px mt-1">Rationale: Stabilization achieved</div>
+              <div className="text-slate-200 font-bold mb-1">{t('josoor.planning.plantOperations')}</div>
+              <div className="text-slate-500 text-8px">{t('josoor.planning.suggestBuildToOperate')}</div>
+              <div className="text-slate-500 text-8px mt-1">{t('josoor.planning.rationaleStabilization')}</div>
             </div>
             <div className="recommendation-item">
-              <div className="text-slate-200 font-bold mb-1">Distribution Mgmt</div>
-              <div className="text-slate-500 text-8px">Suggest: OPERATE → BUILD</div>
-              <div className="text-slate-500 text-8px mt-1">Rationale: Chronic underperformance</div>
+              <div className="text-slate-200 font-bold mb-1">{t('josoor.planning.distributionMgmt')}</div>
+              <div className="text-slate-500 text-8px">{t('josoor.planning.suggestOperateToBuild')}</div>
+              <div className="text-slate-500 text-8px mt-1">{t('josoor.planning.rationaleChronicUnderperformance')}</div>
             </div>
             <div className="recommendation-item">
-              <div className="text-slate-200 font-bold mb-1">Legacy Systems</div>
-              <div className="text-slate-500 text-8px">Suggest: HOLD → DECOMMISSION</div>
-              <div className="text-slate-500 text-8px mt-1">Rationale: Low utilization</div>
+              <div className="text-slate-200 font-bold mb-1">{t('josoor.planning.legacySystems')}</div>
+              <div className="text-slate-500 text-8px">{t('josoor.planning.suggestHoldToDecommission')}</div>
+              <div className="text-slate-500 text-8px mt-1">{t('josoor.planning.rationaleLowUtilization')}</div>
             </div>
           </div>
         </div>
@@ -551,55 +555,56 @@ function StrategicReset() {
 
 // C) Scenario Simulation (What-If)
 function ScenarioSimulation() {
+  const { t } = useTranslation();
   return (
     <div className="intervention-container">
       <div className="scenario-layout">
         {/* 1. Scenario Controls (left) */}
         <div className="scenario-controls-stack">
           <h3 className="section-title">
-            Scenario Controls
+            {t('josoor.planning.scenarioControls')}
           </h3>
 
           <div className="planning-block">
             <div className="block-header-gray">
-              Change Objective Priority
+              {t('josoor.planning.changeObjectivePriority')}
             </div>
             <select className="control-select">
-              <option>Water Security (High → Medium)</option>
-              <option>Infrastructure (Medium → High)</option>
-              <option>Sustainability (Low → Medium)</option>
+              <option>{t('josoor.planning.waterSecurityHighMedium')}</option>
+              <option>{t('josoor.planning.infrastructureMediumHigh')}</option>
+              <option>{t('josoor.planning.sustainabilityLowMedium')}</option>
             </select>
           </div>
 
           <div className="planning-block">
             <div className="block-header-gray">
-              Add / Remove Policy Tool
+              {t('josoor.planning.addRemovePolicyTool')}
             </div>
             <select className="control-select mb-2">
-              <option>Add: Water Pricing Reform</option>
-              <option>Remove: Legacy Conservation</option>
+              <option>{t('josoor.planning.addWaterPricingReform')}</option>
+              <option>{t('josoor.planning.removeLegacyConservation')}</option>
             </select>
           </div>
 
           <div className="planning-block">
             <div className="block-header-gray">
-              Shift Capability Maturity
+              {t('josoor.planning.shiftCapabilityMaturity')}
             </div>
             <select className="control-select">
-              <option>Plant Ops: 3 → 4</option>
-              <option>Distribution: 2 → 3</option>
-              <option>Quality Control: 4 → 5</option>
+              <option>{t('josoor.planning.plantOps3To4')}</option>
+              <option>{t('josoor.planning.distribution2To3')}</option>
+              <option>{t('josoor.planning.qualityControl4To5')}</option>
             </select>
           </div>
 
           <div className="planning-block">
             <div className="block-header-gray">
-              Inject Constraint
+              {t('josoor.planning.injectConstraint')}
             </div>
             <select className="control-select">
-              <option>Budget cut: -15%</option>
-              <option>Schedule delay: +6 months</option>
-              <option>New regulation: Stricter quality</option>
+              <option>{t('josoor.planning.budgetCut15')}</option>
+              <option>{t('josoor.planning.scheduleDelay6Months')}</option>
+              <option>{t('josoor.planning.newRegulationStricterQuality')}</option>
             </select>
           </div>
         </div>
@@ -607,24 +612,24 @@ function ScenarioSimulation() {
         {/* 2. Impact Diff View (center) */}
         <div className="scenario-controls-stack">
           <h3 className="section-title">
-            Impact Diff View
+            {t('josoor.planning.impactDiffView')}
           </h3>
 
           <div className="impact-table-container">
             <div className="impact-header">
               <div className="impact-col-header impact-col-header-current">
-                Current State
+                {t('josoor.planning.currentState')}
               </div>
               <div className="impact-col-header impact-col-header-scenario">
-                Scenario State
+                {t('josoor.planning.scenarioState')}
               </div>
             </div>
 
             {[
-              { metric: 'Risk Exposure', current: 68, scenario: 54, delta: -14 },
-              { metric: 'Load Saturation', current: 95, scenario: 78, delta: -17 },
-              { metric: 'Leakage %', current: 24, scenario: 32, delta: 8 },
-              { metric: 'Capabilities Entering Red', current: 6, scenario: 4, delta: -2 },
+              { metric: t('josoor.planning.riskExposure'), current: 68, scenario: 54, delta: -14 },
+              { metric: t('josoor.planning.loadSaturation'), current: 95, scenario: 78, delta: -17 },
+              { metric: t('josoor.planning.leakagePercent'), current: 24, scenario: 32, delta: 8 },
+              { metric: t('josoor.planning.capabilitiesEnteringRed'), current: 6, scenario: 4, delta: -2 },
             ].map((row, idx) => (
               <div
                 key={idx}
@@ -659,57 +664,56 @@ function ScenarioSimulation() {
         {/* 3. Verdict Panel (right) */}
         <div className="verdict-stack">
           <h3 className="section-title">
-            Verdict Panel
+            {t('josoor.planning.verdictPanel')}
           </h3>
 
           <div className="planning-block">
             <div className="block-header-gray">
-              New Critical Capabilities
+              {t('josoor.planning.newCriticalCapabilities')}
             </div>
             <div className="space-y-1">
-              <div className="text-slate-200 text-10px">• Network Planning</div>
-              <div className="text-slate-200 text-10px">• Data Analytics</div>
+              <div className="text-slate-200 text-10px">• {t('josoor.planning.networkPlanning')}</div>
+              <div className="text-slate-200 text-10px">• {t('josoor.planning.dataAnalytics')}</div>
             </div>
           </div>
 
           <div className="planning-block">
             <div className="block-header-gray">
-              New Broken Chains
+              {t('josoor.planning.newBrokenChains')}
             </div>
             <div className="space-y-1">
               <div className="flex items-center gap-2 text-10px">
                 <div className="w-2 h-2 rounded-full bg-red" />
-                <span className="text-slate-200">Obj3 → PT5 (32% leakage)</span>
+                <span className="text-slate-200">{t('josoor.planning.obj3PT5Leakage')}</span>
               </div>
             </div>
           </div>
 
           <div className="planning-block">
             <div className="block-header-gray">
-              Execution Feasibility
+              {t('josoor.planning.executionFeasibility')}
             </div>
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded-full bg-green" />
-              <span className="text-green text-11px font-bold">YES</span>
+              <span className="text-green text-11px font-bold">{t('josoor.planning.yes')}</span>
             </div>
           </div>
 
           <div className="verdict-rec">
             <div className="block-header-green">
-              Recommendation
+              {t('josoor.planning.recommendation')}
             </div>
             <div className="rec-badge">
-              VIABLE
+              {t('josoor.planning.viable')}
             </div>
             <div className="text-slate-300 text-9px mt-2 leading-relaxed">
-              Scenario reduces critical risks while maintaining delivery capacity. Minor leakage
-              increase is acceptable.
+              {t('josoor.planning.scenarioReducesCriticalRisks')}
             </div>
           </div>
 
           <div className="planning-block">
             <div className="text-slate-500 text-8px normal text-center">
-              No "approve" button. Scenarios inform, they don't decide.
+              {t('josoor.planning.noApproveButton')}
             </div>
           </div>
         </div>

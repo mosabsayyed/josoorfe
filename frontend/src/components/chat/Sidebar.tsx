@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 // Using image assets for sidebar icons (PNG/JPG). Avoiding SVG icon components as requested.
 import {
   DropdownMenu,
@@ -89,6 +90,7 @@ export function Sidebar({
   activeView,
 }: SidebarProps) {
   const { language, isRTL, setLanguage } = useLanguage();
+  const { t } = useTranslation();
   const [showConversations, setShowConversations] = useState(() => conversations.length > 0);
   const [collapsed, setCollapsed] = useState<boolean>(!!isCollapsed);
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
@@ -130,25 +132,25 @@ export function Sidebar({
   const navigate = useNavigate();
 
   const translations = {
-    appName: language === 'ar' ? 'جسور' : 'JOSOOR',
-    newChat: language === 'ar' ? 'محادثة جديدة' : 'New Chat',
-    quickActions: language === 'ar' ? 'إجراءات سريعة' : 'Quick Actions',
-    conversations: language === 'ar' ? 'محادثاتك' : 'Your Chats',
-    guestMode: language === 'ar' ? 'وضع الضيف' : 'Guest Mode',
-    loginToSave: language === 'ar' ? 'سجل الدخول للحفظ' : 'Login to save',
+    appName: t('josoor.chat.josoor'),
+    newChat: t('josoor.sidebar.newChat'),
+    quickActions: t('josoor.sidebar.desks'),
+    conversations: t('josoor.sidebar.yourChats'),
+    guestMode: t('josoor.sidebar.guestMode'),
+    loginToSave: t('josoor.sidebar.loginToSave'),
     messagesCount: (count: number) => (language === 'ar' ? `${count} رسالة` : `${count} messages`),
-    deleteConversation: language === 'ar' ? 'حذف' : 'Delete',
-    account: language === 'ar' ? 'الحساب' : 'Account',
-    toggleSidebar: language === 'ar' ? 'تبديل الشريط الجانبي' : 'Toggle sidebar',
-    guestLeaveWarning: language === 'ar' ? 'أنت تستخدم التطبيق كضيف ولديك محفوظات محلية. إذا غادرت فسوف تفقد السجل والملفات. المتابعة إلى تسجيل الدخول؟' : 'You are using the app as guest and have local history. If you leave you will lose history and artifacts. Proceed to login?',
-    account_menu: language === 'ar' ? 'قائمة الحساب' : 'Account menu',
-    profile: language === 'ar' ? 'الملف الشخصي' : 'Profile',
-    logout: language === 'ar' ? 'تسجيل الخروج' : 'Logout',
-    close: language === 'ar' ? 'إغلاق' : 'Close',
-    theme: language === 'ar' ? 'المظهر' : 'Theme',
-    language: language === 'ar' ? 'اللغة' : 'Language',
-    light: language === 'ar' ? 'فاتح' : 'Light',
-    dark: language === 'ar' ? 'داكن' : 'Dark',
+    deleteConversation: t('josoor.sidebar.deleteChat'),
+    account: t('josoor.sidebar.account'),
+    toggleSidebar: t('josoor.sidebar.toggleSidebar'),
+    guestLeaveWarning: t('josoor.sidebar.guestLeaveWarning'),
+    account_menu: t('josoor.sidebar.accountMenu'),
+    profile: t('josoor.sidebar.profile'),
+    logout: t('josoor.sidebar.logout'),
+    close: t('josoor.sidebar.close'),
+    theme: t('josoor.sidebar.theme'),
+    language: t('josoor.sidebar.language'),
+    light: t('josoor.sidebar.light'),
+    dark: t('josoor.sidebar.dark'),
     english: 'English',
     arabic: 'العربية',
   };
@@ -167,7 +169,7 @@ export function Sidebar({
     const diffHours = Math.floor(diffMs / 3600000);
     const diffDays = Math.floor(diffMs / 86400000);
 
-    if (diffMins < 1) return language === 'ar' ? 'الآن' : 'Now';
+    if (diffMins < 1) return t('josoor.sidebar.now');
     if (diffMins < 60) return language === 'ar' ? `${diffMins} د` : `${diffMins}m`;
     if (diffHours < 24) return language === 'ar' ? `${diffHours} س` : `${diffHours}h`;
     if (diffDays < 7) return language === 'ar' ? `${diffDays} ي` : `${diffDays}d`;
@@ -305,14 +307,14 @@ export function Sidebar({
 
           {!collapsed && (
             <div style={{ display: 'block', color: 'var(--component-text-accent)', margin: '0 auto', font: '600 18px __Inter_d65c78, sans-serif' }}>
-              JOSOOR
+              {t('josoor.chat.josoor')}
             </div>
           )}
         </div>
 
         {/* Sections */}
-        {renderSection(language === 'ar' ? 'الحوكمة والرقابة' : 'Governance/Oversight', deskItems, { isFirst: true })}
-        {renderSection(language === 'ar' ? 'المراجع' : 'References', contentItems)}
+        {renderSection(t('josoor.sidebar.governanceOversight'), deskItems, { isFirst: true })}
+        {renderSection(t('josoor.sidebar.references'), contentItems)}
       </div>
 
       {/* Conversations - only if not collapsed */}
@@ -332,7 +334,7 @@ export function Sidebar({
         >
           {/* Graph Chat Button */}
           <button
-            title="Graph Chat"
+            title={t('josoor.chat.graphChat')}
             onClick={() =>
               onQuickAction?.({ id: 'chat', label: { en: 'Graph Chat', ar: 'دردشة الرسم البياني' }, icon: '/icons/chat.png' })
             }
@@ -357,12 +359,12 @@ export function Sidebar({
           >
             <img
               src="/icons/chat.png"
-              alt="Graph Chat"
+              alt={t('josoor.chat.graphChat')}
               className="sidebar-quickaction-icon sidebar-quickaction-large"
               style={{ display: 'block', fontWeight: '600', height: '24px', width: '24px', objectFit: 'cover' }}
             />
             <div className="quickaction-meta" style={{ display: 'flex', alignItems: 'flex-start', flexDirection: 'column' }}>
-              <span className="quickaction-title" style={{ display: 'block', fontSize: '14px' }}>Graph Chat</span>
+              <span className="quickaction-title" style={{ display: 'block', fontSize: '14px' }}>{t('josoor.chat.graphChat')}</span>
             </div>
           </button>
 
@@ -394,7 +396,7 @@ export function Sidebar({
       {/* Admin Section - moved after Graph Chat */}
       {!collapsed && (
         <div style={{ padding: collapsed ? '0' : '0 20px' }}>
-          {renderSection(language === 'ar' ? 'الإدارة' : 'Admin', adminItems, { marginTop: 12, marginBottom: 20 })}
+          {renderSection(t('josoor.sidebar.admin'), adminItems, { marginTop: 12, marginBottom: 20 })}
         </div>
       )}
     </aside>

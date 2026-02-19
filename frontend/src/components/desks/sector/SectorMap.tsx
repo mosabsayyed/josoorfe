@@ -10,6 +10,7 @@
  * 6. Minimized State -> Collapses Body only (Header stays in place).
  */
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 // @ts-ignore
 import Map, { Marker, Source, Layer, NavigationControl, FullscreenControl, Popup } from 'react-map-gl/mapbox';
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -555,6 +556,7 @@ const SectorMap: React.FC<SectorMapProps> = ({
   timelineFilter = 'both',
   priorityFilter = 'both'
 }) => {
+  const { t } = useTranslation();
   const mapRef = useRef<any>(null);
 
   // UI State
@@ -1045,7 +1047,7 @@ const SectorMap: React.FC<SectorMapProps> = ({
               }}
             >
               <span style={{ fontSize: '18px' }}>⬅</span>
-              Zoom Out to National View
+              {t('josoor.sector.zoomOut')}
             </button>
           </div>
         </div>

@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 
 // SVG Icons
@@ -68,6 +69,7 @@ const PillarSectorNav: React.FC<PillarSectorNavProps> = ({
     onSelectPillar,
     onSelectSector
 }) => {
+    const { t } = useTranslation();
     return (
         <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
 
@@ -84,7 +86,7 @@ const PillarSectorNav: React.FC<PillarSectorNavProps> = ({
                             width: '40px',
                         }}
                     />
-                    <h1 className="nav-title" style={{ margin: 0 }}>KSA Vision 2030</h1>
+                    <h1 className="nav-title" style={{ margin: 0 }}>{t('josoor.sector.ksaVision')} 2030</h1>
                 </div>
             </div>
 
@@ -113,7 +115,7 @@ const PillarSectorNav: React.FC<PillarSectorNavProps> = ({
                                 boxShadow: isActive ? '0 2px 8px rgba(0,0,0,0.2)' : 'none'
                             }}
                         >
-                            {pillar.label.split(' ')[1]}
+                            {key === 'society' ? t('josoor.sector.vibrantSociety') : key === 'economy' ? t('josoor.sector.thrivingEconomy') : t('josoor.sector.ambitiousNation')}
                         </button>
                     );
                 })}
@@ -122,7 +124,7 @@ const PillarSectorNav: React.FC<PillarSectorNavProps> = ({
             {/* Sector List */}
             <div className="sector-list custom-scrollbar">
                 <h3 className="sector-list-title">
-                    {PILLARS[selectedPillar as keyof typeof PILLARS]?.label} Sectors
+                    {selectedPillar === 'society' ? t('josoor.sector.vibrantSociety') : selectedPillar === 'economy' ? t('josoor.sector.thrivingEconomy') : t('josoor.sector.ambitiousNation')} {t('josoor.sector.sectors')}
                 </h3>
 
                 {PILLARS[selectedPillar as keyof typeof PILLARS]?.sectors.map((sectorId: string) => {
@@ -169,8 +171,8 @@ const PillarSectorNav: React.FC<PillarSectorNavProps> = ({
                                 </div>
                                 <div className="sector-status" style={{ color: isSelected ? pillarColor : 'var(--component-text-muted)', fontSize: '0.65rem', fontWeight: 600, opacity: 0.8, marginTop: '2px' }}>
                                     {isSupported
-                                        ? (isSelected ? 'ACTIVE VIEW' : 'CLICK TO EXPLORE')
-                                        : 'DEVELOPMENT IN PROGRESS'}
+                                        ? (isSelected ? t('josoor.sector.activeView') : t('josoor.sector.clickToExplore'))
+                                        : t('josoor.sector.confidentialData')}
                                 </div>
                             </div>
 
@@ -185,7 +187,7 @@ const PillarSectorNav: React.FC<PillarSectorNavProps> = ({
             {/* Footer / Legend - DISCLAIMER REPLACING NEO4J INFO */}
             <div style={{ marginTop: 'auto', paddingTop: '1.25rem', borderTop: '1px solid var(--component-panel-border)', fontSize: '10px', color: 'var(--component-text-muted)', opacity: 0.8 }}>
                 <p style={{ margin: 0, lineHeight: '1.5', fontStyle: 'italic' }}>
-                    <strong>CONFIDENTIAL DATA</strong><br />
+                    <strong>{t('josoor.sector.confidentialData')}</strong><br />
                     • Publicly available V2030 dataset snapshots<br />
                     • Non-comprehensive representative simulation<br />
                     • Authorized personnel only

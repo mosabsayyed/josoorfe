@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 
 // SVG Icons (Legend Style - Circular)
@@ -73,6 +74,7 @@ const SectorHeaderNav: React.FC<SectorHeaderNavProps> = ({
     onStrategyClick,
     selectedYear = '2030'
 }) => {
+    const { t } = useTranslation();
     // Drawer state
     const [drawerOpen, setDrawerOpen] = useState(false);
     const [activeCategory, setActiveCategory] = useState<string | null>(null);
@@ -220,7 +222,7 @@ const SectorHeaderNav: React.FC<SectorHeaderNavProps> = ({
                 {/* 1. BRAND - COMPACT */}
                 <div className="sector-header-brand">
                     <div className="nav-title">
-                        <div>KSA VISION</div>
+                        <div>{t('josoor.sector.ksaVision')}</div>
                         <div>2030</div>
                     </div>
                 </div>
@@ -228,7 +230,7 @@ const SectorHeaderNav: React.FC<SectorHeaderNavProps> = ({
                 {/* 2. CLICKABLE SECTORS */}
                 <div className="sector-header-section">
                     <span className="sector-list-title">
-                        Sectors
+                        {t('josoor.sector.sectors')}
                     </span>
                     <div className="sector-icons-container">
                     {SECTORS.map((sector) => {
@@ -253,7 +255,7 @@ const SectorHeaderNav: React.FC<SectorHeaderNavProps> = ({
                 <div className="sector-header-controls">
                     {/* A. STATUS FILTER */}
                     <div className="sector-header-section">
-                        <span className="sector-list-title">Status</span>
+                        <span className="sector-list-title">{t('josoor.sector.status')}</span>
                         <div className="pillar-tabs">
                             <button
                                 onClick={() => {
@@ -280,7 +282,7 @@ const SectorHeaderNav: React.FC<SectorHeaderNavProps> = ({
 
                     {/* B. PRIORITY FILTER */}
                     <div className="sector-header-section">
-                        <span className="sector-list-title">Priority</span>
+                        <span className="sector-list-title">{t('josoor.sector.priority')}</span>
                         <div className="pillar-tabs">
                             <button
                                 onClick={() => onPriorityFilterChange?.('major')}
@@ -310,7 +312,7 @@ const SectorHeaderNav: React.FC<SectorHeaderNavProps> = ({
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                         </svg>
-                        <span>AI Strategy Brief</span>
+                        <span>{t('josoor.sector.aiStrategyBrief')}</span>
                     </motion.button>
                 </div>
             </div>
@@ -318,7 +320,7 @@ const SectorHeaderNav: React.FC<SectorHeaderNavProps> = ({
             {/* ROW 2: POLICY EXECUTION TOOLS (6 CATEGORIES) */}
             <div className="sector-header-section">
                 <span className="sector-list-title">
-                    Policy Tools
+                    {t('josoor.sector.policyTools')}
                 </span>
                 <div className="policy-tools-grid">
                 {/* 1. Enforce */}

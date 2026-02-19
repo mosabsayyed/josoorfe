@@ -10,6 +10,7 @@
 
 import { useEffect, useRef, useMemo, useState, memo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { MessageBubble, ThinkingIndicator } from './MessageBubble';
 import { ChatInput } from './ChatInput';
 import { CondensationIndicator } from './CondensationIndicator';
@@ -85,6 +86,7 @@ export const ChatContainer = memo(function ChatContainer({
   availableYears = ['2025', '2026', '2027', '2028', '2029'],
 }: ChatContainerProps) {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(() => getUser());
@@ -153,35 +155,25 @@ export const ChatContainer = memo(function ChatContainer({
   }, [displayMessages, isLoading]);
 
   const translations = {
-    welcomeTitle: effectiveLanguage === 'ar' ? 'مرحباً بك، أنا نور' : 'Welcome, I am Noor',
-    welcomeSubtitle: effectiveLanguage === 'ar'
-      ? 'مساعدك الذكي في رحلة التحول المعرفي'
-      : 'Your AI guide to cognitive transformation',
-    examplesTitle: effectiveLanguage === 'ar' ? 'جرب هذه الأمثلة:' : 'Try these examples:',
+    welcomeTitle: t('josoor.chat.welcomeTitle'),
+    welcomeSubtitle: t('josoor.chat.welcomeSubtitle'),
+    examplesTitle: t('josoor.chat.tryExamples'),
     examples: [
       {
         icon: BarChart3,
-        text: effectiveLanguage === 'ar'
-          ? 'كيف يتقدم التحول حتى الآن؟'
-          : 'How is the transformation progressing to date?',
+        text: t('josoor.chat.exampleTransformation'),
       },
       {
         icon: Table,
-        text: effectiveLanguage === 'ar'
-          ? 'سرد القدرات الأكثر نضجاً حسب الوحدات التنظيمية'
-          : 'List the most mature capabilities by organisational units',
+        text: t('josoor.chat.exampleCapabilities'),
       },
       {
         icon: FileText,
-        text: effectiveLanguage === 'ar'
-          ? 'إنشاء تقرير مشاريع الربع الثالث لعام 2025'
-          : 'Generate Q3 Projects Report for 2025',
+        text: t('josoor.chat.exampleReport'),
       },
       {
         icon: MessageSquare,
-        text: effectiveLanguage === 'ar'
-          ? 'ما هو إطار الحوكمة للوكالة؟'
-          : 'What is the governance framework for the agency?',
+        text: t('josoor.chat.exampleGovernance'),
       },
     ],
   };
@@ -241,10 +233,10 @@ export const ChatContainer = memo(function ChatContainer({
 
           {/* Export/Share Buttons */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <button title={effectiveLanguage === 'ar' ? 'تصدير التقرير' : 'Export Report'} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: '6px', borderRadius: '6px', color: 'rgba(255,255,255,0.7)', display: 'flex', alignItems: 'center' }}>
+            <button title={t('josoor.chat.exportReport')} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: '6px', borderRadius: '6px', color: 'rgba(255,255,255,0.7)', display: 'flex', alignItems: 'center' }}>
               <span style={{ fontSize: '18px' }}>📥</span>
             </button>
-            <button title={effectiveLanguage === 'ar' ? 'مشاركة العرض' : 'Share View'} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: '6px', borderRadius: '6px', color: 'rgba(255,255,255,0.7)', display: 'flex', alignItems: 'center' }}>
+            <button title={t('josoor.chat.shareView')} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: '6px', borderRadius: '6px', color: 'rgba(255,255,255,0.7)', display: 'flex', alignItems: 'center' }}>
               <span style={{ fontSize: '18px' }}>🔗</span>
             </button>
           </div>
@@ -255,7 +247,7 @@ export const ChatContainer = memo(function ChatContainer({
           {/* Onboarding Button */}
           <button
             onClick={() => window.dispatchEvent(new CustomEvent('start-onboarding'))}
-            title={effectiveLanguage === 'ar' ? 'إعادة الجولة التعريفية' : 'Replay Tour'}
+            title={t('josoor.chat.replayTour')}
             style={{ background: 'rgba(255,255,255,0.1)', border: 'none', cursor: 'pointer', padding: '4px 8px', borderRadius: '4px', color: 'var(--component-text-accent)', fontSize: '16px', fontWeight: 700, width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
           >
             ?
@@ -273,19 +265,19 @@ export const ChatContainer = memo(function ChatContainer({
                   <div style={{ position: 'relative', background: 'var(--component-color-success)', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '28px', height: '28px', borderRadius: '50%' }}>
                     <img src="https://cdn.builder.io/api/v1/image/assets%2Fc88de0889c4545b98ff911f5842e062a%2Faa1d3e8edf5b47d1b88df2eb208d3cac" alt="profile" style={{ width: '100%', height: '100%', display: 'block', borderRadius: '50%' }} />
                   </div>
-                  <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--component-text-primary)', maxWidth: '100px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{currentUser?.user_metadata?.full_name || currentUser?.email || (effectiveLanguage === 'ar' ? 'الحساب' : 'Account')}</span>
+                  <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--component-text-primary)', maxWidth: '100px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{currentUser?.user_metadata?.full_name || currentUser?.email || (t('josoor.chat.account'))}</span>
                 </div>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" side="bottom" style={{ width: '240px', backgroundColor: 'var(--component-panel-bg)', color: 'var(--component-text-primary)', border: '1px solid var(--component-panel-border)' }}>
                 <div style={{ padding: '12px', borderBottom: '1px solid var(--component-panel-border)', marginBottom: '4px' }}>
-                  <p style={{ margin: 0, fontWeight: 600, fontSize: '14px' }}>{currentUser?.user_metadata?.full_name || (effectiveLanguage === 'ar' ? 'الحساب' : 'Account')}</p>
+                  <p style={{ margin: 0, fontWeight: 600, fontSize: '14px' }}>{currentUser?.user_metadata?.full_name || (t('josoor.chat.account'))}</p>
                   <p style={{ margin: 0, fontSize: '12px', color: 'var(--component-text-secondary)' }}>{currentUser?.email}</p>
                 </div>
                 <DropdownMenuItem className="clickable" onSelect={(e) => { e.preventDefault(); setIsProfileOpen(true); }}>
-                  <span>👤 {effectiveLanguage === 'ar' ? 'الملف الشخصي' : 'Profile'}</span>
+                  <span>👤 {t('josoor.chat.profile')}</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem className="clickable" onSelect={(e) => { e.preventDefault(); setIsSettingsOpen(true); }}>
-                  <span>⚙️ {effectiveLanguage === 'ar' ? 'الإعدادات' : 'Settings'}</span>
+                  <span>⚙️ {t('josoor.chat.settings')}</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem className="clickable" style={{ color: 'var(--component-color-danger)' }} onClick={async () => {
                   try { await authLogout(); } catch { }
@@ -293,7 +285,7 @@ export const ChatContainer = memo(function ChatContainer({
                   setCurrentUser(null);
                   navigate('/landing');
                 }}>
-                  <span>🚪 {effectiveLanguage === 'ar' ? 'تسجيل الخروج' : 'Logout'}</span>
+                  <span>🚪 {t('josoor.chat.logout')}</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -303,8 +295,8 @@ export const ChatContainer = memo(function ChatContainer({
                 <img src="https://cdn.builder.io/api/v1/image/assets%2Fc88de0889c4545b98ff911f5842e062a%2Faa1d3e8edf5b47d1b88df2eb208d3cac" alt="profile" style={{ width: '100%', height: '100%', display: 'block' }} />
               </div>
               <div style={{ textAlign: 'left', lineHeight: 1 }}>
-                <p style={{ margin: 0, fontSize: '12px', fontWeight: 600, color: 'var(--component-text-accent)' }}>{effectiveLanguage === 'ar' ? 'ضيف' : 'Guest'}</p>
-                <p style={{ margin: 0, fontSize: '10px', color: 'var(--component-text-accent)', opacity: 0.8 }}>{effectiveLanguage === 'ar' ? 'سجل للحفظ' : 'Login to save'}</p>
+                <p style={{ margin: 0, fontSize: '12px', fontWeight: 600, color: 'var(--component-text-accent)' }}>{t('josoor.chat.guest')}</p>
+                <p style={{ margin: 0, fontSize: '10px', color: 'var(--component-text-accent)', opacity: 0.8 }}>{t('josoor.chat.loginToSave')}</p>
               </div>
             </button>
           )}
@@ -315,20 +307,20 @@ export const ChatContainer = memo(function ChatContainer({
       <Dialog open={isProfileOpen} onOpenChange={setIsProfileOpen}>
         <DialogContent style={{ maxWidth: '425px', width: '100%' }}>
           <DialogHeader>
-            <DialogTitle>{effectiveLanguage === 'ar' ? 'الملف الشخصي' : 'Profile'}</DialogTitle>
-            <DialogDescription>{effectiveLanguage === 'ar' ? 'الحساب' : 'Account'}</DialogDescription>
+            <DialogTitle>{t('josoor.chat.profile')}</DialogTitle>
+            <DialogDescription>{t('josoor.chat.account')}</DialogDescription>
           </DialogHeader>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px', padding: '16px 0' }}>
             <div style={{ height: '96px', width: '96px', borderRadius: '50%', backgroundColor: 'var(--component-color-success)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
               <img src="https://cdn.builder.io/api/v1/image/assets%2Fc88de0889c4545b98ff911f5842e062a%2Faa1d3e8edf5b47d1b88df2eb208d3cac" alt="profile" style={{ height: '100%', width: '100%', objectFit: 'cover' }} />
             </div>
             <div style={{ textAlign: 'center' }}>
-              <h3 style={{ fontSize: '18px', fontWeight: 600, margin: 0 }}>{currentUser?.user_metadata?.full_name || currentUser?.email || (effectiveLanguage === 'ar' ? 'الحساب' : 'Account')}</h3>
+              <h3 style={{ fontSize: '18px', fontWeight: 600, margin: 0 }}>{currentUser?.user_metadata?.full_name || currentUser?.email || (t('josoor.chat.account'))}</h3>
               <p style={{ fontSize: '14px', color: 'var(--component-text-muted)', margin: 0 }}>{currentUser?.email}</p>
             </div>
           </div>
           <DialogFooter>
-            <Button onClick={() => setIsProfileOpen(false)}>{effectiveLanguage === 'ar' ? 'إغلاق' : 'Close'}</Button>
+            <Button onClick={() => setIsProfileOpen(false)}>{t('josoor.chat.close')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -337,32 +329,32 @@ export const ChatContainer = memo(function ChatContainer({
       <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
         <DialogContent style={{ maxWidth: '425px', width: '100%' }}>
           <DialogHeader>
-            <DialogTitle>{effectiveLanguage === 'ar' ? 'الإعدادات' : 'Settings'}</DialogTitle>
-            <DialogDescription>{effectiveLanguage === 'ar' ? 'تخصيص تفضيلات التطبيق الخاص بك.' : 'Customize your application preferences.'}</DialogDescription>
+            <DialogTitle>{t('josoor.chat.settings')}</DialogTitle>
+            <DialogDescription>{t('josoor.chat.customizePreferences')}</DialogDescription>
           </DialogHeader>
           <div style={{ display: 'grid', gap: '16px', padding: '16px 0' }}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 3fr', alignItems: 'center', gap: '16px' }}>
-              <span style={{ textAlign: 'right', fontWeight: 500 }}>{effectiveLanguage === 'ar' ? 'المظهر' : 'Theme'}</span>
+              <span style={{ textAlign: 'right', fontWeight: 500 }}>{t('josoor.chat.theme')}</span>
               <div style={{ display: 'flex', gap: '8px' }}>
                 <Button
                   variant={theme === 'light' ? 'default' : 'outline'}
                   onClick={() => { document.documentElement.setAttribute('data-theme', 'light'); }}
                   style={{ flex: 1 }}
                 >
-                  {effectiveLanguage === 'ar' ? 'فاتح' : 'Light'}
+                  {t('josoor.chat.light')}
                 </Button>
                 <Button
                   variant={theme === 'dark' ? 'default' : 'outline'}
                   onClick={() => { document.documentElement.setAttribute('data-theme', 'dark'); }}
                   style={{ flex: 1 }}
                 >
-                  {effectiveLanguage === 'ar' ? 'داكن' : 'Dark'}
+                  {t('josoor.chat.dark')}
                 </Button>
               </div>
             </div>
           </div>
           <DialogFooter>
-            <Button onClick={() => setIsSettingsOpen(false)}>{effectiveLanguage === 'ar' ? 'إغلاق' : 'Close'}</Button>
+            <Button onClick={() => setIsSettingsOpen(false)}>{t('josoor.chat.close')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -406,8 +398,8 @@ export const ChatContainer = memo(function ChatContainer({
                           <button
                             onClick={onToggleCanvas}
                             className="sidebar-icon-button clickable"
-                            title={effectiveLanguage === 'ar' ? 'تبديل اللوحة' : 'Toggle canvas'}
-                            aria-label={effectiveLanguage === 'ar' ? 'تبديل اللوحة' : 'Toggle canvas'}
+                            title={t('josoor.chat.toggleCanvas')}
+                            aria-label={t('josoor.chat.toggleCanvas')}
                           >
                             <img src="/icons/menu.png" alt="Toggle canvas" className="sidebar-quickaction-icon sidebar-quickaction-small" />
                           </button>
@@ -501,7 +493,7 @@ export const ChatContainer = memo(function ChatContainer({
                         }}
                         onRetry={() => {
                           // Retry sends a short 'Try Again' prompt through the parent onSendMessage
-                          if (onSendMessage) onSendMessage('Try Again');
+                          if (onSendMessage) onSendMessage(t('josoor.chat.tryAgain'));
                         }}
                       />
                     ))}
