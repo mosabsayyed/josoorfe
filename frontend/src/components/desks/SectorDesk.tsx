@@ -611,13 +611,13 @@ export const SectorDesk: React.FC<SectorDeskProps> = ({ year: propYear, quarter:
 
     const handleStrategyCheck = async () => {
         setIsStrategyModalOpen(true);
-        setStrategyReportHtml('<div style="display:flex;align-items:center;justify-content:center;height:100%;"><h3 style="color:#60a5fa">Generating Strategic Analysis...</h3></div>');
+        setStrategyReportHtml(`<div style="display:flex;align-items:center;justify-content:center;height:100%;"><h3 style="color:#60a5fa">${t('josoor.sector.generatingAnalysis')}</h3></div>`);
         setStrategyArtifacts([]);
 
         try {
             // Use fetched prompt template or fallback to loading message
             if (!strategyPromptTemplate) {
-                setStrategyReportHtml('<div style="display:flex;align-items:center;justify-content:center;height:100%;"><h3 style="color:#ef4444">Error: Strategy prompt template not loaded</h3></div>');
+                setStrategyReportHtml(`<div style="display:flex;align-items:center;justify-content:center;height:100%;"><h3 style="color:#ef4444">Error: ${t('josoor.sector.errorPromptNotLoaded')}</h3></div>`);
                 return;
             }
 
@@ -647,7 +647,7 @@ export const SectorDesk: React.FC<SectorDeskProps> = ({ year: propYear, quarter:
                 }
                 window.dispatchEvent(new Event('josoor_conversation_update'));
             } else {
-                setStrategyReportHtml('<p style="color:red">Analysis failed: No content received.</p>');
+                setStrategyReportHtml(`<p style="color:red">${t('josoor.sector.analysisFailed')}</p>`);
                 setStrategyArtifacts([]);
             }
 
@@ -790,8 +790,8 @@ export const SectorDesk: React.FC<SectorDeskProps> = ({ year: propYear, quarter:
 
                 <div className="sector-details-drawer-footer">
                     <p>
-                        • Publicly available V2030 dataset snapshots<br />
-                        • Non-comprehensive representative simulation
+                        • {t('josoor.sector.disclaimerLine1')}<br />
+                        • {t('josoor.sector.disclaimerLine2')}
                     </p>
                 </div>
             </div>

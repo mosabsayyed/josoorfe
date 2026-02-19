@@ -187,11 +187,11 @@ const SectorHeaderNav: React.FC<SectorHeaderNavProps> = ({
         }
     };
 
-    const renderItem = (label: string, val: number, color: string, status?: 'high' | 'medium' | 'low' | 'none') => (
+    const renderItem = (id: string, val: number, color: string, status?: 'high' | 'medium' | 'low' | 'none') => (
         <div
             className={`policy-tool-item ${isNA ? 'disabled' : ''}`}
-            onMouseEnter={() => !isNA && handleCategoryHover(label)}
-            onClick={() => !isNA && handleCategoryHover(label)}
+            onMouseEnter={() => !isNA && handleCategoryHover(id)}
+            onClick={() => !isNA && handleCategoryHover(id)}
             style={{ cursor: isNA ? 'default' : 'pointer' }}
         >
             <div
@@ -203,7 +203,7 @@ const SectorHeaderNav: React.FC<SectorHeaderNavProps> = ({
             ></div>
             <div className="policy-tool-content">
                 <span className="output-label">
-                    {label}
+                    {t('josoor.sector.' + id.toLowerCase())}
                 </span>
                 <span className="kpi-value">
                     {isNA ? 'N/A' : getValue(val)}
@@ -235,16 +235,17 @@ const SectorHeaderNav: React.FC<SectorHeaderNavProps> = ({
                     <div className="sector-icons-container">
                     {SECTORS.map((sector) => {
                         const isSelected = selectedSector === sector.id;
+                        const sectorLabel = t('josoor.sector.sector' + (sector.id === 'all' ? 'All' : sector.id.charAt(0).toUpperCase() + sector.id.slice(1)));
                         return (
                             <motion.button
                                 key={sector.id}
                                 onClick={() => onSelectSector(sector.id)}
-                                title={sector.label}
+                                title={sectorLabel}
                                 whileHover={{ scale: 1.1 }}
                                 whileTap={{ scale: 0.95 }}
                                 className={`sector-icon-button ${isSelected ? 'active' : ''}`}
                             >
-                                <img src={sector.icon} width={24} height={24} alt={sector.label} style={{ filter: isSelected ? 'none' : 'grayscale(1) opacity(0.8)' }} />
+                                <img src={sector.icon} width={24} height={24} alt={sectorLabel} style={{ filter: isSelected ? 'none' : 'grayscale(1) opacity(0.8)' }} />
                             </motion.button>
                         );
                     })}
@@ -265,7 +266,7 @@ const SectorHeaderNav: React.FC<SectorHeaderNavProps> = ({
                                 className={`pillar-tab ${(timelineFilter === 'current' || timelineFilter === 'both') ? 'active' : ''}`}
                                 title="Toggle Existing Assets"
                             >
-                                Existing
+                                {t('josoor.sector.existing')}
                             </button>
                             <button
                                 onClick={() => {
@@ -275,7 +276,7 @@ const SectorHeaderNav: React.FC<SectorHeaderNavProps> = ({
                                 className={`pillar-tab ${(timelineFilter === 'future' || timelineFilter === 'both') ? 'active' : ''}`}
                                 title="Toggle Planned Assets"
                             >
-                                Planned
+                                {t('josoor.sector.planned')}
                             </button>
                         </div>
                     </div>
@@ -290,13 +291,13 @@ const SectorHeaderNav: React.FC<SectorHeaderNavProps> = ({
                                 title="Major Unlocks Only"
                             >
                                 <img src={majorUnlockPin} width={12} height={12} style={{ filter: priorityFilter === 'major' ? 'none' : 'grayscale(1) opacity(0.5)' }} />
-                                <span>Major</span>
+                                <span>{t('josoor.sector.major')}</span>
                             </button>
                             <button
                                 onClick={() => onPriorityFilterChange?.('both')}
                                 className={`pillar-tab ${priorityFilter === 'both' ? 'active' : ''}`}
                             >
-                                All
+                                {t('josoor.common.all')}
                             </button>
                         </div>
                     </div>

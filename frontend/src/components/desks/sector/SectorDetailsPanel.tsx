@@ -356,43 +356,43 @@ const SectorDetailsPanel: React.FC<SectorDetailsPanelProps> = ({
 
         return [
             {
-                label: 'Water Supply',
+                label: t('josoor.sector.waterSupply'),
                 value: formatNumber(waterCapacity),
                 unit: 'm³/day',
                 color: 'var(--sector-water)'
             },
             {
-                label: 'Energy Capacity',
+                label: t('josoor.sector.energyCapacity'),
                 value: formatNumber(energyCapacity / 1000), // Convert MW to GW
                 unit: 'GW',
                 color: 'var(--sector-energy)'
             },
             {
-                label: 'Housing Units',
+                label: t('josoor.sector.housingUnits'),
                 value: formatNumber(housingUnits),
                 unit: 'units',
                 color: 'var(--sector-giga)'
             },
             {
-                label: 'Tourism Hotel Keys',
+                label: t('josoor.sector.tourismHotelKeys'),
                 value: formatNumber(hotelKeys),
                 unit: 'keys',
                 color: 'var(--sector-giga)'
             },
             {
-                label: 'Industrial Space',
+                label: t('josoor.sector.industrialSpace'),
                 value: formatNumber(industrialSpace),
                 unit: 'km²',
                 color: 'var(--sector-industry)'
             },
             {
-                label: 'Automotive Production',
+                label: t('josoor.sector.automotiveProduction'),
                 value: formatNumber(automotiveProduction),
                 unit: 'cars/yr',
                 color: 'var(--sector-industry)'
             }
         ];
-    }, [allAssets, filteredAssets, selectedRegion, hoveredRegion, selectedSector, year, selectedPriority, selectedStatus]);
+    }, [allAssets, filteredAssets, selectedRegion, hoveredRegion, selectedSector, year, selectedPriority, selectedStatus, t]);
 
     // DEBUG: Log props to understand rendering flow
     console.log('[SectorDetailsPanel RENDER]', {
@@ -522,7 +522,7 @@ const SectorDetailsPanel: React.FC<SectorDetailsPanelProps> = ({
                     {(selectedAsset.completion_date || selectedAsset.launch_date) && (
                         <div style={{ marginBottom: '1.5rem' }}>
                             <div style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--component-text-muted)', marginBottom: '4px', letterSpacing: '0.5px' }}>
-                                {selectedAsset.completion_date ? 'COMPLETION DATE' : 'LAUNCH DATE'}
+                                {selectedAsset.completion_date ? t('josoor.sector.completionDate') : t('josoor.sector.launchDate')}
                             </div>
                             <div style={{ fontSize: '16px', fontWeight: 600, color: 'var(--component-text-primary)' }}>
                                 {selectedAsset.completion_date || selectedAsset.launch_date}
@@ -534,7 +534,7 @@ const SectorDetailsPanel: React.FC<SectorDetailsPanelProps> = ({
                     {selectedAsset.ownership_type && (
                         <div style={{ marginBottom: '1.5rem' }}>
                             <div style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--component-text-muted)', marginBottom: '4px', letterSpacing: '0.5px' }}>
-                                OWNERSHIP TYPE
+                                {t('josoor.sector.ownershipType')}
                             </div>
                             <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--component-text-primary)', textTransform: 'capitalize' }}>
                                 {selectedAsset.ownership_type}
@@ -546,7 +546,7 @@ const SectorDetailsPanel: React.FC<SectorDetailsPanelProps> = ({
                     {selectedAsset.sector_split && typeof selectedAsset.sector_split === 'object' && Object.keys(selectedAsset.sector_split).length > 0 && (
                         <div style={{ marginBottom: '1.5rem' }}>
                             <div style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--component-text-muted)', marginBottom: '8px', letterSpacing: '0.5px' }}>
-                                CAPACITY ALLOCATION
+                                {t('josoor.sector.capacityAllocation')}
                             </div>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                                 {Object.entries(selectedAsset.sector_split).map(([sector, percentage]) => (
@@ -579,7 +579,7 @@ const SectorDetailsPanel: React.FC<SectorDetailsPanelProps> = ({
                                     textTransform: 'uppercase',
                                     letterSpacing: '0.5px'
                                 }}>
-                                    {selectedAsset.priority} PRIORITY
+                                    {t('josoor.sector.prioritySuffix', { level: selectedAsset.priority })}
                                 </span>
                             </div>
 
@@ -587,7 +587,7 @@ const SectorDetailsPanel: React.FC<SectorDetailsPanelProps> = ({
                             {selectedAsset.fiscal_action && (
                                 <div style={{ marginBottom: '1.5rem' }}>
                                     <div style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--component-text-muted)', marginBottom: '4px', letterSpacing: '0.5px' }}>
-                                        FISCAL ACTION
+                                        {t('josoor.sector.fiscalAction')}
                                     </div>
                                     <div style={{ 
                                         fontSize: '16px', 
@@ -607,7 +607,7 @@ const SectorDetailsPanel: React.FC<SectorDetailsPanelProps> = ({
                             {selectedAsset.rationale && (
                                 <div style={{ marginBottom: '1.5rem' }}>
                                     <div style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--component-text-muted)', marginBottom: '4px', letterSpacing: '0.5px' }}>
-                                        STRATEGIC RATIONALE
+                                        {t('josoor.sector.strategicRationale')}
                                     </div>
                                     <div style={{ 
                                         fontSize: '14px', 
@@ -627,7 +627,7 @@ const SectorDetailsPanel: React.FC<SectorDetailsPanelProps> = ({
                             {selectedAsset.capacity && selectedAsset.capacity !== selectedAsset.capacity_metric && (
                                 <div style={{ marginBottom: '1.5rem' }}>
                                     <div style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--component-text-muted)', marginBottom: '4px', letterSpacing: '0.5px' }}>
-                                        {t('josoor.sector.capacity')} DETAILS
+                                        {t('josoor.sector.capacityDetails')}
                                     </div>
                                     <div style={{ fontSize: '14px', color: 'var(--component-text-secondary)' }}>
                                         {selectedAsset.capacity}
@@ -639,7 +639,7 @@ const SectorDetailsPanel: React.FC<SectorDetailsPanelProps> = ({
                             {selectedAsset.category && (
                                 <div style={{ marginBottom: '1.5rem' }}>
                                     <div style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--component-text-muted)', marginBottom: '4px', letterSpacing: '0.5px' }}>
-                                        CATEGORY
+                                        {t('josoor.sector.category')}
                                     </div>
                                     <div style={{ fontSize: '14px', color: 'var(--component-text-secondary)' }}>
                                         {selectedAsset.category}
@@ -651,7 +651,7 @@ const SectorDetailsPanel: React.FC<SectorDetailsPanelProps> = ({
                             {selectedAsset.sub_category && (
                                 <div style={{ marginBottom: '1.5rem' }}>
                                     <div style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--component-text-muted)', marginBottom: '4px', letterSpacing: '0.5px' }}>
-                                        SUB-CATEGORY
+                                        {t('josoor.sector.subCategory')}
                                     </div>
                                     <div style={{ fontSize: '14px', color: 'var(--component-text-secondary)' }}>
                                         {selectedAsset.sub_category}
@@ -673,7 +673,7 @@ const SectorDetailsPanel: React.FC<SectorDetailsPanelProps> = ({
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
                                 <span style={{ fontSize: '16px' }}>🎯</span>
                                 <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--component-color-info)' }}>
-                                    Strategic Alignment
+                                    {t('josoor.sector.strategicAlignment')}
                                 </div>
                             </div>
                             {selectedAsset.rationale && (
@@ -689,7 +689,7 @@ const SectorDetailsPanel: React.FC<SectorDetailsPanelProps> = ({
                             {selectedAsset.fiscal_action && (
                                 <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid rgba(59, 130, 246, 0.2)' }}>
                                     <div style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--component-text-muted)', marginBottom: '4px' }}>
-                                        FISCAL ACTION
+                                        {t('josoor.sector.fiscalAction')}
                                     </div>
                                     <div style={{ fontSize: '13px', color: 'var(--component-text-primary)', fontWeight: 500 }}>
                                         {selectedAsset.fiscal_action}
@@ -774,7 +774,7 @@ const SectorDetailsPanel: React.FC<SectorDetailsPanelProps> = ({
                     {!(selectedAsset.priority === 'HIGH' || selectedAsset.priority === 'MAJOR' || selectedAsset.priority === 'URGENT' || selectedAsset.priority === 'CRITICAL') && selectedAsset.sub_category && (
                         <div style={{ marginBottom: '1rem' }}>
                             <div style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--component-text-muted)', marginBottom: '4px', letterSpacing: '0.5px' }}>
-                                TYPE
+                                {t('josoor.sector.typeLabel')}
                             </div>
                             <div style={{ fontSize: '14px', color: 'var(--component-text-secondary)' }}>
                                 {selectedAsset.sub_category}
@@ -792,15 +792,15 @@ const SectorDetailsPanel: React.FC<SectorDetailsPanelProps> = ({
             <div className="sector-details-panel">
                 <div className="details-header">
                     <h2 className="details-title">
-                        {selectedSector === 'all' || selectedSector === 'All Factors' ? 'All Sectors' : `${selectedSector} Sector`}
+                        {selectedSector === 'all' || selectedSector === 'All Factors' ? t('josoor.sector.allSectors') : t('josoor.sector.sectorSuffix', { sector: selectedSector })}
                     </h2>
-                    <p className="details-subtitle">National Perspective</p>
+                    <p className="details-subtitle">{t('josoor.sector.nationalPerspective')}</p>
                 </div>
 
                 {/* Show Sector Outputs on L1 */}
                 <div className="details-content">
                     <div className="sector-outputs-section">
-                        <h3 className="section-title">Sector Outputs</h3>
+                        <h3 className="section-title">{t('josoor.sector.sectorOutputs')}</h3>
                         <div className="outputs-grid">
                             {sectorOutputs.map((output, idx) => (
                                 <div key={idx} className="output-card">
@@ -826,9 +826,9 @@ const SectorDetailsPanel: React.FC<SectorDetailsPanelProps> = ({
                 <div className="header-content">
                     <div className="header-text">
                         <h2 className="details-title">
-                            {selectedSector === 'all' || selectedSector === 'All Factors' ? 'All Sectors' : `${selectedSector} Sector`}
+                            {selectedSector === 'all' || selectedSector === 'All Factors' ? t('josoor.sector.allSectors') : t('josoor.sector.sectorSuffix', { sector: selectedSector })}
                         </h2>
-                        <p className="details-subtitle">Region: {selectedRegion}</p>
+                        <p className="details-subtitle">{t('josoor.sector.regionLabel', { region: selectedRegion })}</p>
                     </div>
                 </div>
             </div>
@@ -837,7 +837,7 @@ const SectorDetailsPanel: React.FC<SectorDetailsPanelProps> = ({
             <div className="details-content">
                 {/* Top Section: Sector Outputs */}
                 <div className="sector-outputs-section">
-                    <h3 className="section-title">Sector Outputs</h3>
+                    <h3 className="section-title">{t('josoor.sector.sectorOutputs')}</h3>
                     <div className="outputs-grid">
                         {sectorOutputs.map((output, idx) => (
                             <div key={idx} className="output-card">
@@ -853,12 +853,12 @@ const SectorDetailsPanel: React.FC<SectorDetailsPanelProps> = ({
 
                 {/* Bottom Section: Asset List */}
                 <div className="assets-section">
-                    <h3 className="section-title">Assets ({filteredAssets.length})</h3>
+                    <h3 className="section-title">{t('josoor.sector.assetsCount', { count: filteredAssets.length })}</h3>
 
                     {isLoading ? (
-                        <div className="loading-state">Loading...</div>
+                        <div className="loading-state">{t('josoor.common.loading')}</div>
                     ) : filteredAssets.length === 0 ? (
-                        <div className="empty-state">No assets found.</div>
+                        <div className="empty-state">{t('josoor.sector.noAssetsFound')}</div>
                     ) : (
                         <div className="assets-list">
                             {filteredAssets.map(asset => (
@@ -922,19 +922,19 @@ const SectorDetailsPanel: React.FC<SectorDetailsPanelProps> = ({
                                         <div className="asset-details">
                                             {asset.rationale && (
                                                 <div className="detail-field">
-                                                    <span className="detail-label">Rationale:</span>
+                                                    <span className="detail-label">{t('josoor.sector.rationale')}</span>
                                                     <span className="detail-value">{asset.rationale}</span>
                                                 </div>
                                             )}
                                             {asset.fiscal_action && (
                                                 <div className="detail-field">
-                                                    <span className="detail-label">Fiscal Action:</span>
+                                                    <span className="detail-label">{t('josoor.sector.fiscalActionLabel')}</span>
                                                     <span className="detail-value">{asset.fiscal_action}</span>
                                                 </div>
                                             )}
                                             {asset.investment && (
                                                 <div className="detail-field">
-                                                    <span className="detail-label">Investment:</span>
+                                                    <span className="detail-label">{t('josoor.sector.investmentLabel')}</span>
                                                     <span className="detail-value">{asset.investment}</span>
                                                 </div>
                                             )}
@@ -951,7 +951,7 @@ const SectorDetailsPanel: React.FC<SectorDetailsPanelProps> = ({
             {onBackToNational && (
                 <div className="details-footer">
                     <button onClick={onBackToNational} className="back-to-national-button">
-                        ← Back to National View
+                        {t('josoor.sector.backToNational')}
                     </button>
                 </div>
             )}

@@ -133,6 +133,17 @@ const PillarSectorNav: React.FC<PillarSectorNavProps> = ({
                     const isSupported = sector.supported;
                     const pillarColor = PILLARS[selectedPillar as keyof typeof PILLARS]?.color;
 
+                    // Translation key map
+                    const SECTOR_T_KEYS: Record<string, string> = {
+                        'health': 'sectorHealth', 'education': 'sectorEducation', 'livability': 'sectorUrbanQuality',
+                        'water': 'sectorWaterEnv', 'culture': 'sectorCultureEnt', 'hajj': 'sectorHajjUmrah',
+                        'energy': 'sectorEnergy', 'mining': 'sectorMining', 'industry': 'sectorIndustry',
+                        'logistics': 'sectorLogistics', 'tourism': 'sectorTourism', 'digital': 'sectorDigitalEcon',
+                        'finance': 'sectorFinance', 'giga': 'sectorGigaProjects', 'gov': 'sectorGovEffective',
+                        'nonprofit': 'sectorNonProfit'
+                    };
+                    const sectorLabel = t('josoor.sector.' + (SECTOR_T_KEYS[sectorId] || sectorId));
+
                     return (
                         <motion.button
                             key={sectorId}
@@ -157,7 +168,7 @@ const PillarSectorNav: React.FC<PillarSectorNavProps> = ({
                             >
                                 <img
                                     src={sector.icon}
-                                    alt={sector.label}
+                                    alt={sectorLabel}
                                     style={{
                                         width: '100%', height: '100%',
                                         filter: isSupported ? (isSelected ? 'none' : 'grayscale(100%) opacity(0.6)') : 'grayscale(100%) opacity(0.2)'
@@ -167,7 +178,7 @@ const PillarSectorNav: React.FC<PillarSectorNavProps> = ({
 
                             <div style={{ textAlign: 'left', flex: 1 }}>
                                 <div className="sector-label" style={{ color: isSupported ? (isSelected ? 'var(--component-text-primary)' : 'var(--component-text-secondary)') : 'var(--component-text-muted)', fontWeight: isSelected ? 800 : 500, fontSize: '0.9rem' }}>
-                                    {sector.label}
+                                    {sectorLabel}
                                 </div>
                                 <div className="sector-status" style={{ color: isSelected ? pillarColor : 'var(--component-text-muted)', fontSize: '0.65rem', fontWeight: 600, opacity: 0.8, marginTop: '2px' }}>
                                     {isSupported
@@ -188,9 +199,9 @@ const PillarSectorNav: React.FC<PillarSectorNavProps> = ({
             <div style={{ marginTop: 'auto', paddingTop: '1.25rem', borderTop: '1px solid var(--component-panel-border)', fontSize: '10px', color: 'var(--component-text-muted)', opacity: 0.8 }}>
                 <p style={{ margin: 0, lineHeight: '1.5', fontStyle: 'italic' }}>
                     <strong>{t('josoor.sector.confidentialData')}</strong><br />
-                    • Publicly available V2030 dataset snapshots<br />
-                    • Non-comprehensive representative simulation<br />
-                    • Authorized personnel only
+                    • {t('josoor.sector.disclaimerLine1')}<br />
+                    • {t('josoor.sector.disclaimerLine2')}<br />
+                    • {t('josoor.sector.disclaimerLine3')}
                 </p>
             </div>
         </div>
