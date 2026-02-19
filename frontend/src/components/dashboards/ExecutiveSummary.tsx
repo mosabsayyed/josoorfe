@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import Panel from './Panel';
 import type { Dimension } from '../../types/dashboard';
 
@@ -18,6 +19,7 @@ const ExecutiveSummary: React.FC<ExecutiveSummaryProps> = ({
   language
 }) => {
   console.log('[ExecutiveSummary] Rendering component...');
+  const { t } = useTranslation();
   const [executiveSummary, setExecutiveSummary] = useState('');
   const [activeTab, setActiveTab] = useState<'summary' | 'detailed'>('summary');
   const [isConnected, setIsConnected] = useState(false);
@@ -63,7 +65,7 @@ const ExecutiveSummary: React.FC<ExecutiveSummaryProps> = ({
   const handleAnalyze = useCallback(async () => {
     if (dimensions.length === 0) return;
     setIsSummaryLoading(true);
-    setExecutiveSummary("Requesting AI analysis...");
+    setExecutiveSummary(t('josoor.dashboard.executive.requestingAnalysis'));
     
     // Send message to parent window to trigger backend analysis
     // The parent (UniversalCanvas) will handle this, call the backend, 
@@ -75,15 +77,15 @@ const ExecutiveSummary: React.FC<ExecutiveSummaryProps> = ({
       selectedYear: selectedYear // Pass selectedYear
     }, '*');
     
-  }, [dimensions, selectedYear]);
+  }, [dimensions, selectedYear, t]);
 
   return (
     <Panel className="th-summary-panel h-full">
         <div className="th-summary-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <h3 style={{ color: isDark ? '#F9FAFB' : '#1F2937', margin: 0 }}>Strategic Planning</h3>
+                <h3 style={{ color: isDark ? '#F9FAFB' : '#1F2937', margin: 0 }}>{t('josoor.dashboard.executive.strategicPlanning')}</h3>
                 <div 
-                    title={isConnected ? "Connected to Analysis Stream" : "Disconnected from Analysis Stream"}
+                    title={isConnected ? t('josoor.dashboard.executive.connected') : t('josoor.dashboard.executive.disconnected')}
                     style={{
                         width: '8px', 
                         height: '8px', 
@@ -95,7 +97,7 @@ const ExecutiveSummary: React.FC<ExecutiveSummaryProps> = ({
                 />
             </div>
             <button onClick={handleAnalyze} disabled={isSummaryLoading || !isConnected}>
-            {isSummaryLoading ? 'Analyzing...' : isConnected ? '✨ Analyze' : '⚠ Disconnected'}
+            {isSummaryLoading ? t('josoor.dashboard.executive.analyzing') : isConnected ? t('josoor.dashboard.executive.analyze') : t('josoor.dashboard.executive.disconnectedBtn')}
             </button>
         </div>
         <div className={`th-summary-text ${isSummaryLoading ? 'loading' : ''}`} style={{ position: 'relative', minHeight: '100px' }}>
@@ -120,7 +122,7 @@ const ExecutiveSummary: React.FC<ExecutiveSummaryProps> = ({
                             borderRadius: '50%',
                             animation: 'spin 1s linear infinite'
                         }}/>
-                        <span style={{ fontSize: '0.75rem', color: isDark ? '#D1D5DB' : '#4B5563' }}>Updating...</span>
+                        <span style={{ fontSize: '0.75rem', color: isDark ? '#D1D5DB' : '#4B5563' }}>{t('josoor.dashboard.executive.updating')}</span>
                     </div>
                 </div>
             )}
@@ -139,7 +141,7 @@ const ExecutiveSummary: React.FC<ExecutiveSummaryProps> = ({
             ) : (
                 !isSummaryLoading && (
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', color: isDark ? '#6B7280' : '#9CA3AF', padding: '2rem' }}>
-                         <p>Click "Analyze" to generate strategic insights.</p>
+                         <p>{t('josoor.dashboard.executive.clickAnalyze')}</p>
                     </div>
                 )
             )}

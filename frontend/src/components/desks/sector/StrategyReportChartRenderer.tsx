@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import Highcharts from 'highcharts';
 import HighchartsMore from 'highcharts/highcharts-more';
 import HighchartsExporting from 'highcharts/modules/exporting';
@@ -39,6 +40,7 @@ export const StrategyReportChartRenderer: React.FC<StrategyReportChartRendererPr
   width = '100%',
   height = '380px'
 }) => {
+  const { t } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<Highcharts.Chart | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -54,7 +56,7 @@ export const StrategyReportChartRenderer: React.FC<StrategyReportChartRendererPr
         const { columns = [], rows = [] } = artifact.content;
 
         if (columns.length === 0 || rows.length === 0) {
-          setError('No table data available');
+          setError(t('josoor.sector.chart.noTableData'));
           return;
         }
 
@@ -82,14 +84,14 @@ export const StrategyReportChartRenderer: React.FC<StrategyReportChartRendererPr
       // Handle chart artifacts
       const { content } = artifact;
       if (!content) {
-        setError('Invalid chart configuration');
+        setError(t('josoor.sector.chart.invalidConfig'));
         return;
       }
 
       // Validate artifact type
       if (artifact.artifact_type !== 'CHART') {
         console.warn('[StrategyReportChartRenderer] Unexpected artifact type:', artifact.artifact_type);
-        setError(`Cannot render artifact type: ${artifact.artifact_type}`);
+        setError(t('josoor.sector.chart.cannotRender', { type: artifact.artifact_type }));
         return;
       }
 
@@ -97,7 +99,7 @@ export const StrategyReportChartRenderer: React.FC<StrategyReportChartRendererPr
       const hasValidSeries = 'series' in content && Array.isArray(content.series);
       if (!hasValidSeries) {
         console.warn('[StrategyReportChartRenderer] Invalid chart: missing series data', content);
-        setError('Invalid chart: missing series data');
+        setError(t('josoor.sector.chart.missingSeries'));
         return;
       }
 
@@ -234,9 +236,9 @@ export const StrategyReportChartRenderer: React.FC<StrategyReportChartRendererPr
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unknown error';
       console.error('[StrategyReportChartRenderer] Error:', err);
-      setError(`Failed to render chart: ${message}`);
+      setError(t('josoor.sector.chart.failedToRender', { message }));
     }
-  }, [artifact]);
+  }, [artifact, t]);
 
   if (error) {
     return (

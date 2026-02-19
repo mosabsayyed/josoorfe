@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { UnifiedSidebar } from './UnifiedSidebar';
 import { UnifiedHeader } from './UnifiedHeader';
@@ -11,6 +12,7 @@ import type { ConversationSummary, Message as APIMessage } from '../../types/api
 import { useAuth } from '../../contexts/AuthContext';
 
 export const MainLayout: React.FC = () => {
+    const { t } = useTranslation();
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
     const [year, setYear] = useState('2025');
     const [quarter, setQuarter] = useState('All');
@@ -29,12 +31,12 @@ export const MainLayout: React.FC = () => {
 
     // Determine title based on current path
     const getTitle = () => {
-        if (location.pathname.includes('sector')) return 'Sector Desk';
-        if (location.pathname.includes('controls')) return 'Controls Desk';
-        if (location.pathname.includes('planning')) return 'Planning Desk';
-        if (location.pathname.includes('enterprise')) return 'Enterprise Desk';
-        if (location.pathname.includes('reporting')) return 'Reporting Desk';
-        return 'JOSOOR Transformation';
+        if (location.pathname.includes('sector')) return t('josoor.layout.sectorDesk');
+        if (location.pathname.includes('controls')) return t('josoor.layout.controlsDesk');
+        if (location.pathname.includes('planning')) return t('josoor.layout.planningDesk');
+        if (location.pathname.includes('enterprise')) return t('josoor.layout.enterpriseDesk');
+        if (location.pathname.includes('reporting')) return t('josoor.layout.reportingDesk');
+        return t('josoor.layout.josoorTransformation');
     };
 
     // Load Conversations
@@ -44,7 +46,7 @@ export const MainLayout: React.FC = () => {
                 const guestConvos = authService.getGuestConversations();
                 const adapted = (guestConvos || []).map((c: any) => ({
                     id: c.id,
-                    title: c.title || 'New Chat',
+                    title: c.title || t('josoor.layout.newChat'),
                     message_count: (c.messages || []).length,
                     created_at: c.created_at || new Date().toISOString(),
                     updated_at: c.updated_at || new Date().toISOString(),
@@ -56,7 +58,7 @@ export const MainLayout: React.FC = () => {
             const data = await chatService.getConversations();
             const adapted = (data.conversations || []).map((c: any) => ({
                 ...c,
-                title: c.title || "New Chat",
+                title: c.title || t('josoor.layout.newChat'),
                 message_count: Array.isArray(c.messages) ? c.messages.length : (c.message_count || 0),
                 created_at: c.created_at || new Date().toISOString(),
                 updated_at: c.updated_at || new Date().toISOString(),
@@ -153,7 +155,7 @@ export const MainLayout: React.FC = () => {
 
         } catch (error) {
             console.error(error);
-            const errorMsg: APIMessage = { id: Date.now(), role: 'assistant', content: "Error sending message.", created_at: new Date().toISOString() } as any;
+            const errorMsg: APIMessage = { id: Date.now(), role: 'assistant', content: t('josoor.layout.errorSendingMessage'), created_at: new Date().toISOString() } as any;
             setMessages(prev => [...prev, errorMsg]);
         } finally {
             setIsLoading(false);
@@ -226,7 +228,7 @@ export const MainLayout: React.FC = () => {
                     onYearChange={setYear}
                     onQuarterChange={setQuarter}
                     title={getTitle()}
-                    subtitle="Executive Control Tower"
+                    subtitle={t('josoor.layout.executiveControlTower')}
                 />
 
                 <main style={{

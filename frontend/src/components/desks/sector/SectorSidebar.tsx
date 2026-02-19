@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import './SectorSidebar.css';
 
 interface SectorSidebarProps {
@@ -6,6 +7,7 @@ interface SectorSidebarProps {
 }
 
 export function SectorSidebar({ year, quarter }: SectorSidebarProps) {
+    const { t } = useTranslation();
     return (
         <div className="dashboard-sidebar-container">
             <div style={{
@@ -13,13 +15,13 @@ export function SectorSidebar({ year, quarter }: SectorSidebarProps) {
                 color: 'var(--muted-foreground)',
                 textAlign: 'center'
             }}>
-                <p>SectorSidebar placeholder</p>
+                <p>{t('josoor.sector.sidebar.placeholder')}</p>
                 <p style={{ fontSize: '0.875rem', marginTop: '8px' }}>
-                    Legacy dashboard code removed. Component ready for new implementation.
+                    {t('josoor.sector.sidebar.legacyRemoved')}
                 </p>
                 {year && quarter && (
                     <p style={{ fontSize: '0.75rem', marginTop: '8px', opacity: 0.7 }}>
-                        Selected: {quarter} {year}
+                        {t('josoor.sector.sidebar.selected', { quarter, year })}
                     </p>
                 )}
             </div>

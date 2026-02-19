@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
     Settings as SettingsIcon,
     Save,
@@ -26,6 +27,7 @@ interface SettingsDeskProps {
 }
 
 export function SettingsDesk({ year, quarter }: SettingsDeskProps) {
+    const { t } = useTranslation();
     const { user } = useAuth();
     const [settings, setSettings] = useState<AdminSettings | null>(null);
     const [draft, setDraft] = useState<AdminSettings | null>(null);
@@ -60,7 +62,7 @@ export function SettingsDesk({ year, quarter }: SettingsDeskProps) {
             const updated = await saveSettings(draft);
             setSettings(updated);
             setDraft(updated);
-            setSaveStatus('Settings saved successfully');
+            setSaveStatus(t('josoor.settings.savedSuccessfully'));
             setTimeout(() => setSaveStatus(null), 3000);
         } catch (err: any) {
             setError(err.message || 'Failed to save settings');
@@ -131,7 +133,7 @@ export function SettingsDesk({ year, quarter }: SettingsDeskProps) {
                 )}
                 <button className="trace-list-refresh" onClick={loadSettings} disabled={loading}>
                     <RefreshCw className="icon-md" />
-                    Load Settings
+                    {t('josoor.admin.loadSettings')}
                 </button>
             </div>
         );
@@ -142,9 +144,9 @@ export function SettingsDesk({ year, quarter }: SettingsDeskProps) {
             <div className="observability-header-left admin-header-spacing">
                 <SettingsIcon className="observability-header-icon" />
                 <div>
-                    <h2 className="observability-header-title">Admin Settings</h2>
+                    <h2 className="observability-header-title">{t('josoor.admin.adminSettings')}</h2>
                     <p className="observability-header-subtitle">
-                        Configure LLM provider, MCP endpoints, and response schema independently.
+                        {t('josoor.admin.configureProvider')}
                     </p>
                 </div>
             </div>
@@ -164,9 +166,9 @@ export function SettingsDesk({ year, quarter }: SettingsDeskProps) {
 
             <div className="admin-settings-grid">
                 <div className="admin-card">
-                    <h3><Cpu className="icon-md admin-icon-inline" />Provider & Models</h3>
+                    <h3><Cpu className="icon-md admin-icon-inline" />{t('josoor.admin.providerModels')}</h3>
                     <label className="admin-field">
-                        <span>Base URL</span>
+                        <span>{t('josoor.admin.baseUrl')}</span>
                         <input
                             type="text"
                             value={draft.provider.base_url || ''}
@@ -175,7 +177,7 @@ export function SettingsDesk({ year, quarter }: SettingsDeskProps) {
                         />
                     </label>
                     <label className="admin-field">
-                        <span>Model</span>
+                        <span>{t('josoor.admin.model')}</span>
                         <input
                             type="text"
                             value={draft.provider.model || ''}
@@ -184,7 +186,7 @@ export function SettingsDesk({ year, quarter }: SettingsDeskProps) {
                         />
                     </label>
                     <label className="admin-field">
-                        <span>Timeout (s)</span>
+                        <span>{t('josoor.admin.timeout')}</span>
                         <input
                             type="number"
                             value={draft.provider.timeout || 60}
@@ -192,7 +194,7 @@ export function SettingsDesk({ year, quarter }: SettingsDeskProps) {
                         />
                     </label>
                     <label className="admin-field">
-                        <span>Endpoint Path</span>
+                        <span>{t('josoor.admin.endpointPath')}</span>
                         <input
                             type="text"
                             value={draft.provider.endpoint_path || '/v1/chat/completions'}
@@ -201,7 +203,7 @@ export function SettingsDesk({ year, quarter }: SettingsDeskProps) {
                         />
                     </label>
                     <label className="admin-field">
-                        <span>Enable MCP Tools</span>
+                        <span>{t('josoor.admin.enableMcpTools')}</span>
                         <input
                             type="checkbox"
                             checked={draft.provider.enable_mcp_tools ?? true}
@@ -209,7 +211,7 @@ export function SettingsDesk({ year, quarter }: SettingsDeskProps) {
                         />
                     </label>
                     <label className="admin-field">
-                        <span>Enable Response Schema</span>
+                        <span>{t('josoor.admin.enableResponseSchema')}</span>
                         <input
                             type="checkbox"
                             checked={draft.provider.enable_response_schema ?? false}
@@ -217,7 +219,7 @@ export function SettingsDesk({ year, quarter }: SettingsDeskProps) {
                         />
                     </label>
                     <label className="admin-field">
-                        <span>Max Output Tokens</span>
+                        <span>{t('josoor.admin.maxOutputTokens')}</span>
                         <input
                             type="number"
                             value={draft.provider.max_output_tokens || 8000}
@@ -225,7 +227,7 @@ export function SettingsDesk({ year, quarter }: SettingsDeskProps) {
                         />
                     </label>
                     <label className="admin-field">
-                        <span>Temperature</span>
+                        <span>{t('josoor.admin.temperature')}</span>
                         <input
                             type="number"
                             step="0.1"
@@ -237,9 +239,9 @@ export function SettingsDesk({ year, quarter }: SettingsDeskProps) {
 
                 <div className="admin-card">
                     <div className="admin-card-header">
-                        <h3><Database className="icon-md admin-icon-inline" />MCP Endpoints</h3>
+                        <h3><Database className="icon-md admin-icon-inline" />{t('josoor.admin.mcpEndpoints')}</h3>
                         <button className="trace-list-refresh" onClick={addEndpoint} type="button">
-                            <Plus className="icon-sm" /> Add
+                            <Plus className="icon-sm" /> {t('josoor.admin.add')}
                         </button>
                     </div>
                     <div className="admin-mcp-list">
@@ -263,7 +265,7 @@ export function SettingsDesk({ year, quarter }: SettingsDeskProps) {
                                         onClick={() => removeEndpoint(idx)}
                                         type="button"
                                     >
-                                        Remove
+                                        {t('josoor.admin.remove')}
                                     </button>
                                 </div>
                                 <div className="admin-tools-row">
@@ -282,7 +284,7 @@ export function SettingsDesk({ year, quarter }: SettingsDeskProps) {
                         ))}
                     </div>
                     <div className="admin-card admin-card-spacing">
-                        <h4><Zap className="icon-sm admin-icon-inline" />Persona Bindings</h4>
+                        <h4><Zap className="icon-sm admin-icon-inline" />{t('josoor.admin.personaBindings')}</h4>
                         {['noor', 'maestro', 'default'].map((persona) => (
                             <label key={persona} className="admin-field">
                                 <span>{persona} →</span>
@@ -290,7 +292,7 @@ export function SettingsDesk({ year, quarter }: SettingsDeskProps) {
                                     value={draft.mcp.persona_bindings?.[persona] || ''}
                                     onChange={(e) => updateBinding(persona, e.target.value)}
                                 >
-                                    <option value="">Select endpoint</option>
+                                    <option value="">{t('josoor.admin.selectEndpoint')}</option>
                                     {(draft.mcp.endpoints || []).map((ep) => (
                                         <option key={ep.label} value={ep.label}>
                                             {ep.label}
@@ -313,7 +315,7 @@ export function SettingsDesk({ year, quarter }: SettingsDeskProps) {
                     disabled={loading}
                 >
                     <Save className="icon-md" />
-                    Save Changes
+                    {t('josoor.settings.saveChanges')}
                 </button>
             </div>
         </div>

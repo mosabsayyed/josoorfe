@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { L1Capability, L2Capability, L3Capability } from '../../../types/enterprise';
 import { getL1StatusColor, getL2StatusColor, getL3StatusColor } from '../../../utils/enterpriseStatusUtils';
 import { calculateHeatmapColor, getOverlayContent, type OverlayType } from '../../../utils/enterpriseOverlayUtils';
@@ -19,6 +20,7 @@ export function CapabilityMatrix({
   onL3Hover,
   onL3Leave
 }: CapabilityMatrixProps) {
+  const { t } = useTranslation();
   // Calculate max L3 count across all L2s to determine fixed cell width
   const maxL3Count = useMemo(() => {
     let max = 0;
@@ -78,7 +80,7 @@ export function CapabilityMatrix({
                     <div className="cell-name-l1">{l1.name}</div>
                     <div className="cell-description">{l1.description}</div>
                     <div className="cell-maturity">
-                      <span className="maturity-label">Maturity: </span>
+                      <span className="maturity-label">{t('josoor.enterprise.maturityLabel')} </span>
                       <span className="maturity-value">{l1.maturity_level}</span>
                       <span className="maturity-slash">/</span>
                       <span className="maturity-target">{l1.target_maturity_level}</span>
@@ -110,7 +112,7 @@ export function CapabilityMatrix({
                           <div className="cell-name-l2">{l2.name}</div>
                           <div className="cell-description">{l2.description}</div>
                           <div className="cell-maturity">
-                            <span className="maturity-label">Maturity: </span>
+                            <span className="maturity-label">{t('josoor.enterprise.maturityLabel')} </span>
                             <span className="maturity-value">{l2.maturity_level}</span>
                             <span className="maturity-slash">/</span>
                             <span className="maturity-target">{l2.target_maturity_level}</span>

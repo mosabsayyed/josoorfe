@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { createPortal } from 'react-dom';
 import { motion } from 'framer-motion';
 import { ExpandableNodeList } from './GraphSankeyExpanded';
@@ -57,6 +58,7 @@ const getSafeId = (val: any): string => {
 };
 
 export function GraphSankey({ data, isDark = true, chain, metadata, isDiagnostic = false }: GraphSankeyProps) {
+    const { t } = useTranslation();
     const [tooltip, setTooltip] = useState<{ x: number; y: number; content: React.ReactNode } | null>(null);
     const containerRef = React.useRef<HTMLDivElement>(null);
     const tooltipTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
@@ -618,7 +620,7 @@ export function GraphSankey({ data, isDark = true, chain, metadata, isDiagnostic
     if (!layout || layout.nodes.length === 0) {
         return (
             <div className="flex-center h-full text-center p-8 opacity-50">
-                {(!metadata?.canonicalPath) ? 'Waiting for Metadata...' : 'No matching nodes found for this chain.'}
+                {(!metadata?.canonicalPath) ? t('josoor.explorer.sankey.waitingMetadata') : t('josoor.explorer.sankey.noMatchingNodes')}
             </div>
         );
     }
@@ -632,7 +634,7 @@ export function GraphSankey({ data, isDark = true, chain, metadata, isDiagnostic
                 backgroundColor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)'
             }}>
                 <div style={{ fontSize: '0.7rem', fontWeight: 700, color: isDark ? '#9ca3af' : '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.25rem' }}>
-                    Canonical Flow
+                    {t('josoor.explorer.sankey.canonicalFlow')}
                 </div>
                 <div style={{ fontSize: '0.85rem', color: isDark ? '#d1d5db' : '#374151', lineHeight: 1.4, wordBreak: 'break-word' }}>
                     {columns.map((c: any, i) => {
@@ -749,12 +751,12 @@ export function GraphSankey({ data, isDark = true, chain, metadata, isDiagnostic
                                                 <span style={{ color: isDark ? '#fff' : '#000' }}>{tgtDisplay}</span>
                                             </div>
                                             <div style={{ marginTop: '4px', color: '#D4AF37', fontWeight: 600 }}>
-                                                {link.value} connection{link.value > 1 ? 's' : ''}
+                                                {t('josoor.explorer.sankey.connections', { count: link.value })}
                                             </div>
                                             <div style={{ marginTop: '2px', color: isDark ? '#888' : '#666', fontSize: '10px' }}>
-                                                via {link.types.join(', ')}
+                                                {t('josoor.explorer.sankey.via', { types: link.types.join(', ') })}
                                             </div>
-                                            {link.isVirtual && <div style={{ color: '#D4AF37', fontStyle: 'italic', marginTop: '4px' }}>AI Recommendation</div>}
+                                            {link.isVirtual && <div style={{ color: '#D4AF37', fontStyle: 'italic', marginTop: '4px' }}>{t('josoor.explorer.sankey.aiRecommendation')}</div>}
                                         </div>
                                     )
                                 });
@@ -782,10 +784,10 @@ export function GraphSankey({ data, isDark = true, chain, metadata, isDiagnostic
                                                 {node.nameDisplay}
                                             </div>
                                             <div style={{ fontSize: '12px', color: '#D4AF37', fontWeight: 600, marginBottom: '8px' }}>
-                                                {node.aggregateCount} nodes
+                                                {t('josoor.explorer.sankey.nodeCount', { count: node.aggregateCount })}
                                             </div>
                                             <div style={{ fontSize: '12px', opacity: 0.8, borderTop: `1px solid ${isDark ? '#555' : '#ddd'}`, paddingTop: '8px' }}>
-                                                <div style={{ fontWeight: '600', marginBottom: '4px' }}>Labels:</div>
+                                                <div style={{ fontWeight: '600', marginBottom: '4px' }}>{t('josoor.explorer.sankey.labels')}</div>
                                                 <div style={{ marginLeft: '8px', marginBottom: '8px' }}>{node.labels.join(', ')}</div>
                                             </div>
                                             {node.properties?.sampleIds?.length > 0 && node.aggregateMembers && (
@@ -797,7 +799,7 @@ export function GraphSankey({ data, isDark = true, chain, metadata, isDiagnostic
                                             )}
                                             {node.isBroken && (
                                                 <div style={{ color: '#ff4444', fontWeight: 'bold', marginTop: '12px', fontSize: '12px' }}>
-                                                    GAP DETECTED
+                                                    {t('josoor.explorer.sankey.gapDetected')}
                                                 </div>
                                             )}
                                         </div>
@@ -807,11 +809,11 @@ export function GraphSankey({ data, isDark = true, chain, metadata, isDiagnostic
                                                 {node.nameDisplay}
                                             </div>
                                             <div style={{ fontSize: '12px', opacity: 0.8, marginBottom: '8px', borderTop: `1px solid ${isDark ? '#555' : '#ddd'}`, paddingTop: '8px' }}>
-                                                <div style={{ fontWeight: '600', marginBottom: '4px' }}>Labels:</div>
+                                                <div style={{ fontWeight: '600', marginBottom: '4px' }}>{t('josoor.explorer.sankey.labels')}</div>
                                                 <div style={{ marginLeft: '8px', marginBottom: '12px' }}>{node.labels.join(', ')}</div>
                                             </div>
                                             <div style={{ fontSize: '12px', borderTop: `1px solid ${isDark ? '#555' : '#ddd'}`, paddingTop: '8px' }}>
-                                                <div style={{ fontWeight: '600', marginBottom: '4px' }}>Properties:</div>
+                                                <div style={{ fontWeight: '600', marginBottom: '4px' }}>{t('josoor.explorer.sankey.properties')}</div>
                                                 {Object.entries(node.properties || {})
                                                     .filter(([key]) => !key.toLowerCase().includes('embedding'))
                                                     .map(([key, value]) => (
@@ -825,12 +827,12 @@ export function GraphSankey({ data, isDark = true, chain, metadata, isDiagnostic
                                             </div>
                                             {node.isBroken && (
                                                 <div style={{ color: '#ff4444', fontWeight: 'bold', marginTop: '12px', fontSize: '12px' }}>
-                                                    GAP DETECTED
+                                                    {t('josoor.explorer.sankey.gapDetected')}
                                                 </div>
                                             )}
                                             {node.isVirtual && (
                                                 <div style={{ color: '#ffaa00', fontWeight: 'bold', marginTop: '12px', fontSize: '12px' }}>
-                                                    VIRTUAL
+                                                    {t('josoor.explorer.sankey.virtual')}
                                                 </div>
                                             )}
                                         </div>

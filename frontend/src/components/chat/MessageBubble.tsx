@@ -110,7 +110,7 @@ export function MessageBubble({
           const lines = block.split(/\n/).slice(1).map(l => l.trim()).filter(Boolean);
           return (
             <div key={idx} style={{ marginTop: 6 }}>
-              <strong>Questions:</strong>
+              <strong>{t('josoor.chat.message.questions')}</strong>
               <ul style={{ marginTop: 6, paddingLeft: 18 }}>
                 {lines.map((l, i) => <li key={i} style={{ marginBottom: 4 }}>{l}</li>)}
               </ul>
@@ -130,14 +130,14 @@ export function MessageBubble({
       const fg = parsed.failed_generation || parsed;
       const obj = typeof fg === 'string' ? tryParseJSON(fg) || fg : fg;
 
-      let title = 'JSON Data';
+      let title = t('josoor.chat.message.jsonData');
       if (obj && typeof obj === 'object') {
         if (obj.name || obj.tool) {
-          title = `Tool: ${obj.name || obj.tool}`;
+          title = t('josoor.chat.message.tool', { name: obj.name || obj.tool });
         } else if (Array.isArray(obj)) {
-          title = `Array (${obj.length})`;
+          title = t('josoor.chat.message.array', { length: obj.length });
         } else if (parsed.failed_generation) {
-          title = 'Tool Execution Failed';
+          title = t('josoor.chat.message.toolExecutionFailed');
         }
       }
 
@@ -152,7 +152,7 @@ export function MessageBubble({
     if (!parsed && message.metadata?.error) {
       return (
         <div style={{ marginTop: 10 }}>
-          <JSONCollapsible data={rawAsString} title={isUser ? "Raw Content" : "System Output"} expanded={showRaw} onToggle={() => setShowRaw(!showRaw)} />
+          <JSONCollapsible data={rawAsString} title={isUser ? t('josoor.chat.message.rawContent') : t('josoor.chat.message.systemOutput')} expanded={showRaw} onToggle={() => setShowRaw(!showRaw)} />
         </div>
       );
     }
@@ -160,7 +160,7 @@ export function MessageBubble({
     // If it looks like JSON but failed to parse (mixed content)
     // For User messages, we trust looksLikeJSON more to wrap it
     if (!parsed && looksLikeJSON) {
-      return <JSONCollapsible data={rawAsString} title={isUser ? "JSON Content" : "Raw Content (JSON-like)"} expanded={showRaw} onToggle={() => setShowRaw(!showRaw)} />;
+      return <JSONCollapsible data={rawAsString} title={isUser ? t('josoor.chat.message.jsonContent') : t('josoor.chat.message.rawContentJsonLike')} expanded={showRaw} onToggle={() => setShowRaw(!showRaw)} />;
     }
 
     return renderStringBlocks(String(rawContent).replace(/\n{3,}/g, '\n\n').trim());
@@ -182,7 +182,7 @@ export function MessageBubble({
       if (!Array.isArray(visualizations) || visualizations.length === 0) return null;
 
       // Use the 'answer' field if available, otherwise default generic message
-      const cleanAnswer = parsed.answer || "Here is the requested report with visualizations.";
+      const cleanAnswer = parsed.answer || t('josoor.chat.message.reportWithVisualizations');
 
       // Convert all visualizations to artifact format
       const artifacts = visualizations.map((v: any) => {
@@ -420,7 +420,7 @@ export function MessageBubble({
                 <div
                   style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', padding: '4px 0' }}
                   onClick={() => setShowRaw(!showRaw)}
-                  title="Click to view full request data"
+                  title={t('josoor.chat.message.clickToViewData')}
                 >
                   <div style={{
                     width: 32, height: 32,
@@ -530,7 +530,7 @@ export function MessageBubble({
             
             if (!hasHtmlArtifact) {
               // Extract title from HTML content or use default
-              let title = 'HTML Report';
+              let title = t('josoor.chat.message.htmlReport');
               const titleMatch = htmlCandidate.match(/<title[^>]*>([^<]+)<\/title>/i);
               if (titleMatch) {
                 title = titleMatch[1].trim();

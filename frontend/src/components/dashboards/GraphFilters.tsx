@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from 'react-i18next';
 import { Filter, X } from "lucide-react";
 
 const NODE_COLORS: Record<string, string> = {
@@ -47,6 +48,7 @@ export function GraphFilters({
   onApply,
   isDark
 }: GraphFiltersProps) {
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   
   // LOCAL state for pending changes - only applied on "Apply" click
@@ -205,14 +207,14 @@ export function GraphFilters({
         data-testid="button-toggle-filters"
       >
         <Filter style={{ width: '1rem', height: '1rem' }} />
-        Filters {filterCount > 0 && <span>({filterCount})</span>}
+        {t('josoor.dashboard.filters.filters')} {filterCount > 0 && <span>({filterCount})</span>}
       </button>
 
       {isOpen && (
         <div style={panelStyle}>
           {/* Header */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-            <h3 style={{ fontWeight: 600, color: 'var(--component-text-accent)', margin: 0 }}>Graph Filters</h3>
+            <h3 style={{ fontWeight: 600, color: 'var(--component-text-accent)', margin: 0 }}>{t('josoor.dashboard.filters.graphFilters')}</h3>
             <button
               onClick={handleCancel}
               style={{ 
@@ -238,16 +240,16 @@ export function GraphFilters({
               fontSize: '0.75rem',
               color: 'var(--component-text-accent)'
             }}>
-              ⚠ Changes not applied yet. Click "Apply Filters" to apply.
+              {t('josoor.dashboard.filters.pendingChanges')}
             </div>
           )}
 
           {/* Limit Filter Section */}
           <div style={sectionStyle}>
-            <label style={labelStyle}>Result Limit</label>
+            <label style={labelStyle}>{t('josoor.dashboard.filters.resultLimit')}</label>
             <input
               type="number"
-              placeholder="Max nodes (e.g., 200)"
+              placeholder={t('josoor.dashboard.filters.maxNodesPlaceholder')}
               value={pendingLimit}
               onChange={(e) => handleLimitChange(e.target.value)}
               min="1"
@@ -272,14 +274,14 @@ export function GraphFilters({
           <div style={sectionStyle}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
               <label style={{ ...labelStyle, marginBottom: 0 }}>
-                Node Labels ({pendingLabels.length}/{schema.labels.length})
+                {t('josoor.dashboard.filters.nodeLabels', { count: pendingLabels.length, total: schema.labels.length })}
               </label>
               <div style={{ display: 'flex', gap: '0.25rem' }}>
                 <button onClick={selectAllLabels} style={smallButtonStyle} data-testid="button-select-all-labels">
-                  All
+                  {t('josoor.dashboard.filters.all')}
                 </button>
                 <button onClick={() => setPendingLabels([])} style={smallButtonStyle} data-testid="button-clear-labels">
-                  None
+                  {t('josoor.dashboard.filters.none')}
                 </button>
               </div>
             </div>
@@ -303,14 +305,14 @@ export function GraphFilters({
           <div style={sectionStyle}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
               <label style={{ ...labelStyle, marginBottom: 0 }}>
-                Relationships ({pendingRelationships.length}/{schema.relationshipTypes.length})
+                {t('josoor.dashboard.filters.relationships', { count: pendingRelationships.length, total: schema.relationshipTypes.length })}
               </label>
               <div style={{ display: 'flex', gap: '0.25rem' }}>
                 <button onClick={selectAllRelationships} style={smallButtonStyle} data-testid="button-select-all-relationships">
-                  All
+                  {t('josoor.dashboard.filters.all')}
                 </button>
                 <button onClick={() => setPendingRelationships([])} style={smallButtonStyle} data-testid="button-clear-relationships">
-                  None
+                  {t('josoor.dashboard.filters.none')}
                 </button>
               </div>
             </div>
@@ -345,7 +347,7 @@ export function GraphFilters({
               }}
               data-testid="button-apply-filters"
             >
-              Apply Filters
+              {t('josoor.dashboard.filters.applyFilters')}
             </button>
             <button
               onClick={clearAllPending}
@@ -360,7 +362,7 @@ export function GraphFilters({
               }}
               data-testid="button-clear-all-filters"
             >
-              Clear All
+              {t('josoor.dashboard.filters.clearAll')}
             </button>
           </div>
         </div>

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   ChevronRight,
   ChevronDown,
@@ -83,12 +84,13 @@ function TraceList({
   onRefresh: () => void;
   loading: boolean;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="trace-list-panel">
       <div className="trace-list-header">
         <h3 className="trace-list-title">
           <Layers className="icon-md" />
-          Conversation Traces
+          {t('josoor.observability.conversationTraces')}
         </h3>
         <button
           className={`trace-list-refresh ${loading ? 'loading' : ''}`}
@@ -125,7 +127,7 @@ function TraceList({
               const previewLimit = 240;
               const preview = fullQuery.length > previewLimit
                 ? `${fullQuery.slice(0, previewLimit)}…`
-                : (fullQuery || 'No query');
+                : (fullQuery || t('josoor.observability.noQuery'));
 
               return (
                 <p className="trace-item-query" title={fullQuery || undefined}>
@@ -273,11 +275,12 @@ function normalizeThought(thought: unknown): Array<{ text: string; type?: string
 }
 
 function ReasoningPanel({ reasoning }: { reasoning: any[] }) {
+  const { t } = useTranslation();
   if (!reasoning || reasoning.length === 0) {
     return (
       <div className="reasoning-empty">
         <Brain />
-        <p>No reasoning steps captured</p>
+        <p>{t('josoor.observability.noReasoningSteps')}</p>
       </div>
     );
   }
@@ -307,6 +310,7 @@ function ReasoningPanel({ reasoning }: { reasoning: any[] }) {
 // TOOL CALLS PANEL
 // ============================================================================
 function ToolCallsPanel({ toolCalls, mcpOps }: { toolCalls: any[]; mcpOps: any[] }) {
+  const { t } = useTranslation();
   const getToolName = (tc: any) => {
     if (!tc) return 'tool_call';
     if (typeof tc === 'string') return tc;
@@ -339,7 +343,7 @@ function ToolCallsPanel({ toolCalls, mcpOps }: { toolCalls: any[]; mcpOps: any[]
         <div className="mcp-tools-card">
           <div className="mcp-tools-header">
             <Database />
-            MCP Tools Available
+            {t('josoor.observability.mcpToolsAvailable')}
           </div>
           <div className="mcp-tools-list">
             {mcpOps[0]?.tools?.map((tool: string) => (
@@ -370,7 +374,7 @@ function ToolCallsPanel({ toolCalls, mcpOps }: { toolCalls: any[]; mcpOps: any[]
       {toolCalls.length === 0 && (
         <div className="tools-empty">
           <Zap />
-          <p>No tool calls made</p>
+          <p>{t('josoor.observability.noToolCalls')}</p>
         </div>
       )}
     </div>
@@ -381,11 +385,12 @@ function ToolCallsPanel({ toolCalls, mcpOps }: { toolCalls: any[]; mcpOps: any[]
 // ERRORS PANEL
 // ============================================================================
 function ErrorsPanel({ errors }: { errors: any[] }) {
+  const { t } = useTranslation();
   if (!errors || errors.length === 0) {
     return (
       <div className="errors-success">
         <CheckCircle />
-        <p>No errors detected</p>
+        <p>{t('josoor.observability.noErrors')}</p>
       </div>
     );
   }
@@ -413,6 +418,7 @@ function ErrorsPanel({ errors }: { errors: any[] }) {
 // TRACE DETAIL VIEW COMPONENT
 // ============================================================================
 function TraceDetailView({ trace, onBack }: { trace: TraceDetail; onBack: () => void }) {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState('timeline');
 
   const turnCount = trace.timeline?.filter(
@@ -484,35 +490,35 @@ function TraceDetailView({ trace, onBack }: { trace: TraceDetail; onBack: () => 
             onClick={() => setActiveTab('timeline')}
           >
             <Clock />
-            Timeline
+            {t('josoor.observability.timeline')}
           </button>
           <button
             className={`tab-trigger ${activeTab === 'reasoning' ? 'active' : ''}`}
             onClick={() => setActiveTab('reasoning')}
           >
             <Brain />
-            Reasoning
+            {t('josoor.observability.reasoning')}
           </button>
           <button
             className={`tab-trigger ${activeTab === 'tools' ? 'active' : ''}`}
             onClick={() => setActiveTab('tools')}
           >
             <Zap />
-            Tool Calls
+            {t('josoor.observability.toolCalls')}
           </button>
           <button
             className={`tab-trigger ${activeTab === 'errors' ? 'active' : ''}`}
             onClick={() => setActiveTab('errors')}
           >
             <AlertCircle />
-            Errors
+            {t('josoor.observability.errors')}
           </button>
           <button
             className={`tab-trigger ${activeTab === 'raw' ? 'active' : ''}`}
             onClick={() => setActiveTab('raw')}
           >
             <Code />
-            Raw JSON
+            {t('josoor.observability.rawJson')}
           </button>
         </div>
 
@@ -607,6 +613,8 @@ function AdminSettingsPanel({
     setDraft({ ...draft, mcp: { ...draft.mcp, endpoints } });
   };
 
+  const { t } = useTranslation();
+
   if (!draft) {
     return (
       <div className="detail-panel admin-settings-loading">
@@ -618,7 +626,7 @@ function AdminSettingsPanel({
         )}
         <button className="trace-list-refresh" onClick={onReload} disabled={loading}>
           <RefreshCw className="icon-md" />
-          Load Settings
+          {t('josoor.admin.loadSettings')}
         </button>
       </div>
     );
@@ -629,9 +637,9 @@ function AdminSettingsPanel({
       <div className="observability-header-left admin-header-spacing">
         <SettingsIcon className="observability-header-icon" />
         <div>
-          <h2 className="observability-header-title">Admin Settings</h2>
+          <h2 className="observability-header-title">{t('josoor.admin.adminSettings')}</h2>
           <p className="observability-header-subtitle">
-            Flexible LLM provider: configure endpoint, MCP tools, and response schema independently.
+            {t('josoor.admin.configureProvider')}
           </p>
         </div>
       </div>
@@ -645,9 +653,9 @@ function AdminSettingsPanel({
 
       <div className="admin-settings-grid">
         <div className="admin-card">
-          <h3>Provider & Models</h3>
+          <h3>{t('josoor.admin.providerModels')}</h3>
           <label className="admin-field">
-            <span>Base URL</span>
+            <span>{t('josoor.admin.baseUrl')}</span>
             <input
               type="text"
               value={draft.provider.base_url || ''}
@@ -656,7 +664,7 @@ function AdminSettingsPanel({
             />
           </label>
           <label className="admin-field">
-            <span>Model</span>
+            <span>{t('josoor.admin.model')}</span>
             <input
               type="text"
               value={draft.provider.model || ''}
@@ -665,7 +673,7 @@ function AdminSettingsPanel({
             />
           </label>
           <label className="admin-field">
-            <span>Timeout (s)</span>
+            <span>{t('josoor.admin.timeout')}</span>
             <input
               type="number"
               value={draft.provider.timeout || 60}
@@ -673,7 +681,7 @@ function AdminSettingsPanel({
             />
           </label>
           <label className="admin-field">
-            <span>Endpoint Path</span>
+            <span>{t('josoor.admin.endpointPath')}</span>
             <input
               type="text"
               value={draft.provider.endpoint_path || '/v1/chat/completions'}
@@ -682,7 +690,7 @@ function AdminSettingsPanel({
             />
           </label>
           <label className="admin-field">
-            <span>Enable MCP Tools</span>
+            <span>{t('josoor.admin.enableMcpTools')}</span>
             <input
               type="checkbox"
               checked={draft.provider.enable_mcp_tools ?? true}
@@ -690,7 +698,7 @@ function AdminSettingsPanel({
             />
           </label>
           <label className="admin-field">
-            <span>Enable Response Schema</span>
+            <span>{t('josoor.admin.enableResponseSchema')}</span>
             <input
               type="checkbox"
               checked={draft.provider.enable_response_schema ?? false}
@@ -698,7 +706,7 @@ function AdminSettingsPanel({
             />
           </label>
           <label className="admin-field">
-            <span>Max Output Tokens</span>
+            <span>{t('josoor.admin.maxOutputTokens')}</span>
             <input
               type="number"
               value={draft.provider.max_output_tokens || 8000}
@@ -706,7 +714,7 @@ function AdminSettingsPanel({
             />
           </label>
           <label className="admin-field">
-            <span>Temperature</span>
+            <span>{t('josoor.admin.temperature')}</span>
             <input
               type="number"
               step="0.1"
@@ -718,9 +726,9 @@ function AdminSettingsPanel({
 
         <div className="admin-card">
           <div className="admin-card-header">
-            <h3>MCP Endpoints</h3>
+            <h3>{t('josoor.admin.mcpEndpoints')}</h3>
             <button className="trace-list-refresh" onClick={addEndpoint} type="button">
-              <Plus className="icon-sm" /> Add
+              <Plus className="icon-sm" /> {t('josoor.admin.add')}
             </button>
           </div>
           <div className="admin-mcp-list">
@@ -744,7 +752,7 @@ function AdminSettingsPanel({
                     onClick={() => removeEndpoint(idx)}
                     type="button"
                   >
-                    Remove
+                    {t('josoor.admin.remove')}
                   </button>
                 </div>
                 <div className="admin-tools-row">
@@ -763,7 +771,7 @@ function AdminSettingsPanel({
             ))}
           </div>
           <div className="admin-card admin-card-spacing">
-            <h4>Persona Bindings</h4>
+            <h4>{t('josoor.admin.personaBindings')}</h4>
             {['noor', 'maestro', 'default'].map((persona) => (
               <label key={persona} className="admin-field">
                 <span>{persona} →</span>
@@ -771,7 +779,7 @@ function AdminSettingsPanel({
                   value={draft.mcp.persona_bindings?.[persona] || ''}
                   onChange={(e) => updateBinding(persona, e.target.value)}
                 >
-                  <option value="">Select endpoint</option>
+                  <option value="">{t('josoor.admin.selectEndpoint')}</option>
                   {(draft.mcp.endpoints || []).map((ep) => (
                     <option key={ep.label} value={ep.label}>
                       {ep.label}
@@ -792,20 +800,20 @@ function AdminSettingsPanel({
         </div>
         <div className="admin-button-row">
           <button className="trace-list-refresh" onClick={onReload} disabled={loading}>
-            <RefreshCw className="icon-sm" /> Reload
+            <RefreshCw className="icon-sm" /> {t('josoor.admin.reload')}
           </button>
           <button className="trace-list-refresh" onClick={() => setDraft(settings)} disabled={loading}>
-            Revert
+            {t('josoor.admin.revert')}
           </button>
           <button className="trace-list-refresh" onClick={onSave} disabled={loading}>
-            <Save className="icon-sm" /> Save
+            <Save className="icon-sm" /> {t('josoor.common.save')}
           </button>
         </div>
       </div>
 
       {draft.audit && draft.audit.length > 0 && (
         <div className="admin-card admin-audit-card-spacing">
-          <h4>Recent Changes</h4>
+          <h4>{t('josoor.observability.recentChanges')}</h4>
           <div className="admin-audit-list">
             {draft.audit.slice(-5).reverse().map((a, idx) => (
               <div key={idx} className="admin-audit-row">
@@ -845,6 +853,7 @@ export function ObservabilityDashboard({
   // Auto-refresh state (Default false to prevent flickering/disappearing issues)
   const [isLive, setIsLive] = useState(false);
   const { user, token } = useAuth();
+  const { t } = useTranslation();
 
   const fetchTraces = useCallback(async () => {
     // Don't set loading to true for background updates to avoid UI flicker
@@ -939,7 +948,7 @@ export function ObservabilityDashboard({
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                 <h1 className="observability-header-title">
-                  {isAdminOnly ? 'System Administration' : 'Observability Dashboard'}
+                  {isAdminOnly ? t('josoor.observability.systemAdministration') : t('josoor.observability.systemObservability')}
                 </h1>
                 {!isAdminOnly && (
                   <button
@@ -960,7 +969,7 @@ export function ObservabilityDashboard({
                         <span className="live-dot"></span>
                       </span>
                     )}
-                    {isLive ? 'LIVE' : 'PAUSED'}
+                    {isLive ? t('josoor.observability.live') : t('josoor.observability.paused')}
                   </button>
                 )}
               </div>
@@ -975,7 +984,7 @@ export function ObservabilityDashboard({
             className="observability-back-btn"
             onClick={() => window.location.href = '/josoor-v2'}
           >
-            Back to Dashboard
+            {t('josoor.observability.backToDashboard')}
           </button>
         </header>
       )}
@@ -984,13 +993,13 @@ export function ObservabilityDashboard({
       {!showHeader && !isAdminOnly && (
         <div className="flex justify-between items-center mb-4 px-4 pt-2">
           <div className="flex items-center gap-2">
-            <h3 className="text-white font-semibold">Live Monitoring</h3>
+            <h3 className="text-white font-semibold">{t('josoor.observability.liveMonitoring')}</h3>
             <button
               onClick={() => setIsLive(!isLive)}
               className={`badge clickable ${isLive ? 'badge-success' : 'badge-secondary'}`}
               style={{ fontSize: '10px', padding: '2px 8px' }}
             >
-              {isLive ? 'ON' : 'PAUSED'}
+              {isLive ? t('josoor.observability.on') : t('josoor.observability.paused')}
             </button>
           </div>
         </div>
@@ -1010,14 +1019,14 @@ export function ObservabilityDashboard({
           onClick={() => setActiveTab('traces')}
         >
           <Layers className="icon-sm" />
-          System Observability
+          {t('josoor.observability.systemObservability')}
         </button>
         <button
           className={`tab-trigger ${activeTab === 'admin-settings' ? 'active' : ''}`}
           onClick={() => setActiveTab('admin-settings')}
         >
           <SettingsIcon className="icon-sm" />
-          Admin Settings
+          {t('josoor.admin.adminSettings')}
         </button>
       </div>
 
@@ -1045,11 +1054,9 @@ export function ObservabilityDashboard({
             ) : (
               <div className="detail-empty">
                 <Eye className="detail-empty-icon" />
-                <h3>Select a Trace</h3>
+                <h3>{t('josoor.observability.selectTrace')}</h3>
                 <p>
-                  Click on a conversation trace to view its full execution details,
-                  <br />
-                  including reasoning steps, tool calls, and errors.
+                  {t('josoor.observability.selectTraceDesc')}
                 </p>
               </div>
             )}

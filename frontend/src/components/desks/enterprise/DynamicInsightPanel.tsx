@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { L3Capability } from '../../../types/enterprise';
 import type { OverlayType } from '../../../utils/enterpriseOverlayUtils';
 import './DynamicInsightPanel.css';
@@ -17,6 +18,7 @@ interface InsightData {
 }
 
 export function DynamicInsightPanel({ selectedOverlay, allL3s }: DynamicInsightPanelProps) {
+    const { t } = useTranslation();
     const insights = useMemo((): InsightData | null => {
         if (selectedOverlay === 'none') {
             const ontrack = allL3s.filter(l3 => {
@@ -33,11 +35,11 @@ export function DynamicInsightPanel({ selectedOverlay, allL3s }: DynamicInsightP
             }).length;
 
             return {
-                title: '📊 Capability Overview',
-                description: 'Baseline health status across all tracked capabilities in the current portfolio view.',
-                stat: `${allL3s.length} capabilities tracked`,
-                details: `${ontrack} ontrack | ${atRisk} at risk | ${issues} issues`,
-                explanation: 'Select an overlay to analyze specific capability dimensions.'
+                title: t('josoor.enterprise.insightPanel.capabilityOverview'),
+                description: t('josoor.enterprise.insightPanel.baselineHealth'),
+                stat: t('josoor.enterprise.insightPanel.capabilitiesTracked', { count: allL3s.length }),
+                details: t('josoor.enterprise.insightPanel.statusBreakdown', { ontrack, atRisk, issues }),
+                explanation: t('josoor.enterprise.insightPanel.selectOverlay')
             };
         }
 
@@ -56,9 +58,9 @@ export function DynamicInsightPanel({ selectedOverlay, allL3s }: DynamicInsightP
                     const worstExposure = worst ? (worst.exposure_percent || 0) : 0;
                     return exposure > worstExposure ? l3 : worst;
                 }, null as L3Capability | null);
-                title = 'Risk Exposure Analysis';
-                description = 'Identifies capabilities facing delivery delays or operational health degradation based on current risk indicators.';
-                explanation = 'RED = ≥15% exposure. AMBER = 5-15% exposure. GREEN = <5% exposure.';
+                title = t('josoor.enterprise.insightPanel.riskExposureAnalysis');
+                description = t('josoor.enterprise.insightPanel.riskExposureDesc');
+                explanation = t('josoor.enterprise.insightPanel.riskExposureExplanation');
                 icon = '⚠️';
                 break;
 
@@ -72,9 +74,9 @@ export function DynamicInsightPanel({ selectedOverlay, allL3s }: DynamicInsightP
                     const worstTotal = worst ? ((worst.policy_tool_count || 0) + (worst.performance_target_count || 0)) : 0;
                     return total > worstTotal ? l3 : worst;
                 }, null as L3Capability | null);
-                title = 'External Pressure Check';
-                description = 'Highlights capabilities under heavy regulatory or performance mandate load from external stakeholders.';
-                explanation = 'Capabilities under heavy policy/KPI constraints.';
+                title = t('josoor.enterprise.insightPanel.externalPressureCheck');
+                description = t('josoor.enterprise.insightPanel.externalPressureDesc');
+                explanation = t('josoor.enterprise.insightPanel.externalPressureExplanation');
                 icon = '🎯';
                 break;
 
@@ -88,9 +90,9 @@ export function DynamicInsightPanel({ selectedOverlay, allL3s }: DynamicInsightP
                     const worstGap = worst ? Math.max(worst.org_gap || 0, worst.process_gap || 0, worst.it_gap || 0) : 0;
                     return maxGap > worstGap ? l3 : worst;
                 }, null as L3Capability | null);
-                title = 'Footprint Stress Analysis';
-                description = 'Reveals capabilities with significant imbalances across organizational structure, processes, and technology assets.';
-                explanation = 'Capabilities with imbalanced Org/Process/IT investment.';
+                title = t('josoor.enterprise.insightPanel.footprintStressAnalysis');
+                description = t('josoor.enterprise.insightPanel.footprintStressDesc');
+                explanation = t('josoor.enterprise.insightPanel.footprintStressExplanation');
                 icon = '⚖️';
                 break;
 
@@ -101,9 +103,9 @@ export function DynamicInsightPanel({ selectedOverlay, allL3s }: DynamicInsightP
                     const worstLoad = worst ? (worst.adoption_load_percent || 0) : 0;
                     return load > worstLoad ? l3 : worst;
                 }, null as L3Capability | null);
-                title = 'Change Saturation Check';
-                description = 'Detects capabilities experiencing excessive change velocity that may compromise adoption and integration quality.';
-                explanation = 'Capabilities overwhelmed with too many concurrent projects.';
+                title = t('josoor.enterprise.insightPanel.changeSaturationCheck');
+                description = t('josoor.enterprise.insightPanel.changeSaturationDesc');
+                explanation = t('josoor.enterprise.insightPanel.changeSaturationExplanation');
                 icon = '⚡';
                 break;
 
@@ -114,9 +116,9 @@ export function DynamicInsightPanel({ selectedOverlay, allL3s }: DynamicInsightP
                     return recent[0] > recent[1] && recent[1] > recent[2];
                 });
                 worstCase = critical.length > 0 ? critical[0] : null;
-                title = 'Trend Early Warning';
-                description = 'Surfaces capabilities showing sustained health decline patterns over recent measurement cycles for proactive intervention.';
-                explanation = 'Capabilities showing silent degradation (2-cycle decline).';
+                title = t('josoor.enterprise.insightPanel.trendEarlyWarning');
+                description = t('josoor.enterprise.insightPanel.trendEarlyWarningDesc');
+                explanation = t('josoor.enterprise.insightPanel.trendEarlyWarningExplanation');
                 icon = '📉';
                 break;
         }
@@ -124,11 +126,11 @@ export function DynamicInsightPanel({ selectedOverlay, allL3s }: DynamicInsightP
         return {
             title: `${icon} ${title}`,
             description,
-            stat: `${critical.length} critical ${critical.length === 1 ? 'capability' : 'capabilities'} identified`,
-            details: worstCase ? `Worst: ${worstCase.name}` : 'No critical issues',
+            stat: t('josoor.enterprise.insightPanel.criticalCapabilities', { count: critical.length }),
+            details: worstCase ? t('josoor.enterprise.insightPanel.worstCase', { name: worstCase.name }) : t('josoor.enterprise.insightPanel.noCriticalIssues'),
             explanation
         };
-    }, [selectedOverlay, allL3s]);
+    }, [selectedOverlay, allL3s, t]);
 
     if (!insights) return null;
 

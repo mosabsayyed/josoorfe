@@ -476,7 +476,32 @@
       "switchTo3d": "انتقل إلى العرض ثلاثي الأبعاد لهذه السلسلة.",
       "dbNodes": "عقد قاعدة البيانات",
       "dbLinks": "روابط قاعدة البيانات",
-      "isolated": "معزول"
+      "isolated": "معزول",
+      "sankey": {
+        "waitingMetadata": "في انتظار البيانات الوصفية...",
+        "noMatchingNodes": "لم يتم العثور على عُقد مطابقة لهذه السلسلة.",
+        "canonicalFlow": "التدفق المرجعي",
+        "labels": "التسميات:",
+        "properties": "الخصائص:",
+        "gapDetected": "تم اكتشاف فجوة",
+        "virtual": "افتراضي",
+        "aiRecommendation": "توصية الذكاء الاصطناعي",
+        "connections_one": "{{count}} اتصال",
+        "connections_other": "{{count}} اتصالات",
+        "via": "عبر {{types}}",
+        "nodeCount": "{{count}} عقدة"
+      },
+      "table": {
+        "datasetAudit": "\ud83d\udcca تدقيق البيانات ({{nodes}} عقدة، {{links}} رابط)",
+        "id": "المعرّف",
+        "label": "التسمية",
+        "nameTitle": "الاسم / العنوان",
+        "rawProperties": "الخصائص الأولية",
+        "source": "المصدر",
+        "type": "النوع",
+        "target": "الهدف",
+        "value": "القيمة"
+      }
     },
     "explorerFilters": {
       "graphControls": "أدوات الرسم البياني",
@@ -519,7 +544,70 @@
       "changeSaturation": "تشبع التغيير",
       "trendWarning": "تحذير الاتجاه",
       "loadingEnterprise": "جاري تحميل بيانات المؤسسة...",
-      "errorPrefix": "خطأ"
+      "errorPrefix": "خطأ",
+      "maturityLabel": "النضج:",
+      "insight": {
+        "capabilityOverview": "نظرة عامة على القدرات",
+        "riskExposureAnalysis": "تحليل التعرض للمخاطر",
+        "externalPressureCheck": "فحص الضغط الخارجي",
+        "footprintStressAnalysis": "تحليل ضغط البصمة التشغيلية",
+        "changeSaturationCheck": "فحص تشبع التغيير",
+        "trendEarlyWarning": "إنذار مبكر بالاتجاه"
+      },
+      "insightPanel": {
+        "capabilityOverview": "\ud83d\udcca نظرة عامة على القدرات",
+        "baselineHealth": "الحالة الصحية الأساسية عبر جميع القدرات المتتبعة في عرض المحفظة الحالي.",
+        "capabilitiesTracked": "{{count}} قدرة متتبعة",
+        "statusBreakdown": "{{ontrack}} على المسار | {{atRisk}} في خطر | {{issues}} مشكلات",
+        "selectOverlay": "اختر طبقة تحليلية لفحص أبعاد القدرات المحددة.",
+        "riskExposureAnalysis": "تحليل التعرض للمخاطر",
+        "riskExposureDesc": "يحدد القدرات التي تواجه تأخيرات في التسليم أو تدهوراً في الصحة التشغيلية بناءً على مؤشرات المخاطر الحالية.",
+        "riskExposureExplanation": "أحمر = تعرض ≥15%. برتقالي = تعرض 5-15%. أخضر = تعرض <5%.",
+        "externalPressureCheck": "فحص الضغط الخارجي",
+        "externalPressureDesc": "يسلط الضوء على القدرات تحت ضغط تنظيمي أو أداء كبير من أصحاب المصلحة الخارجيين.",
+        "externalPressureExplanation": "قدرات تحت قيود سياسية/مؤشرات أداء مكثفة.",
+        "footprintStressAnalysis": "تحليل ضغط البصمة التشغيلية",
+        "footprintStressDesc": "يكشف القدرات ذات الاختلالات الكبيرة عبر الهيكل التنظيمي والعمليات والأصول التقنية.",
+        "footprintStressExplanation": "قدرات بعدم توازن في استثمار المنظمة/العمليات/تقنية المعلومات.",
+        "changeSaturationCheck": "فحص تشبع التغيير",
+        "changeSaturationDesc": "يكتشف القدرات التي تشهد سرعة تغيير مفرطة قد تهدد جودة التبني والتكامل.",
+        "changeSaturationExplanation": "قدرات مثقلة بمشاريع متزامنة كثيرة.",
+        "trendEarlyWarning": "إنذار مبكر بالاتجاه",
+        "trendEarlyWarningDesc": "يبرز القدرات التي تظهر أنماط تراجع صحي مستمر عبر دورات القياس الأخيرة للتدخل الاستباقي.",
+        "trendEarlyWarningExplanation": "قدرات تظهر تدهوراً صامتاً (تراجع دورتين).",
+        "criticalCapabilities": "{{count}} قدرة حرجة محددة",
+        "worstCase": "الأسوأ: {{name}}",
+        "noCriticalIssues": "لا توجد مشكلات حرجة"
+      },
+      "tooltip": {
+        "mode": "الوضع:",
+        "maturity": "النضج:",
+        "gap": "الفجوة:",
+        "levels_one": "{{count}} مستوى",
+        "levels_other": "{{count}} مستويات",
+        "timeline": "الجدول الزمني:",
+        "riskExposure": "التعرض للمخاطر:",
+        "expectedDelay": "التأخير المتوقع:",
+        "days": "يوم",
+        "exposure": "التعرض:",
+        "trend": "الاتجاه:",
+        "rising": "▲ صاعد",
+        "falling": "▼ هابط",
+        "stable": "■ مستقر",
+        "externalPressure": "الضغط الخارجي:",
+        "policyTools": "أدوات السياسات:",
+        "performanceTargets": "مستهدفات الأداء:",
+        "footprintStress": "ضغط البصمة التشغيلية:",
+        "orgGap": "فجوة تنظيمية:",
+        "processGap": "فجوة العمليات:",
+        "itGap": "فجوة تقنية المعلومات:",
+        "changeSaturation": "تشبع التغيير:",
+        "activeProjects": "المشاريع النشطة:",
+        "adoptionLoad": "حمل التبني:",
+        "healthTrend": "اتجاه الصحة:",
+        "last3Cycles": "آخر 3 دورات:",
+        "earlyWarning": "⚠️ إنذار مبكر: تراجع دورتين"
+      }
     },
     "sector": {
       "loading": "جاري تحميل بيانات القطاع...",
@@ -637,7 +725,52 @@
       "commerce": "التجارة",
       "health": "الصحة",
       "education": "التعليم",
-      "labor": "العمل"
+      "labor": "العمل",
+      "map": {
+        "heatmaps": "خرائط حرارية",
+        "telecomCoverage": "تغطية الاتصالات",
+        "categories": "الفئات",
+        "status": "الحالة",
+        "clearAllFilters": "مسح جميع المرشحات",
+        "assetDetails": "تفاصيل الأصل",
+        "region": "المنطقة",
+        "capacity": "السعة",
+        "description": "الوصف",
+        "coordinates": "الإحداثيات",
+        "openGoogleMaps": "فتح في خرائط Google \u2190",
+        "assetStatus": "حالة الأصل",
+        "assetCount": "عدد الأصول: {{count}}",
+        "filter": "تصفية ({{count}}/{{total}})"
+      },
+      "kpi": {
+        "productionCap": "القدرة الإنتاجية",
+        "stratStorage": "التخزين الاستراتيجي",
+        "reuseRate": "معدل إعادة الاستخدام",
+        "localContent": "المحتوى المحلي",
+        "src": "المصدر: {{source}}",
+        "target": "الهدف: {{target}}",
+        "economicImpact": "الأثر الاقتصادي"
+      },
+      "sidebar": {
+        "placeholder": "الشريط الجانبي للقطاع",
+        "legacyRemoved": "تم إزالة الكود القديم. المكون جاهز للتنفيذ الجديد.",
+        "selected": "المحدد: {{quarter}} {{year}}"
+      },
+      "policy": {
+        "subTools_one": "{{count}} أداة فرعية",
+        "subTools_other": "{{count}} أدوات فرعية"
+      },
+      "report": {
+        "saveAsMarkdown": "حفظ كـ Markdown",
+        "aiBadge": "AI"
+      },
+      "chart": {
+        "noTableData": "لا تتوفر بيانات جدول",
+        "invalidConfig": "تكوين رسم بياني غير صالح",
+        "cannotRender": "لا يمكن عرض نوع القطعة: {{type}}",
+        "missingSeries": "رسم بياني غير صالح: بيانات السلسلة مفقودة",
+        "failedToRender": "فشل في عرض الرسم البياني: {{message}}"
+      }
     },
     "chat": {
       "tryAgain": "حاول مرة أخرى",
@@ -683,7 +816,43 @@
       "close": "إغلاق",
       "theme": "المظهر",
       "light": "فاتح",
-      "dark": "داكن"
+      "dark": "داكن",
+      "chains": {
+        "verifiedChains": "السلاسل المعتمدة",
+        "nodeId": "معرّف العقدة",
+        "year": "السنة",
+        "mode": "الوضع",
+        "narrative": "سردي",
+        "diagnostic": "تشخيصي",
+        "running": "قيد التشغيل...",
+        "provideId": "يرجى تقديم معرّف لتشغيل السلسلة.",
+        "failedToRun": "فشل تشغيل السلسلة",
+        "lastResult": "آخر نتيجة",
+        "chain": "السلسلة:",
+        "id": "المعرّف:",
+        "yearLabel": "السنة:",
+        "count": "العدد:",
+        "modeLabel": "الوضع:"
+      },
+      "input": {
+        "placeholder": "راسل نور — اضغط Enter للإرسال",
+        "attachFile": "إرفاق ملف",
+        "send": "إرسال"
+      },
+      "message": {
+        "questions": "الأسئلة:",
+        "jsonData": "بيانات JSON",
+        "tool": "أداة: {{name}}",
+        "array": "مصفوفة ({{length}})",
+        "toolExecutionFailed": "فشل تنفيذ الأداة",
+        "rawContent": "محتوى خام",
+        "systemOutput": "مخرجات النظام",
+        "jsonContent": "محتوى JSON",
+        "rawContentJsonLike": "محتوى خام (شبيه بـ JSON)",
+        "reportWithVisualizations": "إليك التقرير المطلوب مع الرسوم البيانية.",
+        "htmlReport": "تقرير HTML",
+        "clickToViewData": "انقر لعرض بيانات الطلب الكاملة"
+      }
     },
     "sidebar": {
       "newChat": "محادثة جديدة",
@@ -710,6 +879,105 @@
       "dark": "داكن",
       "now": "الآن",
       "account": "الحساب"
+    },
+    "admin": {
+      "adminSettings": "إعدادات المسؤول",
+      "configureProvider": "إعداد مزود النماذج اللغوية ونقاط MCP ومخطط الاستجابة بشكل مستقل.",
+      "providerModels": "المزود والنماذج",
+      "baseUrl": "الرابط الأساسي",
+      "model": "النموذج",
+      "timeout": "المهلة (ثانية)",
+      "endpointPath": "مسار نقطة الوصول",
+      "enableMcpTools": "تفعيل أدوات MCP",
+      "enableResponseSchema": "تفعيل مخطط الاستجابة",
+      "maxOutputTokens": "الحد الأقصى لرموز المخرجات",
+      "temperature": "درجة الحرارة",
+      "mcpEndpoints": "نقاط وصول MCP",
+      "add": "إضافة",
+      "remove": "إزالة",
+      "personaBindings": "ربط الشخصيات",
+      "selectEndpoint": "اختر نقطة وصول",
+      "reload": "إعادة تحميل",
+      "revert": "التراجع",
+      "loadSettings": "تحميل الإعدادات"
+    },
+    "observability": {
+      "conversationTraces": "تتبع المحادثات",
+      "noQuery": "لا يوجد استعلام",
+      "timeline": "الخط الزمني",
+      "reasoning": "التفكير",
+      "toolCalls": "استدعاءات الأدوات",
+      "errors": "الأخطاء",
+      "rawJson": "JSON خام",
+      "noReasoningSteps": "لم يتم التقاط خطوات تفكير",
+      "mcpToolsAvailable": "أدوات MCP المتاحة",
+      "noToolCalls": "لم يتم إجراء استدعاءات أدوات",
+      "noErrors": "لم يتم اكتشاف أخطاء",
+      "systemObservability": "مراقبة النظام",
+      "systemAdministration": "إدارة النظام",
+      "live": "مباشر",
+      "paused": "متوقف",
+      "backToDashboard": "العودة إلى لوحة المتابعة",
+      "liveMonitoring": "المراقبة المباشرة",
+      "on": "مفعّل",
+      "selectTrace": "اختر تتبعاً",
+      "selectTraceDesc": "انقر على تتبع محادثة لعرض تفاصيل التنفيذ الكاملة، بما في ذلك خطوات التفكير واستدعاءات الأدوات والأخطاء.",
+      "recentChanges": "التغييرات الأخيرة"
+    },
+    "settings": {
+      "saveChanges": "حفظ التغييرات",
+      "savedSuccessfully": "تم حفظ الإعدادات بنجاح"
+    },
+    "dashboard": {
+      "filters": {
+        "filters": "المرشحات",
+        "graphFilters": "مرشحات الرسم البياني",
+        "pendingChanges": "\u26a0 لم يتم تطبيق التغييرات بعد. انقر \"تطبيق المرشحات\" للتطبيق.",
+        "resultLimit": "حد النتائج",
+        "maxNodesPlaceholder": "الحد الأقصى للعُقد (مثال: 200)",
+        "nodeLabels": "تسميات العُقد ({{count}}/{{total}})",
+        "all": "الكل",
+        "none": "لا شيء",
+        "relationships": "العلاقات ({{count}}/{{total}})",
+        "applyFilters": "تطبيق المرشحات",
+        "clearAll": "مسح الكل"
+      },
+      "executive": {
+        "strategicPlanning": "التخطيط الاستراتيجي",
+        "connected": "متصل بتدفق التحليل",
+        "disconnected": "غير متصل بتدفق التحليل",
+        "requestingAnalysis": "جارٍ طلب التحليل الذكي...",
+        "analyzing": "جارٍ التحليل...",
+        "analyze": "\u2728 تحليل",
+        "disconnectedBtn": "\u26a0 غير متصل",
+        "updating": "جارٍ التحديث...",
+        "clickAnalyze": "انقر \"تحليل\" لتوليد رؤى استراتيجية."
+      },
+      "radar": {
+        "actual": "الفعلي",
+        "planned": "المخطط"
+      },
+      "graph": {
+        "switchTo2D": "تبديل إلى 2D",
+        "switchTo3D": "تبديل إلى 3D",
+        "preparingCanvas": "جارٍ تحضير اللوحة...",
+        "labels": "التسميات:",
+        "id": "المعرّف:",
+        "orphan": "\ud83d\udd34 يتيم: لا توجد اتصالات صادرة",
+        "bastard": "\ud83d\udd34 منقطع: لا توجد اتصالات واردة",
+        "properties": "الخصائص:"
+      }
+    },
+    "layout": {
+      "sectorDesk": "مكتب القطاع",
+      "controlsDesk": "مكتب الضوابط",
+      "planningDesk": "مكتب التخطيط",
+      "enterpriseDesk": "مكتب المؤسسة",
+      "reportingDesk": "مكتب التقارير",
+      "josoorTransformation": "تحول JOSOOR",
+      "newChat": "محادثة جديدة",
+      "errorSendingMessage": "خطأ في إرسال الرسالة.",
+      "executiveControlTower": "برج التحكم التنفيذي"
     }
   }
 }

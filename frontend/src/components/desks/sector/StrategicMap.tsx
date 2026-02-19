@@ -472,7 +472,7 @@ export function StrategicMap({ year, quarter }: SectorMapProps) {
             {showLayerPanel && (
                 <div className="layer-panel">
                     <div className="panel-section">
-                        <h4>Heatmaps</h4>
+                        <h4>{t('josoor.sector.map.heatmaps')}</h4>
                         {Object.entries(HEATMAP_LAYERS).map(([key, config]) => (
                             <label key={key} className="layer-checkbox">
                                 <input
@@ -486,7 +486,7 @@ export function StrategicMap({ year, quarter }: SectorMapProps) {
                         ))}
                     </div>
                     <div className="panel-section">
-                        <h4>Telecom Coverage</h4>
+                        <h4>{t('josoor.sector.map.telecomCoverage')}</h4>
                         <label className="layer-checkbox">
                             <input type="checkbox" checked={activeTelco.has('mobily')} onChange={() => toggleTelco('mobily')} />
                             <span className="layer-color" style={{ background: '#7c3aed' }} />
@@ -512,7 +512,7 @@ export function StrategicMap({ year, quarter }: SectorMapProps) {
                 onClick={() => setShowFilterPanel(!showFilterPanel)}
             >
                 <Filter size={16} />
-                Filter ({filteredAssets.length}/{strategicAssets.length - 4})
+                {t('josoor.sector.map.filter', { count: filteredAssets.length, total: strategicAssets.length - 4 })}
                 {showFilterPanel ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
             </button>
 
@@ -520,7 +520,7 @@ export function StrategicMap({ year, quarter }: SectorMapProps) {
             {showFilterPanel && (
                 <div className="filter-panel">
                     <div className="panel-section">
-                        <h4>Categories</h4>
+                        <h4>{t('josoor.sector.map.categories')}</h4>
                         <div className="filter-chips">
                             {allCategories.map(cat => (
                                 <button
@@ -535,7 +535,7 @@ export function StrategicMap({ year, quarter }: SectorMapProps) {
                         </div>
                     </div>
                     <div className="panel-section">
-                        <h4>Status</h4>
+                        <h4>{t('josoor.sector.map.status')}</h4>
                         <div className="filter-chips">
                             {allStatuses.map(status => (
                                 <button
@@ -551,7 +551,7 @@ export function StrategicMap({ year, quarter }: SectorMapProps) {
                     </div>
                     {(selectedCategories.size > 0 || selectedStatuses.size > 0) && (
                         <button className="clear-filters-btn" onClick={() => { setSelectedCategories(new Set()); setSelectedStatuses(new Set()); }}>
-                            Clear All Filters
+                            {t('josoor.sector.map.clearAllFilters')}
                         </button>
                     )}
                 </div>
@@ -569,7 +569,7 @@ export function StrategicMap({ year, quarter }: SectorMapProps) {
             {selectedAsset && (
                 <div className="asset-panel">
                     <div className="panel-header">
-                        <span className="panel-title">ASSET DETAILS</span>
+                        <span className="panel-title">{t('josoor.sector.map.assetDetails')}</span>
                         <button onClick={() => setSelectedAsset(null)} className="panel-close-btn">
                             <X size={16} />
                         </button>
@@ -591,19 +591,19 @@ export function StrategicMap({ year, quarter }: SectorMapProps) {
 
                         <div className="asset-details">
                             <div className="detail-row">
-                                <span className="detail-label">Region</span>
+                                <span className="detail-label">{t('josoor.sector.map.region')}</span>
                                 <span className="detail-value">{selectedAsset.region}</span>
                             </div>
                             <div className="detail-row">
-                                <span className="detail-label">Capacity</span>
+                                <span className="detail-label">{t('josoor.sector.map.capacity')}</span>
                                 <span className="detail-value">{selectedAsset.capacity}</span>
                             </div>
                             <div className="detail-row">
-                                <span className="detail-label">Description</span>
+                                <span className="detail-label">{t('josoor.sector.map.description')}</span>
                                 <span className="detail-value">{selectedAsset.description}</span>
                             </div>
                             <div className="detail-row">
-                                <span className="detail-label">Coordinates</span>
+                                <span className="detail-label">{t('josoor.sector.map.coordinates')}</span>
                                 <span className="detail-value">{selectedAsset.lat.toFixed(4)}, {selectedAsset.long.toFixed(4)}</span>
                             </div>
                         </div>
@@ -614,7 +614,7 @@ export function StrategicMap({ year, quarter }: SectorMapProps) {
                             rel="noopener noreferrer"
                             className="google-maps-link"
                         >
-                            Open in Google Maps →
+                            {t('josoor.sector.map.openGoogleMaps')}
                         </a>
                     </div>
                 </div>
@@ -627,7 +627,7 @@ export function StrategicMap({ year, quarter }: SectorMapProps) {
                     {t('josoor.sector.legend')}
                 </div>
                 <div className="legend-section">
-                    <div className="legend-subtitle">Asset Status</div>
+                    <div className="legend-subtitle">{t('josoor.sector.map.assetStatus')}</div>
                     {Object.entries(STATUS_COLORS).map(([status, color]) => (
                         <div key={status} className="legend-item">
                             <span className="legend-circle" style={{ backgroundColor: color }} />
@@ -636,7 +636,7 @@ export function StrategicMap({ year, quarter }: SectorMapProps) {
                     ))}
                 </div>
                 <div className="legend-section">
-                    <div className="legend-subtitle">Asset Count: {filteredAssets.length}</div>
+                    <div className="legend-subtitle">{t('josoor.sector.map.assetCount', { count: filteredAssets.length })}</div>
                 </div>
             </div>
         </div>

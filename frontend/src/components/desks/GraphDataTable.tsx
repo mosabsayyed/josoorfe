@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface GraphDataTableProps {
     data: {
@@ -9,6 +10,7 @@ interface GraphDataTableProps {
 }
 
 export function GraphDataTable({ data, isDark }: GraphDataTableProps) {
+    const { t } = useTranslation();
     if (!data || (!data.nodes.length && !data.links.length)) return null;
 
     const tableStyle = {
@@ -50,7 +52,7 @@ export function GraphDataTable({ data, isDark }: GraphDataTableProps) {
             }}>
 
             <h3 style={{ color: isDark ? '#D4AF37' : '#B4922B' }} className="text-lg font-bold">
-                📊 Dataset Audit ({data.nodes.length} Nodes, {data.links.length} Links)
+                {t('josoor.explorer.table.datasetAudit', { nodes: data.nodes.length, links: data.links.length })}
             </h3>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -59,10 +61,10 @@ export function GraphDataTable({ data, isDark }: GraphDataTableProps) {
                     <table style={tableStyle}>
                         <thead style={{ backgroundColor: isDark ? '#111' : '#f9f9f9' }}>
                             <tr>
-                                <th style={thStyle}>ID</th>
-                                <th style={thStyle}>Label</th>
-                                <th style={thStyle}>Name / Title</th>
-                                <th style={thStyle}>Raw Properties</th>
+                                <th style={thStyle}>{t('josoor.explorer.table.id')}</th>
+                                <th style={thStyle}>{t('josoor.explorer.table.label')}</th>
+                                <th style={thStyle}>{t('josoor.explorer.table.nameTitle')}</th>
+                                <th style={thStyle}>{t('josoor.explorer.table.rawProperties')}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -85,10 +87,10 @@ export function GraphDataTable({ data, isDark }: GraphDataTableProps) {
                     <table style={tableStyle}>
                         <thead style={{ backgroundColor: isDark ? '#111' : '#f9f9f9' }}>
                             <tr>
-                                <th style={thStyle}>Source</th>
-                                <th style={thStyle}>Type</th>
-                                <th style={thStyle}>Target</th>
-                                <th style={thStyle}>Value</th>
+                                <th style={thStyle}>{t('josoor.explorer.table.source')}</th>
+                                <th style={thStyle}>{t('josoor.explorer.table.type')}</th>
+                                <th style={thStyle}>{t('josoor.explorer.table.target')}</th>
+                                <th style={thStyle}>{t('josoor.explorer.table.value')}</th>
                             </tr>
                         </thead>
                         <tbody>

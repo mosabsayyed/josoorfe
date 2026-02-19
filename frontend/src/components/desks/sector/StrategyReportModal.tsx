@@ -69,7 +69,7 @@ const StrategyReportModal: React.FC<StrategyReportModalProps> = ({
                                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                                     boxShadow: '0 0 15px rgba(244,187,48,0.3)'
                                 }}>
-                                    <span style={{ color: 'black', fontWeight: 800, fontSize: '14px' }}>AI</span>
+                                    <span style={{ color: 'black', fontWeight: 800, fontSize: '14px' }}>{t('josoor.sector.report.aiBadge')}</span>
                                 </div>
                                 <h2 style={{ margin: 0, color: 'var(--component-text-primary)', fontSize: '1.25rem', fontWeight: 700, letterSpacing: '-0.02em' }}>
                                     {t('josoor.sector.strategyReport')}
@@ -78,7 +78,7 @@ const StrategyReportModal: React.FC<StrategyReportModalProps> = ({
                             <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
                                 <button
                                     onClick={handleSaveMd}
-                                    title="Save as Markdown"
+                                    title={t('josoor.sector.report.saveAsMarkdown')}
                                     style={{
                                         background: 'rgba(255, 255, 255, 0.05)',
                                         border: '1px solid var(--component-panel-border)',

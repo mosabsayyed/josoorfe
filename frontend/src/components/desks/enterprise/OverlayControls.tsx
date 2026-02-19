@@ -1,4 +1,5 @@
 import { AlertTriangle, Target, Scale, Activity, TrendingUp } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import type { OverlayType } from '../../../utils/enterpriseOverlayUtils';
 import './OverlayControls.css';
 
@@ -8,13 +9,14 @@ interface OverlayControlsProps {
 }
 
 export function OverlayControls({ selectedOverlay, onToggleOverlay }: OverlayControlsProps) {
+    const { t } = useTranslation();
     const overlayButtons = [
-        { id: 'none' as OverlayType, label: 'Status Only', icon: null },
-        { id: 'risk-exposure' as OverlayType, label: 'Risk Exposure', icon: AlertTriangle },
-        { id: 'external-pressure' as OverlayType, label: 'External Pressure', icon: Target },
-        { id: 'footprint-stress' as OverlayType, label: 'Footprint Stress', icon: Scale },
-        { id: 'change-saturation' as OverlayType, label: 'Change Saturation', icon: Activity },
-        { id: 'trend-warning' as OverlayType, label: 'Trend Warning', icon: TrendingUp }
+        { id: 'none' as OverlayType, label: t('josoor.enterprise.statusOnly'), icon: null },
+        { id: 'risk-exposure' as OverlayType, label: t('josoor.enterprise.riskExposure'), icon: AlertTriangle },
+        { id: 'external-pressure' as OverlayType, label: t('josoor.enterprise.externalPressure'), icon: Target },
+        { id: 'footprint-stress' as OverlayType, label: t('josoor.enterprise.footprintStress'), icon: Scale },
+        { id: 'change-saturation' as OverlayType, label: t('josoor.enterprise.changeSaturation'), icon: Activity },
+        { id: 'trend-warning' as OverlayType, label: t('josoor.enterprise.trendWarning'), icon: TrendingUp }
     ];
 
     return (

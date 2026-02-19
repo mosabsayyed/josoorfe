@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { useTranslation } from 'react-i18next';
 import ForceGraph3D from "react-force-graph-3d";
 import ForceGraph2D from "react-force-graph-2d";
 import { GraphData } from "../../types/dashboard";
@@ -40,6 +41,7 @@ export function NeoGraph({
   legendConfig
 }: NeoGraphProps) {
 
+  const { t } = useTranslation();
   const graphRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
@@ -103,13 +105,6 @@ export function NeoGraph({
     };
   }, [data]);
 
-  // Handle localization
-  const content = {
-    switchTo2D: { en: 'Switch to 2D', ar: 'تبديل إلى 2D' },
-    switchTo3D: { en: 'Switch to 3D', ar: 'تبديل إلى 3D' },
-  };
-  const t = (key: keyof typeof content) => language === 'ar' ? content[key].ar : content[key].en;
-
   const commonProps = {
     ref: graphRef,
     width: dimensions.width,
@@ -158,7 +153,7 @@ export function NeoGraph({
           className="viz-mode-btn"
         >
           {is3D ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
-          {is3D ? t('switchTo2D') : t('switchTo3D')}
+          {is3D ? t('josoor.dashboard.graph.switchTo2D') : t('josoor.dashboard.graph.switchTo3D')}
         </button>
       </div>
 
@@ -166,7 +161,7 @@ export function NeoGraph({
         is3D ? <ForceGraph3D {...commonProps} {...physics3DProps} /> : <ForceGraph2D {...commonProps} />
       ) : (
         <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          Preparing Canvas...
+          {t('josoor.dashboard.graph.preparingCanvas')}
         </div>
       )}
 
@@ -189,10 +184,10 @@ export function NeoGraph({
           <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '0.5rem' }}>
             <div>
               <p style={{ margin: 0, fontSize: '0.8rem', lineHeight: 1.5, color: '#fff' }}>
-                <strong style={{ color: '#D4AF37' }}>Labels:</strong> {hoverNode.labels?.join(', ') || hoverNode.type || 'Unknown'}
+                <strong style={{ color: '#D4AF37' }}>{t('josoor.dashboard.graph.labels')}</strong> {hoverNode.labels?.join(', ') || hoverNode.type || 'Unknown'}
               </p>
               <p style={{ margin: 0, fontSize: '0.8rem', lineHeight: 1.5, color: '#fff' }}>
-                <strong style={{ color: '#D4AF37' }}>ID:</strong> <code>{hoverNode.properties?.id || hoverNode.id}</code>
+                <strong style={{ color: '#D4AF37' }}>{t('josoor.dashboard.graph.id')}</strong> <code>{hoverNode.properties?.id || hoverNode.id}</code>
               </p>
             </div>
             {/* Orphan/Bastard Flags */}
@@ -206,19 +201,19 @@ export function NeoGraph({
               }}>
                 {hoverNode.orphan && (
                   <p style={{ margin: 0, fontSize: '0.75rem', color: '#EF4444' }}>
-                    🔴 <strong>Orphan:</strong> No outgoing connections
+                    {t('josoor.dashboard.graph.orphan')}
                   </p>
                 )}
                 {hoverNode.bastard && (
                   <p style={{ margin: hoverNode.orphan ? '4px 0 0 0' : 0, fontSize: '0.75rem', color: '#EF4444' }}>
-                    🔴 <strong>Bastard:</strong> No incoming connections
+                    {t('josoor.dashboard.graph.bastard')}
                   </p>
                 )}
               </div>
             )}
             {hoverNode.properties && Object.keys(hoverNode.properties).length > 0 && (
               <div>
-                <strong style={{ display: 'block', marginTop: '8px', marginBottom: '4px', color: '#D4AF37' }}>Properties:</strong>
+                <strong style={{ display: 'block', marginTop: '8px', marginBottom: '4px', color: '#D4AF37' }}>{t('josoor.dashboard.graph.properties')}</strong>
                 {Object.entries(hoverNode.properties).map(([key, value]: [string, any]) => (
                   <div key={key} style={{ display: 'flex', gap: '4px', fontSize: '0.75rem', margin: '2px 0', color: '#fff' }}>
                     <span style={{ color: '#9ca3af', minWidth: '60px' }}>{key}:</span>

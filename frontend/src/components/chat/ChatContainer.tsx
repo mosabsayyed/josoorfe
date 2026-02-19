@@ -401,7 +401,7 @@ export const ChatContainer = memo(function ChatContainer({
                             title={t('josoor.chat.toggleCanvas')}
                             aria-label={t('josoor.chat.toggleCanvas')}
                           >
-                            <img src="/icons/menu.png" alt="Toggle canvas" className="sidebar-quickaction-icon sidebar-quickaction-small" />
+                            <img src="/icons/menu.png" alt={t('josoor.chat.toggleCanvas')} className="sidebar-quickaction-icon sidebar-quickaction-small" />
                           </button>
                         </div>
                       </div>

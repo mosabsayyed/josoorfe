@@ -9,6 +9,7 @@
  */
 
 import { useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Send, Paperclip, X, FileText, Image as ImageIcon } from 'lucide-react';
 import '../../styles/chat.css';
 
@@ -60,6 +61,7 @@ export function ChatInput({
   placeholder,
   language = 'en',
 }: ChatInputProps) {
+  const { t } = useTranslation();
   const [message, setMessage] = useState('');
   const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
   const [uploading, setUploading] = useState(false);
@@ -67,9 +69,7 @@ export function ChatInput({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isRTL = language === 'ar';
 
-  const defaultPlaceholder = language === 'ar'
-    ? 'اكتب رسالتك إلى نور... — اضغط Enter للإرسال'
-    : 'Message Noor — Press Enter to send';
+  const defaultPlaceholder = t('josoor.chat.input.placeholder');
 
   // Auto-resize textarea
   useEffect(() => {
@@ -314,7 +314,7 @@ export function ChatInput({
             className={`chat-attach-button clickable ${disabled || uploading ? 'disabled' : ''}`}
             onClick={() => fileInputRef.current?.click()}
             disabled={disabled || uploading}
-            title={language === 'ar' ? 'إرفاق ملف' : 'Attach file'}
+            title={t('josoor.chat.input.attachFile')}
           >
             <Paperclip className="chat-attach-icon" />
           </button>
@@ -339,7 +339,7 @@ export function ChatInput({
             onClick={handleSubmit}
             disabled={!canSend}
             className={`chat-send-button clickable ${canSend ? 'can-send' : 'disabled'}`}
-            title={language === 'ar' ? 'إرسال' : 'Send'}
+            title={t('josoor.chat.input.send')}
           >
             {uploading ? (
               <div className="spinner" style={{ width: '20px', height: '20px' }} />

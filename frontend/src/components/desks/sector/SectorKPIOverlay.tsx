@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 
 // Icons
@@ -9,32 +10,33 @@ interface SectorKPIOverlayProps {
 }
 
 const SectorKPIOverlay: React.FC<SectorKPIOverlayProps> = ({ kpis }) => {
+    const { t } = useTranslation();
     if (!kpis) return null;
 
     const data = [
         {
             key: 'production',
-            label: 'Production Cap.',
+            label: t('josoor.sector.kpi.productionCap'),
             value: kpis.production_capacity.value,
-            sub: `Src: ${kpis.production_capacity.source}`,
+            sub: t('josoor.sector.kpi.src', { source: kpis.production_capacity.source }),
             icon: Factory,
             color: 'var(--component-text-primary)',
             bg: 'var(--component-bg-primary)'
         },
         {
             key: 'storage',
-            label: 'Strat. Storage',
+            label: t('josoor.sector.kpi.stratStorage'),
             value: kpis.strategic_storage.value,
-            sub: `Target: ${kpis.strategic_storage.target}`,
+            sub: t('josoor.sector.kpi.target', { target: kpis.strategic_storage.target }),
             icon: Database,
             color: 'var(--component-color-success)',
             bg: 'var(--component-bg-primary)'
         },
         {
             key: 'reuse',
-            label: 'Reuse Rate',
+            label: t('josoor.sector.kpi.reuseRate'),
             value: kpis.reuse_rate.value,
-            sub: `Target: ${kpis.reuse_rate.target}`,
+            sub: t('josoor.sector.kpi.target', { target: kpis.reuse_rate.target }),
             icon: RefreshCw,
             color: 'var(--component-color-error)', // Lagging status
             accent: true,
@@ -42,9 +44,9 @@ const SectorKPIOverlay: React.FC<SectorKPIOverlayProps> = ({ kpis }) => {
         },
         {
             key: 'local',
-            label: 'Local Content',
+            label: t('josoor.sector.kpi.localContent'),
             value: kpis.localization_impact.value,
-            sub: 'Economic Impact',
+            sub: t('josoor.sector.kpi.economicImpact'),
             icon: Globe,
             color: 'var(--component-text-accent)',
             bg: 'var(--component-bg-primary)'

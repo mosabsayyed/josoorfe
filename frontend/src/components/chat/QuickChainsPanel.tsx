@@ -1,12 +1,7 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { chainsService, ChainResponse } from '../../services/chainsService';
 import '../../styles/quick-chains-panel.css';
-
-const CHAINS = [
-  { key: 'sector_value_chain', label: 'Sector Value Chain' },
-  { key: 'setting_strategic_initiatives', label: 'Setting Strategic Initiatives' },
-  { key: 'operate_oversight', label: 'Operate Oversight' },
-];
 
 type QuickChainsPanelProps = {
   defaultYear?: number;
@@ -14,6 +9,7 @@ type QuickChainsPanelProps = {
 };
 
 export function QuickChainsPanel({ defaultYear = 2025, onChainResult }: QuickChainsPanelProps) {
+  const { t } = useTranslation();
   const [nodeId, setNodeId] = useState('');
   const [year, setYear] = useState<number>(defaultYear);
   const [mode, setMode] = useState<'narrative' | 'diagnostic'>('narrative');
@@ -21,9 +17,15 @@ export function QuickChainsPanel({ defaultYear = 2025, onChainResult }: QuickCha
   const [error, setError] = useState<string | null>(null);
   const [lastResult, setLastResult] = useState<ChainResponse | null>(null);
 
+  const CHAINS = [
+    { key: 'sector_value_chain', label: t('josoor.explorerFilters.chains.sector_value_chain') },
+    { key: 'setting_strategic_initiatives', label: t('josoor.explorerFilters.chains.setting_strategic_initiatives') },
+    { key: 'operate_oversight', label: t('josoor.explorerFilters.chains.operate_oversight') },
+  ];
+
   const handleRun = async (chainKey: string) => {
     if (!nodeId.trim()) {
-      setError('Please provide an ID to run the chain.');
+      setError(t('josoor.chat.chains.provideId'));
       return;
     }
     setError(null);
@@ -39,7 +41,7 @@ export function QuickChainsPanel({ defaultYear = 2025, onChainResult }: QuickCha
       setLastResult(result);
       if (onChainResult) onChainResult(result);
     } catch (e: any) {
-      setError(e?.message || 'Failed to run chain');
+      setError(e?.message || t('josoor.chat.chains.failedToRun'));
     } finally {
       setLoadingKey(null);
     }
@@ -47,10 +49,10 @@ export function QuickChainsPanel({ defaultYear = 2025, onChainResult }: QuickCha
 
   return (
     <div className="quick-chains-panel">
-      <div className="quick-chains-header">Verified Chains</div>
+      <div className="quick-chains-header">{t('josoor.chat.chains.verifiedChains')}</div>
       <div className="quick-chains-inputs">
         <label className="quick-chains-label">
-          Node ID
+          {t('josoor.chat.chains.nodeId')}
           <input
             value={nodeId}
             onChange={(e) => setNodeId(e.target.value)}
@@ -59,7 +61,7 @@ export function QuickChainsPanel({ defaultYear = 2025, onChainResult }: QuickCha
           />
         </label>
         <label className="quick-chains-label">
-          Year
+          {t('josoor.chat.chains.year')}
           <input
             type="number"
             value={year}
@@ -68,14 +70,14 @@ export function QuickChainsPanel({ defaultYear = 2025, onChainResult }: QuickCha
           />
         </label>
         <label className="quick-chains-label">
-          Mode
+          {t('josoor.chat.chains.mode')}
           <select
             value={mode}
             onChange={(e) => setMode(e.target.value as 'narrative' | 'diagnostic')}
             className="quick-chains-input"
           >
-            <option value="narrative">Narrative</option>
-            <option value="diagnostic">Diagnostic</option>
+            <option value="narrative">{t('josoor.chat.chains.narrative')}</option>
+            <option value="diagnostic">{t('josoor.chat.chains.diagnostic')}</option>
           </select>
         </label>
       </div>
@@ -88,7 +90,7 @@ export function QuickChainsPanel({ defaultYear = 2025, onChainResult }: QuickCha
             className="quick-chains-button"
             disabled={!!loadingKey}
           >
-            {loadingKey === key ? 'Running...' : label}
+            {loadingKey === key ? t('josoor.chat.chains.running') : label}
           </button>
         ))}
       </div>
@@ -97,13 +99,13 @@ export function QuickChainsPanel({ defaultYear = 2025, onChainResult }: QuickCha
 
       {lastResult && (
         <div className="quick-chains-result">
-          <div className="quick-chains-result-title">Last Result</div>
+          <div className="quick-chains-result-title">{t('josoor.chat.chains.lastResult')}</div>
           <div className="quick-chains-meta">
-            <span>Chain: {lastResult.chain_key}</span>
-            <span>ID: {lastResult.id}</span>
-            <span>Year: {lastResult.year}</span>
-            <span>Count: {lastResult.count}</span>
-            {lastResult.mode && <span>Mode: {lastResult.mode}</span>}
+            <span>{t('josoor.chat.chains.chain')} {lastResult.chain_key}</span>
+            <span>{t('josoor.chat.chains.id')} {lastResult.id}</span>
+            <span>{t('josoor.chat.chains.yearLabel')} {lastResult.year}</span>
+            <span>{t('josoor.chat.chains.count')} {lastResult.count}</span>
+            {lastResult.mode && <span>{t('josoor.chat.chains.modeLabel')} {lastResult.mode}</span>}
           </div>
           <pre className="quick-chains-pre">{JSON.stringify(lastResult.results?.slice(0, 2) || [], null, 2)}</pre>
         </div>

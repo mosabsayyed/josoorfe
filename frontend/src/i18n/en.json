@@ -479,7 +479,32 @@
       "switchTo3d": "Switch to 3D view for this chain.",
       "dbNodes": "DB Nodes",
       "dbLinks": "DB Links",
-      "isolated": "Isolated"
+      "isolated": "Isolated",
+      "sankey": {
+        "waitingMetadata": "Waiting for Metadata...",
+        "noMatchingNodes": "No matching nodes found for this chain.",
+        "canonicalFlow": "Canonical Flow",
+        "labels": "Labels:",
+        "properties": "Properties:",
+        "gapDetected": "GAP DETECTED",
+        "virtual": "VIRTUAL",
+        "aiRecommendation": "AI Recommendation",
+        "connections_one": "{{count}} connection",
+        "connections_other": "{{count}} connections",
+        "via": "via {{types}}",
+        "nodeCount": "{{count}} nodes"
+      },
+      "table": {
+        "datasetAudit": "\ud83d\udcca Dataset Audit ({{nodes}} Nodes, {{links}} Links)",
+        "id": "ID",
+        "label": "Label",
+        "nameTitle": "Name / Title",
+        "rawProperties": "Raw Properties",
+        "source": "Source",
+        "type": "Type",
+        "target": "Target",
+        "value": "Value"
+      }
     },
     "explorerFilters": {
       "graphControls": "Graph Controls",
@@ -522,7 +547,70 @@
       "changeSaturation": "Change Saturation",
       "trendWarning": "Trend Warning",
       "loadingEnterprise": "Loading Enterprise Data...",
-      "errorPrefix": "Error"
+      "errorPrefix": "Error",
+      "maturityLabel": "Maturity:",
+      "insight": {
+        "capabilityOverview": "Capability Overview",
+        "riskExposureAnalysis": "Risk Exposure Analysis",
+        "externalPressureCheck": "External Pressure Check",
+        "footprintStressAnalysis": "Footprint Stress Analysis",
+        "changeSaturationCheck": "Change Saturation Check",
+        "trendEarlyWarning": "Trend Early Warning"
+      },
+      "insightPanel": {
+        "capabilityOverview": "\ud83d\udcca Capability Overview",
+        "baselineHealth": "Baseline health status across all tracked capabilities in the current portfolio view.",
+        "capabilitiesTracked": "{{count}} capabilities tracked",
+        "statusBreakdown": "{{ontrack}} ontrack | {{atRisk}} at risk | {{issues}} issues",
+        "selectOverlay": "Select an overlay to analyze specific capability dimensions.",
+        "riskExposureAnalysis": "Risk Exposure Analysis",
+        "riskExposureDesc": "Identifies capabilities facing delivery delays or operational health degradation based on current risk indicators.",
+        "riskExposureExplanation": "RED = \u226515% exposure. AMBER = 5-15% exposure. GREEN = <5% exposure.",
+        "externalPressureCheck": "External Pressure Check",
+        "externalPressureDesc": "Highlights capabilities under heavy regulatory or performance mandate load from external stakeholders.",
+        "externalPressureExplanation": "Capabilities under heavy policy/KPI constraints.",
+        "footprintStressAnalysis": "Footprint Stress Analysis",
+        "footprintStressDesc": "Reveals capabilities with significant imbalances across organizational structure, processes, and technology assets.",
+        "footprintStressExplanation": "Capabilities with imbalanced Org/Process/IT investment.",
+        "changeSaturationCheck": "Change Saturation Check",
+        "changeSaturationDesc": "Detects capabilities experiencing excessive change velocity that may compromise adoption and integration quality.",
+        "changeSaturationExplanation": "Capabilities overwhelmed with too many concurrent projects.",
+        "trendEarlyWarning": "Trend Early Warning",
+        "trendEarlyWarningDesc": "Surfaces capabilities showing sustained health decline patterns over recent measurement cycles for proactive intervention.",
+        "trendEarlyWarningExplanation": "Capabilities showing silent degradation (2-cycle decline).",
+        "criticalCapabilities": "{{count}} critical capabilities identified",
+        "worstCase": "Worst: {{name}}",
+        "noCriticalIssues": "No critical issues"
+      },
+      "tooltip": {
+        "mode": "Mode:",
+        "maturity": "Maturity:",
+        "gap": "Gap:",
+        "levels_one": "{{count}} level",
+        "levels_other": "{{count}} levels",
+        "timeline": "Timeline:",
+        "riskExposure": "Risk Exposure:",
+        "expectedDelay": "Expected Delay:",
+        "days": "days",
+        "exposure": "Exposure:",
+        "trend": "Trend:",
+        "rising": "\u25b2 Rising",
+        "falling": "\u25bc Falling",
+        "stable": "\u25a0 Stable",
+        "externalPressure": "External Pressure:",
+        "policyTools": "Policy Tools:",
+        "performanceTargets": "Performance Targets:",
+        "footprintStress": "Footprint Stress:",
+        "orgGap": "Org Gap:",
+        "processGap": "Process Gap:",
+        "itGap": "IT Gap:",
+        "changeSaturation": "Change Saturation:",
+        "activeProjects": "Active Projects:",
+        "adoptionLoad": "Adoption Load:",
+        "healthTrend": "Health Trend:",
+        "last3Cycles": "Last 3 Cycles:",
+        "earlyWarning": "\u26a0\ufe0f Early warning: 2-cycle decline"
+      }
     },
     "sector": {
       "loading": "Loading sector data...",
@@ -640,7 +728,52 @@
       "commerce": "Commerce",
       "health": "Health",
       "education": "Education",
-      "labor": "Labor"
+      "labor": "Labor",
+      "map": {
+        "heatmaps": "Heatmaps",
+        "telecomCoverage": "Telecom Coverage",
+        "categories": "Categories",
+        "status": "Status",
+        "clearAllFilters": "Clear All Filters",
+        "assetDetails": "ASSET DETAILS",
+        "region": "Region",
+        "capacity": "Capacity",
+        "description": "Description",
+        "coordinates": "Coordinates",
+        "openGoogleMaps": "Open in Google Maps \u2192",
+        "assetStatus": "Asset Status",
+        "assetCount": "Asset Count: {{count}}",
+        "filter": "Filter ({{count}}/{{total}})"
+      },
+      "kpi": {
+        "productionCap": "Production Cap.",
+        "stratStorage": "Strat. Storage",
+        "reuseRate": "Reuse Rate",
+        "localContent": "Local Content",
+        "src": "Src: {{source}}",
+        "target": "Target: {{target}}",
+        "economicImpact": "Economic Impact"
+      },
+      "sidebar": {
+        "placeholder": "SectorSidebar placeholder",
+        "legacyRemoved": "Legacy dashboard code removed. Component ready for new implementation.",
+        "selected": "Selected: {{quarter}} {{year}}"
+      },
+      "policy": {
+        "subTools_one": "{{count}} sub-tool",
+        "subTools_other": "{{count}} sub-tools"
+      },
+      "report": {
+        "saveAsMarkdown": "Save as Markdown",
+        "aiBadge": "AI"
+      },
+      "chart": {
+        "noTableData": "No table data available",
+        "invalidConfig": "Invalid chart configuration",
+        "cannotRender": "Cannot render artifact type: {{type}}",
+        "missingSeries": "Invalid chart: missing series data",
+        "failedToRender": "Failed to render chart: {{message}}"
+      }
     },
     "chat": {
       "tryAgain": "Try Again",
@@ -686,7 +819,43 @@
       "close": "Close",
       "theme": "Theme",
       "light": "Light",
-      "dark": "Dark"
+      "dark": "Dark",
+      "chains": {
+        "verifiedChains": "Verified Chains",
+        "nodeId": "Node ID",
+        "year": "Year",
+        "mode": "Mode",
+        "narrative": "Narrative",
+        "diagnostic": "Diagnostic",
+        "running": "Running...",
+        "provideId": "Please provide an ID to run the chain.",
+        "failedToRun": "Failed to run chain",
+        "lastResult": "Last Result",
+        "chain": "Chain:",
+        "id": "ID:",
+        "yearLabel": "Year:",
+        "count": "Count:",
+        "modeLabel": "Mode:"
+      },
+      "input": {
+        "placeholder": "Message Noor \u2014 Press Enter to send",
+        "attachFile": "Attach file",
+        "send": "Send"
+      },
+      "message": {
+        "questions": "Questions:",
+        "jsonData": "JSON Data",
+        "tool": "Tool: {{name}}",
+        "array": "Array ({{length}})",
+        "toolExecutionFailed": "Tool Execution Failed",
+        "rawContent": "Raw Content",
+        "systemOutput": "System Output",
+        "jsonContent": "JSON Content",
+        "rawContentJsonLike": "Raw Content (JSON-like)",
+        "reportWithVisualizations": "Here is the requested report with visualizations.",
+        "htmlReport": "HTML Report",
+        "clickToViewData": "Click to view full request data"
+      }
     },
     "sidebar": {
       "newChat": "New Chat",
@@ -713,6 +882,105 @@
       "dark": "Dark",
       "now": "Now",
       "account": "Account"
+    },
+    "admin": {
+      "adminSettings": "Admin Settings",
+      "configureProvider": "Configure LLM provider, MCP endpoints, and response schema independently.",
+      "providerModels": "Provider & Models",
+      "baseUrl": "Base URL",
+      "model": "Model",
+      "timeout": "Timeout (s)",
+      "endpointPath": "Endpoint Path",
+      "enableMcpTools": "Enable MCP Tools",
+      "enableResponseSchema": "Enable Response Schema",
+      "maxOutputTokens": "Max Output Tokens",
+      "temperature": "Temperature",
+      "mcpEndpoints": "MCP Endpoints",
+      "add": "Add",
+      "remove": "Remove",
+      "personaBindings": "Persona Bindings",
+      "selectEndpoint": "Select endpoint",
+      "reload": "Reload",
+      "revert": "Revert",
+      "loadSettings": "Load Settings"
+    },
+    "observability": {
+      "conversationTraces": "Conversation Traces",
+      "noQuery": "No query",
+      "timeline": "Timeline",
+      "reasoning": "Reasoning",
+      "toolCalls": "Tool Calls",
+      "errors": "Errors",
+      "rawJson": "Raw JSON",
+      "noReasoningSteps": "No reasoning steps captured",
+      "mcpToolsAvailable": "MCP Tools Available",
+      "noToolCalls": "No tool calls made",
+      "noErrors": "No errors detected",
+      "systemObservability": "System Observability",
+      "systemAdministration": "System Administration",
+      "live": "LIVE",
+      "paused": "PAUSED",
+      "backToDashboard": "Back to Dashboard",
+      "liveMonitoring": "Live Monitoring",
+      "on": "ON",
+      "selectTrace": "Select a Trace",
+      "selectTraceDesc": "Click on a conversation trace to view its full execution details, including reasoning steps, tool calls, and errors.",
+      "recentChanges": "Recent Changes"
+    },
+    "settings": {
+      "saveChanges": "Save Changes",
+      "savedSuccessfully": "Settings saved successfully"
+    },
+    "dashboard": {
+      "filters": {
+        "filters": "Filters",
+        "graphFilters": "Graph Filters",
+        "pendingChanges": "\u26a0 Changes not applied yet. Click \"Apply Filters\" to apply.",
+        "resultLimit": "Result Limit",
+        "maxNodesPlaceholder": "Max nodes (e.g., 200)",
+        "nodeLabels": "Node Labels ({{count}}/{{total}})",
+        "all": "All",
+        "none": "None",
+        "relationships": "Relationships ({{count}}/{{total}})",
+        "applyFilters": "Apply Filters",
+        "clearAll": "Clear All"
+      },
+      "executive": {
+        "strategicPlanning": "Strategic Planning",
+        "connected": "Connected to Analysis Stream",
+        "disconnected": "Disconnected from Analysis Stream",
+        "requestingAnalysis": "Requesting AI analysis...",
+        "analyzing": "Analyzing...",
+        "analyze": "\u2728 Analyze",
+        "disconnectedBtn": "\u26a0 Disconnected",
+        "updating": "Updating...",
+        "clickAnalyze": "Click \"Analyze\" to generate strategic insights."
+      },
+      "radar": {
+        "actual": "Actual",
+        "planned": "Planned"
+      },
+      "graph": {
+        "switchTo2D": "Switch to 2D",
+        "switchTo3D": "Switch to 3D",
+        "preparingCanvas": "Preparing Canvas...",
+        "labels": "Labels:",
+        "id": "ID:",
+        "orphan": "\ud83d\udd34 Orphan: No outgoing connections",
+        "bastard": "\ud83d\udd34 Bastard: No incoming connections",
+        "properties": "Properties:"
+      }
+    },
+    "layout": {
+      "sectorDesk": "Sector Desk",
+      "controlsDesk": "Controls Desk",
+      "planningDesk": "Planning Desk",
+      "enterpriseDesk": "Enterprise Desk",
+      "reportingDesk": "Reporting Desk",
+      "josoorTransformation": "JOSOOR Transformation",
+      "newChat": "New Chat",
+      "errorSendingMessage": "Error sending message.",
+      "executiveControlTower": "Executive Control Tower"
     }
   }
 }

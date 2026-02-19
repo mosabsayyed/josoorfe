@@ -64,7 +64,7 @@ export const PolicyToolsDrawer: React.FC<PolicyToolsDrawerProps> = ({
                                                 {tool.childCount > 0 && (
                                                     <div className="policy-tool-card-meta">
                                                         <span className="policy-tool-children">
-                                                            {tool.childCount} sub-tool{tool.childCount > 1 ? 's' : ''}
+                                                            {t('josoor.sector.policy.subTools', { count: tool.childCount })}
                                                         </span>
                                                     </div>
                                                 )}
