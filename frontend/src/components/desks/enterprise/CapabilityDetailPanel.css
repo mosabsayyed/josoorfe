@@ -1,0 +1,15 @@
+/* CapabilityDetailPanel.css — overlay + animation only (layout uses SectorDesk shared classes) */
+
+.detail-panel-overlay {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.4);
+    z-index: 200;
+    display: flex;
+    justify-content: flex-end;
+}
+
+@keyframes slideInRight {
+    from { transform: translateX(100%); }
+    to { transform: translateX(0); }
+}

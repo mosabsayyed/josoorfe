@@ -3,7 +3,7 @@ name: neo4j-migration-skill
 description: Use when upgrading Neo4j drivers to new major versions
 allowed-tools: WebFetch
 ---
-
+2
 # Neo4j migration skill
 
 This skill uses online guides to upgrade old Neo4j codebases. It handles all official Neo4j drivers.

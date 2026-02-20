@@ -122,10 +122,22 @@ export interface PolicyToolRiskRow {
   risk: { build_band: string | null; operate_band: string | null; build_exposure_pct: number | null; expected_delay_days: number | null; likelihood_of_delay: number | null } | null;
 }
 
+export interface L2DetailCap {
+  capId: string;
+  capName: string;
+  capLevel: string;
+  buildBand: string | null;
+}
+
 export interface L1RiskAggregation {
   l1Name: string;
   worstBand: 'red' | 'amber' | 'green' | 'none';
-  l2Details: Array<{ l2Id: string; l2Name: string; capId: string; capName: string; buildBand: string | null }>;
+  l2Details: Array<{
+    l2Id: string;
+    l2Name: string;
+    worstBand: string | null;
+    caps: L2DetailCap[];
+  }>;
 }
 
 export interface PolicyToolItem {
@@ -176,7 +188,12 @@ export const L1_CATEGORY_MAP: Record<string, PolicyCategory> = {
  * Source 3: build_oversight → non-physical L1/L2 policy tools + capabilities + risks + projects
  * Source 4: operate_oversight → KPIs + capabilities + risks
  */
-export async function fetchSectorGraphData(): Promise<any[]> {
+interface SectorGraphResult {
+  nodes: any[];
+  buildChainData: { nodes: any[]; links: any[] };
+}
+
+export async function fetchSectorGraphData(): Promise<SectorGraphResult> {
     const baseUrl = window.location.origin;
 
     console.log('[Neo4jMCP] Fetching Sector Graph Data from 4 sources...');
@@ -260,75 +277,142 @@ export async function fetchSectorGraphData(): Promise<any[]> {
             }, {})
         );
 
-        return allNodes;
+        return { nodes: allNodes, buildChainData: buildData };
 
     } catch (error) {
         console.error('[Neo4jMCP] Failed to fetch sector graph data:', error);
-        return [];
+        return { nodes: [], buildChainData: { nodes: [], links: [] } };
     }
 }
 
 /**
- * Fetch risk data for policy tools using direct Cypher via MCP.
+ * Extract policy tool risk data from the build_oversight chain response.
+ * Replaces direct MCP Cypher — uses chain data already fetched by fetchSectorGraphData.
  *
- * DB has 363 INFORMS edges (Risk → PolicyTool). Chain APIs only return ~1.
- * Direct Cypher gets ALL risk→policy connections with bands.
- *
- * Query: Risk(L2) -[:INFORMS]-> PolicyTool(L2) <-[:PARENT_OF]- PolicyTool(L1)
- *        + optional Cap via Risk(L2) <-[:PARENT_OF]- Risk(L3) <-[:MONITORED_BY]- Cap
+ * Chain path (build_oversight):
+ * EntityCapability(L3) →MONITORED_BY→ EntityRisk(L3)
+ * EntityRisk(L2) →PARENT_OF→ EntityRisk(L3)
+ * coalesce(riskL2,riskL3) →INFORMS→ SectorPolicyTool(L2)
+ * SectorPolicyTool(L1) →PARENT_OF→ SectorPolicyTool(L2)
  */
-export async function fetchPolicyToolRiskData(year?: string | number): Promise<PolicyToolRiskRow[]> {
-    console.log(`[Neo4jMCP] Fetching policy tool risk data via direct Cypher (MCP)...`);
+export function extractPolicyRiskFromChain(chainData: { nodes: any[]; links: any[] }): PolicyToolRiskRow[] {
+    const { nodes, links } = chainData;
 
-    try {
-        // Single query: get all Risk→INFORMS→PolicyTool(L2) with parent L1 and linked Cap
-        const query = `
-            MATCH (risk:EntityRisk {level: 'L2'})-[:INFORMS]->(ptL2:SectorPolicyTool {level: 'L2'})
-            OPTIONAL MATCH (ptL1:SectorPolicyTool {level: 'L1'})-[:PARENT_OF]->(ptL2)
-            WHERE ptL1.year = ptL2.year
-            OPTIONAL MATCH (risk)<-[:PARENT_OF]-(riskL3:EntityRisk {level: 'L3'})<-[:MONITORED_BY]-(cap:EntityCapability)
-            WHERE cap.year = risk.year
-            RETURN DISTINCT
-                ptL1 { .id, .name, .year, .level } as l1,
-                ptL2 { .id, .name, .year, .level, .parent_id } as l2,
-                risk { .id, .build_band, .operate_band, .build_exposure_pct, .expected_delay_days, .likelihood_of_delay } as risk,
-                cap { .id, .name, .level } as cap
-        `;
-
-        const result = await callNeo4jTool('read_neo4j_cypher', { query });
-        const data = result?.data || result || [];
-
-        const rows: PolicyToolRiskRow[] = [];
-        const l1sUsed = new Set<string>();
-
-        for (const row of data) {
-            const l1 = row.l1 || null;
-            const l2 = row.l2 || null;
-            const risk = row.risk || null;
-            const cap = row.cap || null;
-
-            if (l1) l1sUsed.add(`${l1.id}-${l1.year}`);
-
-            rows.push({
-                l1: l1 ? { id: l1.id, name: l1.name, year: l1.year, level: l1.level } : null,
-                l2: l2 ? { id: l2.id, name: l2.name, year: l2.year, level: l2.level, parent_id: l2.parent_id || l1?.id || '' } : null,
-                cap: cap ? { id: cap.id, name: cap.name, level: cap.level } : null,
-                risk: risk ? {
-                    build_band: risk.build_band || null,
-                    operate_band: risk.operate_band || null,
-                    build_exposure_pct: risk.build_exposure_pct || null,
-                    expected_delay_days: risk.expected_delay_days || null,
-                    likelihood_of_delay: risk.likelihood_of_delay || null
-                } : null
-            });
-        }
-
-        console.log(`[Neo4jMCP] Policy risk data: ${rows.length} rows from direct Cypher (DB has 363 INFORMS edges)`);
-        return rows;
-    } catch (error) {
-        console.error('[Neo4jMCP] Failed to fetch policy tool risk data:', error);
-        return [];
+    // 1. Build node map by elementId
+    const nodeByElementId = new Map<string, any>();
+    for (const n of nodes) {
+        const props = n.properties || {};
+        nodeByElementId.set(n.elementId, { ...props, _labels: n.labels, _elementId: n.elementId });
     }
+
+    // 2. Parse link elementIds from link.id field
+    // Format: "{srcElementId}-{TYPE}-{tgtElementId}"
+    const parsedLinks = links.map((l: any) => {
+        const parts = l.id.split(`-${l.type}-`);
+        return {
+            sourceElementId: parts[0],
+            targetElementId: parts[1],
+            type: l.type,
+            sourceId: l.source,
+            targetId: l.target
+        };
+    });
+
+    // 3. Build relationship maps
+    const informsLinks = parsedLinks.filter((l: any) => l.type === 'INFORMS');
+    const monitoredByLinks = parsedLinks.filter((l: any) => l.type === 'MONITORED_BY');
+    const parentOfLinks = parsedLinks.filter((l: any) => l.type === 'PARENT_OF');
+
+    // 4. polToolL2 elementId → risk elementIds (INFORMS: risk → polToolL2)
+    const polL2ToRisks = new Map<string, string[]>();
+    for (const l of informsLinks) {
+        if (!polL2ToRisks.has(l.targetElementId)) polL2ToRisks.set(l.targetElementId, []);
+        polL2ToRisks.get(l.targetElementId)!.push(l.sourceElementId);
+    }
+
+    // 5. Risk L2 → Risk L3 children (PARENT_OF where both EntityRisk)
+    const riskL2ToL3 = new Map<string, string[]>();
+    for (const l of parentOfLinks) {
+        const srcNode = nodeByElementId.get(l.sourceElementId);
+        const tgtNode = nodeByElementId.get(l.targetElementId);
+        if (srcNode?._labels?.includes('EntityRisk') && tgtNode?._labels?.includes('EntityRisk')) {
+            if (!riskL2ToL3.has(l.sourceElementId)) riskL2ToL3.set(l.sourceElementId, []);
+            riskL2ToL3.get(l.sourceElementId)!.push(l.targetElementId);
+        }
+    }
+
+    // 6. Risk → cap map (MONITORED_BY: cap → risk, so target is risk)
+    const riskToCaps = new Map<string, string[]>();
+    for (const l of monitoredByLinks) {
+        if (!riskToCaps.has(l.targetElementId)) riskToCaps.set(l.targetElementId, []);
+        riskToCaps.get(l.targetElementId)!.push(l.sourceElementId);
+    }
+
+    // 7. polTool L2 → L1 parent (PARENT_OF where both SectorPolicyTool)
+    const polL2ToL1 = new Map<string, string>();
+    for (const l of parentOfLinks) {
+        const srcNode = nodeByElementId.get(l.sourceElementId);
+        const tgtNode = nodeByElementId.get(l.targetElementId);
+        if (srcNode?._labels?.includes('SectorPolicyTool') && tgtNode?._labels?.includes('SectorPolicyTool')) {
+            polL2ToL1.set(l.targetElementId, l.sourceElementId);
+        }
+    }
+
+    // 8. Build PolicyToolRiskRow[]
+    const rows: PolicyToolRiskRow[] = [];
+
+    for (const [polL2ElemId, riskElemIds] of polL2ToRisks) {
+        const polL2Node = nodeByElementId.get(polL2ElemId);
+        if (!polL2Node) continue;
+
+        const polL1ElemId = polL2ToL1.get(polL2ElemId);
+        const polL1Node = polL1ElemId ? nodeByElementId.get(polL1ElemId) : null;
+
+        for (const riskElemId of riskElemIds) {
+            const riskNode = nodeByElementId.get(riskElemId);
+            if (!riskNode) continue;
+
+            // Find capabilities: direct + via L3 children
+            const directCaps = riskToCaps.get(riskElemId) || [];
+            const childRiskIds = riskL2ToL3.get(riskElemId) || [];
+            const childCaps = childRiskIds.flatMap(childId => riskToCaps.get(childId) || []);
+            const allCapIds = [...new Set([...directCaps, ...childCaps])];
+
+            if (allCapIds.length === 0) {
+                rows.push({
+                    l1: polL1Node ? { id: polL1Node.id, name: polL1Node.name, year: polL1Node.year, level: polL1Node.level } : null,
+                    l2: { id: polL2Node.id, name: polL2Node.name, year: polL2Node.year, level: polL2Node.level, parent_id: polL2Node.parent_id || polL1Node?.id || '' },
+                    cap: null,
+                    risk: {
+                        build_band: riskNode.build_band || null,
+                        operate_band: riskNode.operate_band || null,
+                        build_exposure_pct: riskNode.build_exposure_pct || null,
+                        expected_delay_days: riskNode.expected_delay_days || null,
+                        likelihood_of_delay: riskNode.likelihood_of_delay || null
+                    }
+                });
+            } else {
+                for (const capElemId of allCapIds) {
+                    const capNode = nodeByElementId.get(capElemId);
+                    rows.push({
+                        l1: polL1Node ? { id: polL1Node.id, name: polL1Node.name, year: polL1Node.year, level: polL1Node.level } : null,
+                        l2: { id: polL2Node.id, name: polL2Node.name, year: polL2Node.year, level: polL2Node.level, parent_id: polL2Node.parent_id || polL1Node?.id || '' },
+                        cap: capNode ? { id: capNode.id, name: capNode.name, level: capNode.level } : null,
+                        risk: {
+                            build_band: riskNode.build_band || null,
+                            operate_band: riskNode.operate_band || null,
+                            build_exposure_pct: riskNode.build_exposure_pct || null,
+                            expected_delay_days: riskNode.expected_delay_days || null,
+                            likelihood_of_delay: riskNode.likelihood_of_delay || null
+                        }
+                    });
+                }
+            }
+        }
+    }
+
+    console.log(`[Neo4jMCP] Extracted ${rows.length} policy risk rows from chain data (${informsLinks.length} INFORMS, ${monitoredByLinks.length} MONITORED_BY)`);
+    return rows;
 }
 
 /**
@@ -348,30 +432,38 @@ export function aggregatePolicyRiskByL1(rows: PolicyToolRiskRow[]): Map<string, 
         }
         const agg = map.get(l1Id)!;
 
-        // Effective band: build_band primary, operate_band fallback
         const effectiveBand = row.risk?.build_band || row.risk?.operate_band || null;
 
-        // Add L2 detail if present and not already added
-        if (row.l2 && !agg.l2Details.some(d => d.l2Id === row.l2!.id)) {
-            agg.l2Details.push({
-                l2Id: row.l2.id,
-                l2Name: row.l2.name,
-                capId: row.cap?.id || '',
-                capName: row.cap?.name || '',
-                buildBand: effectiveBand ? effectiveBand.toLowerCase() : null
-            });
+        // Find or create L2 entry
+        if (row.l2) {
+            let l2Entry = agg.l2Details.find(d => d.l2Id === row.l2!.id);
+            if (!l2Entry) {
+                l2Entry = { l2Id: row.l2.id, l2Name: row.l2.name, worstBand: null, caps: [] };
+                agg.l2Details.push(l2Entry);
+            }
+            // Update L2 worst band
+            const band = effectiveBand?.toLowerCase() || null;
+            if (band === 'red') l2Entry.worstBand = 'red';
+            else if (band === 'amber' && l2Entry.worstBand !== 'red') l2Entry.worstBand = 'amber';
+            else if (band === 'green' && !l2Entry.worstBand) l2Entry.worstBand = 'green';
+
+            // Add cap if not already present
+            if (row.cap?.id && !l2Entry.caps.some(c => c.capId === row.cap!.id)) {
+                l2Entry.caps.push({
+                    capId: row.cap.id,
+                    capName: row.cap.name,
+                    capLevel: row.cap.level,
+                    buildBand: band
+                });
+            }
         }
 
-        // Update worst band
+        // Update L1 worst band
         if (effectiveBand) {
             const band = effectiveBand.toLowerCase();
-            if (band === 'red') {
-                agg.worstBand = 'red';
-            } else if (band === 'amber' && agg.worstBand !== 'red') {
-                agg.worstBand = 'amber';
-            } else if (band === 'green' && agg.worstBand === 'none') {
-                agg.worstBand = 'green';
-            }
+            if (band === 'red') agg.worstBand = 'red';
+            else if (band === 'amber' && agg.worstBand !== 'red') agg.worstBand = 'amber';
+            else if (band === 'green' && agg.worstBand === 'none') agg.worstBand = 'green';
         }
     }
 

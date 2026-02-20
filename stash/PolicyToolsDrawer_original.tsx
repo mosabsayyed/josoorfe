@@ -17,8 +17,6 @@ interface PolicyToolsDrawerProps {
     tools: PolicyToolItem[];
     onClose: () => void;
     color: string;
-    onToolClick?: (tool: PolicyToolItem) => void;
-    toolRiskBands?: Map<string, any>;
 }
 
 export const PolicyToolsDrawer: React.FC<PolicyToolsDrawerProps> = ({
@@ -26,9 +24,7 @@ export const PolicyToolsDrawer: React.FC<PolicyToolsDrawerProps> = ({
     category,
     tools,
     onClose,
-    color,
-    onToolClick,
-    toolRiskBands
+    color
 }) => {
     const { t } = useTranslation();
     return (
@@ -54,13 +50,11 @@ export const PolicyToolsDrawer: React.FC<PolicyToolsDrawerProps> = ({
                                 ) : (
                                     tools.map((tool, index) => (
                                         <motion.div
-                                            key={`${tool.id}-${index}`}
+                                            key={tool.id}
                                             className="policy-tool-card"
                                             initial={{ opacity: 0, y: -10 }}
                                             animate={{ opacity: 1, y: 0 }}
                                             transition={{ delay: index * 0.05, duration: 0.2 }}
-                                            onClick={() => onToolClick?.(tool)}
-                                            style={{ cursor: 'pointer' }}
                                         >
                                             <div className="policy-tool-card-main">
                                                 <div className="policy-tool-card-name">
@@ -77,13 +71,7 @@ export const PolicyToolsDrawer: React.FC<PolicyToolsDrawerProps> = ({
                                             </div>
                                             <div
                                                 className="policy-tool-card-accent"
-                                                style={{ background: (() => {
-                                                    const band = toolRiskBands?.get(tool.id)?.worstBand;
-                                                    if (band === 'red') return 'var(--component-color-danger)';
-                                                    if (band === 'amber') return 'var(--component-color-warning)';
-                                                    if (band === 'green') return 'var(--component-color-success)';
-                                                    return 'var(--component-text-tertiary)';
-                                                })() }}
+                                                style={{ background: color }}
                                             />
                                         </motion.div>
                                     ))
