@@ -186,13 +186,60 @@ async function fetchEnterpriseViaCypher(year: number | 'all', quarter: number | 
     ${yearFilter}
     OPTIONAL MATCH (cap)-[:MONITORED_BY]->(risk:EntityRisk)
     ${riskYearFilter}
+    WITH cap, risk
+    OPTIONAL MATCH (cap)-[gapRel:ROLE_GAPS|KNOWLEDGE_GAPS|AUTOMATION_GAPS]->(gap)-[:GAPS_SCOPE]->(proj:EntityProject)
+    WITH cap, risk,
+         collect(DISTINCT CASE WHEN proj IS NOT NULL THEN {
+           id: proj.id, name: proj.name, status: proj.status,
+           progress_percentage: proj.progress_percentage,
+           end_date: proj.end_date,
+           category: CASE type(gapRel)
+             WHEN 'ROLE_GAPS' THEN 'People'
+             WHEN 'KNOWLEDGE_GAPS' THEN 'Process'
+             WHEN 'AUTOMATION_GAPS' THEN 'Tools'
+           END
+         } END) as rawProjects
+    OPTIONAL MATCH (opOrg:EntityOrgUnit)-[:OPERATES]->(cap)
+    WITH cap, risk, rawProjects, collect(DISTINCT CASE WHEN opOrg IS NOT NULL THEN {id: opOrg.id, name: opOrg.name, type: 'OrgUnit', status: opOrg.status} END) as orgs
+    OPTIONAL MATCH (opProc:EntityProcess)-[:OPERATES]->(cap)
+    WITH cap, risk, rawProjects, orgs, collect(DISTINCT CASE WHEN opProc IS NOT NULL THEN {id: opProc.id, name: opProc.name, type: 'Process', status: opProc.status} END) as procs
+    OPTIONAL MATCH (opIT:EntityITSystem)-[:OPERATES]->(cap)
+    WITH cap, risk, rawProjects, orgs, procs, collect(DISTINCT CASE WHEN opIT IS NOT NULL THEN {id: opIT.id, name: opIT.name, type: 'ITSystem', status: opIT.status} END) as its
+    OPTIONAL MATCH (cap)-[:REPORTS]->(perf:SectorPerformance)
+    WITH cap, risk, rawProjects, orgs, procs, its,
+         collect(DISTINCT CASE WHEN perf IS NOT NULL THEN {
+           id: perf.id, name: perf.name, level: perf.level,
+           target: perf.target, baseline: perf.baseline, actual_value: perf.actual_value,
+           unit: perf.unit, status: perf.status
+         } END) as rawPerformanceTargets
+    OPTIONAL MATCH (pol:SectorPolicyTool)-[:SETS_PRIORITIES]->(cap)
+    WITH cap, risk, rawProjects, orgs, procs, its, rawPerformanceTargets,
+         collect(DISTINCT CASE WHEN pol IS NOT NULL THEN {
+           id: pol.id, name: pol.name, end_date: pol.end_date, start_date: pol.start_date, status: pol.status
+         } END) as rawPolicyTools
+    OPTIONAL MATCH (obj:SectorObjective)-[:REALIZED_VIA]->(polT:SectorPolicyTool)-[:SETS_PRIORITIES]->(cap)
+    WITH cap, risk, rawProjects, orgs, procs, its, rawPerformanceTargets, rawPolicyTools,
+         collect(DISTINCT CASE WHEN obj IS NOT NULL THEN {
+           id: obj.id, name: obj.name, level: obj.level, status: obj.status
+         } END) as rawObjectivesFromPol
+    OPTIONAL MATCH (perf2:SectorPerformance)-[:SETS_TARGETS]->(cap)
+    OPTIONAL MATCH (perf2)-[:AGGREGATES_TO]->(obj2:SectorObjective)
+    WITH cap, risk, rawProjects, orgs, procs, its, rawPerformanceTargets, rawPolicyTools, rawObjectivesFromPol,
+         collect(DISTINCT CASE WHEN obj2 IS NOT NULL THEN {
+           id: obj2.id, name: obj2.name, level: obj2.level, status: obj2.status
+         } END) as rawObjectivesFromPerf
     RETURN cap {
       .*,
       embedding: null,
       vector: null,
       elementId: elementId(cap),
       businessId: cap.id,
-      risk: CASE WHEN risk IS NOT NULL THEN risk {.*, embedding: null, vector: null} ELSE null END
+      risk: CASE WHEN risk IS NOT NULL THEN risk {.*, embedding: null, vector: null} ELSE null END,
+      linkedProjects: [p IN rawProjects WHERE p IS NOT NULL],
+      operatingEntities: [e IN (orgs + procs + its) WHERE e IS NOT NULL],
+      performanceTargets: [p IN rawPerformanceTargets WHERE p IS NOT NULL],
+      policyTools: [p IN rawPolicyTools WHERE p IS NOT NULL],
+      objectives: [o IN (rawObjectivesFromPol + rawObjectivesFromPerf) WHERE o IS NOT NULL]
     } as data
     ORDER BY cap.level, cap.id
   `;
@@ -545,13 +592,28 @@ function buildL2(l2Node: NeoGraphNode, l3Nodes: NeoGraphNode[]): L2Capability {
     l3.parent_id === l2BusinessId
   );
 
+  // R9: Collect upward chain data from L2 node
+  const policyTools = ((l2Node as any).policyTools || []).filter((p: any) => p != null);
+  const performanceTargets = ((l2Node as any).performanceTargets || []).filter((p: any) => p != null);
+  const objectives = ((l2Node as any).objectives || []).filter((o: any) => o != null);
+  // Deduplicate objectives by id
+  const uniqueObjectives = objectives.filter((o: any, i: number, arr: any[]) => arr.findIndex((x: any) => x.id === o.id) === i);
+
+  const l3Caps = l3Children.map(l3Node => buildL3(l3Node));
+
   return {
     id: l2BusinessId,
     name: l2Node.name || 'Unnamed L2',
     description: l2Node.description || '',
     maturity_level: calculateL2Maturity(l3Children),
     target_maturity_level: calculateL2TargetMaturity(l3Children),
-    l3: l3Children.map(l3Node => buildL3(l3Node))
+    l3: l3Caps,
+    upwardChain: (policyTools.length > 0 || performanceTargets.length > 0 || uniqueObjectives.length > 0) ? {
+      policyTools,
+      performanceTargets,
+      objectives: uniqueObjectives
+    } : undefined,
+    rawL2Node: l2Node as any
   };
 }
 
@@ -584,10 +646,57 @@ function buildL3(l3Node: NeoGraphNode): L3Capability {
     quarter: `Q${getNeo4jInt(l3Node.quarter)}` as 'Q1' | 'Q2' | 'Q3' | 'Q4'
   };
 
+  // Store raw capability properties for detail panel (exclude internal fields)
+  const { risk: _risk, embedding: _emb, vector: _vec, elementId: _eid, linkedProjects: _lp, operatingEntities: _oe, performanceTargets: _pt, policyTools: _pol, ...capProps } = l3Node as any;
+  l3Cap.rawCapability = capProps;
+  // Store linked data from initial query (no extra DB calls needed)
+  l3Cap.rawCapability.linkedProjects = (l3Node as any).linkedProjects || [];
+  l3Cap.rawCapability.operatingEntities = (l3Node as any).operatingEntities || [];
+  l3Cap.rawCapability.performanceTargets = (l3Node as any).performanceTargets || [];
+  l3Cap.rawCapability.policyTools = (l3Node as any).policyTools || [];
+
+  // R4: Late detection — compare latest project end_date vs PolicyTool end_date
+  const policyTools = (l3Node as any).policyTools || [];
+  const linkedProjects = (l3Node as any).linkedProjects || [];
+  if (l3Cap.mode === 'build' && policyTools.length > 0 && linkedProjects.length > 0) {
+    // "Due by" = PolicyTool end_date (the mandate deadline)
+    const policyDates = policyTools
+      .filter((p: any) => p.end_date)
+      .map((p: any) => new Date(p.end_date).getTime());
+    const dueBy = policyDates.length > 0 ? Math.min(...policyDates) : null;
+
+    // "Planned by" = latest project end_date (when work will actually finish)
+    const projectDates = linkedProjects
+      .filter((p: any) => p.end_date && p.status !== 'complete' && p.status !== 'completed')
+      .map((p: any) => new Date(p.end_date).getTime());
+    const plannedBy = projectDates.length > 0 ? Math.max(...projectDates) : null;
+
+    if (dueBy && plannedBy) {
+      const deltaMs = plannedBy - dueBy;
+      const deltaDays = Math.round(deltaMs / (1000 * 60 * 60 * 24));
+      l3Cap.rawCapability.dueByDate = new Date(dueBy).toISOString().split('T')[0];
+      l3Cap.rawCapability.plannedByDate = new Date(plannedBy).toISOString().split('T')[0];
+      l3Cap.rawCapability.lateByDays = deltaDays > 0 ? deltaDays : 0;
+      l3Cap.rawCapability.isLate = deltaDays > 0;
+      // Severity bands: 0% on time, <=5% slight, >5% significant (of total duration)
+      const policyStartDates = policyTools
+        .filter((p: any) => p.start_date)
+        .map((p: any) => new Date(p.start_date).getTime());
+      const earliestStart = policyStartDates.length > 0 ? Math.min(...policyStartDates) : dueBy;
+      const totalDuration = plannedBy - earliestStart;
+      if (totalDuration > 0 && deltaDays > 0) {
+        const delayPct = (deltaDays / (totalDuration / (1000 * 60 * 60 * 24))) * 100;
+        l3Cap.rawCapability.delaySeverity = delayPct <= 5 ? 'slight' : 'significant';
+      }
+    }
+  }
+
   // Enrich with risk data from nested object (if present)
   if (l3Node.risk) {
     enrichWithRiskData(l3Cap, l3Node.risk, mode);
     calculateOverlayFields(l3Cap, mode);
+    // Store raw risk for detail panel display
+    l3Cap.rawRisk = l3Node.risk;
   }
 
   // Derive build/execute status from risk bands (SST v1.2 thresholds: Green≤35%, Amber≤65%, Red>65%)
@@ -613,12 +722,12 @@ function buildL3(l3Node: NeoGraphNode): L3Capability {
       }
     }
   } else {
-    // No risk data: default to ontrack/planned
+    // No risk data — leave build_status/execute_status undefined
+    // The raw DB status (cap.status) will be shown instead
     if (mode === 'build') {
-      l3Cap.build_status = 'planned';
-    } else {
-      l3Cap.execute_status = 'ontrack';
+      l3Cap.build_status = 'not-due';
     }
+    // Do NOT set execute_status — no risk data means we can't derive ontrack/at-risk/issues
   }
 
   return l3Cap;
@@ -820,3 +929,4 @@ function calculateL2TargetMaturity(l3Nodes: NeoGraphNode[]): number {
   const targets = l3Nodes.map(l3 => typeof l3.target_maturity_level === 'string' ? parseInt(l3.target_maturity_level) : getNeo4jInt(l3.target_maturity_level) || 5);
   return Math.round(targets.reduce((a, b) => a + b) / targets.length);
 }
+

@@ -300,11 +300,78 @@ export default function ChatAppPage() {
   }, [activeConversationId, handleNewChat, loadConversations]);
 
   const handleQuickAction = (action: any) => {
-    // Basic simulation of quick actions
     const actionId = typeof action === 'string' ? action : action.id;
+
+    // Desk navigation
     if (actionId && actionId.endsWith('-desk')) {
       navigate(`/desk/${actionId.replace('-desk', '')}`);
-    } else if (typeof action === 'object' && action.command) {
+      return;
+    }
+
+    // References section items
+    if (actionId === 'knowledge') {
+      // Twin Knowledge / Multimedia Tutorials → open in canvas
+      const artifact = {
+        artifact_type: 'REACT',
+        title: language === 'ar' ? 'علوم التوأمة' : 'Twin Knowledge Base',
+        content: {
+          reactElement: <TwinKnowledge onNavigate={(chapterId: string, episodeId: string) => {
+            const content: any = { chapterId, episodeId };
+            const detailArtifact = {
+              artifact_type: 'REACT',
+              title: language === 'ar' ? 'علوم التوأمة' : 'Twin Knowledge Base',
+              content: { reactElement: <TwinKnowledgeRenderer content={content} onBack={() => handleQuickAction({id: 'knowledge'})} /> },
+              forceZen: true,
+              hideNavigation: true
+            };
+            setCanvasArtifacts([detailArtifact]);
+          }} />
+        },
+        forceZen: true,
+        hideNavigation: true
+      };
+      setCanvasArtifacts([artifact]);
+      setInitialCanvasIndex(0);
+      setIsCanvasOpen(true);
+      return;
+    }
+
+    if (actionId === 'explorer') {
+      navigate('/desk/explorer');
+      return;
+    }
+
+    if (actionId === 'roadmap') {
+      // Product Roadmap → open in canvas
+      const artifact = {
+        artifact_type: 'REACT',
+        title: language === 'ar' ? 'خارطة طريق المنتج' : 'Product Roadmap',
+        content: {
+          reactElement: <ProductRoadmap />
+        },
+        forceZen: true,
+        hideNavigation: true
+      };
+      setCanvasArtifacts([artifact]);
+      setInitialCanvasIndex(0);
+      setIsCanvasOpen(true);
+      return;
+    }
+
+    // Admin items → navigate to JosoorShell with correct view
+    if (actionId === 'settings' || actionId === 'observability' || actionId === 'providers' || actionId === 'ab-testing' || actionId === 'monitoring') {
+      navigate('/josoor');
+      return;
+    }
+
+    // Chat → new chat
+    if (actionId === 'chat') {
+      handleNewChat();
+      return;
+    }
+
+    // Fallback: send as chat command
+    if (typeof action === 'object' && action.command) {
       handleSendMessage(action.command.en || action.command);
     }
   };

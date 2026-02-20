@@ -357,10 +357,12 @@
 
 /* ═══ KSA Compatibility Badges ═══ */
 .ksa {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-  gap: 1.2rem;
-  padding: 1.1rem;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 0.8rem 1rem;
   background: var(--component-panel-bg);
   border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 16px;
@@ -369,18 +371,23 @@
 }
 
 .ksa-i {
-  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  flex: 0 0 auto;
+}
+
+.ksa-logo {
+  height: 36px;
+  width: auto;
+  object-fit: contain;
 }
 
 .ksa-n {
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--component-text-primary);
-}
-
-.ksa-d {
-  font-size: 14px;
-  color: var(--component-text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--component-text-secondary);
 }
 
 /* ═══ Responsive Design ═══ */
@@ -484,8 +491,15 @@
   }
 
   .ksa {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 0.8rem;
+    gap: 0.6rem;
+  }
+
+  .ksa-logo {
+    height: 28px;
+  }
+
+  .ksa-n {
+    font-size: 11px;
   }
 }
 

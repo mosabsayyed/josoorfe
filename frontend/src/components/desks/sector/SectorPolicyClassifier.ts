@@ -9,12 +9,12 @@ export interface PolicyToolCounts {
     awareness: number;
     total: number;
     // Risk-based status for each category
-    enforceStatus?: 'high' | 'medium' | 'low' | 'none';
-    incentiveStatus?: 'high' | 'medium' | 'low' | 'none';
-    licenseStatus?: 'high' | 'medium' | 'low' | 'none';
-    servicesStatus?: 'high' | 'medium' | 'low' | 'none';
-    regulateStatus?: 'high' | 'medium' | 'low' | 'none';
-    awarenessStatus?: 'high' | 'medium' | 'low' | 'none';
+    enforceStatus?: 'red' | 'amber' | 'green' | 'none';
+    incentiveStatus?: 'red' | 'amber' | 'green' | 'none';
+    licenseStatus?: 'red' | 'amber' | 'green' | 'none';
+    servicesStatus?: 'red' | 'amber' | 'green' | 'none';
+    regulateStatus?: 'red' | 'amber' | 'green' | 'none';
+    awarenessStatus?: 'red' | 'amber' | 'green' | 'none';
 }
 
 // 6 Categories

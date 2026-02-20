@@ -16,6 +16,7 @@ import majorUnlockPin from '../../../assets/map-markers/lPriority.svg';
 
 import { PolicyToolCounts } from '../../desks/sector/SectorPolicyClassifier';
 import { PolicyToolsDrawer, PolicyToolItem } from './PolicyToolsDrawer';
+import { L1_CATEGORY_MAP } from '../../../services/neo4jMcpService';
 
 const SECTORS = [
     { id: 'all', label: 'All', icon: iconAll },
@@ -53,6 +54,11 @@ interface SectorHeaderNavProps {
 
     // Filtering context for drawer
     selectedYear?: string;
+
+    // Real risk data from Neo4j
+    categoryRiskColors?: Record<string, string>;
+    policyRiskByL1?: Map<string, any>;
+    onPolicyToolClick?: (tool: any) => void;
 }
 
 const SectorHeaderNav: React.FC<SectorHeaderNavProps> = ({
@@ -72,7 +78,10 @@ const SectorHeaderNav: React.FC<SectorHeaderNavProps> = ({
     policyCounts,
     policyNodes = [],
     onStrategyClick,
-    selectedYear = '2030'
+    selectedYear = '2030',
+    categoryRiskColors = {},
+    policyRiskByL1,
+    onPolicyToolClick
 }) => {
     const { t } = useTranslation();
     // Drawer state
@@ -90,38 +99,13 @@ const SectorHeaderNav: React.FC<SectorHeaderNavProps> = ({
         'Awareness': 'var(--component-color-warning)'
     };
 
-    // L1 Name -> Category Mapping (from SectorPolicyClassifier)
-    const L1_CATEGORY_MAP: Record<string, string> = {
-        'Policy Tool for Compliance Rate': 'Enforce',
-        'Policy Tool for Environmental Compliance Rate': 'Enforce',
-        'Policy Tool for Resource Efficiency': 'Enforce',
-        'Water Human Capital Program': 'Incentive',
-        'Water Innovation & R&D': 'Incentive',
-        'Water Innovation Ecosystem': 'Incentive',
-        'Policy Tool for Employment Generation': 'Incentive',
-        'Policy Tool for Investment Agreement Value': 'Incentive',
-        'Water Inspection & Compliance': 'License',
-        'Policy Tool for Licensing Coverage': 'License',
-        'Water Digital Platforms': 'Services',
-        'Water Logistics & Service Delivery': 'Services',
-        'Policy Tool for Processing Time Reduction': 'Services',
-        'Policy Tool for Service Reliability': 'Services',
-        'Policy Tool for Customer Satisfaction Rate': 'Services',
-        'Policy Tool for Complaint Resolution Rate': 'Services',
-        'Water Monitoring & Regulation': 'Regulate',
-        'Policy Tool for GDP Contribution Rate': 'Regulate',
-        'Policy Tool for Sustainability Index': 'Regulate',
-        'Policy Tool for Waste Reduction': 'Awareness',
-        'Policy Tool for Water Loss Reduction': 'Awareness',
-        'Policy Tool for Stakeholder Engagement Rate': 'Awareness'
-    };
-
     // Handle category hover/click
     const handleCategoryHover = (category: string) => {
-        // 1. Filter by Year (matching SectorDesk.tsx lines 446-450)
+        // 1. Filter by Year: Exact match (DB has per-year snapshots per ontology rule 1.2)
+        const selectedYearNum = parseInt(selectedYear, 10);
         const yearlyNodes = policyNodes.filter(n => {
-            const nodeYear = String(n.year || n.parent_year || '');
-            return nodeYear === selectedYear;
+            const nodeYear = parseInt(String(n.year || n.parent_year || '0'), 10);
+            return !isNaN(nodeYear) && nodeYear === selectedYearNum;
         });
 
         // 2. Filter by Sector (matching SectorDesk.tsx lines 452-456)
@@ -171,46 +155,41 @@ const SectorHeaderNav: React.FC<SectorHeaderNavProps> = ({
         servicesStatus: 'none', regulateStatus: 'none', awarenessStatus: 'none'
     };
 
-    // Policy tools are sector-agnostic (no sector field in DB)
-    // Show actual counts for all sectors
-    const isNA = false; // Policy tools always available
-    const getValue = (val: number) => val; // No scaling needed
-
-    // Get risk-based status color
-    const getStatusColor = (status?: 'high' | 'medium' | 'low' | 'none'): string => {
+    // Get risk-based color from real data ONLY — no hardcoded fallbacks
+    const getStatusColor = (status?: 'red' | 'amber' | 'green' | 'none'): string => {
         switch (status) {
-            case 'high': return 'var(--component-color-danger)'; // Red
-            case 'medium': return 'var(--component-color-warning)'; // Yellow
-            case 'low': return 'var(--component-color-success)'; // Green
+            case 'red': return 'var(--component-color-danger)';
+            case 'amber': return 'var(--component-color-warning)';
+            case 'green': return 'var(--component-color-success)';
             case 'none':
-            default: return 'var(--component-text-tertiary)'; // Gray
+            default: return 'var(--component-text-tertiary)';
         }
     };
 
-    const renderItem = (id: string, val: number, color: string, status?: 'high' | 'medium' | 'low' | 'none') => (
-        <div
-            className={`policy-tool-item ${isNA ? 'disabled' : ''}`}
-            onMouseEnter={() => !isNA && handleCategoryHover(id)}
-            onClick={() => !isNA && handleCategoryHover(id)}
-            style={{ cursor: isNA ? 'default' : 'pointer' }}
-        >
+    const renderItem = (id: string, val: number, status?: 'red' | 'amber' | 'green' | 'none') => {
+        const bandColor = getStatusColor(status);
+        return (
             <div
-                className="policy-tool-indicator"
-                style={{
-                    background: isNA ? 'var(--component-panel-border)' : getStatusColor(status),
-                    boxShadow: isNA ? 'none' : `0 0 8px ${getStatusColor(status)}`
-                }}
-            ></div>
-            <div className="policy-tool-content">
-                <span className="output-label">
-                    {t('josoor.sector.' + id.toLowerCase())}
-                </span>
-                <span className="kpi-value">
-                    {isNA ? 'N/A' : getValue(val)}
-                </span>
+                className="policy-tool-item"
+                onMouseEnter={() => handleCategoryHover(id)}
+                onClick={() => handleCategoryHover(id)}
+                style={{ cursor: 'pointer' }}
+            >
+                <div
+                    className="policy-tool-indicator"
+                    style={{
+                        background: bandColor,
+                        boxShadow: `0 0 8px ${bandColor}`
+                    }}
+                />
+                <div className="policy-tool-content">
+                    <span className="output-label" style={{ fontSize: '14px', fontWeight: 600 }}>
+                        {t('josoor.sector.' + id.toLowerCase())} ({val})
+                    </span>
+                </div>
             </div>
-        </div>
-    )
+        );
+    }
 
     return (
         <div style={{ position: 'relative' }}>
@@ -324,23 +303,12 @@ const SectorHeaderNav: React.FC<SectorHeaderNavProps> = ({
                     {t('josoor.sector.policyTools')}
                 </span>
                 <div className="policy-tools-grid">
-                {/* 1. Enforce */}
-                {renderItem('Enforce', counts.enforce, 'var(--component-color-danger)', counts.enforceStatus)}
-
-                {/* 2. Incentive */}
-                {renderItem('Incentive', counts.incentive, 'var(--component-color-success)', counts.incentiveStatus)}
-
-                {/* 3. License */}
-                {renderItem('License', counts.license, 'var(--component-color-info)', counts.licenseStatus)}
-
-                {/* 4. Services */}
-                {renderItem('Services', counts.services, 'var(--sector-water)', counts.servicesStatus)}
-
-                {/* 5. Regulate */}
-                {renderItem('Regulate', counts.regulate, 'var(--status-planned)', counts.regulateStatus)}
-
-                {/* 6. Awareness */}
-                {renderItem('Awareness', counts.awareness, 'var(--component-color-warning)', counts.awarenessStatus)}
+                {renderItem('Enforce', counts.enforce, categoryRiskColors['Enforce'] as any)}
+                {renderItem('Incentive', counts.incentive, categoryRiskColors['Incentive'] as any)}
+                {renderItem('License', counts.license, categoryRiskColors['License'] as any)}
+                {renderItem('Services', counts.services, categoryRiskColors['Services'] as any)}
+                {renderItem('Regulate', counts.regulate, categoryRiskColors['Regulate'] as any)}
+                {renderItem('Awareness', counts.awareness, categoryRiskColors['Awareness'] as any)}
             </div>
 
         </div>
@@ -352,6 +320,8 @@ const SectorHeaderNav: React.FC<SectorHeaderNavProps> = ({
                 tools={categoryTools}
                 onClose={handleDrawerClose}
                 color={activeCategory ? CATEGORY_COLORS[activeCategory] : '#666'}
+                onToolClick={onPolicyToolClick}
+                toolRiskBands={policyRiskByL1}
             />
         </div>
     );

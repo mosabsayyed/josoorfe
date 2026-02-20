@@ -58,6 +58,11 @@ export const adminService = {
         throw new Error('Invalid response format');
     },
 
+    createProvider: async (config: Partial<ProviderDetail>): Promise<any> => {
+        const response = await apiClient.post<any>('/api/admin/providers', config);
+        return response.data?.data || response.data;
+    },
+
     updateProvider: async (id: string, config: Partial<ProviderDetail>): Promise<any> => {
         const response = await apiClient.put<any>(`/api/admin/providers/${id}`, config);
         return response.data?.data || response.data;

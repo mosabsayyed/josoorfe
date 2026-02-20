@@ -230,28 +230,20 @@ export default function Architecture({ content, language }: ArchitectureProps) {
 
         {/* KSA Compatibility Badges */}
         <div className="ksa">
-          <div style={{ gridColumn: '1 / -1', textAlign: 'center', marginBottom: '1rem', fontSize: '14px', fontWeight: '600' }}>
-            {t('architecture.vision2030Compatible')}
+          <div style={{ gridColumn: '1 / -1', textAlign: 'center', marginBottom: '0.5rem', fontSize: '14px', fontWeight: '600' }}>
+            {t('architecture.alignedNationalStandards')}
           </div>
           <div className="ksa-i">
-            <div className="ksa-n">{t('architecture.ksa.adaa')}</div>
-            <div className="ksa-d">{t('architecture.ksa.adaaDesc')}</div>
+            <img src="/att/logos/adaa.png" alt="Adaa" className="ksa-logo" />
           </div>
           <div className="ksa-i">
-            <div className="ksa-n">{t('architecture.ksa.expro')}</div>
-            <div className="ksa-d">{t('architecture.ksa.exproDesc')}</div>
+            <img src="/att/logos/expro.svg" alt="EXPRO" className="ksa-logo" />
           </div>
           <div className="ksa-i">
-            <div className="ksa-n">{t('architecture.ksa.dga')}</div>
-            <div className="ksa-d">{t('architecture.ksa.dgaDesc')}</div>
+            <img src="/att/logos/dga.svg" alt="DGA" className="ksa-logo" />
           </div>
           <div className="ksa-i">
-            <div className="ksa-n">{t('architecture.ksa.etimad')}</div>
-            <div className="ksa-d">{t('architecture.ksa.etimadDesc')}</div>
-          </div>
-          <div className="ksa-i">
-            <div className="ksa-n">{t('architecture.ksa.cog')}</div>
-            <div className="ksa-d">{t('architecture.ksa.cogDesc')}</div>
+            <img src="/att/logos/etimad.svg" alt="Etimad" className="ksa-logo" />
           </div>
         </div>
       </div>

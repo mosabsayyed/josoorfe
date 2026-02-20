@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 
 interface SectorDetailsPanelProps {
     selectedSector: string;
@@ -14,6 +15,11 @@ interface SectorDetailsPanelProps {
     quarter?: string;
     selectedPriority?: string; // "All" | "HIGH" | "MAJOR" | etc
     selectedStatus?: string;   // "All" | "Existing" | "Planned" | etc
+    // Policy tool panel props
+    selectedPolicyTool?: any;
+    policyRiskByL1?: Map<string, any>;
+    onPolicyToolClose?: () => void;
+    onRiskAssessment?: (tool: any, riskData: any) => void;
 }
 
 interface GraphNode {
@@ -192,9 +198,14 @@ const SectorDetailsPanel: React.FC<SectorDetailsPanelProps> = ({
     year,
     quarter,
     selectedPriority,
-    selectedStatus
+    selectedStatus,
+    selectedPolicyTool,
+    policyRiskByL1,
+    onPolicyToolClose,
+    onRiskAssessment
 }) => {
     const { t } = useTranslation();
+    const navigate = useNavigate();
     const MEGA_REGIONS = [
         { id: 'Northern', name: 'Northern', regions: ['Northern', 'Tabuk', 'Jawf', 'Hail'] },
         { id: 'Western', name: 'Western', regions: ['Western', 'Makkah', 'Madinah', 'Jazan'] },
@@ -401,6 +412,86 @@ const SectorDetailsPanel: React.FC<SectorDetailsPanelProps> = ({
         hasAssetClick: !!onAssetClick,
         assetsCount: allAssets.length
     });
+
+    // PRIORITY 0: Policy Tool View
+    if (selectedPolicyTool) {
+        const riskData = policyRiskByL1?.get(selectedPolicyTool.id);
+        const worstBand = riskData?.worstBand || 'none';
+        const l2Details = riskData?.l2Details || [];
+        const bandColor = worstBand === 'red' ? 'var(--component-color-danger)' : worstBand === 'amber' ? 'var(--component-color-warning)' : worstBand === 'green' ? 'var(--component-color-success)' : 'var(--component-text-tertiary)';
+
+        return (
+            <div className="sector-details-panel drawer">
+                {/* Header */}
+                <div className="details-header">
+                    <div className="header-content">
+                        <div className="header-text">
+                            <h2 className="details-title">{selectedPolicyTool.id} • {selectedPolicyTool.name}</h2>
+                            <div className="details-subtitle">{selectedPolicyTool.category}</div>
+                        </div>
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                            {onRiskAssessment && (
+                                <button
+                                    onClick={() => onRiskAssessment(selectedPolicyTool, riskData)}
+                                    style={{ background: 'rgba(244,187,48,0.15)', border: '1px solid rgba(244,187,48,0.3)', color: 'var(--component-text-accent)', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}
+                                    title={t('josoor.sector.policy.riskAssessment')}
+                                >
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" fill="currentColor"/></svg>
+                                    {t('josoor.sector.policy.riskAssessment')}
+                                </button>
+                            )}
+                            <button onClick={onPolicyToolClose} className="back-button">✕</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="details-content">
+                    {/* L2 Children with inline linked capability */}
+                    <div>
+                        <h3 style={{ fontSize: '13px', textTransform: 'uppercase', color: 'var(--component-text-muted)', marginBottom: '12px' }}>
+                            {t('josoor.sector.policy.l2Children')} ({l2Details.length})
+                        </h3>
+                        {l2Details.map((l2: any) => {
+                            const l2Band = l2.buildBand?.toLowerCase() || 'none';
+                            const l2Color = l2Band === 'red' ? 'var(--component-color-danger)' : l2Band === 'amber' ? 'var(--component-color-warning)' : l2Band === 'green' ? 'var(--component-color-success)' : 'var(--component-text-tertiary)';
+                            return (
+                                <div key={l2.l2Id} style={{ padding: '10px 12px', borderLeft: `3px solid ${l2Color}`, marginBottom: '8px', background: 'rgba(30,41,59,0.5)', borderRadius: '0 4px 4px 0' }}>
+                                    <div style={{ fontSize: '14px', color: 'var(--component-text-primary)' }}>{l2.l2Id} • {l2.l2Name}</div>
+                                    {l2.capName && (
+                                        <div
+                                            onClick={() => l2.capId && navigate(`/desk/enterprise?cap=${l2.capId}`)}
+                                            style={{ fontSize: '12px', color: 'var(--component-text-accent)', marginTop: '6px', cursor: l2.capId ? 'pointer' : 'default', display: 'flex', alignItems: 'center', gap: '6px' }}
+                                            title={l2.capId ? t('josoor.sector.policy.navigateToEnterprise') : ''}
+                                        >
+                                            <span style={{
+                                                display: 'inline-block',
+                                                padding: '1px 6px',
+                                                borderRadius: '3px',
+                                                fontSize: '10px',
+                                                fontWeight: 700,
+                                                letterSpacing: '0.5px',
+                                                background: l2.buildBand ? 'rgba(99,102,241,0.15)' : 'rgba(6,182,212,0.15)',
+                                                color: l2.buildBand ? 'var(--status-planned)' : 'var(--sector-water)',
+                                                border: l2.buildBand ? '1px solid rgba(99,102,241,0.3)' : '1px solid rgba(6,182,212,0.3)'
+                                            }}>
+                                                {l2.buildBand ? 'BUILD' : 'OPERATE'}
+                                            </span>
+                                            <span>→ {l2.capId} • {l2.capName}</span>
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })}
+                        {l2Details.length === 0 && (
+                            <div style={{ fontSize: '13px', color: 'var(--component-text-muted)', fontStyle: 'italic' }}>
+                                {t('josoor.sector.noPolicyTools')}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     // PRIORITY 1: Single Asset View (must check BEFORE selectedRegion)
     if (selectedAsset) {

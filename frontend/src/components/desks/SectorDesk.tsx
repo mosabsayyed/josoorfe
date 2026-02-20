@@ -11,7 +11,7 @@ import { dashboardData } from './sector/SectorDashboardData';
 import { chatService } from '../../services/chatService';
 import { Artifact } from '../../types/api';
 // Removed: buildArtifactsFromTags, extractDatasetBlocks - now handled by chatService
-import { fetchSectorGraphData, L1_CATEGORY_MAP } from '../../services/neo4jMcpService';
+import { fetchSectorGraphData, L1_CATEGORY_MAP, fetchPolicyToolRiskData, aggregatePolicyRiskByL1, aggregatePolicyRiskByCategory, L1RiskAggregation } from '../../services/neo4jMcpService';
 import { SECTOR_POLICY_MOCK_DATA } from './sector/data/SectorPolicyMock';
 import { PolicyToolCounts } from './sector/SectorPolicyClassifier';
 
@@ -105,6 +105,29 @@ export const SectorDesk: React.FC<SectorDeskProps> = ({ year: propYear, quarter:
     const [rawPolicyNodes, setRawPolicyNodes] = useState<GraphNode[]>([]);
     const [policyCounts, setPolicyCounts] = useState<PolicyToolCounts | undefined>(undefined);
 
+    // Risk data from Neo4j (dynamic coloring for policy tool categories)
+    const [categoryRiskColors, setCategoryRiskColors] = useState<Record<string, string>>({});
+    const [policyRiskByL1, setPolicyRiskByL1] = useState<Map<string, L1RiskAggregation>>(new Map());
+
+    // Policy tool detail panel state
+    const [selectedPolicyTool, setSelectedPolicyTool] = useState<any>(null);
+
+    // Fetch real risk data from Neo4j for dynamic policy tool coloring
+    useEffect(() => {
+        const loadRiskData = async () => {
+            try {
+                const riskRows = await fetchPolicyToolRiskData(selectedYear);
+                const l1RiskMap = aggregatePolicyRiskByL1(riskRows);
+                const catColors = aggregatePolicyRiskByCategory(l1RiskMap, L1_CATEGORY_MAP);
+                setPolicyRiskByL1(l1RiskMap);
+                setCategoryRiskColors(catColors);
+            } catch (err) {
+                console.error('[SectorDesk] Risk data fetch failed:', err);
+            }
+        };
+        loadRiskData();
+    }, [selectedYear]);
+
     // Sync sector/pillar
     useEffect(() => {
         const PILLARS_SECTORS: { [key: string]: string[] } = {
@@ -167,14 +190,15 @@ export const SectorDesk: React.FC<SectorDeskProps> = ({ year: propYear, quarter:
     useEffect(() => {
         let result = [...allAssets];
 
-        // 1. Year Filter - Filter by selected year
+        // 1. Year Filter - Exact match (DB has per-year snapshots per ontology rule 1.2)
         if (selectedYear) {
             const beforeCount = result.length;
+            const selectedYearNum = parseInt(selectedYear, 10);
             result = result.filter(asset => {
-                const assetYear = String(asset.year || asset.parent_year || '');
-                return assetYear === selectedYear;
+                const assetYear = parseInt(String(asset.year || asset.parent_year || '0'), 10);
+                return !isNaN(assetYear) && assetYear === selectedYearNum;
             });
-            console.log(`Year filter: ${beforeCount} → ${result.length} (year=${selectedYear})`);
+            console.log(`Year filter: ${beforeCount} → ${result.length} (year===${selectedYear})`);
         }
 
         // 2. Level Filter: ONLY show L1 assets that have NO L2 children
@@ -472,10 +496,11 @@ export const SectorDesk: React.FC<SectorDeskProps> = ({ year: propYear, quarter:
     useEffect(() => {
         if (rawPolicyNodes.length === 0) return;
 
-        // 1. Filter by Year
+        // 1. Filter by Year: Exact match (DB has per-year snapshots per ontology rule 1.2)
+        const selectedYearNum = parseInt(selectedYear, 10);
         const yearlyNodes = rawPolicyNodes.filter(n => {
-            const nodeYear = String(n.year || n.parent_year || '');
-            return nodeYear === selectedYear;
+            const nodeYear = parseInt(String(n.year || n.parent_year || '0'), 10);
+            return !isNaN(nodeYear) && nodeYear === selectedYearNum;
         });
 
         // 2. Filter by Sector
@@ -494,46 +519,17 @@ export const SectorDesk: React.FC<SectorDeskProps> = ({ year: propYear, quarter:
             servicesStatus: 'none', regulateStatus: 'none', awarenessStatus: 'none'
         };
 
-        // Helper to calculate risk status from nodes
-        const calculateRiskStatus = (nodes: any[]): 'high' | 'medium' | 'low' | 'none' => {
-            if (nodes.length === 0) return 'none';
-
-            // Check for risk-related properties
-            const risks = nodes.filter(n =>
-                n.risk_level || n.risk_status || n.has_risk ||
-                n.risk_severity || n.risk_count
-            );
-
-            if (risks.length === 0) return 'low'; // No explicit risks = low risk
-
-            // Aggregate risk levels
-            const highRisks = risks.filter(n =>
-                String(n.risk_level || n.risk_status || n.risk_severity || '').toLowerCase().includes('high') ||
-                String(n.risk_level || n.risk_status || n.risk_severity || '').toLowerCase().includes('critical')
-            );
-            const mediumRisks = risks.filter(n =>
-                String(n.risk_level || n.risk_status || n.risk_severity || '').toLowerCase().includes('medium') ||
-                String(n.risk_level || n.risk_status || n.risk_severity || '').toLowerCase().includes('moderate')
-            );
-
-            if (highRisks.length > 0) return 'high';
-            if (mediumRisks.length > 0) return 'medium';
-            return 'low';
-        };
-
-        // Track nodes by category for risk calculation
-        const categoryNodes: Record<string, any[]> = {
-            enforce: [], incentive: [], license: [], services: [], regulate: [], awareness: []
-        };
-
         l1PolicyTools.forEach((l1: any) => {
-            const children = l2PolicyTools.filter((l2: any) => String(l2.parent_id) === String(l1.id));
+            // Ontology rule 1.2: year must match across relationships
+            const children = l2PolicyTools.filter((l2: any) =>
+                String(l2.parent_id) === String(l1.id) &&
+                String(l2.year || l2.parent_year || '') === String(l1.year || l1.parent_year || '')
+            );
             const childCount = children.length;
             const effectiveCount = childCount > 0 ? childCount : 1;
             const category = L1_CATEGORY_MAP[l1.name] || 'Services';
             const categoryKey = category?.toLowerCase();
 
-            // Add to counts
             switch (categoryKey) {
                 case 'enforce': counts.enforce += effectiveCount; break;
                 case 'incentive': counts.incentive += effectiveCount; break;
@@ -542,21 +538,7 @@ export const SectorDesk: React.FC<SectorDeskProps> = ({ year: propYear, quarter:
                 case 'regulate': counts.regulate += effectiveCount; break;
                 case 'awareness': counts.awareness += effectiveCount; break;
             }
-
-            // Collect nodes for risk calculation
-            if (categoryNodes[categoryKey]) {
-                categoryNodes[categoryKey].push(l1);
-                categoryNodes[categoryKey].push(...children);
-            }
         });
-
-        // Calculate risk status for each category
-        counts.enforceStatus = calculateRiskStatus(categoryNodes.enforce);
-        counts.incentiveStatus = calculateRiskStatus(categoryNodes.incentive);
-        counts.licenseStatus = calculateRiskStatus(categoryNodes.license);
-        counts.servicesStatus = calculateRiskStatus(categoryNodes.services);
-        counts.regulateStatus = calculateRiskStatus(categoryNodes.regulate);
-        counts.awarenessStatus = calculateRiskStatus(categoryNodes.awareness);
 
         counts.total = counts.enforce + counts.incentive + counts.license + counts.services + counts.regulate + counts.awareness;
         setPolicyCounts(counts);
@@ -681,6 +663,9 @@ export const SectorDesk: React.FC<SectorDeskProps> = ({ year: propYear, quarter:
                         policyCounts={policyCounts}
                         policyNodes={rawPolicyNodes}
                         selectedYear={selectedYear}
+                        categoryRiskColors={categoryRiskColors}
+                        policyRiskByL1={policyRiskByL1}
+                        onPolicyToolClick={(tool: any) => { setSelectedPolicyTool(tool); setSelectedAsset(null); }}
 
                         onBackToNational={() => {
                             setSelectedRegionId(null);
@@ -717,9 +702,9 @@ export const SectorDesk: React.FC<SectorDeskProps> = ({ year: propYear, quarter:
             <div
                 className="sector-details-drawer"
                 style={{
-                    width: (viewLevel === 'L2' && (selectedRegionId || selectedAsset || hoveredRegion)) || (viewLevel === 'L1' && hoveredRegion) ? '400px' : '0px',
-                    flex: (viewLevel === 'L2' && (selectedRegionId || selectedAsset || hoveredRegion)) || (viewLevel === 'L1' && hoveredRegion) ? '0 0 400px' : '0 0 0px',
-                    boxShadow: ((viewLevel === 'L2' && (selectedRegionId || selectedAsset || hoveredRegion)) || (viewLevel === 'L1' && hoveredRegion)) ? '-4px 0 20px rgba(0,0,0,0.3)' : 'none'
+                    width: selectedPolicyTool || (viewLevel === 'L2' && (selectedRegionId || selectedAsset || hoveredRegion)) || (viewLevel === 'L1' && hoveredRegion) ? '400px' : '0px',
+                    flex: selectedPolicyTool || (viewLevel === 'L2' && (selectedRegionId || selectedAsset || hoveredRegion)) || (viewLevel === 'L1' && hoveredRegion) ? '0 0 400px' : '0 0 0px',
+                    boxShadow: (selectedPolicyTool || (viewLevel === 'L2' && (selectedRegionId || selectedAsset || hoveredRegion)) || (viewLevel === 'L1' && hoveredRegion)) ? '-4px 0 20px rgba(0,0,0,0.3)' : 'none'
                 }}
                 onMouseEnter={() => {
                     if (hoverTimeoutRef.current) {
@@ -729,7 +714,19 @@ export const SectorDesk: React.FC<SectorDeskProps> = ({ year: propYear, quarter:
                 }}
             >
                 <div className="sector-drawer-content">
-                    {viewLevel === 'L2' && (selectedRegionId || selectedAsset || hoveredRegion) ? (
+                    {selectedPolicyTool ? (
+                        <SectorDetailsPanel
+                            selectedRegion={selectedRegionId}
+                            hoveredRegion={hoveredRegion}
+                            selectedAsset={null}
+                            assets={filteredAssets}
+                            selectedSector={selectedSector}
+                            year={Number(selectedYear)}
+                            selectedPolicyTool={selectedPolicyTool}
+                            policyRiskByL1={policyRiskByL1}
+                            onPolicyToolClose={() => setSelectedPolicyTool(null)}
+                        />
+                    ) : viewLevel === 'L2' && (selectedRegionId || selectedAsset || hoveredRegion) ? (
                         <SectorDetailsPanel
                             selectedRegion={selectedRegionId}
                             hoveredRegion={hoveredRegion}

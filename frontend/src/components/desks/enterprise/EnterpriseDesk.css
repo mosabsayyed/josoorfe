@@ -6,6 +6,8 @@
     height: 100vh;
     background-color: #020617;
     color: #f9fafb;
+    font-family: var(--component-font-family);
+    font-style: normal;
     overflow: hidden;
 }
 
@@ -156,4 +158,12 @@
 .overlay-buttons-block .overlay-btn-inactive {
     background: var(--component-panel-bg);
     color: var(--component-text-secondary);
+}
+
+.overlay-buttons-block .overlay-btn-disabled {
+    background: var(--component-panel-bg);
+    color: var(--component-text-muted);
+    opacity: 0.4;
+    cursor: not-allowed;
+    pointer-events: none;
 }

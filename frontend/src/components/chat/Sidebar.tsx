@@ -332,6 +332,35 @@ export function Sidebar({
             overflowY: 'auto'
           }}
         >
+          {/* New Chat Button */}
+          <button
+            title={translations.newChat}
+            onClick={() => onNewChat()}
+            className="quickaction-item clickable"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              backgroundColor: 'rgba(0, 0, 0, 0)',
+              borderRadius: '4px',
+              color: 'var(--component-text-accent)',
+              gap: '8px',
+              justifyContent: 'flex-start',
+              width: '100%',
+              padding: '6px 0',
+              fontWeight: 500,
+              fontSize: '13px',
+              lineHeight: '1.4',
+              fontFamily: language === 'ar' ? 'var(--component-font-family-ar)' : 'var(--component-font-family)',
+              border: '1px solid rgba(0, 0, 0, 0)',
+              cursor: 'pointer'
+            }}
+          >
+            <span style={{ fontSize: '20px', width: '24px', textAlign: 'center' }}>+</span>
+            <div className="quickaction-meta" style={{ display: 'flex', alignItems: 'flex-start', flexDirection: 'column' }}>
+              <span className="quickaction-title" style={{ display: 'block', fontSize: '14px' }}>{translations.newChat}</span>
+            </div>
+          </button>
+
           {/* Graph Chat Button */}
           <button
             title={t('josoor.chat.graphChat')}

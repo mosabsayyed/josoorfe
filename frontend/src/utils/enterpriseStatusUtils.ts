@@ -71,6 +71,7 @@ export function getL3StatusColor(l3: L3Capability): string {
     if (l3.execute_status === 'ontrack') return '#10b981';
     else if (l3.execute_status === 'at-risk') return '#f59e0b';
     else if (l3.execute_status === 'issues') return '#ef4444';
+    else return '#475569'; // No risk data — neutral gray
   }
   return '#475569';
 }
@@ -122,14 +123,14 @@ export function getStatusLabel(l3: L3Capability): string {
       case 'in-progress-ontrack': return 'ontrack';
       case 'in-progress-atrisk': return 'at risk';
       case 'in-progress-issues': return 'issues';
-      default: return 'unknown';
+      default: return l3.status || 'pending';
     }
   } else {
     switch (l3.execute_status) {
       case 'ontrack': return 'ontrack';
       case 'at-risk': return 'at risk';
       case 'issues': return 'issues';
-      default: return 'unknown';
+      default: return l3.status || 'active';
     }
   }
 }

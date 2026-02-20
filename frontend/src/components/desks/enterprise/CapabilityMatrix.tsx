@@ -11,6 +11,9 @@ interface CapabilityMatrixProps {
   isL3Dimmed: (l3: L3Capability) => boolean;
   onL3Hover: (l3: L3Capability, event: React.MouseEvent) => void;
   onL3Leave: () => void;
+  onL3Click: (l3: L3Capability) => void;
+  onL2Click?: (l2: L2Capability) => void;
+  highPriorityCapIds?: Set<string>;
 }
 
 export function CapabilityMatrix({
@@ -18,7 +21,10 @@ export function CapabilityMatrix({
   selectedOverlay,
   isL3Dimmed,
   onL3Hover,
-  onL3Leave
+  onL3Leave,
+  onL3Click,
+  onL2Click,
+  highPriorityCapIds
 }: CapabilityMatrixProps) {
   const { t } = useTranslation();
   // Calculate max L3 count across all L2s to determine fixed cell width
@@ -60,7 +66,7 @@ export function CapabilityMatrix({
 
           return (
             <div key={l1.id} className="capability-row-l1">
-              <div className="capability-grid" style={{ gridTemplateColumns: '15% 20% 1fr', gridTemplateRows: `repeat(${totalL2Count}, 80px)` }}>
+              <div className="capability-grid" style={{ gridTemplateColumns: '10% 14% 1fr', gridTemplateRows: `repeat(${totalL2Count}, 100px)` }}>
                 {/* L1 Cell - Spans all rows */}
                 <div
                   className="capability-cell-l1"
@@ -96,10 +102,12 @@ export function CapabilityMatrix({
                     <div key={`l2-row-${l2.id}`} className="l2-row-contents">
                       {/* L2 Cell */}
                       <div
-                        className="capability-cell-l2"
+                        className={`capability-cell-l2${onL2Click ? ' l2-clickable' : ''}`}
                         style={{
-                          borderLeft: `3px solid ${l2Dimmed ? '#cbd5e1' : getL2StatusColor(l2, isL3Dimmed)}`
+                          borderLeft: `3px solid ${l2Dimmed ? '#cbd5e1' : getL2StatusColor(l2, isL3Dimmed)}`,
+                          cursor: onL2Click ? 'pointer' : 'default'
                         }}
+                        onClick={() => onL2Click && onL2Click(l2)}
                       >
                         {/* Grey out overlay for L2 (when dimmed) */}
                         {l2Dimmed && (
@@ -131,7 +139,7 @@ export function CapabilityMatrix({
                             return (
                               <div
                                 key={l3.id}
-                                className="l3-cell"
+                                className={`l3-cell${highPriorityCapIds?.has(l3.id) ? ' high-priority-glow' : ''}`}
                                 style={{
                                   borderRight: '1px solid rgba(148, 163, 184, 0.3)',
                                   borderLeft: l3Dimmed ? '3px solid #cbd5e1' : `3px solid ${statusColor}`,
@@ -139,6 +147,7 @@ export function CapabilityMatrix({
                                 }}
                                 onMouseEnter={(e) => onL3Hover(l3, e)}
                                 onMouseLeave={onL3Leave}
+                                onClick={() => onL3Click(l3)}
                               >
                                 {/* Grey out overlay (when dimmed) - overrides everything */}
                                 {l3Dimmed && (

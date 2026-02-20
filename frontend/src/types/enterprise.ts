@@ -40,6 +40,8 @@ export interface L3Capability {
     adoption_load?: 'low' | 'medium' | 'high';
     adoption_load_percent?: number;
     health_history?: number[];
+    rawRisk?: Record<string, any>;
+    rawCapability?: Record<string, any>;
 }
 
 export interface L2Capability {
@@ -49,6 +51,13 @@ export interface L2Capability {
     maturity_level: number;
     target_maturity_level: number;
     l3: L3Capability[];
+    // R9: Upward chain data
+    upwardChain?: {
+        policyTools: Array<{ id: string; name: string; level?: string; end_date?: string; status?: string; start_date?: string }>;
+        performanceTargets: Array<{ id: string; name: string; level?: string; target?: number; actual_value?: number; unit?: string; status?: string; baseline?: number }>;
+        objectives: Array<{ id: string; name: string; level?: string; status?: string }>;
+    };
+    rawL2Node?: Record<string, any>;
 }
 
 export interface L1Capability {

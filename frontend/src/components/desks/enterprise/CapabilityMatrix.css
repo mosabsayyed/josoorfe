@@ -5,12 +5,12 @@
 }
 
 .capability-wrapper {
-    border: 1px solid rgba(148, 163, 184, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     overflow: hidden;
 }
 
 .capability-row-l1 {
-    border-bottom: 1px solid rgba(148, 163, 184, 0.3);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .capability-row-l1:last-child {
@@ -24,12 +24,13 @@
 
 /* L1 Cell */
 .capability-cell-l1 {
-    background-color: white;
-    border-right: 1px solid rgba(148, 163, 184, 0.3);
+    background-color: var(--component-panel-bg, #1F2937);
+    border-right: 1px solid rgba(255, 255, 255, 0.1);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     padding: 0.5rem;
     display: flex;
     flex-direction: column;
-    justify-content: center;
+    justify-content: flex-start;
     position: relative;
 }
 
@@ -37,7 +38,7 @@
     position: absolute;
     inset: 0;
     pointer-events: none;
-    background-color: rgba(203, 213, 225, 0.5);
+    background-color: rgba(0, 0, 0, 0.5);
     z-index: 50;
 }
 
@@ -47,46 +48,46 @@
 }
 
 .cell-id {
-    font-size: 9px;
-    color: #64748b;
+    font-size: 12px;
+    color: var(--component-text-muted, #9CA3AF);
     margin-bottom: 0.25rem;
     font-family: monospace;
 }
 
 .cell-name-l1 {
     font-weight: 700;
-    color: black;
-    font-size: 10px;
+    color: var(--component-text-primary, #F9FAFB);
+    font-size: 13px;
     margin-bottom: 0.25rem;
     line-height: normal;
 }
 
 .cell-description {
-    font-size: 8px;
-    color: #94a3b8;
+    font-size: 11px;
+    color: var(--component-text-secondary, #D1D5DB);
     margin-bottom: 0.25rem;
     line-height: normal;
 }
 
 .cell-maturity {
-    font-size: 7px;
+    font-size: 10px;
 }
 
 .maturity-label {
-    color: #64748b;
+    color: var(--component-text-muted, #9CA3AF);
 }
 
 .maturity-value {
-    color: black;
+    color: var(--component-text-primary, #F9FAFB);
     font-weight: 700;
 }
 
 .maturity-slash {
-    color: #475569;
+    color: var(--component-text-muted, #9CA3AF);
 }
 
 .maturity-target {
-    color: #94a3b8;
+    color: var(--component-text-secondary, #D1D5DB);
 }
 
 /* L2 Row */
@@ -95,28 +96,28 @@
 }
 
 .capability-cell-l2 {
-    background-color: white;
-    border-right: 1px solid rgba(148, 163, 184, 0.3);
-    border-bottom: 1px solid rgba(148, 163, 184, 0.3);
+    background-color: var(--component-panel-bg, #1F2937);
+    border-right: 1px solid rgba(255, 255, 255, 0.1);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     padding: 0.5rem;
     display: flex;
     flex-direction: column;
-    justify-content: center;
+    justify-content: flex-start;
     position: relative;
 }
 
 .cell-name-l2 {
     font-weight: 600;
-    color: black;
-    font-size: 10px;
+    color: var(--component-text-primary, #F9FAFB);
+    font-size: 12px;
     margin-bottom: 0.25rem;
     line-height: normal;
 }
 
 /* L3 Container */
 .l3-container-cell {
-    background-color: white;
-    border-bottom: 1px solid rgba(148, 163, 184, 0.3);
+    background-color: var(--component-panel-bg, #1F2937);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     display: flex;
     align-items: center;
 }
@@ -132,7 +133,7 @@
     transition: all 0.2s;
     display: flex;
     flex-direction: column;
-    justify-content: center;
+    justify-content: flex-start;
     position: relative;
     /* width, border-left, border-right set inline */
     flex-shrink: 0;
@@ -147,7 +148,7 @@
     position: absolute;
     inset: 0;
     pointer-events: none;
-    background-color: rgba(203, 213, 225, 0.5);
+    background-color: rgba(0, 0, 0, 0.5);
     z-index: 20;
 }
 
@@ -166,32 +167,48 @@
 }
 
 .l3-id {
-    color: #64748b;
+    color: var(--component-text-muted, #9CA3AF);
     font-family: monospace;
     margin-bottom: 0.125rem;
-    font-size: 7px;
+    font-size: 12px;
 }
 
 .l3-name {
-    color: black;
+    color: var(--component-text-primary, #F9FAFB);
     font-weight: 500;
     line-height: 1.25;
-    font-size: 9px;
+    font-size: 12px;
 }
 
 .l3-maturity {
-    color: #64748b;
+    color: var(--component-text-muted, #9CA3AF);
     margin-top: 0.125rem;
-    font-size: 7px;
+    font-size: 10px;
 }
 
 .l3-overlay-tag {
     margin-top: 0.25rem;
-    font-size: 8px;
+    font-size: 11px;
     font-weight: 700;
     color: #3b82f6;
     background-color: rgba(59, 130, 246, 0.1);
     padding: 0.125rem 0.25rem;
     border-radius: 0;
     display: inline-block;
+}
+
+/* High-priority glowing red for L3 cells linked to critical policy blockers */
+.l3-cell.high-priority-glow {
+    position: relative;
+    animation: priority-pulse 2.5s ease-in-out infinite;
+    z-index: 2;
+}
+
+@keyframes priority-pulse {
+    0%, 100% {
+        box-shadow: 0 0 6px rgba(239, 68, 68, 0.3), 0 0 12px rgba(239, 68, 68, 0.15);
+    }
+    50% {
+        box-shadow: 0 0 10px rgba(239, 68, 68, 0.5), 0 0 20px rgba(239, 68, 68, 0.25), 0 0 30px rgba(239, 68, 68, 0.1);
+    }
 }

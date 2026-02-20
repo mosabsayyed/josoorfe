@@ -270,6 +270,7 @@ export default function JosoorShell() {
                     }}
                     isCollapsed={!isSidebarOpen}
                     onRequestToggleCollapse={() => setIsSidebarOpen(!isSidebarOpen)}
+                    activeView={activeView}
                 />
             </div>
 
