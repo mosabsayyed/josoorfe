@@ -11,7 +11,7 @@ import { dashboardData } from './sector/SectorDashboardData';
 import { chatService } from '../../services/chatService';
 import { Artifact } from '../../types/api';
 // Removed: buildArtifactsFromTags, extractDatasetBlocks - now handled by chatService
-import { fetchSectorGraphData, L1_CATEGORY_MAP, extractPolicyRiskFromChain, aggregatePolicyRiskByL1, aggregatePolicyRiskByCategory, L1RiskAggregation } from '../../services/neo4jMcpService';
+import { fetchSectorGraphData, L1_CATEGORY_MAP, extractPolicyRiskFromChain, extractOperateRiskForPolicyTools, aggregatePolicyRiskByL1, L1RiskAggregation } from '../../services/neo4jMcpService';
 import { SECTOR_POLICY_MOCK_DATA } from './sector/data/SectorPolicyMock';
 import { PolicyToolCounts } from './sector/SectorPolicyClassifier';
 
@@ -61,9 +61,10 @@ interface GraphConnection {
 interface SectorDeskProps {
     year?: string;
     quarter?: string;
+    onNavigateToCapability?: (capId: string) => void;
 }
 
-export const SectorDesk: React.FC<SectorDeskProps> = ({ year: propYear, quarter: propQuarter }) => {
+export const SectorDesk: React.FC<SectorDeskProps> = ({ year: propYear, quarter: propQuarter, onNavigateToCapability }) => {
     const { t } = useTranslation();
     const [selectedPillar, setSelectedPillar] = useState('economy');
     const [selectedSector, setSelectedSector] = useState('all');
@@ -103,31 +104,52 @@ export const SectorDesk: React.FC<SectorDeskProps> = ({ year: propYear, quarter:
 
     // Snapshot nodes for reactive filtering
     const [rawPolicyNodes, setRawPolicyNodes] = useState<GraphNode[]>([]);
+    const [allSectorPolicyToolNodes, setAllSectorPolicyToolNodes] = useState<any[]>([]);
     const [policyCounts, setPolicyCounts] = useState<PolicyToolCounts | undefined>(undefined);
+    // ID-based category map: domain_id → category (built once from data, stable across years)
+    const [categoryById, setCategoryById] = useState<Map<string, string>>(new Map());
 
     // Risk data from Neo4j (dynamic coloring for policy tool categories)
     const [categoryRiskColors, setCategoryRiskColors] = useState<Record<string, string>>({});
     const [policyRiskByL1, setPolicyRiskByL1] = useState<Map<string, L1RiskAggregation>>(new Map());
 
-    // Build chain data for risk extraction
+    // Chain data for risk extraction (build = projects, operate = KPIs)
     const [buildChainData, setBuildChainData] = useState<{ nodes: any[]; links: any[] } | null>(null);
+    const [operateChainData, setOperateChainData] = useState<{ nodes: any[]; links: any[] } | null>(null);
+    const [svcChainData, setSvcChainData] = useState<{ nodes: any[]; links: any[] } | null>(null);
 
     // Policy tool detail panel state
     const [selectedPolicyTool, setSelectedPolicyTool] = useState<any>(null);
 
-    // Extract risk data from build_oversight chain (no separate fetch needed)
+    // Extract risk data from BOTH chains (build + operate)
     useEffect(() => {
-        if (!buildChainData) return;
+        if (!buildChainData && !operateChainData) return;
         try {
-            const riskRows = extractPolicyRiskFromChain(buildChainData);
-            const l1RiskMap = aggregatePolicyRiskByL1(riskRows);
-            const catColors = aggregatePolicyRiskByCategory(l1RiskMap, L1_CATEGORY_MAP);
+            const buildRows = buildChainData ? extractPolicyRiskFromChain(buildChainData, 'build') : [];
+            const operateDirectRows = operateChainData ? extractPolicyRiskFromChain(operateChainData, 'operate') : [];
+            const operateMappedRows = (operateChainData && svcChainData) ? extractOperateRiskForPolicyTools(operateChainData, svcChainData, allSectorPolicyToolNodes) : [];
+            const allRows = [...buildRows, ...operateDirectRows, ...operateMappedRows];
+            const l1RiskMap = aggregatePolicyRiskByL1(allRows);
+
+            // Fill in missing L2s with null band (grey strip, "Not Started" label)
+            for (const node of allSectorPolicyToolNodes) {
+                if (node.level !== 'L2' || !node.parent_id) continue;
+                const l1Id = String(node.parent_id).includes('.') ? String(node.parent_id) : parseFloat(node.parent_id).toFixed(1);
+                const l2Id = String(node.domain_id || node.id).includes('.') ? String(node.domain_id || node.id) : parseFloat(node.domain_id || node.id).toFixed(1);
+                // Only add L2 entry — do NOT create or alter L1 worstBand
+                if (!l1RiskMap.has(l1Id)) continue;
+                const agg = l1RiskMap.get(l1Id)!;
+                const existing = agg.l2Details.find((d: any) => d.l2Id === l2Id);
+                if (!existing) {
+                    agg.l2Details.push({ l2Id, l2Name: node.name, worstBand: null, caps: [] });
+                }
+            }
+
             setPolicyRiskByL1(l1RiskMap);
-            setCategoryRiskColors(catColors);
         } catch (err) {
             console.error('[SectorDesk] Risk data extraction failed:', err);
         }
-    }, [buildChainData]);
+    }, [buildChainData, operateChainData, svcChainData, allSectorPolicyToolNodes]);
 
     // Sync sector/pillar
     useEffect(() => {
@@ -140,30 +162,6 @@ export const SectorDesk: React.FC<SectorDeskProps> = ({ year: propYear, quarter:
             setSelectedSector(PILLARS_SECTORS[selectedPillar][0]);
         }
     }, [selectedPillar]);
-
-    // Fetch strategy brief prompt template from backend (Task #7)
-    useEffect(() => {
-        const fetchPromptTemplate = async () => {
-            try {
-                const VITE_ENV: any = (typeof import.meta !== 'undefined' && (import.meta as any).env) ? (import.meta as any).env : undefined;
-                const RAW_API_BASE = VITE_ENV?.VITE_API_URL || '';
-                const API_BASE_URL = RAW_API_BASE ? RAW_API_BASE.replace(/\/+$/g, '') : '';
-                const API_PATH_PREFIX = (API_BASE_URL && API_BASE_URL.endsWith('/api/v1')) ? '' : '/api/v1';
-                const baseUrl = API_BASE_URL || window.location.origin;
-                
-                const response = await fetch(`${baseUrl}${API_PATH_PREFIX}/prompts/sector_desk_strategy_brief`);
-                if (response.ok) {
-                    const data = await response.json();
-                    setStrategyPromptTemplate(data.content);
-                } else {
-                    console.error('Failed to fetch strategy prompt template:', response.statusText);
-                }
-            } catch (error) {
-                console.error('Error fetching strategy prompt template:', error);
-            }
-        };
-        fetchPromptTemplate();
-    }, []);
 
     // Sync View Level
     useEffect(() => {
@@ -191,15 +189,27 @@ export const SectorDesk: React.FC<SectorDeskProps> = ({ year: propYear, quarter:
     useEffect(() => {
         let result = [...allAssets];
 
-        // 1. Year Filter - Exact match (DB has per-year snapshots per ontology rule 1.2)
+        // 1. Year Filter - Cumulative (selecting 2029 = show 2025 through 2029)
+        // Keep latest snapshot per asset (dedup by domain_id/id)
         if (selectedYear) {
             const beforeCount = result.length;
             const selectedYearNum = parseInt(selectedYear, 10);
             result = result.filter(asset => {
                 const assetYear = parseInt(String(asset.year || asset.parent_year || '0'), 10);
-                return !isNaN(assetYear) && assetYear === selectedYearNum;
+                return !isNaN(assetYear) && assetYear <= selectedYearNum;
             });
-            console.log(`Year filter: ${beforeCount} → ${result.length} (year===${selectedYear})`);
+            // Deduplicate: keep latest year per asset
+            const latestById = new Map<string, any>();
+            for (const a of result) {
+                const key = `${(a._labels || [])[0] || ''}:${a.domain_id || a.id}`;
+                const existing = latestById.get(key);
+                const aYear = parseInt(String(a.year || a.parent_year || '0'), 10);
+                if (!existing || aYear > parseInt(String(existing.year || existing.parent_year || '0'), 10)) {
+                    latestById.set(key, a);
+                }
+            }
+            result = Array.from(latestById.values());
+            console.log(`Year filter: ${beforeCount} → ${result.length} (year<=${selectedYear}, deduped)`);
         }
 
         // 2. Level Filter: ONLY show L1 assets that have NO L2 children
@@ -272,14 +282,19 @@ export const SectorDesk: React.FC<SectorDeskProps> = ({ year: propYear, quarter:
 
                 if (!isMounted) return;
 
-                // Store chain data for risk extraction
+                // Store chain data for risk extraction (build + operate)
                 setBuildChainData(result.buildChainData);
+                setOperateChainData(result.operateChainData);
+                setSvcChainData(result.svcChainData);
 
                 // --- 1. Split Data based on 'sector' field ---
                 // Physical Assets have a sector (e.g. "Water", "Transportation")
                 // Policy Tools have explicit null/empty sector
                 const physicalNodes = nodes.filter((n: any) => n.sector && n.sector !== "null" && n.sector !== "");
                 const policyNodes = nodes.filter((n: any) => !n.sector || n.sector === "null" || n.sector === "");
+
+                // Store ALL SectorPolicyTool nodes (physical + non-physical) for L2 child lookup in panel
+                setAllSectorPolicyToolNodes(nodes.filter((n: any) => (n._labels || []).includes('SectorPolicyTool')));
 
                 console.log('=== SECTOR DESK DATA FLOW ===');
                 console.log('Total nodes from Neo4j:', nodes.length);
@@ -442,6 +457,21 @@ export const SectorDesk: React.FC<SectorDeskProps> = ({ year: propYear, quarter:
                 const combinedAssets = [...processedPhysicalAssets, ...processedPolicyNodes];
                 setAllAssets(combinedAssets);
                 setRawPolicyNodes(policyNodes);
+
+                // Build stable domain_id → category map (using 2029 as reference year)
+                const idCatMap = new Map<string, string>();
+                const refNodes = policyNodes.filter((n: any) =>
+                    n.level === 'L1' &&
+                    (n._labels || []).includes('SectorPolicyTool') &&
+                    String(n.year || '') === '2029'
+                );
+                for (const n of refNodes) {
+                    const did = String(n.domain_id || n.id || '');
+                    const cat = L1_CATEGORY_MAP[n.name] || 'Services';
+                    if (did) idCatMap.set(did, cat);
+                }
+                setCategoryById(idCatMap);
+
                 setAllConnections([]);
                 setLoading(false);
 
@@ -499,55 +529,73 @@ export const SectorDesk: React.FC<SectorDeskProps> = ({ year: propYear, quarter:
 
     // --- POLICY AGGREGATION (REACTIVE TO YEAR AND SECTOR) ---
     useEffect(() => {
-        if (rawPolicyNodes.length === 0) return;
+        if (rawPolicyNodes.length === 0 || categoryById.size === 0) return;
 
-        // 1. Filter by Year: Exact match (DB has per-year snapshots per ontology rule 1.2)
-        const selectedYearNum = parseInt(selectedYear, 10);
+        // 1. Filter by Year: Exact match (each year has its own intentional PT distribution)
         const yearlyNodes = rawPolicyNodes.filter(n => {
-            const nodeYear = parseInt(String(n.year || n.parent_year || '0'), 10);
-            return !isNaN(nodeYear) && nodeYear === selectedYearNum;
+            const nodeYear = String(n.year || n.parent_year || '');
+            return nodeYear === selectedYear;
         });
 
         // 2. Filter by Sector
-        // Policy tools have no sector field in DB, but we know they're all water
         const sectorFilteredNodes = (selectedSector === 'all' || selectedSector === 'water')
             ? yearlyNodes
-            : []; // Non-water sectors get zero policy tools
+            : [];
 
-        // 3. Reconstruct Hierarchy
-        const l1PolicyTools = sectorFilteredNodes.filter((n: any) => n.level === 'L1');
-        const l2PolicyTools = sectorFilteredNodes.filter((n: any) => n.level === 'L2');
+        // 3. Filter L1 SectorPolicyTool nodes
+        const isPolicyTool = (n: any) => (n._labels || []).includes('SectorPolicyTool');
+        const isNonPhysical = (n: any) => !n.sector || n.sector === '' || n.sector === 'null';
+        const l1PolicyTools = sectorFilteredNodes.filter((n: any) => n.level === 'L1' && isPolicyTool(n) && isNonPhysical(n));
 
         const counts: PolicyToolCounts = {
-            enforce: 0, incentive: 0, license: 0, services: 0, regulate: 0, awareness: 0, total: 0,
-            enforceStatus: 'none', incentiveStatus: 'none', licenseStatus: 'none',
-            servicesStatus: 'none', regulateStatus: 'none', awarenessStatus: 'none'
+            enforce: 0, incentive: 0, license: 0, services: 0, regulate: 0, awareness: 0, total: 0
+        };
+
+        // nid: normalize ID to canonical "X.Y" format (8 → "8.0", "3.1" → "3.1")
+        const nid = (v: any): string => {
+            if (v == null) return '';
+            const s = String(v);
+            const n = parseFloat(s);
+            if (isNaN(n)) return s;
+            return s.includes('.') ? s : n.toFixed(1);
         };
 
         l1PolicyTools.forEach((l1: any) => {
-            // Ontology rule 1.2: year must match across relationships
-            const children = l2PolicyTools.filter((l2: any) =>
-                String(l2.parent_id) === String(l1.id) &&
-                String(l2.year || l2.parent_year || '') === String(l1.year || l1.parent_year || '')
-            );
-            const childCount = children.length;
-            const effectiveCount = childCount > 0 ? childCount : 1;
-            const category = L1_CATEGORY_MAP[l1.name] || 'Services';
-            const categoryKey = category?.toLowerCase();
+            const did = String(l1.domain_id || l1.id || '');
+            const category = categoryById.get(did) || 'Services';
+            const categoryKey = category.toLowerCase();
 
             switch (categoryKey) {
-                case 'enforce': counts.enforce += effectiveCount; break;
-                case 'incentive': counts.incentive += effectiveCount; break;
-                case 'license': counts.license += effectiveCount; break;
-                case 'services': counts.services += effectiveCount; break;
-                case 'regulate': counts.regulate += effectiveCount; break;
-                case 'awareness': counts.awareness += effectiveCount; break;
+                case 'enforce': counts.enforce += 1; break;
+                case 'incentive': counts.incentive += 1; break;
+                case 'license': counts.license += 1; break;
+                case 'services': counts.services += 1; break;
+                case 'regulate': counts.regulate += 1; break;
+                case 'awareness': counts.awareness += 1; break;
             }
         });
 
         counts.total = counts.enforce + counts.incentive + counts.license + counts.services + counts.regulate + counts.awareness;
+
+        // 4. Compute category risk colors from VISIBLE L1 tools only
+        const catColors: Record<string, 'red' | 'amber' | 'green' | 'none'> = {
+            'Enforce': 'green', 'Incentive': 'green', 'License': 'green',
+            'Services': 'green', 'Regulate': 'green', 'Awareness': 'green'
+        };
+        l1PolicyTools.forEach((l1: any) => {
+            const did = String(l1.domain_id || l1.id || '');
+            const cat = categoryById.get(did) || 'Services';
+            const l1Id = nid(l1.domain_id || l1.id);
+            const riskEntry = policyRiskByL1.get(l1Id);
+            const band = riskEntry?.worstBand || 'green';
+            const current = catColors[cat] || 'green';
+            if (band === 'red') catColors[cat] = 'red';
+            else if (band === 'amber' && current !== 'red') catColors[cat] = 'amber';
+        });
+        setCategoryRiskColors(catColors);
+
         setPolicyCounts(counts);
-    }, [rawPolicyNodes, selectedYear, selectedSector]);
+    }, [rawPolicyNodes, selectedYear, selectedSector, policyRiskByL1, categoryById]);
 
     // --- EXISTING HANDLERS ---
     const handleRegionHover = useCallback((regionId: string | null) => {
@@ -566,6 +614,7 @@ export const SectorDesk: React.FC<SectorDeskProps> = ({ year: propYear, quarter:
 
     const handleAssetSelect = useCallback((asset: GraphNode | null) => {
         setSelectedAsset(asset);
+        if (asset) setSelectedPolicyTool(null);
     }, []);
 
     useEffect(() => {
@@ -594,25 +643,14 @@ export const SectorDesk: React.FC<SectorDeskProps> = ({ year: propYear, quarter:
     const [strategyReportHtml, setStrategyReportHtml] = useState<string>('');
     const [strategyArtifacts, setStrategyArtifacts] = useState<Artifact[]>([]);
     const [strategyConversationId, setStrategyConversationId] = useState<number | null>(null);
-    const [strategyPromptTemplate, setStrategyPromptTemplate] = useState<string | null>(null);
-
     const handleStrategyCheck = async () => {
         setIsStrategyModalOpen(true);
         setStrategyReportHtml(`<div style="display:flex;align-items:center;justify-content:center;height:100%;"><h3 style="color:#60a5fa">${t('josoor.sector.generatingAnalysis')}</h3></div>`);
         setStrategyArtifacts([]);
 
         try {
-            // Use fetched prompt template or fallback to loading message
-            if (!strategyPromptTemplate) {
-                setStrategyReportHtml(`<div style="display:flex;align-items:center;justify-content:center;height:100%;"><h3 style="color:#ef4444">Error: ${t('josoor.sector.errorPromptNotLoaded')}</h3></div>`);
-                return;
-            }
-
-            // Replace {year} placeholder with actual selectedYear
-            const prompt = strategyPromptTemplate.replace(/{year}/g, selectedYear);
-
             const response = await chatService.sendMessage({
-                query: prompt,
+                query: `Prepare a comprehensive strategic brief on the transformation progress for ${selectedYear}`,
                 desk_type: 'sector_desk'
             });
 
@@ -640,13 +678,13 @@ export const SectorDesk: React.FC<SectorDeskProps> = ({ year: propYear, quarter:
 
         } catch (error) {
             console.error("Strategy Check Failed", error);
-            setStrategyReportHtml(`<p style="color:red">Analysis Error: ${(error as Error).message}</p>`);
+            setStrategyReportHtml(`<p style="color:red">${t('josoor.sector.analysisError', 'Analysis Error')}: ${(error as Error).message}</p>`);
             setStrategyArtifacts([]);
         }
     };
 
     return (
-        <div className="sector-desk-container-new" style={{ display: 'flex', flexDirection: 'row', width: '100%', height: '100%', overflow: 'hidden', background: 'var(--component-bg-primary)' }}>
+        <div className="sector-desk-container-new" style={{ display: 'flex', flexDirection: 'row', width: '100%', height: '100%', overflow: 'hidden', background: 'var(--component-bg-primary)', position: 'relative' }}>
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative', minWidth: 0 }}>
 
                 {/* Header: Pass PolicyCounts */}
@@ -670,6 +708,7 @@ export const SectorDesk: React.FC<SectorDeskProps> = ({ year: propYear, quarter:
                         selectedYear={selectedYear}
                         categoryRiskColors={categoryRiskColors}
                         policyRiskByL1={policyRiskByL1}
+                        categoryById={categoryById}
                         onPolicyToolClick={(tool: any) => { setSelectedPolicyTool(tool); setSelectedAsset(null); }}
 
                         onBackToNational={() => {
@@ -708,7 +747,6 @@ export const SectorDesk: React.FC<SectorDeskProps> = ({ year: propYear, quarter:
                 className="sector-details-drawer"
                 style={{
                     width: selectedPolicyTool || (viewLevel === 'L2' && (selectedRegionId || selectedAsset || hoveredRegion)) || (viewLevel === 'L1' && hoveredRegion) ? '400px' : '0px',
-                    flex: selectedPolicyTool || (viewLevel === 'L2' && (selectedRegionId || selectedAsset || hoveredRegion)) || (viewLevel === 'L1' && hoveredRegion) ? '0 0 400px' : '0 0 0px',
                     boxShadow: (selectedPolicyTool || (viewLevel === 'L2' && (selectedRegionId || selectedAsset || hoveredRegion)) || (viewLevel === 'L1' && hoveredRegion)) ? '-4px 0 20px rgba(0,0,0,0.3)' : 'none'
                 }}
                 onMouseEnter={() => {
@@ -729,7 +767,9 @@ export const SectorDesk: React.FC<SectorDeskProps> = ({ year: propYear, quarter:
                             year={Number(selectedYear)}
                             selectedPolicyTool={selectedPolicyTool}
                             policyRiskByL1={policyRiskByL1}
+                            allPolicyNodes={allSectorPolicyToolNodes}
                             onPolicyToolClose={() => setSelectedPolicyTool(null)}
+                            onNavigateToCapability={onNavigateToCapability}
                         />
                     ) : viewLevel === 'L2' && (selectedRegionId || selectedAsset || hoveredRegion) ? (
                         <SectorDetailsPanel

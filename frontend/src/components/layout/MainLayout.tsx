@@ -14,7 +14,7 @@ import { useAuth } from '../../contexts/AuthContext';
 export const MainLayout: React.FC = () => {
     const { t } = useTranslation();
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-    const [year, setYear] = useState('2025');
+    const [year, setYear] = useState('2029');
     const [quarter, setQuarter] = useState('All');
     const { isRTL, language } = useLanguage();
     const navigate = useNavigate();

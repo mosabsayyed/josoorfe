@@ -8,13 +8,6 @@ export interface PolicyToolCounts {
     regulate: number;
     awareness: number;
     total: number;
-    // Risk-based status for each category
-    enforceStatus?: 'red' | 'amber' | 'green' | 'none';
-    incentiveStatus?: 'red' | 'amber' | 'green' | 'none';
-    licenseStatus?: 'red' | 'amber' | 'green' | 'none';
-    servicesStatus?: 'red' | 'amber' | 'green' | 'none';
-    regulateStatus?: 'red' | 'amber' | 'green' | 'none';
-    awarenessStatus?: 'red' | 'amber' | 'green' | 'none';
 }
 
 // 6 Categories
@@ -70,12 +63,11 @@ export const classifyPolicyTools = (nodes: GraphNode[], edges: GraphConnection[]
     };
 
     // 1. Filter for SectorPolicyTool L1 nodes that are Non-Physical
-    // Logic: merged_asset_count is blank AND old_region is blank
+    // Logic: real policy tools have sector=null; physical assets have sector="Industry"/"Giga"/etc.
     const l1Nodes = nodes.filter(n =>
         n.group === 'SectorPolicyTool' &&
         n.level === 'L1' &&
-        (!n.merged_asset_count || n.merged_asset_count === '' || n.merged_asset_count === 'null') &&
-        (!n.old_region || n.old_region === '' || n.old_region === 'null')
+        (!n.sector || n.sector === '' || n.sector === 'null')
     );
 
     // 2. Identify L2 children for each L1 parent via PARENT_OF edges

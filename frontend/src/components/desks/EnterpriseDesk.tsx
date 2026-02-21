@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import type { L1Capability, L2Capability, L3Capability } from '../../types/enterprise';
@@ -26,9 +27,10 @@ interface TooltipData {
 interface EnterpriseDeskProps {
   year?: string;
   quarter?: string;
+  focusCapId?: string | null;
 }
 
-export function EnterpriseDesk({ year = '2025', quarter = 'Q1' }: EnterpriseDeskProps) {
+export function EnterpriseDesk({ year = '2025', quarter = 'Q1', focusCapId }: EnterpriseDeskProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
 
@@ -55,54 +57,15 @@ export function EnterpriseDesk({ year = '2025', quarter = 'Q1' }: EnterpriseDesk
   const [searchParams] = useSearchParams();
   const targetCapId = searchParams.get('cap');
 
-  // Data fetching state
-  const [matrixData, setMatrixData] = useState<L1Capability[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // Fetch capability matrix from Neo4j (cached via React Query)
+  const { data: matrixData = [], isLoading, error: queryError } = useQuery({
+    queryKey: ['enterprise-matrix', selectedYear, selectedQuarter],
+    queryFn: () => getCapabilityMatrix(selectedYear, selectedQuarter),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 30 * 60 * 1000, // 30 minutes cache
+  });
 
-  // Fetch capability matrix from Neo4j
-  useEffect(() => {
-    let isCancelled = false;
-
-    async function fetchMatrix() {
-      setIsLoading(true);
-      setError(null);
-
-      console.log('[EnterpriseDesk] 🚀 Fetching matrix at', new Date().toISOString(), { selectedYear, selectedQuarter });
-
-      try {
-        const data = await getCapabilityMatrix(selectedYear, selectedQuarter);
-
-        if (isCancelled) {
-          console.log('[EnterpriseDesk] ⚠️ Request cancelled, ignoring results');
-          return;
-        }
-
-        console.log('[EnterpriseDesk] ✅ Received data:', {
-          l1Count: data.length,
-          totalL3: data.reduce((sum, l1) => sum + l1.l2.reduce((s, l2) => s + l2.l3.length, 0), 0)
-        });
-        setMatrixData(data);
-      } catch (err) {
-        if (!isCancelled) {
-          console.error('[EnterpriseDesk] ❌ Failed to fetch capability matrix:', err);
-          setError(err instanceof Error ? err.message : 'Failed to load capabilities');
-          setMatrixData([]);
-        }
-      } finally {
-        if (!isCancelled) {
-          setIsLoading(false);
-        }
-      }
-    }
-
-    fetchMatrix();
-
-    return () => {
-      isCancelled = true;
-      console.log('[EnterpriseDesk] 🛑 Cleanup: Cancelling previous request');
-    };
-  }, [selectedYear, selectedQuarter]);
+  const error = queryError ? (queryError instanceof Error ? queryError.message : 'Failed to load capabilities') : null;
 
   // Fetch AI risk analysis prompt template on mount
   useEffect(() => {
@@ -128,18 +91,36 @@ export function EnterpriseDesk({ year = '2025', quarter = 'Q1' }: EnterpriseDesk
     fetchPromptTemplate();
   }, []);
 
-  // Auto-select capability from cross-desk navigation (query param ?cap=X)
+  // Auto-select capability from cross-desk navigation (query param ?cap=X or focusCapId prop)
+  const effectiveCapId = focusCapId || targetCapId;
   useEffect(() => {
-    if (!targetCapId || matrixData.length === 0) return;
+    if (!effectiveCapId || matrixData.length === 0) return;
     for (const l1 of matrixData) {
+      // Check L1
+      if (l1.id === effectiveCapId) {
+        if (l1.l2.length > 0 && l1.l2[0].l3.length > 0) {
+          setSelectedL3(l1.l2[0].l3[0]);
+        }
+        return;
+      }
       for (const l2 of l1.l2) {
-        if (l2.id === targetCapId && l2.l3.length > 0) {
-          setSelectedL3(l2.l3[0]);
+        // Check L2
+        if (l2.id === effectiveCapId) {
+          if (l2.l3.length > 0) {
+            setSelectedL3(l2.l3[0]);
+          }
           return;
+        }
+        // Check L3
+        for (const l3 of l2.l3) {
+          if (l3.id === effectiveCapId) {
+            setSelectedL3(l3);
+            return;
+          }
         }
       }
     }
-  }, [targetCapId, matrixData]);
+  }, [effectiveCapId, matrixData]);
 
   // Check if L3 should be dimmed based on filters
   // NOTE: Year/quarter filtering is done server-side during matrix building

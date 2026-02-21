@@ -28,14 +28,13 @@
  * ═══════════════════════════════════════════════════════════════════════════
  */
 
-import { graphService } from './graphService';
 import type { L1Capability, L2Capability, L3Capability } from '../types/enterprise';
+import { graphService } from './graphService';
 
 // Backend response format: nodes have properties directly on them
 // Numeric fields are Neo4j Integer objects: {low: number, high: number}
 interface NeoGraphNode {
-  id: string;              // WARNING: Backend puts elementId here, NOT business ID!
-  elementId?: string;      // Neo4j element ID (4:...)
+  id: string;              // Business ID (e.g., "1.0", "1.1.1")
   businessId?: string;     // May contain the real business ID (6.0, 1.0, etc.)
   group: string;           // Node type: "EntityCapability", "EntityRisk", etc.
   label: string;           // Display name
@@ -87,305 +86,449 @@ function getNeo4jInt(val: { low: number; high: number } | number | undefined): n
   return val.low;
 }
 
-/**
- * L1 Business ID Fallback Mapping
- * Used when backend doesn't provide proper business ID in x.0 format
- */
-const L1_NAME_TO_BUSINESS_ID: Record<string, string> = {
-  'Sector Strategies, Policies': '1.0',
-  'Strategic enablement of the water sector': '2.0',
-  'Security management/ planning': '3.0',
-  'Water sector regulation': '4.0',
-  'Water Sector Development': '5.0',  // ← ADDED: Was missing, causing 5.0 branch absence
-  'Monitoring and supervision of the water sector': '6.0'
-};
+// ═══════════════════════════════════════════════════════════════════════════
+// MCP CYPHER ENDPOINT
+// ═══════════════════════════════════════════════════════════════════════════
+
+const MCP_ENDPOINT = '/4/mcp/'; // Proxied to https://betaBE.aitwintech.com/4/mcp/
 
 /**
- * Extract business ID from node, with fallback strategies:
- * 1. Use properties.id if it matches x.0 pattern
- * 2. Fall back to name matching for L1 nodes (case-insensitive)
- * 3. For L2/L3, extract from element ID or use sequential fallback
+ * Execute a read-only Cypher query via MCP endpoint.
+ * Returns parsed JSON array of rows.
  */
-
-// Build a normalized (lowercase, trimmed) lookup map for case-insensitive matching
-const L1_NAME_NORMALIZED_MAP: Map<string, string> = new Map(
-  Object.entries(L1_NAME_TO_BUSINESS_ID).map(([name, id]) => [name.toLowerCase().trim(), id])
-);
-
-function extractBusinessId(node: NeoGraphNode): string {
-  // Check if node has a property that might be the business ID
-  // Backend might send it as a separate field or buried in properties
-  const possibleId = (node as any).properties?.id || node.id;
-
-  // Validate x.0 pattern (L1), x.y pattern (L2), or x.y.z pattern (L3)
-  // Validate x.0 pattern (L1), x.y pattern (L2), or x.y.z pattern (L3)
-  const businessIdPattern = /^\d+\.\d+(\.\d+)?$/;
-
-
-
-  if (typeof possibleId === 'string' && businessIdPattern.test(possibleId)) {
-    return possibleId;
-  }
-
-  // Fallback for L1: match by name (case-insensitive, trimmed)
-  if (node.level === 'L1' && node.name) {
-    const normalizedName = node.name.toLowerCase().trim();
-    const mappedId = L1_NAME_NORMALIZED_MAP.get(normalizedName);
-    if (mappedId) {
-      return mappedId;
+async function runCypher(query: string): Promise<any[]> {
+  const body = {
+    jsonrpc: '2.0',
+    id: Date.now(),
+    method: 'tools/call',
+    params: {
+      name: 'read_neo4j_cypher',
+      arguments: { query }
     }
-    // Log unmapped L1 names for debugging
-    console.warn(`[EnterpriseService] L1 node name not in mapping:`, node.name, '(normalized:', normalizedName + ')');
-
-
-  }
-
-  // If all else fails, return the element ID (will break hierarchy but at least won't crash)
-  console.warn(`[EnterpriseService] Could not extract business ID for node:`, node.name, node.level);
-  return node.id;
-}
-
-/**
- * Fetch capability matrix from Neo4j
- * Filters by year/quarter and constructs 3-level hierarchy
- */
-/**
- * Fetch capability matrix using Direct Cypher via MCP (Port 8080)
- * This bypasses the generic /api/graph endpoint to:
- * 1. Exclude heavy embedding vectors
- * 2. execute precise cumulative filtering server-side
- * 3. Ensure "Rogue" internal IDs are cleaner
- */
-async function fetchEnterpriseViaCypher(year: number | 'all', quarter: number | 'all'): Promise<NeoGraphData> {
-  // MCP4 endpoint - uses Vite proxy to avoid CORS
-  const endpoint = '/4/mcp/';
-
-  // Construct Year/Quarter filters for Cypher
-  // Logic: logical_year <= target_year
-  const yearClause = year === 'all' ? '1=1' : `l.year <= ${year}`;
-
-  // Note: Quarter logic is complex in cumulative queries if we want partial years.
-  // For simplicity and correctness, we fetch all nodes up to the target year
-  // and let the granular filter logic in transformNeo4jToMatrix handle exact quarter cutoffs,
-  // OR we can rely on the fact that 'year' property in nodes usually implies full year presence unless 'quarter' restricts it.
-
-  // Cypher Query:
-  // 1. Match L1, L2, L3 nodes
-  // 2. Filter by year (cumulative)
-  // 3. Return explicit properties (NO EMBEDDINGS)
-  // 4. Use COALESCE to prioritize businessId
-
-  // QUERY: Get ALL EntityCapability nodes with risk data via MONITORED_BY relationship
-  // Per SST v1.2 § 5.8: EntityCapability-[:MONITORED_BY]->EntityRisk
-  // Years are accumulative: capabilities from previous years persist
-  const yearFilter = year === 'all' ? '' : `WHERE cap.year <= ${year}`;
-  const riskYearFilter = year === 'all' ? '' : `WHERE risk.year <= ${year}`;
-
-  const cypherQuery = `
-    MATCH (cap:EntityCapability)
-    ${yearFilter}
-    OPTIONAL MATCH (cap)-[:MONITORED_BY]->(risk:EntityRisk)
-    ${riskYearFilter}
-    WITH cap, risk
-    OPTIONAL MATCH (cap)-[gapRel:ROLE_GAPS|KNOWLEDGE_GAPS|AUTOMATION_GAPS]->(gap)-[:GAPS_SCOPE]->(proj:EntityProject)
-    WITH cap, risk,
-         collect(DISTINCT CASE WHEN proj IS NOT NULL THEN {
-           id: proj.id, name: proj.name, status: proj.status,
-           progress_percentage: proj.progress_percentage,
-           end_date: proj.end_date,
-           category: CASE type(gapRel)
-             WHEN 'ROLE_GAPS' THEN 'People'
-             WHEN 'KNOWLEDGE_GAPS' THEN 'Process'
-             WHEN 'AUTOMATION_GAPS' THEN 'Tools'
-           END
-         } END) as rawProjects
-    OPTIONAL MATCH (opOrg:EntityOrgUnit)-[:OPERATES]->(cap)
-    WITH cap, risk, rawProjects, collect(DISTINCT CASE WHEN opOrg IS NOT NULL THEN {id: opOrg.id, name: opOrg.name, type: 'OrgUnit', status: opOrg.status} END) as orgs
-    OPTIONAL MATCH (opProc:EntityProcess)-[:OPERATES]->(cap)
-    WITH cap, risk, rawProjects, orgs, collect(DISTINCT CASE WHEN opProc IS NOT NULL THEN {id: opProc.id, name: opProc.name, type: 'Process', status: opProc.status} END) as procs
-    OPTIONAL MATCH (opIT:EntityITSystem)-[:OPERATES]->(cap)
-    WITH cap, risk, rawProjects, orgs, procs, collect(DISTINCT CASE WHEN opIT IS NOT NULL THEN {id: opIT.id, name: opIT.name, type: 'ITSystem', status: opIT.status} END) as its
-    OPTIONAL MATCH (cap)-[:REPORTS]->(perf:SectorPerformance)
-    WITH cap, risk, rawProjects, orgs, procs, its,
-         collect(DISTINCT CASE WHEN perf IS NOT NULL THEN {
-           id: perf.id, name: perf.name, level: perf.level,
-           target: perf.target, baseline: perf.baseline, actual_value: perf.actual_value,
-           unit: perf.unit, status: perf.status
-         } END) as rawPerformanceTargets
-    OPTIONAL MATCH (pol:SectorPolicyTool)-[:SETS_PRIORITIES]->(cap)
-    WITH cap, risk, rawProjects, orgs, procs, its, rawPerformanceTargets,
-         collect(DISTINCT CASE WHEN pol IS NOT NULL THEN {
-           id: pol.id, name: pol.name, end_date: pol.end_date, start_date: pol.start_date, status: pol.status
-         } END) as rawPolicyTools
-    OPTIONAL MATCH (obj:SectorObjective)-[:REALIZED_VIA]->(polT:SectorPolicyTool)-[:SETS_PRIORITIES]->(cap)
-    WITH cap, risk, rawProjects, orgs, procs, its, rawPerformanceTargets, rawPolicyTools,
-         collect(DISTINCT CASE WHEN obj IS NOT NULL THEN {
-           id: obj.id, name: obj.name, level: obj.level, status: obj.status
-         } END) as rawObjectivesFromPol
-    OPTIONAL MATCH (perf2:SectorPerformance)-[:SETS_TARGETS]->(cap)
-    OPTIONAL MATCH (perf2)-[:AGGREGATES_TO]->(obj2:SectorObjective)
-    WITH cap, risk, rawProjects, orgs, procs, its, rawPerformanceTargets, rawPolicyTools, rawObjectivesFromPol,
-         collect(DISTINCT CASE WHEN obj2 IS NOT NULL THEN {
-           id: obj2.id, name: obj2.name, level: obj2.level, status: obj2.status
-         } END) as rawObjectivesFromPerf
-    RETURN cap {
-      .*,
-      embedding: null,
-      vector: null,
-      elementId: elementId(cap),
-      businessId: cap.id,
-      risk: CASE WHEN risk IS NOT NULL THEN risk {.*, embedding: null, vector: null} ELSE null END,
-      linkedProjects: [p IN rawProjects WHERE p IS NOT NULL],
-      operatingEntities: [e IN (orgs + procs + its) WHERE e IS NOT NULL],
-      performanceTargets: [p IN rawPerformanceTargets WHERE p IS NOT NULL],
-      policyTools: [p IN rawPolicyTools WHERE p IS NOT NULL],
-      objectives: [o IN (rawObjectivesFromPol + rawObjectivesFromPerf) WHERE o IS NOT NULL]
-    } as data
-    ORDER BY cap.level, cap.id
-  `;
-
-  console.log('[EnterpriseService] 🚀 Executing Cypher via MCP:', { endpoint, year, querySnippet: cypherQuery.substring(0, 100) });
-
-  const token = localStorage.getItem('token');
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    'Accept': 'application/json, text/event-stream' // Required by MCP
   };
-  if (token) {
-    headers['Authorization'] = `Bearer ${token} `;
-  }
 
-  const response = await fetch(endpoint, {
+  const response = await fetch(MCP_ENDPOINT, {
     method: 'POST',
-    headers,
-    body: JSON.stringify({
-      jsonrpc: '2.0',
-      id: Date.now(),
-      method: 'tools/call',
-      params: {
-        name: 'read_neo4j_cypher',
-        arguments: {
-          query: cypherQuery
-        }
-      }
-    })
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json, text/event-stream'
+    },
+    body: JSON.stringify(body)
   });
 
   if (!response.ok) {
-    const text = await response.text();
-    console.error('[EnterpriseService] MCP Call Failed:', response.status, text);
-    throw new Error(`MCP Call Failed: ${response.status} `);
+    throw new Error(`MCP HTTP Error: ${response.status}`);
   }
 
-  // Parse SSE-wrapped JSON-RPC response
-  // Format: data: {"jsonrpc":"2.0","result":{...}}
   const text = await response.text();
-  const lines = text.split('\n');
-  const dataLine = lines.find(line => line.startsWith('data: '));
 
-  if (!dataLine) {
-    // Try to parse as raw JSON error
-    try {
-      const rawJson = JSON.parse(text);
-      if (rawJson.error) {
-        console.error('[EnterpriseService] MCP Returned Raw Error:', rawJson.error);
-        throw new Error(`MCP Error: ${rawJson.error.message} `);
-      }
-    } catch (e) {
-      // ignore
-    }
-    console.error('[EnterpriseService] Invalid SSE response format. Raw text:', text.substring(0, 500));
-    console.log('[EnterpriseService] DEBUG: Full Raw Response:', text);
-    throw new Error('Invalid SSE response from MCP');
-  }
-
-  const jsonRpc = JSON.parse(dataLine.substring(6));
-
-  if (jsonRpc.error) {
-    console.error('[EnterpriseService] JSON-RPC Error:', jsonRpc.error);
-    throw new Error(`Cypher Execution Error: ${jsonRpc.error.message} `);
-  }
-
-  // Check tool execution error status
-  if (jsonRpc.result?.isError) {
-    const errorContent = jsonRpc.result.content?.[0]?.text;
-    console.error('[EnterpriseService] Tool Logic Error:', errorContent);
-    throw new Error(`Tool Execution Failed: ${errorContent} `);
-  }
-
-  // Tool result structure: result.content[0].text is a JSON string containing "data" array
-  const innerContent = jsonRpc.result?.content?.[0]?.text;
-
-  if (!innerContent) {
-    console.warn('[EnterpriseService] Empty content from tool execution');
-    return { nodes: [], links: [] };
-  }
-
-  // Parse the inner Cypher result
-  // Structure: { data: [ { l1: {...}, l2: {...}, l3: {...}, risk: {...} }, ... ] }
-  let cypherData;
+  // Parse SSE or JSON response
+  let result: any;
   try {
-    cypherData = JSON.parse(innerContent);
-  } catch (e) {
-    console.warn('[EnterpriseService] Failed to parse inner Cypher result:', innerContent);
-    return { nodes: [], links: [] };
+    result = JSON.parse(text);
+  } catch {
+    const dataLine = text.split('\n').find(l => l.startsWith('data: '));
+    if (!dataLine) throw new Error('Invalid MCP response format');
+    result = JSON.parse(dataLine.substring(6));
   }
 
-  // Check if cypherData is directly the array (which happens with raw JSON response from some inputs)
-  let rows = [];
-  if (Array.isArray(cypherData)) {
-    rows = cypherData;
-  } else if (cypherData && Array.isArray(cypherData.data)) {
-    rows = cypherData.data;
-  } else {
-    // If it's an error object, throw it
-    if (cypherData?.code) {
-      throw new Error(`Cypher Error ${cypherData.code}: ${cypherData.message} `);
+  if (result.error) throw new Error(`MCP Error: ${result.error.message}`);
+  if (result.result?.isError) {
+    throw new Error(`Cypher Error: ${result.result.content.map((c: any) => c.text).join('\n')}`);
+  }
+
+  const contentText = result.result?.content?.[0]?.text;
+  if (!contentText) return [];
+
+  return JSON.parse(contentText);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// CUMULATIVE YEAR/QUARTER FILTER
+// From ENTERPRISE_DESK_IMPLEMENTATION_GUIDE.md (line 962-997)
+// "2026 Q3" = All of 2025 + 2026 Q1 + 2026 Q2 + 2026 Q3
+// ═══════════════════════════════════════════════════════════════════════════
+
+const QUARTERS = ['Q1', 'Q2', 'Q3', 'Q4'];
+
+function matchesCumulativeFilter(
+  nodeYear: number,
+  nodeQuarter: number | string,
+  filterYear: number | 'all',
+  filterQuarter: number | 'all'
+): boolean {
+  if (filterYear === 'all') return true;
+
+  // Include all years before filter year
+  if (nodeYear < filterYear) return true;
+
+  // Same year — check quarter
+  if (nodeYear === filterYear) {
+    if (filterQuarter === 'all') return true;
+    // Normalize quarter to index (Q1=0, Q2=1, etc.)
+    const nodeQIdx = typeof nodeQuarter === 'string'
+      ? QUARTERS.indexOf(nodeQuarter)
+      : (nodeQuarter - 1);
+    const filterQIdx = typeof filterQuarter === 'string'
+      ? QUARTERS.indexOf(filterQuarter as string)
+      : ((filterQuarter as number) - 1);
+    return nodeQIdx <= filterQIdx;
+  }
+
+  // Future years excluded
+  return false;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// FETCH ENTERPRISE DATA VIA MCP CYPHER
+// Step 1: Base MAP — ALL EntityCapability nodes (direct Cypher)
+// Step 2: Risk overlay — ALL EntityRisk nodes, matched 1:1 by (id, year, quarter)
+// Step 3: Cumulative filter client-side, dedup by business ID
+// ═══════════════════════════════════════════════════════════════════════════
+
+// Raw data cache — fetched ONCE, reused across year/quarter changes
+interface RawEnterpriseData {
+  caps: any[];           // ALL EntityCapability from MCP Cypher
+  risks: any[];          // ALL EntityRisk from MCP Cypher
+  chainIntegrated: any;  // integrated_oversight chain response {nodes, links}
+  chainBuild: any;       // build_oversight chain response {nodes, links}
+}
+
+let _rawDataCache: RawEnterpriseData | null = null;
+let _rawDataPromise: Promise<RawEnterpriseData> | null = null;
+
+/**
+ * Fetch ALL EntityCapability + EntityRisk from DB + chain data from graph server.
+ * Called ONCE, cached in memory. Year/quarter changes don't trigger refetch.
+ */
+async function fetchAllEnterpriseData(): Promise<RawEnterpriseData> {
+  // Return cached data if available
+  if (_rawDataCache) return _rawDataCache;
+  // Deduplicate concurrent calls
+  if (_rawDataPromise) return _rawDataPromise;
+
+  _rawDataPromise = (async () => {
+    console.log('[EnterpriseService] Fetching ALL data via MCP Cypher + chains (one-time)');
+
+    const [capRows, riskRows, chainIntegrated, chainBuild] = await Promise.all([
+      runCypher(`
+        MATCH (c:EntityCapability)
+        RETURN c { .id, .name, .level, .year, .quarter, .status, .description,
+                   .parent_id, .parent_year, .maturity_level, .target_maturity_level } AS cap
+      `),
+      runCypher(`
+        MATCH (r:EntityRisk)
+        RETURN r { .id, .name, .year, .quarter, .level,
+                   .build_band, .operate_band, .build_exposure_pct,
+                   .operate_exposure_pct_effective, .expected_delay_days,
+                   .delay_days, .likelihood_of_delay, .operational_health_pct,
+                   .people_score, .process_score, .tools_score,
+                   .threshold_green, .threshold_amber, .risk_category, .risk_status,
+                   .prev_operational_health_pct, .prev2_operational_health_pct,
+                   .operate_trend_flag } AS risk
+      `),
+      graphService.getBusinessChain('integrated_oversight', { excludeEmbeddings: 'true' }),
+      graphService.getBusinessChain('build_oversight', { excludeEmbeddings: 'true' })
+    ]);
+
+    const caps = capRows.map((r: any) => r.cap);
+    const risks = riskRows.map((r: any) => r.risk);
+    console.log(`[EnterpriseService] Fetched: ${caps.length} caps, ${risks.length} risks, integrated: ${chainIntegrated?.nodes?.length || 0} nodes, build: ${chainBuild?.nodes?.length || 0} nodes`);
+
+    _rawDataCache = { caps, risks, chainIntegrated, chainBuild };
+    _rawDataPromise = null;
+    return _rawDataCache;
+  })();
+
+  return _rawDataPromise;
+}
+
+/** Invalidate cache (e.g. after data write) */
+export function invalidateEnterpriseCache(): void {
+  _rawDataCache = null;
+  _rawDataPromise = null;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// CHAIN EXTRACTION HELPERS
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * Extract typed nodes from a chain response, keyed by nId for link resolution.
+ */
+function extractChainNodes(chainData: { nodes: any[]; links: any[] }) {
+  const byLabel = new Map<string, Map<string, any>>(); // label -> nId -> props
+  const nIdToBizId = new Map<string, string>(); // nId -> business ID (for caps)
+
+  for (const n of chainData.nodes) {
+    const props = n.nProps || n.properties || {};
+    const labels: string[] = n.nLabels || n.labels || [];
+    const nId = String(n.nId ?? n.id ?? '');
+    const primaryLabel = labels.find(l => l !== 'Resource') || labels[0] || 'Unknown';
+
+    if (!byLabel.has(primaryLabel)) byLabel.set(primaryLabel, new Map());
+    byLabel.get(primaryLabel)!.set(nId, props);
+
+    if (primaryLabel === 'EntityCapability') {
+      nIdToBizId.set(nId, props.id || nId);
     }
-    console.error('[EnterpriseService] Unexpected Cypher response structure:', cypherData);
-    return { nodes: [], links: [] };
   }
 
-  // Transform Cypher response to capability nodes with nested risk data
-  const capabilityNodes: NeoGraphNode[] = [];
+  return { byLabel, nIdToBizId, links: chainData.links || [] };
+}
 
-  rows.forEach((row: any) => {
-    const data = row.data;
-    if (!data) return;
+/**
+ * Resolve chain links: find all links of a given type,
+ * map source/target nIds to the extracted node maps.
+ * Returns array of { sourceBizId, targetProps } pairs.
+ */
+function resolveChainLinks(
+  chain: ReturnType<typeof extractChainNodes>,
+  linkType: string,
+  sourceLabel: string,
+  targetLabel: string
+): { sourceBizId: string; targetProps: any }[] {
+  const results: { sourceBizId: string; targetProps: any }[] = [];
+  const sourceNodes = chain.byLabel.get(sourceLabel);
+  const targetNodes = chain.byLabel.get(targetLabel);
+  if (!sourceNodes || !targetNodes) return results;
 
-    const node = {
-      ...data,
-      id: data.businessId || data.id,
-      businessId: data.businessId || data.id,
+  for (const link of chain.links) {
+    const rType = link.rType ?? link.type ?? '';
+    if (rType !== linkType) continue;
+
+    const srcNid = String(link.sourceId ?? link.source ?? '');
+    const tgtNid = String(link.targetId ?? link.target ?? '');
+
+    // Source is the "from" node, target is the "to" node
+    const sourceBizId = chain.nIdToBizId.get(srcNid);
+    const targetProps = targetNodes.get(tgtNid);
+
+    if (sourceBizId && targetProps) {
+      results.push({ sourceBizId, targetProps });
+    }
+
+    // Also check reverse direction (chains may have either direction)
+    const revSourceBizId = chain.nIdToBizId.get(tgtNid);
+    const revTargetProps = targetNodes.get(srcNid);
+    if (!sourceBizId && revSourceBizId && revTargetProps) {
+      results.push({ sourceBizId: revSourceBizId, targetProps: revTargetProps });
+    }
+  }
+
+  return results;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// FILTER + BUILD GRAPH
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * Apply cumulative filter + dedup + risk matching + chain overlay attachment.
+ * Pure function — no DB call. Runs instantly on year/quarter change.
+ */
+function filterAndBuildGraph(raw: RawEnterpriseData, year: number | 'all', quarter: number | 'all'): NeoGraphData {
+  // Step 1: Cumulative filter
+  const filteredCaps = raw.caps
+    .filter((c: any) => matchesCumulativeFilter(c.year, c.quarter, year, quarter));
+  const filteredRisks = raw.risks
+    .filter((r: any) => matchesCumulativeFilter(r.year, r.quarter, year, quarter));
+
+  console.log(`[EnterpriseService] Filter year=${year} q=${quarter}: ${filteredCaps.length} caps, ${filteredRisks.length} risks`);
+
+  // Step 2: Dedup caps by business ID — keep most recent year/quarter within window
+  const capByBizId = new Map<string, any>();
+  for (const c of filteredCaps) {
+    const existing = capByBizId.get(c.id);
+    if (!existing) {
+      capByBizId.set(c.id, c);
+    } else {
+      if (c.year > existing.year || (c.year === existing.year && c.quarter > existing.quarter)) {
+        capByBizId.set(c.id, c);
+      }
+    }
+  }
+
+  // Step 3: Build risk index by composite key (id + year + quarter)
+  const riskByKey = new Map<string, any>();
+  for (const r of filteredRisks) {
+    riskByKey.set(`${r.id}_${r.year}_${r.quarter}`, r);
+  }
+
+  // Step 4: Convert to NeoGraphNode format and attach risk 1:1
+  const nodes: NeoGraphNode[] = [];
+  capByBizId.forEach((c) => {
+    const node: NeoGraphNode = {
+      id: c.id,
+      businessId: c.id,
       group: 'EntityCapability',
-      label: data.name || data.id,
-      name: data.name || data.id,
-      // Keep nested risk object if present
-      risk: data.risk || null
+      label: c.name || c.id,
+      name: c.name || c.id,
+      level: c.level || '',
+      year: c.year,
+      quarter: c.quarter,
+      status: c.status,
+      description: c.description,
+      parent_id: c.parent_id,
+      parent_year: c.parent_year,
+      maturity_level: c.maturity_level,
+      target_maturity_level: c.target_maturity_level,
     };
 
-    capabilityNodes.push(node);
+    const risk = riskByKey.get(`${c.id}_${c.year}_${c.quarter}`);
+    if (risk) {
+      (node as any).risk = risk;
+    }
+
+    nodes.push(node);
   });
 
-  console.log(`[EnterpriseService] ✅ Fetched ${capabilityNodes.length} capability nodes with risk data (year filter: ${year === 'all' ? 'all' : '<=' + year})`);
+  // Step 5: Extract chain data
+  const intChain = raw.chainIntegrated?.nodes ? extractChainNodes(raw.chainIntegrated) : null;
+  const buildChain = raw.chainBuild?.nodes ? extractChainNodes(raw.chainBuild) : null;
 
-  return { nodes: capabilityNodes, links: [] };
+  // Step 6: Attach overlay data from chains to capability nodes
+  const nodeByBizId = new Map<string, NeoGraphNode>();
+  for (const node of nodes) {
+    nodeByBizId.set(node.id, node);
+  }
+
+  const activeChains = [intChain, buildChain].filter(Boolean) as ReturnType<typeof extractChainNodes>[];
+
+  // Risk via MONITORED_BY (from both chains) - SUPPLEMENTS composite key matching
+  for (const chain of activeChains) {
+    const riskLinks = resolveChainLinks(chain, 'MONITORED_BY', 'EntityCapability', 'EntityRisk');
+    for (const { sourceBizId, targetProps } of riskLinks) {
+      const node = nodeByBizId.get(sourceBizId);
+      if (node && !(node as any).risk) {
+        (node as any).risk = targetProps;
+      }
+    }
+  }
+
+  // Projects from build_oversight (CLOSE_GAPS)
+  if (buildChain) {
+    const projectLinks = resolveChainLinks(buildChain, 'CLOSE_GAPS', 'EntityCapability', 'EntityProject');
+    for (const { sourceBizId, targetProps } of projectLinks) {
+      const node = nodeByBizId.get(sourceBizId);
+      if (node) {
+        if (!(node as any).linkedProjects) (node as any).linkedProjects = [];
+        (node as any).linkedProjects.push(targetProps);
+      }
+    }
+  }
+
+  // Operating entities from integrated_oversight (ROLE_GAPS, KNOWLEDGE_GAPS, AUTOMATION_GAPS)
+  for (const linkType of ['ROLE_GAPS', 'KNOWLEDGE_GAPS', 'AUTOMATION_GAPS']) {
+    for (const entityLabel of ['EntityOrgUnit', 'EntityProcess', 'EntityITSystem']) {
+      for (const chain of activeChains) {
+        const entLinks = resolveChainLinks(chain, linkType, 'EntityCapability', entityLabel);
+        for (const { sourceBizId, targetProps } of entLinks) {
+          const node = nodeByBizId.get(sourceBizId);
+          if (node) {
+            if (!(node as any).operatingEntities) (node as any).operatingEntities = [];
+            const enriched = { ...targetProps, type: entityLabel.replace('Entity', '') };
+            const existing = (node as any).operatingEntities;
+            if (!existing.find((e: any) => e.id === enriched.id)) {
+              existing.push(enriched);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // Performance targets from chains (INFORMS + SETS_TARGETS)
+  for (const chain of activeChains) {
+    const perfLinks = resolveChainLinks(chain, 'INFORMS', 'EntityCapability', 'SectorPerformance');
+    for (const { sourceBizId, targetProps } of perfLinks) {
+      const node = nodeByBizId.get(sourceBizId);
+      if (node) {
+        if (!(node as any).performanceTargets) (node as any).performanceTargets = [];
+        if (!(node as any).performanceTargets.find((p: any) => p.id === targetProps.id)) {
+          (node as any).performanceTargets.push(targetProps);
+        }
+      }
+    }
+    const setsLinks = resolveChainLinks(chain, 'SETS_TARGETS', 'EntityCapability', 'SectorPerformance');
+    for (const { sourceBizId, targetProps } of setsLinks) {
+      const node = nodeByBizId.get(sourceBizId);
+      if (node) {
+        if (!(node as any).performanceTargets) (node as any).performanceTargets = [];
+        if (!(node as any).performanceTargets.find((p: any) => p.id === targetProps.id)) {
+          (node as any).performanceTargets.push(targetProps);
+        }
+      }
+    }
+  }
+
+  // Policy tools from chains (SETS_PRIORITIES + INFORMS)
+  for (const chain of activeChains) {
+    for (const linkType of ['SETS_PRIORITIES', 'INFORMS']) {
+      const polLinks = resolveChainLinks(chain, linkType, 'EntityCapability', 'SectorPolicyTool');
+      for (const { sourceBizId, targetProps } of polLinks) {
+        const node = nodeByBizId.get(sourceBizId);
+        if (node) {
+          if (!(node as any).policyTools) (node as any).policyTools = [];
+          if (!(node as any).policyTools.find((p: any) => p.id === targetProps.id)) {
+            (node as any).policyTools.push(targetProps);
+          }
+        }
+      }
+    }
+  }
+
+  // Objectives from chains (GOVERNED_BY + AGGREGATES_TO)
+  for (const chain of activeChains) {
+    const objLinks = resolveChainLinks(chain, 'GOVERNED_BY', 'EntityCapability', 'SectorObjective');
+    for (const { sourceBizId, targetProps } of objLinks) {
+      const node = nodeByBizId.get(sourceBizId);
+      if (node) {
+        if (!(node as any).objectives) (node as any).objectives = [];
+        if (!(node as any).objectives.find((o: any) => o.id === targetProps.id)) {
+          (node as any).objectives.push(targetProps);
+        }
+      }
+    }
+    const aggLinks = resolveChainLinks(chain, 'AGGREGATES_TO', 'EntityCapability', 'SectorObjective');
+    for (const { sourceBizId, targetProps } of aggLinks) {
+      const node = nodeByBizId.get(sourceBizId);
+      if (node) {
+        if (!(node as any).objectives) (node as any).objectives = [];
+        if (!(node as any).objectives.find((o: any) => o.id === targetProps.id)) {
+          (node as any).objectives.push(targetProps);
+        }
+      }
+    }
+  }
+
+  const l1Count = nodes.filter(n => n.level === 'L1').length;
+  const l2Count = nodes.filter(n => n.level === 'L2').length;
+  const l3Count = nodes.filter(n => n.level === 'L3').length;
+  const withRisk = nodes.filter(n => (n as any).risk).length;
+  const withProjects = nodes.filter(n => (n as any).linkedProjects?.length > 0).length;
+  const withEntities = nodes.filter(n => (n as any).operatingEntities?.length > 0).length;
+  console.log(`[EnterpriseService] Result: ${nodes.length} caps (L1:${l1Count}, L2:${l2Count}, L3:${l3Count}), risk: ${withRisk}, projects: ${withProjects}, entities: ${withEntities}`);
+
+  return { nodes, links: [] };
 }
 
 export async function getCapabilityMatrix(
   year: number | 'all',
   quarter: number | 'all'
 ): Promise<L1Capability[]> {
-  // Use new MCP Cypher fetcher
-  const graphData = await fetchEnterpriseViaCypher(year, quarter);
+  // Step 1: Fetch all data (cached — only hits DB on first call)
+  const raw = await fetchAllEnterpriseData();
+
+  // Step 2: Filter + dedup + risk match (pure function, instant)
+  const graphData = filterAndBuildGraph(raw, year, quarter);
 
   if (!graphData.nodes || graphData.nodes.length === 0) {
     console.warn('[EnterpriseService] No data found, returning empty.');
     return [];
   }
 
-  const result = transformNeo4jToMatrix(graphData, year, quarter);
-  return result;
+  return transformNeo4jToMatrix(graphData, year, quarter);
 }
 
 /**
@@ -393,8 +536,8 @@ export async function getCapabilityMatrix(
  * Risk data is now nested in each capability node via MONITORED_BY relationship
  */
 function transformNeo4jToMatrix(graphData: NeoGraphData, year: number | 'all', quarter: number | 'all'): L1Capability[] {
-  // All nodes are already EntityCapability (from simplified query)
-  // Year filter already applied in Cypher query (accumulative)
+  // Cumulative year/quarter filtering already applied in fetchEnterpriseViaCypher
+  // Dedup by business ID also already done — nodes are ready for hierarchy building
   const capabilityNodes = graphData.nodes;
 
   if (!capabilityNodes || capabilityNodes.length === 0) {
@@ -743,24 +886,6 @@ function deriveStatus(neoStatus: string): 'active' | 'pending' | 'at-risk' {
   return 'pending';
 }
 
-/**
- * Derive build status from capability status
- */
-function deriveBuildStatus(neoStatus: string): 'not-due' | 'planned' | 'in-progress-ontrack' | 'in-progress-atrisk' | 'in-progress-issues' {
-  if (neoStatus === 'planned') return 'planned';
-  if (neoStatus === 'in_progress' || neoStatus === 'in-progress') {
-    return 'in-progress-ontrack'; // Could check EntityRisk for atrisk/issues
-  }
-  return 'planned';
-}
-
-/**
- * Derive execute status from capability status
- */
-function deriveExecuteStatus(neoStatus: string): 'ontrack' | 'at-risk' | 'issues' {
-  if (neoStatus === 'at_risk' || neoStatus === 'at-risk') return 'at-risk';
-  return 'ontrack';
-}
 
 /**
  * Enrich L3 capability with EntityRisk data from nested object
@@ -865,16 +990,6 @@ function calculateOverlayFields(l3Cap: any, mode: 'build' | 'execute' | null): v
       processGap >= orgGap && processGap >= itGap ? 'P' : 'T';
     l3Cap._stress_severity = Math.ceil(range);
   }
-}
-
-/**
- * Convert 1-5 risk score to 0-100 gap percentage
- * Score: 5 = perfect (0% gap), 1 = critical (100% gap)
- */
-function convertScoreToGap(score: number | undefined): number {
-  if (!score) return 0;
-  const clamped = Math.max(1, Math.min(5, score));
-  return ((5 - clamped) / 4) * 100;
 }
 
 /**

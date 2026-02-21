@@ -59,6 +59,7 @@ interface SectorHeaderNavProps {
     categoryRiskColors?: Record<string, string>;
     policyRiskByL1?: Map<string, any>;
     onPolicyToolClick?: (tool: any) => void;
+    categoryById?: Map<string, string>;
 }
 
 const SectorHeaderNav: React.FC<SectorHeaderNavProps> = ({
@@ -68,7 +69,7 @@ const SectorHeaderNav: React.FC<SectorHeaderNavProps> = ({
     onTimelineFilterChange,
     priorityFilter = 'both',
     onPriorityFilterChange,
-    year = '2030', // Default
+    year = '2029',
     onYearChange,
     existingCount = 0,
     plannedCount = 0,
@@ -78,10 +79,11 @@ const SectorHeaderNav: React.FC<SectorHeaderNavProps> = ({
     policyCounts,
     policyNodes = [],
     onStrategyClick,
-    selectedYear = '2030',
+    selectedYear = '2029',
     categoryRiskColors = {},
     policyRiskByL1,
-    onPolicyToolClick
+    onPolicyToolClick,
+    categoryById = new Map()
 }) => {
     const { t } = useTranslation();
     // Drawer state
@@ -101,25 +103,25 @@ const SectorHeaderNav: React.FC<SectorHeaderNavProps> = ({
 
     // Handle category hover/click
     const handleCategoryHover = (category: string) => {
-        // 1. Filter by Year: Exact match (DB has per-year snapshots per ontology rule 1.2)
-        const selectedYearNum = parseInt(selectedYear, 10);
+        // 1. Filter by Year: Exact match (each year has its own intentional PT distribution)
         const yearlyNodes = policyNodes.filter(n => {
-            const nodeYear = parseInt(String(n.year || n.parent_year || '0'), 10);
-            return !isNaN(nodeYear) && nodeYear === selectedYearNum;
+            const nodeYear = String(n.year || n.parent_year || '');
+            return nodeYear === selectedYear;
         });
 
-        // 2. Filter by Sector (matching SectorDesk.tsx lines 452-456)
+        // 2. Filter by Sector (matching SectorDesk.tsx)
         const sectorFilteredNodes = (selectedSector === 'all' || selectedSector === 'water')
             ? yearlyNodes
             : [];
 
-        // 3. Filter L1 nodes for this category
+        // 3. Filter L1 SectorPolicyTool nodes for this category (by domain_id)
         const l1Nodes = sectorFilteredNodes.filter(n => {
             const isL1 = n.level === 'L1';
-            const isNonPhysical = (!n.merged_asset_count || n.merged_asset_count === '' || n.merged_asset_count === 'null') &&
-                (!n.old_region || n.old_region === '' || n.old_region === 'null');
-            const nodeCategory = L1_CATEGORY_MAP[n.name] || 'Services';
-            return isL1 && isNonPhysical && nodeCategory === category;
+            const isPolicyTool = (n._labels || []).includes('SectorPolicyTool');
+            const isNonPhysical = !n.sector || n.sector === '' || n.sector === 'null';
+            const did = String(n.domain_id || n.id || '');
+            const nodeCategory = categoryById.get(did) || L1_CATEGORY_MAP[n.name] || 'Services';
+            return isL1 && isPolicyTool && isNonPhysical && nodeCategory === category;
         });
 
         // Build tool items with child counts
@@ -127,7 +129,8 @@ const SectorHeaderNav: React.FC<SectorHeaderNavProps> = ({
             // Count L2 children (would need edges, simplified for now)
             const childCount = parseInt(node.child_count || '0', 10);
             return {
-                id: node.id,
+                ...node,  // Pass all raw Neo4j properties through
+                id: String(node.id),
                 name: node.name,
                 level: node.level,
                 childCount: childCount,
@@ -150,14 +153,12 @@ const SectorHeaderNav: React.FC<SectorHeaderNavProps> = ({
 
     // Helper to render category item
     const counts = policyCounts || {
-        enforce: 0, incentive: 0, license: 0, services: 0, regulate: 0, awareness: 0, total: 0,
-        enforceStatus: 'none', incentiveStatus: 'none', licenseStatus: 'none',
-        servicesStatus: 'none', regulateStatus: 'none', awarenessStatus: 'none'
+        enforce: 0, incentive: 0, license: 0, services: 0, regulate: 0, awareness: 0, total: 0
     };
 
-    // Get risk-based color from real data ONLY — no hardcoded fallbacks
-    const getStatusColor = (status?: 'red' | 'amber' | 'green' | 'none'): string => {
-        switch (status) {
+    // Map risk level to color — visual only, not a status indicator
+    const getRiskColor = (riskLevel?: 'red' | 'amber' | 'green' | 'none'): string => {
+        switch (riskLevel) {
             case 'red': return 'var(--component-color-danger)';
             case 'amber': return 'var(--component-color-warning)';
             case 'green': return 'var(--component-color-success)';
@@ -166,8 +167,8 @@ const SectorHeaderNav: React.FC<SectorHeaderNavProps> = ({
         }
     };
 
-    const renderItem = (id: string, val: number, status?: 'red' | 'amber' | 'green' | 'none') => {
-        const bandColor = getStatusColor(status);
+    const renderItem = (id: string, val: number, riskLevel?: 'red' | 'amber' | 'green' | 'none') => {
+        const bandColor = getRiskColor(riskLevel);
         return (
             <div
                 className="policy-tool-item"
@@ -208,24 +209,24 @@ const SectorHeaderNav: React.FC<SectorHeaderNavProps> = ({
 
                 {/* 2. CLICKABLE SECTORS */}
                 <div className="sector-header-section">
-                    <span className="sector-list-title">
-                        {t('josoor.sector.sectors')}
-                    </span>
-                    <div className="sector-icons-container">
+                    <div className="sector-icons-container" style={{ gap: '14px' }}>
                     {SECTORS.map((sector) => {
                         const isSelected = selectedSector === sector.id;
-                        const sectorLabel = t('josoor.sector.sector' + (sector.id === 'all' ? 'All' : sector.id.charAt(0).toUpperCase() + sector.id.slice(1)));
+                        const sectorLabel = sector.id === 'all'
+                            ? t('josoor.sector.sectors')
+                            : t('josoor.sector.sector' + (sector.id.charAt(0).toUpperCase() + sector.id.slice(1)));
                         return (
-                            <motion.button
-                                key={sector.id}
-                                onClick={() => onSelectSector(sector.id)}
-                                title={sectorLabel}
-                                whileHover={{ scale: 1.1 }}
-                                whileTap={{ scale: 0.95 }}
-                                className={`sector-icon-button ${isSelected ? 'active' : ''}`}
-                            >
-                                <img src={sector.icon} width={24} height={24} alt={sectorLabel} style={{ filter: isSelected ? 'none' : 'grayscale(1) opacity(0.8)' }} />
-                            </motion.button>
+                            <div key={sector.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px' }}>
+                                <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--component-text-primary)', letterSpacing: '0.3px', whiteSpace: 'nowrap' }}>{sectorLabel}</span>
+                                <motion.button
+                                    onClick={() => onSelectSector(sector.id)}
+                                    whileHover={{ scale: 1.1 }}
+                                    whileTap={{ scale: 0.95 }}
+                                    className={`sector-icon-button ${isSelected ? 'active' : ''}`}
+                                >
+                                    <img src={sector.icon} width={24} height={24} alt="" style={{ filter: isSelected ? 'none' : 'grayscale(1) opacity(0.8)' }} />
+                                </motion.button>
+                            </div>
                         );
                     })}
                     </div>
@@ -243,7 +244,7 @@ const SectorHeaderNav: React.FC<SectorHeaderNavProps> = ({
                                     else if (timelineFilter === 'future') onTimelineFilterChange?.('both');
                                 }}
                                 className={`pillar-tab ${(timelineFilter === 'current' || timelineFilter === 'both') ? 'active' : ''}`}
-                                title="Toggle Existing Assets"
+                                title={t('josoor.sector.toggleExisting', 'Toggle Existing Assets')}
                             >
                                 {t('josoor.sector.existing')}
                             </button>
@@ -253,7 +254,7 @@ const SectorHeaderNav: React.FC<SectorHeaderNavProps> = ({
                                     else if (timelineFilter === 'current') onTimelineFilterChange?.('both');
                                 }}
                                 className={`pillar-tab ${(timelineFilter === 'future' || timelineFilter === 'both') ? 'active' : ''}`}
-                                title="Toggle Planned Assets"
+                                title={t('josoor.sector.togglePlanned', 'Toggle Planned Assets')}
                             >
                                 {t('josoor.sector.planned')}
                             </button>
@@ -267,7 +268,7 @@ const SectorHeaderNav: React.FC<SectorHeaderNavProps> = ({
                             <button
                                 onClick={() => onPriorityFilterChange?.('major')}
                                 className={`pillar-tab ${priorityFilter === 'major' ? 'active' : ''}`}
-                                title="Major Unlocks Only"
+                                title={t('josoor.sector.majorUnlocks', 'Major Unlocks Only')}
                             >
                                 <img src={majorUnlockPin} width={12} height={12} style={{ filter: priorityFilter === 'major' ? 'none' : 'grayscale(1) opacity(0.5)' }} />
                                 <span>{t('josoor.sector.major')}</span>
@@ -287,7 +288,7 @@ const SectorHeaderNav: React.FC<SectorHeaderNavProps> = ({
                         whileHover={{ scale: 1.03 }}
                         whileTap={{ scale: 0.97 }}
                         className="ai-strategy-btn"
-                        title="Generate AI Strategy Brief"
+                        title={t('josoor.sector.generateStrategy', 'Generate AI Strategy Brief')}
                     >
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />

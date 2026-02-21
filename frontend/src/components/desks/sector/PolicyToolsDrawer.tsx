@@ -78,11 +78,11 @@ export const PolicyToolsDrawer: React.FC<PolicyToolsDrawerProps> = ({
                                             <div
                                                 className="policy-tool-card-accent"
                                                 style={{ background: (() => {
-                                                    const band = toolRiskBands?.get(tool.id)?.worstBand;
+                                                    const band = toolRiskBands?.get(String(tool.id))?.worstBand;
                                                     if (band === 'red') return 'var(--component-color-danger)';
                                                     if (band === 'amber') return 'var(--component-color-warning)';
-                                                    if (band === 'green') return 'var(--component-color-success)';
-                                                    return 'var(--component-text-tertiary)';
+                                                    // No risk data = green (no detected risk)
+                                                    return 'var(--component-color-success)';
                                                 })() }}
                                             />
                                         </motion.div>

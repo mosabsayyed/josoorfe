@@ -18,8 +18,10 @@ interface SectorDetailsPanelProps {
     // Policy tool panel props
     selectedPolicyTool?: any;
     policyRiskByL1?: Map<string, any>;
+    allPolicyNodes?: any[];
     onPolicyToolClose?: () => void;
     onRiskAssessment?: (tool: any, riskData: any) => void;
+    onNavigateToCapability?: (capId: string) => void;
 }
 
 interface GraphNode {
@@ -201,8 +203,10 @@ const SectorDetailsPanel: React.FC<SectorDetailsPanelProps> = ({
     selectedStatus,
     selectedPolicyTool,
     policyRiskByL1,
+    allPolicyNodes = [],
     onPolicyToolClose,
-    onRiskAssessment
+    onRiskAssessment,
+    onNavigateToCapability
 }) => {
     const { t } = useTranslation();
     const navigate = useNavigate();
@@ -413,12 +417,107 @@ const SectorDetailsPanel: React.FC<SectorDetailsPanelProps> = ({
         assetsCount: allAssets.length
     });
 
+    // Normalize ID: "8.0" (string) and 8.0 (number→"8") must match
+    // Converts to canonical "X.Y" format so all comparisons are consistent
+    const nid = (v: any): string => {
+        if (v == null) return '';
+        const s = String(v);
+        const n = parseFloat(s);
+        if (isNaN(n)) return s;
+        // Ensure "8" becomes "8.0", "3.1" stays "3.1"
+        return s.includes('.') ? s : n.toFixed(1);
+    };
+
     // PRIORITY 0: Policy Tool View
     if (selectedPolicyTool) {
-        const riskData = policyRiskByL1?.get(selectedPolicyTool.id);
+        // Look up risk data — try both raw id and normalized id
+        const rawId = String(selectedPolicyTool.domain_id || selectedPolicyTool.id);
+        const normId = nid(rawId);
+        const riskData = policyRiskByL1?.get(rawId) || policyRiskByL1?.get(normId);
+        console.log(`[STRIP DEBUG] L1 id=${rawId} normId=${normId} riskMapKeys=${JSON.stringify([...(policyRiskByL1?.keys() || [])])} found=${!!riskData} band=${riskData?.worstBand}`);
         const worstBand = riskData?.worstBand || 'none';
-        const l2Details = riskData?.l2Details || [];
+        const riskL2Details = riskData?.l2Details || [];
+
+        // Build COMPLETE L2 list from all SectorPolicyTool nodes (parent_id match only — no year filter)
+        const toolNormId = normId;
+
+        // DEBUG: Log what we're looking for and what's available
+        const l2Candidates = allPolicyNodes.filter((n: any) => n.level === 'L2' && (n._labels || []).includes('SectorPolicyTool'));
+        const parentIdSamples = l2Candidates.slice(0, 15).map((n: any) =>
+            `id=${n.domain_id||n.id} parent_id=${n.parent_id}(${typeof n.parent_id}) nid=${nid(n.parent_id)} name="${n.name}"`
+        );
+        console.log(`[DEBUG L2] tool=${toolNormId} | allPolicyNodes=${allPolicyNodes.length} | L2candidates=${l2Candidates.length}`);
+        // Targeted: find ALL nodes related to this tool's id
+        const relatedNodes = allPolicyNodes.filter((n: any) => {
+            const pid = String(n.parent_id || '');
+            const nidVal = String(n.domain_id || n.id || '');
+            return pid.startsWith(rawId.split('.')[0] + '.') || nidVal.startsWith(rawId.split('.')[0] + '.');
+        });
+        console.log(`[DEBUG L2] Nodes with id or parent_id starting with "${rawId.split('.')[0]}.":`);
+        relatedNodes.forEach((n: any) => console.log(`  id=${n.domain_id||n.id} parent_id=${n.parent_id} level=${n.level} labels=${(n._labels||[]).join(',')} name="${n.name}"`));
+
+        const allL2Raw = allPolicyNodes.filter((n: any) =>
+            n.level === 'L2' &&
+            (n._labels || []).includes('SectorPolicyTool') &&
+            nid(n.parent_id) === toolNormId
+        );
+        console.log(`[DEBUG L2 LOOKUP] Matched ${allL2Raw.length} L2 children for ${toolNormId}`);
+
+        // Deduplicate by L2 id (same tool appears across multiple year snapshots) and sort by id
+        const l2Seen = new Set<string>();
+        const allL2Children = allL2Raw.filter((n: any) => {
+            const lid = nid(n.domain_id || n.id);
+            if (l2Seen.has(lid)) return false;
+            l2Seen.add(lid);
+            return true;
+        }).sort((a: any, b: any) => {
+            const aId = parseFloat(String(a.domain_id || a.id)) || 0;
+            const bId = parseFloat(String(b.domain_id || b.id)) || 0;
+            return aId - bId;
+        });
+
+        // Build lookup from allL2Children by normalized id
+        const l2NodeMap = new Map<string, any>();
+        for (const l2 of allL2Children) {
+            l2NodeMap.set(nid(l2.domain_id || l2.id), l2);
+        }
+
+        // Start with risk L2s (these have capabilities attached), enrich with node ref
+        const l2Details: any[] = riskL2Details.map((rd: any) => ({
+            ...rd,
+            node: l2NodeMap.get(nid(rd.l2Id)) || null
+        }));
+        const seenIds = new Set(riskL2Details.map((rd: any) => nid(rd.l2Id)));
+
+        for (const l2 of allL2Children) {
+            const l2Id = nid(l2.domain_id || l2.id);
+            if (!seenIds.has(l2Id)) {
+                l2Details.push({ l2Id: String(l2.domain_id || l2.id), l2Name: l2.name, worstBand: null, caps: [], node: l2 });
+                seenIds.add(l2Id);
+            }
+        }
+
+        // Sort by id
+        l2Details.sort((a: any, b: any) => parseFloat(String(a.l2Id)) - parseFloat(String(b.l2Id)));
         const bandColor = worstBand === 'red' ? 'var(--component-color-danger)' : worstBand === 'amber' ? 'var(--component-color-warning)' : worstBand === 'green' ? 'var(--component-color-success)' : 'var(--component-text-tertiary)';
+
+        const ragColor = (band: string | null | undefined) => {
+            const b = (band || '').toLowerCase();
+            if (b === 'red') return 'var(--component-color-danger)';
+            if (b === 'amber') return 'var(--component-color-warning)';
+            if (b === 'green') return 'var(--component-color-success)';
+            return 'var(--component-text-tertiary)';
+        };
+
+        const riskLabel = (band: string | null | undefined): string => {
+            const b = (band || '').toLowerCase();
+            if (b === 'red') return t('josoor.sector.policy.riskHigh', 'High');
+            if (b === 'amber') return t('josoor.sector.policy.riskModerate', 'Moderate');
+            if (b === 'green') return t('josoor.sector.policy.riskLow', 'Low');
+            return t('josoor.sector.policy.notStarted', 'Not Started');
+        };
+
+        const cardBorder = '1px solid rgba(255,255,255,0.1)';
 
         return (
             <div className="sector-details-panel drawer">
@@ -426,8 +525,11 @@ const SectorDetailsPanel: React.FC<SectorDetailsPanelProps> = ({
                 <div className="details-header">
                     <div className="header-content">
                         <div className="header-text">
-                            <h2 className="details-title">{selectedPolicyTool.id} • {selectedPolicyTool.name}</h2>
-                            <div className="details-subtitle">{selectedPolicyTool.category}</div>
+                            <h2 className="details-title">{selectedPolicyTool.domain_id || selectedPolicyTool.id} • {selectedPolicyTool.name}</h2>
+                            <div className="details-subtitle" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                <span>{t('josoor.sector.' + (selectedPolicyTool.category || '').toLowerCase(), selectedPolicyTool.category)}</span>
+                                <span style={{ fontSize: '11px', padding: '1px 8px', borderRadius: '3px', background: 'rgba(255,255,255,0.08)', color: 'var(--component-text-secondary)', fontWeight: 600 }}>{selectedPolicyTool.status || '—'}</span>
+                            </div>
                         </div>
                         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                             {onRiskAssessment && (
@@ -446,42 +548,140 @@ const SectorDetailsPanel: React.FC<SectorDetailsPanelProps> = ({
                 </div>
 
                 <div className="details-content">
-                    {/* L2 Children with inline linked capability */}
+                    {/* L1 Policy Properties */}
+                    <div style={{ padding: '10px 12px', borderInlineStart: `3px solid ${bandColor}`, background: 'rgba(30,41,59,0.5)', borderRadius: '0 4px 4px 0', border: cardBorder, marginBottom: '1rem' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 12px' }}>
+                            <div>
+                                <div style={{ fontSize: '10px', textTransform: 'uppercase', color: 'var(--component-text-muted)', letterSpacing: '0.5px' }}>{t('josoor.sector.policy.riskStatus', 'Risk Status')}</div>
+                                <div style={{ fontSize: '14px', fontWeight: 700, color: bandColor }}>{riskLabel(worstBand)}</div>
+                            </div>
+                            <div>
+                                <div style={{ fontSize: '10px', textTransform: 'uppercase', color: 'var(--component-text-muted)', letterSpacing: '0.5px' }}>{t('josoor.sector.policy.toolType', 'Tool Type')}</div>
+                                <div style={{ fontSize: '14px', color: 'var(--component-text-primary)', fontWeight: 600 }}>{selectedPolicyTool.tool_type || '—'}</div>
+                            </div>
+                            <div>
+                                <div style={{ fontSize: '10px', textTransform: 'uppercase', color: 'var(--component-text-muted)', letterSpacing: '0.5px' }}>{t('josoor.sector.policy.impactTarget', 'Impact Target')}</div>
+                                <div style={{ fontSize: '14px', color: 'var(--component-text-primary)', fontWeight: 600 }}>{selectedPolicyTool.impact_target || '—'}</div>
+                            </div>
+                            <div>
+                                <div style={{ fontSize: '10px', textTransform: 'uppercase', color: 'var(--component-text-muted)', letterSpacing: '0.5px' }}>{t('josoor.sector.policy.deliveryChannel', 'Delivery Channel')}</div>
+                                <div style={{ fontSize: '14px', color: 'var(--component-text-primary)', fontWeight: 600 }}>{selectedPolicyTool.delivery_channel || '—'}</div>
+                            </div>
+                            <div>
+                                <div style={{ fontSize: '10px', textTransform: 'uppercase', color: 'var(--component-text-muted)', letterSpacing: '0.5px' }}>{t('josoor.sector.policy.costOfImplementation', 'Cost')}</div>
+                                <div style={{ fontSize: '14px', color: 'var(--component-text-primary)', fontWeight: 600 }}>{selectedPolicyTool.cost_of_implementation || '—'}</div>
+                            </div>
+                        </div>
+                        {selectedPolicyTool.description && (
+                            <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                                <div style={{ fontSize: '10px', textTransform: 'uppercase', color: 'var(--component-text-muted)', letterSpacing: '0.5px' }}>{t('josoor.sector.policy.description', 'Description')}</div>
+                                <div style={{ fontSize: '13px', color: 'var(--component-text-secondary)', lineHeight: '1.5' }}>{selectedPolicyTool.description}</div>
+                            </div>
+                        )}
+                        {(selectedPolicyTool.strategic_objective || selectedPolicyTool.governed_by) && (
+                            <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                                <div style={{ fontSize: '10px', textTransform: 'uppercase', color: 'var(--component-text-muted)', letterSpacing: '0.5px' }}>{t('josoor.sector.policy.strategicObjective', 'Strategic Objective')}</div>
+                                <div style={{ fontSize: '13px', color: 'var(--component-text-accent)', lineHeight: '1.5' }}>{selectedPolicyTool.strategic_objective || selectedPolicyTool.governed_by}</div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* L2 Children with linked capabilities */}
                     <div>
-                        <h3 style={{ fontSize: '13px', textTransform: 'uppercase', color: 'var(--component-text-muted)', marginBottom: '12px' }}>
+                        <h3 style={{ fontSize: '14px', textTransform: 'uppercase', color: 'var(--component-text-muted)', marginBottom: '12px' }}>
                             {t('josoor.sector.policy.l2Children')} ({l2Details.length})
                         </h3>
                         {l2Details.map((l2: any) => {
                             const l2Band = l2.worstBand?.toLowerCase() || 'none';
-                            const l2Color = l2Band === 'red' ? 'var(--component-color-danger)' : l2Band === 'amber' ? 'var(--component-color-warning)' : l2Band === 'green' ? 'var(--component-color-success)' : 'var(--component-text-tertiary)';
+                            const l2Color = ragColor(l2Band);
                             return (
-                                <div key={l2.l2Id} style={{ padding: '10px 12px', borderLeft: `3px solid ${l2Color}`, marginBottom: '8px', background: 'rgba(30,41,59,0.5)', borderRadius: '0 4px 4px 0' }}>
-                                    <div style={{ fontSize: '14px', color: 'var(--component-text-primary)' }}>{l2.l2Id} • {l2.l2Name}</div>
-                                    {(l2.caps || []).map((cap: any) => (
-                                        <div
-                                            key={cap.capId}
-                                            onClick={() => cap.capId && navigate(`/desk/enterprise?cap=${cap.capId}`)}
-                                            style={{ fontSize: '12px', color: 'var(--component-text-accent)', marginTop: '6px', cursor: cap.capId ? 'pointer' : 'default', display: 'flex', alignItems: 'center', gap: '6px' }}
-                                            title={cap.capId ? t('josoor.sector.policy.navigateToEnterprise') : ''}
-                                        >
+                                <div key={l2.l2Id} style={{ marginBottom: '16px' }}>
+                                    {/* L2 Policy Card */}
+                                    <div style={{ padding: '8px 10px', background: 'rgba(30,41,59,0.5)', borderRadius: '0 4px 4px 0', borderTop: cardBorder, borderBottom: cardBorder, borderInlineEnd: cardBorder, borderInlineStart: `3px solid ${l2Color}` }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                             <span style={{
                                                 display: 'inline-block',
                                                 padding: '1px 6px',
                                                 borderRadius: '3px',
-                                                fontSize: '10px',
+                                                fontSize: '9px',
                                                 fontWeight: 700,
                                                 letterSpacing: '0.5px',
-                                                background: cap.buildBand ? 'rgba(99,102,241,0.15)' : 'rgba(6,182,212,0.15)',
-                                                color: cap.buildBand ? 'var(--status-planned)' : 'var(--sector-water)',
-                                                border: cap.buildBand ? '1px solid rgba(99,102,241,0.3)' : '1px solid rgba(6,182,212,0.3)'
+                                                background: 'rgba(244,187,48,0.12)',
+                                                color: 'var(--component-text-accent)',
+                                                border: '1px solid rgba(244,187,48,0.25)',
+                                                flexShrink: 0
                                             }}>
-                                                {cap.buildBand ? 'BUILD' : 'OPERATE'}
+                                                {t('josoor.sector.policy.policyTag', 'POLICY')}
                                             </span>
-                                            <span>{'\u2192'} {cap.capId} {'\u2022'} {cap.capName}</span>
+                                            <span style={{ fontSize: '14px', color: 'var(--component-text-primary)', fontWeight: 600, flex: 1 }}>{l2.l2Id} • {l2.l2Name}</span>
+                                            <span style={{ fontSize: '10px', padding: '1px 6px', borderRadius: '3px', background: l2Band === 'none' ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.08)', color: l2Band === 'none' ? 'var(--component-text-muted)' : l2Color, fontWeight: 600 }}>{l2Band === 'none' ? t('josoor.sector.policy.notStarted', 'Not Started') : riskLabel(l2Band)}</span>
                                         </div>
-                                    ))}
+                                        {/* L2 Properties */}
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 10px', marginTop: '6px', paddingTop: '6px', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+                                            <div><div style={{ fontSize: '9px', textTransform: 'uppercase', color: 'var(--component-text-muted)', letterSpacing: '0.3px' }}>{t('josoor.sector.policy.toolType', 'Tool Type')}</div><div style={{ fontSize: '12px', color: 'var(--component-text-primary)' }}>{l2.node?.tool_type || '—'}</div></div>
+                                            <div><div style={{ fontSize: '9px', textTransform: 'uppercase', color: 'var(--component-text-muted)', letterSpacing: '0.3px' }}>{t('josoor.sector.policy.impactTarget', 'Impact Target')}</div><div style={{ fontSize: '12px', color: 'var(--component-text-primary)' }}>{l2.node?.impact_target || '—'}</div></div>
+                                            <div><div style={{ fontSize: '9px', textTransform: 'uppercase', color: 'var(--component-text-muted)', letterSpacing: '0.3px' }}>{t('josoor.sector.policy.deliveryChannel', 'Channel')}</div><div style={{ fontSize: '12px', color: 'var(--component-text-primary)' }}>{l2.node?.delivery_channel || '—'}</div></div>
+                                            <div><div style={{ fontSize: '9px', textTransform: 'uppercase', color: 'var(--component-text-muted)', letterSpacing: '0.3px' }}>{t('josoor.sector.policy.costOfImplementation', 'Cost')}</div><div style={{ fontSize: '12px', color: 'var(--component-text-primary)' }}>{l2.node?.cost_of_implementation || '—'}</div></div>
+                                        </div>
+                                    </div>
+
+                                    {/* Linked Capabilities — separate cards with RAG strip */}
+                                    {(l2.caps || []).length > 0 && (
+                                        <div style={{ marginTop: '6px', marginInlineStart: '14px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                            {l2.caps.map((cap: any) => {
+                                                const capBandColor = ragColor(cap.buildBand);
+                                                return (
+                                                    <div
+                                                        key={cap.capId}
+                                                        onClick={() => cap.capId && (onNavigateToCapability ? onNavigateToCapability(cap.capId) : navigate(`/desk/enterprise?cap=${cap.capId}`))}
+                                                        style={{
+                                                            padding: '8px 12px',
+                                                            background: 'rgba(20,30,48,0.6)',
+                                                            borderRadius: '0 4px 4px 0',
+                                                            borderTop: cardBorder,
+                                                            borderBottom: cardBorder,
+                                                            borderInlineEnd: cardBorder,
+                                                            borderInlineStart: `3px solid ${capBandColor}`,
+                                                            cursor: cap.capId ? 'pointer' : 'default',
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            gap: '8px',
+                                                            transition: 'background 0.15s ease'
+                                                        }}
+                                                        title={cap.capId ? t('josoor.sector.policy.navigateToEnterprise') : ''}
+                                                        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(30,45,65,0.8)'; }}
+                                                        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(20,30,48,0.6)'; }}
+                                                    >
+                                                        <div>
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                                <span style={{
+                                                                    display: 'inline-block',
+                                                                    padding: '1px 6px',
+                                                                    borderRadius: '3px',
+                                                                    fontSize: '9px',
+                                                                    fontWeight: 700,
+                                                                    letterSpacing: '0.5px',
+                                                                    background: 'rgba(6,182,212,0.12)',
+                                                                    color: 'var(--sector-water)',
+                                                                    border: '1px solid rgba(6,182,212,0.25)',
+                                                                    flexShrink: 0
+                                                                }}>
+                                                                    {t('josoor.sector.policy.capabilityTag', 'CAPABILITY')}
+                                                                </span>
+                                                                <span style={{ fontSize: '14px', color: 'var(--component-text-primary)' }}>{cap.capId} • {cap.capName}</span>
+                                                            </div>
+                                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 10px', marginTop: '6px', paddingTop: '6px', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+                                                                <div><div style={{ fontSize: '9px', textTransform: 'uppercase', color: 'var(--component-text-muted)', letterSpacing: '0.3px' }}>{t('josoor.sector.policy.level', 'Level')}</div><div style={{ fontSize: '12px', color: 'var(--component-text-primary)' }}>{cap.capLevel || '—'}</div></div>
+                                                                <div><div style={{ fontSize: '9px', textTransform: 'uppercase', color: 'var(--component-text-muted)', letterSpacing: '0.3px' }}>{t('josoor.sector.policy.riskStatus', 'Risk')}</div><div style={{ fontSize: '12px', fontWeight: 600, color: capBandColor }}>{riskLabel(cap.buildBand)}</div></div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
                                     {(!l2.caps || l2.caps.length === 0) && (
-                                        <div style={{ fontSize: '11px', color: 'var(--component-text-muted)', marginTop: '4px', fontStyle: 'italic' }}>
+                                        <div style={{ fontSize: '13px', color: 'var(--component-text-muted)', marginTop: '6px', marginInlineStart: '14px', fontStyle: 'italic' }}>
                                             {t('josoor.sector.policy.noLinkedCaps', 'No linked capabilities')}
                                         </div>
                                     )}
@@ -509,7 +709,7 @@ const SectorDetailsPanel: React.FC<SectorDetailsPanelProps> = ({
                     <div className="header-content">
                         <div className="header-text">
                             <h2 className="details-title">
-                                <span style={{ opacity: 0.6, marginRight: '8px' }}>{selectedAsset.id}</span>
+                                <span style={{ opacity: 0.6, marginRight: '8px' }}>{selectedAsset.domain_id || selectedAsset.id}</span>
                                 {selectedAsset.name}
                             </h2>
                             <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginTop: '4px' }}>
@@ -571,7 +771,7 @@ const SectorDetailsPanel: React.FC<SectorDetailsPanelProps> = ({
                                     {t('josoor.sector.region')}
                                 </div>
                                 <div style={{ fontSize: '16px', fontWeight: 600, color: 'var(--component-text-primary)' }}>
-                                    {selectedAsset.region}
+                                    {t('josoor.sector.region_' + (selectedAsset.region || '').toLowerCase(), selectedAsset.region)}
                                 </div>
                             </div>
                         )}
@@ -826,7 +1026,7 @@ const SectorDetailsPanel: React.FC<SectorDetailsPanelProps> = ({
                     {(selectedAsset.completion_date || selectedAsset.launch_date) && (
                         <div style={{ marginBottom: '1.5rem' }}>
                             <div style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--component-text-muted)', marginBottom: '4px', letterSpacing: '0.5px' }}>
-                                {selectedAsset.completion_date ? 'COMPLETION DATE' : 'LAUNCH DATE'}
+                                {selectedAsset.completion_date ? t('josoor.sector.completionDate') : t('josoor.sector.launchDate')}
                             </div>
                             <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--component-text-primary)' }}>
                                 {selectedAsset.completion_date || selectedAsset.launch_date}
@@ -838,7 +1038,7 @@ const SectorDetailsPanel: React.FC<SectorDetailsPanelProps> = ({
                     {selectedAsset.ownership_type && (
                         <div style={{ marginBottom: '1.5rem' }}>
                             <div style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--component-text-muted)', marginBottom: '4px', letterSpacing: '0.5px' }}>
-                                OWNERSHIP TYPE
+                                {t('josoor.sector.ownershipType')}
                             </div>
                             <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--component-text-primary)', textTransform: 'capitalize' }}>
                                 {selectedAsset.ownership_type}
@@ -850,7 +1050,7 @@ const SectorDetailsPanel: React.FC<SectorDetailsPanelProps> = ({
                     {selectedAsset.sector_split && typeof selectedAsset.sector_split === 'object' && Object.keys(selectedAsset.sector_split).length > 0 && (
                         <div style={{ marginBottom: '1.5rem' }}>
                             <div style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--component-text-muted)', marginBottom: '8px', letterSpacing: '0.5px' }}>
-                                CAPACITY ALLOCATION
+                                {t('josoor.sector.capacityAllocation')}
                             </div>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                                 {Object.entries(selectedAsset.sector_split).map(([sector, percentage]) => (
@@ -925,7 +1125,7 @@ const SectorDetailsPanel: React.FC<SectorDetailsPanelProps> = ({
                         <h2 className="details-title">
                             {selectedSector === 'all' || selectedSector === 'All Factors' ? t('josoor.sector.allSectors') : t('josoor.sector.sectorSuffix', { sector: selectedSector })}
                         </h2>
-                        <p className="details-subtitle">{t('josoor.sector.regionLabel', { region: selectedRegion })}</p>
+                        <p className="details-subtitle">{t('josoor.sector.regionLabel', { region: t('josoor.sector.region_' + (selectedRegion || '').toLowerCase(), selectedRegion || '') })}</p>
                     </div>
                 </div>
             </div>
@@ -973,7 +1173,7 @@ const SectorDetailsPanel: React.FC<SectorDetailsPanelProps> = ({
                                 >
                                     <div className="asset-header">
                                         <div className="asset-name">
-                                            <span style={{ opacity: 0.6, marginRight: '6px' }}>{asset.id}</span>
+                                            <span style={{ opacity: 0.6, marginRight: '6px' }}>{asset.domain_id || asset.id}</span>
                                             {asset.name}
                                         </div>
                                         {(asset.priority === 'HIGH' || asset.priority === 'MAJOR' || asset.priority === 'URGENT' || asset.priority === 'CRITICAL') && (
@@ -982,7 +1182,7 @@ const SectorDetailsPanel: React.FC<SectorDetailsPanelProps> = ({
                                     </div>
 
                                     <div className="asset-meta">
-                                        <span className="asset-type">{asset.asset_type || asset.category || 'Asset'}</span>
+                                        <span className="asset-type">{asset.asset_type || asset.category || t('josoor.sector.asset', 'Asset')}</span>
                                         <span
                                             className="asset-status"
                                             style={{
@@ -991,7 +1191,7 @@ const SectorDetailsPanel: React.FC<SectorDetailsPanelProps> = ({
                                                     : 'var(--component-color-info)'
                                             }}
                                         >
-                                            ● {asset.status || 'Unknown'}
+                                            ● {asset.status || t('josoor.sector.unknown', 'Unknown')}
                                         </span>
                                     </div>
 

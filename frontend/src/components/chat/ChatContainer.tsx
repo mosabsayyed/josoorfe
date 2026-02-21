@@ -76,7 +76,7 @@ export const ChatContainer = memo(function ChatContainer({
   onToggleCanvas,
   onOpenArtifact,
   streamingMessage,
-  year = '2025',
+  year = '2029',
   quarter = 'All',
   onYearChange,
   onQuarterChange,
