@@ -676,10 +676,7 @@
         "generatingAnalysis": "Generating AI Analysis...",
         "analysisFailed": "Analysis failed. Please try again.",
         "processMetrics": "Process Metrics",
-        "target": "Target",
-        "compositeScore": "Process Performance Score",
-        "breakdown": "Breakdown",
-        "contributingMetrics": "Contributing Metrics"
+        "target": "Target"
       },
       "tooltip": {
         "mode": "Mode:",

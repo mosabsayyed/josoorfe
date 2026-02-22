@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import '../../canvas.css';
 
@@ -318,6 +318,16 @@ export function CanvasManager({ isOpen = false, conversationId = null, artifacts
     };
   }, [createArtifact, mode]);
 
+  // Build embedded artifacts map from sibling artifacts (for hydrating <ui-chart>/<ui-table> placeholders in HTML)
+  const embeddedArtifactsMap = useMemo(() => {
+    const map: Record<string, Artifact> = {};
+    artifacts.forEach(a => {
+      const id = (a as any).id || a.title;
+      if (id) map[id] = a;
+    });
+    return map;
+  }, [artifacts]);
+
   // --- Render Logic ---
   if (mode === 'hidden') return null;
 
@@ -599,11 +609,12 @@ export function CanvasManager({ isOpen = false, conversationId = null, artifacts
                 display: 'flex', 
                 flexDirection: 'column' 
               }}>
-                <UniversalCanvas 
-                  content={currentArtifact.content} 
+                <UniversalCanvas
+                  content={currentArtifact.content}
                   title={currentArtifact.title}
                   type={currentArtifact.artifact_type}
                   artifact={currentArtifact}
+                  embeddedArtifacts={embeddedArtifactsMap}
                   onNext={handleNext}
                 />
               </div>

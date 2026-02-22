@@ -673,10 +673,7 @@
         "generatingAnalysis": "جارٍ إنشاء التحليل بالذكاء الاصطناعي...",
         "analysisFailed": "فشل التحليل. يرجى المحاولة مرة أخرى.",
         "processMetrics": "مقاييس العمليات",
-        "target": "المستهدف",
-        "compositeScore": "مؤشر أداء العمليات",
-        "breakdown": "التفصيل",
-        "contributingMetrics": "المقاييس المساهمة"
+        "target": "المستهدف"
       },
       "tooltip": {
         "mode": "الوضع:",

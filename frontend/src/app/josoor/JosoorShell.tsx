@@ -344,6 +344,7 @@ export default function JosoorShell() {
                     >
                         <MemoizedCanvasManager
                             artifacts={canvasArtifacts}
+
                             isOpen={isCanvasOpen}
                             onClose={() => setIsCanvasOpen(false)}
                         />

@@ -1,56 +1,62 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { createRoot, Root } from 'react-dom/client';
+import React, { useEffect, useMemo, useState } from 'react';
 import DOMPurify from 'dompurify';
-import { replaceVisualizationTags } from '../../../utils/visualizationBuilder';
-import { useArtifactHydration } from '../../../hooks/useArtifactHydration';
-import { ArtifactRenderer } from '../ArtifactRenderer';
+import ReactMarkdown from 'react-markdown';
+import rehypeRaw from 'rehype-raw';
+import remarkGfm from 'remark-gfm';
+import { StrategyReportChartRenderer } from '../../desks/sector/StrategyReportChartRenderer';
 import type { Artifact } from '../../../types/api';
 import '../../desks/sector/SectorReport.css';
 
 interface HtmlRendererProps {
-  // Accept either a direct HTML string via `html` or an entire `artifact`
-  // object (legacy callers pass the artifact directly). The renderer will
-  // extract the HTML from known fields when given an artifact.
   html?: string | any;
   artifact?: any;
   title?: string;
   embeddedArtifacts?: Record<string, Artifact>;
 }
 
+/**
+ * HtmlRenderer — renders HTML content with inline chart/table rendering.
+ *
+ * Uses the same proven approach as StrategyReportModal:
+ * Split HTML by <ui-chart>/<ui-table> regex, render charts inline as React components.
+ */
 export function HtmlRenderer({ html, artifact, title, embeddedArtifacts: propArtifacts }: HtmlRendererProps) {
-  const containerRef = useRef<HTMLDivElement | null>(null);
   const [sanitizedHtml, setSanitizedHtml] = useState<string>('');
 
-  // Extract embedded artifacts map if available
-  const getEmbeddedArtifacts = (): Record<string, Artifact> => {
-    let artifacts: Record<string, Artifact> = propArtifacts || {};
+  // Build artifact lookup map from all available sources
+  const artifactMap = useMemo(() => {
+    const map: Record<string, Artifact> = {};
 
-    if (artifact && typeof artifact === 'object' && artifact.content?.embedded_artifacts) {
-      artifacts = { ...artifacts, ...artifact.content.embedded_artifacts };
+    // From prop
+    if (propArtifacts) {
+      Object.entries(propArtifacts).forEach(([k, v]) => { map[k] = v; });
     }
-    if (html && typeof html === 'object' && html.content?.embedded_artifacts) {
-      artifacts = { ...artifacts, ...html.content.embedded_artifacts };
-    }
-    // Also check deeper nesting if passed as content object
-    if (html && typeof html === 'object' && html.embedded_artifacts) {
-      artifacts = { ...artifacts, ...html.embedded_artifacts };
-    }
-    return artifacts;
-  };
 
-  const embeddedArtifacts = getEmbeddedArtifacts();
+    // From artifact.content.embedded_artifacts
+    if (artifact?.content?.embedded_artifacts) {
+      Object.entries(artifact.content.embedded_artifacts).forEach(([k, v]) => {
+        map[k] = v as Artifact;
+      });
+    }
+
+    // From html object (legacy)
+    if (html && typeof html === 'object') {
+      const ea = html.content?.embedded_artifacts || html.embedded_artifacts;
+      if (ea) {
+        Object.entries(ea).forEach(([k, v]) => { map[k] = v as Artifact; });
+      }
+    }
+
+    console.log('[HtmlRenderer] artifactMap keys:', Object.keys(map));
+    return map;
+  }, [propArtifacts, artifact, html]);
 
   useEffect(() => {
-    // Determine the raw candidate HTML string. Support these input shapes:
-    //  - html is a string (preferred)
-    //  - html is an artifact object (legacy callers)
-    //  - artifact prop provided (artifact object)
     let candidate: string = '';
     try {
       if (typeof html === 'string' && html.trim()) {
         candidate = html;
       } else if (html && typeof html === 'object') {
-        // html was passed but it's actually an artifact object; fall through
         const art = html;
         candidate = String(art.content?.body || art.content?.html || art.content?.config?.html_content || art.resolved_html || art.content || '');
       } else if (artifact && typeof artifact === 'object') {
@@ -66,51 +72,36 @@ export function HtmlRenderer({ html, artifact, title, embeddedArtifacts: propArt
       return;
     }
 
-    // Attempt to unescape common HTML-escaped sequences the LLM may include
+    // Unescape common HTML-escaped sequences
     candidate = candidate.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
 
-    // If candidate looks like a full HTML document, extract the body inner HTML
-    const extractBody = (docString: string) => {
-      try {
-        const bodyMatch = docString.match(/<body[^>]*>([\s\S]*)<\/body>/i);
-        if (bodyMatch && bodyMatch[1]) return bodyMatch[1];
-        const htmlMatch = docString.match(/<html[^>]*>([\s\S]*)<\/html>/i);
-        if (htmlMatch && htmlMatch[1]) return htmlMatch[1];
-        // Fallback: remove <!doctype ...> and <head>...</head>
-        let s = docString.replace(/<!doctype[\s\S]*?>/i, '');
-        s = s.replace(/<head[\s\S]*?>[\s\S]*?<\/head>/i, '');
-        return s;
-      } catch (_) {
-        return docString;
-      }
-    };
-
+    // Extract body from full HTML documents
     if (/^\s*<!doctype/i.test(candidate) || /<html[\s\S]*>/i.test(candidate)) {
-      candidate = extractBody(candidate);
+      try {
+        const bodyMatch = candidate.match(/<body[^>]*>([\s\S]*)<\/body>/i);
+        if (bodyMatch?.[1]) candidate = bodyMatch[1];
+        else {
+          const htmlMatch = candidate.match(/<html[^>]*>([\s\S]*)<\/html>/i);
+          if (htmlMatch?.[1]) candidate = htmlMatch[1];
+          else {
+            candidate = candidate.replace(/<!doctype[\s\S]*?>/i, '');
+            candidate = candidate.replace(/<head[\s\S]*?>[\s\S]*?<\/head>/i, '');
+          }
+        }
+      } catch (_) { /* keep candidate as-is */ }
     }
 
-    // Use default DOMPurify sanitization first (avoid passing unstable config keys)
+    // Sanitize but KEEP <ui-chart> and <ui-table> tags
     let clean = DOMPurify.sanitize(candidate, {
       ADD_TAGS: ['ui-chart', 'ui-table'],
       ADD_ATTR: ['data-id', 'type', 'chart-type']
     });
 
-    // Replace custom visualization tags with placeholders
-    try {
-      clean = replaceVisualizationTags(clean);
-    } catch (error) {
-      console.warn('[HtmlRenderer] Error replacing visualization tags:', error);
-      // Continue gracefully if tag replacement fails
-    }
-
-    // As an extra safety layer, strip any remaining <script>, <style> or stylesheet links from the string
+    // Strip scripts and stylesheet links
     try {
       clean = clean.replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, '');
-      // clean = clean.replace(/<style[\s\S]*?>[\s\S]*?<\/style>/gi, '');
       clean = clean.replace(/<link[^>]*rel=["']?stylesheet["']?[^>]*>/gi, '');
-    } catch (e) {
-      // ignore
-    }
+    } catch (_) { /* ignore */ }
 
     setSanitizedHtml(clean);
   }, [html, artifact]);
@@ -121,23 +112,104 @@ export function HtmlRenderer({ html, artifact, title, embeddedArtifacts: propArt
     fontFamily: 'var(--component-font-family)',
     color: 'var(--component-text, inherit)',
     lineHeight: 1.45,
-    whiteSpace: 'normal', // Override parent pre-wrap
+    whiteSpace: 'normal',
     WebkitFontSmoothing: 'antialiased',
     MozOsxFontSmoothing: 'grayscale',
   };
 
-  // Hydrate visualization placeholders
-  useArtifactHydration(containerRef, embeddedArtifacts, sanitizedHtml);
+  // Split HTML by <ui-chart> and <ui-table> tags, render charts inline (proven StrategyReportModal pattern)
+  const renderContent = () => {
+    if (!sanitizedHtml) return null;
+
+    const parts = sanitizedHtml.split(/(<ui-chart[^>]*>|<ui-table[^>]*>)/g);
+
+    return parts.map((part, index) => {
+      // Check for chart tag
+      const chartMatch = part.match(/<ui-chart[^>]*data-id=["']([^"']+)["'][^>]*>/);
+      if (chartMatch) {
+        const chartId = chartMatch[1];
+        const chartArtifact = artifactMap[chartId];
+        if (!chartArtifact) {
+          console.warn('[HtmlRenderer] Chart artifact not found:', chartId, 'Available:', Object.keys(artifactMap));
+          return null;
+        }
+        return (
+          <div key={`chart-${index}`} style={{ margin: '16px 0', width: '100%' }}>
+            <StrategyReportChartRenderer
+              artifact={chartArtifact}
+              width="100%"
+              height={chartArtifact.artifact_type === 'TABLE' ? 'auto' : '380px'}
+            />
+          </div>
+        );
+      }
+
+      // Check for table tag
+      const tableMatch = part.match(/<ui-table[^>]*data-id=["']([^"']+)["'][^>]*>/);
+      if (tableMatch) {
+        const tableId = tableMatch[1];
+        const tableArtifact = artifactMap[tableId];
+        if (!tableArtifact) {
+          console.warn('[HtmlRenderer] Table artifact not found:', tableId, 'Available:', Object.keys(artifactMap));
+          return null;
+        }
+        return (
+          <div key={`table-${index}`} style={{ margin: '16px 0', width: '100%' }}>
+            <StrategyReportChartRenderer
+              artifact={tableArtifact}
+              width="100%"
+              height="auto"
+            />
+          </div>
+        );
+      }
+
+      // Also handle data-id first format: <ui-chart data-id="X"> or <ui-table data-id="X">
+      const altChartMatch = part.match(/<ui-chart[^>]*id=["']([^"']+)["'][^>]*>/);
+      if (altChartMatch) {
+        const chartArtifact = artifactMap[altChartMatch[1]];
+        if (chartArtifact) {
+          return (
+            <div key={`chart-alt-${index}`} style={{ margin: '16px 0', width: '100%' }}>
+              <StrategyReportChartRenderer artifact={chartArtifact} width="100%" height="380px" />
+            </div>
+          );
+        }
+      }
+      const altTableMatch = part.match(/<ui-table[^>]*id=["']([^"']+)["'][^>]*>/);
+      if (altTableMatch) {
+        const tableArtifact = artifactMap[altTableMatch[1]];
+        if (tableArtifact) {
+          return (
+            <div key={`table-alt-${index}`} style={{ margin: '16px 0', width: '100%' }}>
+              <StrategyReportChartRenderer artifact={tableArtifact} width="100%" height="auto" />
+            </div>
+          );
+        }
+      }
+
+      // Regular HTML content — render via ReactMarkdown (handles both HTML and markdown)
+      if (!part.trim()) return null;
+      return (
+        <ReactMarkdown
+          key={`content-${index}`}
+          rehypePlugins={[rehypeRaw]}
+          remarkPlugins={[remarkGfm]}
+        >
+          {part}
+        </ReactMarkdown>
+      );
+    });
+  };
 
   return (
     <div className="html-renderer-wrapper" style={{ padding: 8 }} aria-label={title || 'HTML content'}>
       <div
-        ref={containerRef}
         className="html-renderer-inner josoor-report-content"
         style={containerStyle}
-        // eslint-disable-next-line react/no-danger
-        dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
-      />
+      >
+        {renderContent()}
+      </div>
     </div>
   );
 }

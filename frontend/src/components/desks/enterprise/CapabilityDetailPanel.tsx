@@ -760,10 +760,198 @@ function CollapsibleRiskDetails({ risk, isOpen, onToggle }: { risk: Record<strin
 }
 
 /** ═══════════════════════════════════════════════════════════
+ *  L2 KPI COMPUTATION — Domain-specific named KPIs per L2 capability
+ *  ═══════════════════════════════════════════════════════════ */
+interface L2ComputedKPI {
+  name: string;
+  nameAr: string;
+  value: number;
+  target: number;
+  formula: string;
+  inputs: Array<{
+    name: string;
+    actual: number;
+    target: number;
+    unit: string;
+    achievement: number;
+  }>;
+}
+
+function computeL2KPI(l2Id: string, childMetrics: any[]): L2ComputedKPI | null {
+  if (!childMetrics || childMetrics.length === 0) return null;
+
+  // Helper: compute achievement % for a single metric
+  const metricAchievement = (pm: any): { actual: number; target: number; pct: number; unit: string; name: string } | null => {
+    const actual = pm.actual != null ? Number(pm.actual) : null;
+    const target = pm.target != null ? Number(pm.target) : null;
+    if (actual == null || target == null || target === 0) return null;
+    const isLowerBetter = pm.metric_type === 'cycle_time' || pm.metric_type === 'cost';
+    const raw = isLowerBetter ? (target / actual) * 100 : (actual / target) * 100;
+    return {
+      actual,
+      target,
+      pct: Math.max(0, Math.round(raw * 10) / 10),
+      unit: pm.unit || '',
+      name: pm.metric_name || pm.name || ''
+    };
+  };
+
+  // Helper: find metric by type or partial name match from children
+  const findByType = (type: string): any | undefined => childMetrics.find(m => m.metric_type === type);
+  const findByName = (partial: string): any | undefined => childMetrics.find(m => (m.metric_name || m.name || '').toLowerCase().includes(partial.toLowerCase()));
+
+  // Strip sub-IDs (e.g. "2.1" from "2.1.1") — we match on the L2 id
+  const id = l2Id.trim();
+
+  // ──────────────────────────────────────────────
+  // 1. Policy Development (L2 "2.1")
+  // ──────────────────────────────────────────────
+  if (id === '2.1') {
+    const pm = findByName('Policies Drafted') || findByName('policy') || findByType('throughput');
+    const m = pm ? metricAchievement(pm) : null;
+    const value = m ? Math.round(m.pct * 10) / 10 : 0;
+    return {
+      name: 'Policy Output Rate',
+      nameAr: 'معدل إنتاج السياسات',
+      value: Math.round(value),
+      target: 100,
+      formula: 'Actual / Target policies drafted',
+      inputs: m ? [{ name: m.name, actual: m.actual, target: m.target, unit: m.unit, achievement: Math.round(m.pct) }] : []
+    };
+  }
+
+  // ──────────────────────────────────────────────
+  // 2. Water Quality Management (L2 "4.6")
+  // ──────────────────────────────────────────────
+  if (id === '4.6') {
+    const qualityPm = findByType('quality');
+    const cyclePm = findByType('cycle_time');
+    const qm = qualityPm ? metricAchievement(qualityPm) : null;
+    const cm = cyclePm ? metricAchievement(cyclePm) : null;
+
+    let value = 0;
+    const inputs: L2ComputedKPI['inputs'] = [];
+    if (qm) inputs.push({ name: qm.name, actual: qm.actual, target: qm.target, unit: qm.unit, achievement: Math.round(qm.pct) });
+    if (cm) inputs.push({ name: cm.name, actual: cm.actual, target: cm.target, unit: cm.unit, achievement: Math.round(cm.pct) });
+
+    if (qm && cm) {
+      value = Math.round(qm.pct * 0.6 + cm.pct * 0.4);
+    } else if (qm) {
+      value = Math.round(qm.pct);
+    } else if (cm) {
+      value = Math.round(cm.pct);
+    }
+
+    return {
+      name: 'Service Quality Index',
+      nameAr: 'مؤشر جودة الخدمة',
+      value,
+      target: 95,
+      formula: 'Quality 60% + Resolution Speed 40%',
+      inputs
+    };
+  }
+
+  // ──────────────────────────────────────────────
+  // 3. Licensing (L2 "4.7")
+  // ──────────────────────────────────────────────
+  if (id === '4.7') {
+    const cyclePm = findByType('cycle_time');
+    const throughputPm = findByType('throughput');
+    const qualityPm = findByType('quality');
+    const cm = cyclePm ? metricAchievement(cyclePm) : null;
+    const tm = throughputPm ? metricAchievement(throughputPm) : null;
+    const qm = qualityPm ? metricAchievement(qualityPm) : null;
+
+    const inputs: L2ComputedKPI['inputs'] = [];
+    if (cm) inputs.push({ name: cm.name, actual: cm.actual, target: cm.target, unit: cm.unit, achievement: Math.round(cm.pct) });
+    if (tm) inputs.push({ name: tm.name, actual: tm.actual, target: tm.target, unit: tm.unit, achievement: Math.round(tm.pct) });
+    if (qm) inputs.push({ name: qm.name, actual: qm.actual, target: qm.target, unit: qm.unit, achievement: Math.round(qm.pct) });
+
+    let value = 0;
+    const parts: number[] = [];
+    if (cm) parts.push(cm.pct * 0.4);
+    if (tm) parts.push(tm.pct * 0.35);
+    if (qm) parts.push(qm.pct * 0.25);
+    if (parts.length > 0) {
+      // Normalize if not all parts present
+      const totalWeight = (cm ? 0.4 : 0) + (tm ? 0.35 : 0) + (qm ? 0.25 : 0);
+      value = Math.round(parts.reduce((s, v) => s + v, 0) / totalWeight);
+    }
+
+    return {
+      name: 'Licensing Efficiency Index',
+      nameAr: 'مؤشر كفاءة التراخيص',
+      value,
+      target: 90,
+      formula: 'Speed 40% + Volume 35% + Accuracy 25%',
+      inputs
+    };
+  }
+
+  // ──────────────────────────────────────────────
+  // 4. Water Production (L2 "5.1")
+  // ──────────────────────────────────────────────
+  if (id === '5.1') {
+    const qualityPm = findByType('quality');
+    const volumePm = findByType('volume') || findByType('throughput');
+    const qm = qualityPm ? metricAchievement(qualityPm) : null;
+    const vm = volumePm ? metricAchievement(volumePm) : null;
+
+    const inputs: L2ComputedKPI['inputs'] = [];
+    if (qm) inputs.push({ name: qm.name, actual: qm.actual, target: qm.target, unit: qm.unit, achievement: Math.round(qm.pct) });
+    if (vm) inputs.push({ name: vm.name, actual: vm.actual, target: vm.target, unit: vm.unit, achievement: Math.round(vm.pct) });
+
+    let value = 0;
+    if (qm && vm) {
+      value = Math.round(qm.pct * 0.5 + vm.pct * 0.5);
+    } else if (qm) {
+      value = Math.round(qm.pct);
+    } else if (vm) {
+      value = Math.round(vm.pct);
+    }
+
+    return {
+      name: 'Production Performance Index',
+      nameAr: 'مؤشر أداء الإنتاج',
+      value,
+      target: 95,
+      formula: 'Efficiency 50% + Output Volume 50%',
+      inputs
+    };
+  }
+
+  // ──────────────────────────────────────────────
+  // 5. Fallback — any other L2 with process metrics
+  // ──────────────────────────────────────────────
+  const inputs: L2ComputedKPI['inputs'] = [];
+  let sum = 0;
+  let count = 0;
+  childMetrics.forEach(pm => {
+    const m = metricAchievement(pm);
+    if (m) {
+      inputs.push({ name: m.name, actual: m.actual, target: m.target, unit: m.unit, achievement: Math.round(m.pct) });
+      sum += m.pct;
+      count++;
+    }
+  });
+  const value = count > 0 ? Math.round(sum / count) : 0;
+
+  return {
+    name: 'Process Health Score',
+    nameAr: 'مؤشر صحة العمليات',
+    value,
+    target: 85,
+    formula: 'Average of all process achievements',
+    inputs
+  };
+}
+
+/** ═══════════════════════════════════════════════════════════
  *  L2 DETAIL VIEW — Group-level capability panel
  *  ═══════════════════════════════════════════════════════════ */
 function L2DetailView({ l2, onClose, selectedYear, selectedQuarter, onAIAnalysis }: { l2: L2Capability; onClose: () => void; selectedYear?: number | 'all'; selectedQuarter?: number | 'all'; onAIAnalysis?: () => void }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const chain = l2.upwardChain;
   const maturityGap = l2.target_maturity_level - l2.maturity_level;
 
@@ -871,119 +1059,73 @@ function L2DetailView({ l2, onClose, selectedYear, selectedQuarter, onAIAnalysis
             </div>
           )}
 
-          {/* 2b. Process Metrics — L2 Composite Aggregation from L3 children */}
+          {/* 2b. Process Metrics — L2 Domain-Specific KPI */}
           {allProcessMetrics.length > 0 && (() => {
-            // --- Compute per-metric achievement percentages ---
-            const metricAchievements: { metric: any; pct: number; isLowerBetter: boolean }[] = [];
-            allProcessMetrics.forEach(pm => {
-              const actual = pm.actual != null ? Number(pm.actual) : null;
-              const target = pm.target != null ? Number(pm.target) : null;
-              const isLowerBetter = pm.metric_type === 'cycle_time' || pm.metric_type === 'cost';
-              if (actual != null && target != null && target > 0) {
-                const raw = isLowerBetter ? (target / actual) * 100 : (actual / target) * 100;
-                metricAchievements.push({ metric: pm, pct: Math.max(0, Math.min(Math.round(raw), 100)), isLowerBetter });
-              }
-            });
-
-            // --- Group by metric_type and compute per-type scores ---
-            const typeWeights: Record<string, number> = { quality: 35, throughput: 25, cycle_time: 25, volume: 10, cost: 5 };
-            const typeLabels: Record<string, string> = { quality: 'Quality', throughput: 'Throughput', cycle_time: 'Efficiency', volume: 'Volume', cost: 'Cost' };
-            const grouped: Record<string, { pcts: number[]; metrics: any[] }> = {};
-            metricAchievements.forEach(({ metric, pct }) => {
-              const mType = metric.metric_type || 'other';
-              if (!grouped[mType]) grouped[mType] = { pcts: [], metrics: [] };
-              grouped[mType].pcts.push(pct);
-              grouped[mType].metrics.push({ ...metric, _pct: pct });
-            });
-
-            const typeSummaries = Object.entries(grouped).map(([mType, { pcts, metrics }]) => {
-              const avg = Math.round(pcts.reduce((s, v) => s + v, 0) / pcts.length);
-              return { type: mType, label: typeLabels[mType] || mType, score: avg, weight: typeWeights[mType] || 5, metrics };
-            });
-
-            // --- Compute weighted composite score ---
-            let totalWeight = 0;
-            let weightedSum = 0;
-            typeSummaries.forEach(ts => { weightedSum += ts.score * ts.weight; totalWeight += ts.weight; });
-            const compositeScore = totalWeight > 0 ? Math.round(weightedSum / totalWeight) : 0;
-            const compositeColor = compositeScore >= 70 ? '#10b981' : compositeScore >= 40 ? '#f59e0b' : '#ef4444';
+            const kpi = computeL2KPI(l2.id, allProcessMetrics);
+            if (!kpi) return null;
+            const isAr = i18n.language === 'ar';
+            const kpiName = isAr ? kpi.nameAr : kpi.name;
+            const kpiColor = kpi.value >= 70 ? '#10b981' : kpi.value >= 40 ? '#f59e0b' : '#ef4444';
 
             return (
               <>
-                <h3 style={sectionTitleStyle}>{t('josoor.enterprise.detailPanel.compositeScore')}</h3>
+                <h3 style={sectionTitleStyle}>{t('josoor.enterprise.detailPanel.processMetrics')}</h3>
 
-                {/* --- Prominent composite score --- */}
+                {/* --- KPI Header + Value --- */}
                 <div style={{
-                  background: 'rgba(255,255,255,0.03)', border: `1px solid ${compositeColor}33`,
-                  borderRadius: '8px', padding: '16px', marginBottom: '16px', textAlign: 'center'
+                  background: 'rgba(255,255,255,0.03)', border: `1px solid ${kpiColor}33`,
+                  borderRadius: '8px', padding: '16px', marginBottom: '12px'
                 }}>
-                  <div style={{ fontSize: '36px', fontWeight: 800, color: compositeColor, lineHeight: 1.1 }}>
-                    {compositeScore}%
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '10px' }}>
+                    <span style={{ fontSize: '16px', fontWeight: 700, color: 'var(--component-text-primary)' }}>
+                      {kpiName}
+                    </span>
+                    <span style={{ fontSize: '28px', fontWeight: 800, color: kpiColor, lineHeight: 1 }}>
+                      {kpi.value}%
+                    </span>
                   </div>
+
+                  {/* Wide progress bar */}
+                  <div style={{ height: '8px', background: 'rgba(255,255,255,0.06)', borderRadius: '4px', overflow: 'hidden', marginBottom: '6px' }}>
+                    <div style={{ height: '100%', width: `${Math.min(kpi.value, 100)}%`, background: kpiColor, borderRadius: '4px', transition: 'width 0.4s ease' }} />
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '12px', color: 'var(--component-text-muted)' }}>
+                      {kpi.value}% / {kpi.target}% {t('josoor.enterprise.detailPanel.target').toLowerCase()}
+                    </span>
+                    <span style={{ fontSize: '11px', color: 'var(--component-text-muted)', fontStyle: 'italic' }}>
+                      {kpi.formula}
+                    </span>
+                  </div>
+                </div>
+
+                {/* --- Input metrics from L3 children --- */}
+                {kpi.inputs.length > 0 && (
                   <div style={{
-                    height: '8px', background: 'rgba(255,255,255,0.06)', borderRadius: '4px',
-                    overflow: 'hidden', marginTop: '10px'
+                    display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '1.5rem',
+                    background: 'rgba(255,255,255,0.02)', borderRadius: '6px', padding: '8px 10px'
                   }}>
-                    <div style={{ height: '100%', width: `${compositeScore}%`, background: compositeColor, borderRadius: '4px', transition: 'width 0.4s ease' }} />
-                  </div>
-                </div>
-
-                {/* --- Breakdown by metric type --- */}
-                <h4 style={{ ...sectionTitleStyle, fontSize: '13px', marginBottom: '8px', marginTop: '0' }}>
-                  {t('josoor.enterprise.detailPanel.breakdown')}
-                </h4>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '16px' }}>
-                  {typeSummaries.map(ts => {
-                    const clr = ts.score >= 70 ? '#10b981' : ts.score >= 40 ? '#f59e0b' : '#ef4444';
-                    return (
-                      <div key={ts.type} style={{
-                        display: 'flex', alignItems: 'center', gap: '10px', padding: '6px 10px',
-                        background: 'rgba(255,255,255,0.02)', borderRadius: '4px'
-                      }}>
-                        <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--component-text-secondary)', width: '80px', flexShrink: 0 }}>
-                          {ts.label}
-                        </span>
-                        <div style={{ flex: 1, height: '6px', background: 'rgba(255,255,255,0.06)', borderRadius: '3px', overflow: 'hidden' }}>
-                          <div style={{ height: '100%', width: `${ts.score}%`, background: clr, borderRadius: '3px' }} />
+                    {kpi.inputs.map((inp, idx) => {
+                      const inpColor = inp.achievement >= 70 ? '#10b981' : inp.achievement >= 40 ? '#f59e0b' : '#ef4444';
+                      return (
+                        <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '3px 0' }}>
+                          <span style={{ fontSize: '12px', color: 'var(--component-text-secondary)', flex: 1, minWidth: 0 }}>
+                            {inp.name}
+                          </span>
+                          <span style={{ fontSize: '12px', color: 'var(--component-text-muted)', whiteSpace: 'nowrap' }}>
+                            {inp.actual} → {inp.target} {inp.unit}
+                          </span>
+                          <div style={{ width: '40px', height: '4px', background: 'rgba(255,255,255,0.06)', borderRadius: '2px', overflow: 'hidden', flexShrink: 0 }}>
+                            <div style={{ height: '100%', width: `${Math.min(inp.achievement, 100)}%`, background: inpColor, borderRadius: '2px' }} />
+                          </div>
+                          <span style={{ fontSize: '11px', fontWeight: 600, color: inpColor, width: '32px', textAlign: 'right', flexShrink: 0 }}>
+                            {inp.achievement}%
+                          </span>
                         </div>
-                        <span style={{ fontSize: '13px', fontWeight: 700, color: clr, width: '36px', textAlign: 'right', flexShrink: 0 }}>
-                          {ts.score}%
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                {/* --- Compact contributing metrics list --- */}
-                <h4 style={{ ...sectionTitleStyle, fontSize: '13px', marginBottom: '6px', marginTop: '0' }}>
-                  {t('josoor.enterprise.detailPanel.contributingMetrics')} ({allProcessMetrics.length})
-                </h4>
-                <div style={{
-                  display: 'flex', flexDirection: 'column', gap: '2px', marginBottom: '1.5rem',
-                  background: 'rgba(255,255,255,0.02)', borderRadius: '6px', padding: '8px 10px'
-                }}>
-                  {metricAchievements.map(({ metric: pm, pct }) => (
-                    <div key={pm.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '3px 0' }}>
-                      <span style={{ fontSize: '12px', color: 'var(--component-text-secondary)', flex: 1 }}>
-                        {pm.metric_name || pm.name}
-                      </span>
-                      <span style={{ fontSize: '12px', color: 'var(--component-text-muted)', whiteSpace: 'nowrap', marginLeft: '8px' }}>
-                        {pm.actual != null ? pm.actual : '\u2014'} → {pm.target != null ? pm.target : '\u2014'} {pm.unit || ''}
-                      </span>
-                    </div>
-                  ))}
-                  {/* Show metrics that couldn't compute a percentage */}
-                  {allProcessMetrics.filter(pm => !metricAchievements.find(ma => ma.metric.id === pm.id)).map(pm => (
-                    <div key={pm.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '3px 0' }}>
-                      <span style={{ fontSize: '12px', color: 'var(--component-text-muted)', flex: 1 }}>
-                        {pm.metric_name || pm.name}
-                      </span>
-                      <span style={{ fontSize: '12px', color: 'var(--component-text-muted)', whiteSpace: 'nowrap', marginLeft: '8px' }}>
-                        {pm.actual != null ? pm.actual : '\u2014'} {pm.unit || ''}
-                      </span>
-                    </div>
-                  ))}
-                </div>
+                      );
+                    })}
+                  </div>
+                )}
               </>
             );
           })()}

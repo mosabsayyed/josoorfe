@@ -149,7 +149,7 @@ function ArtifactRendererContent({ artifact, language = 'en', fullHeight = false
         // string. This avoids coupling artifact normalization into the core
         // renderer pipeline and preserves compatibility with other callers.
         console.log('[ArtifactRenderer] Returning HtmlRenderer; content keys:', Object.keys(artifact.content || {}));
-        return <HtmlRenderer artifact={artifact} />;
+        return <HtmlRenderer artifact={artifact} embeddedArtifacts={embeddedArtifacts} />;
       case 'MARKDOWN':
         // Match MarkdownRendererProps: { content: string; title?: string }
         const markdownBody = typeof artifact.content === 'string' ? artifact.content : (artifact.content?.body || JSON.stringify(artifact.content));

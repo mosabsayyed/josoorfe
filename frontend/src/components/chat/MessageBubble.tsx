@@ -541,12 +541,22 @@ export function MessageBubble({
                 }
               }
               
+              // Build embedded_artifacts map from sibling CHART/TABLE artifacts
+              // so HtmlRenderer can hydrate <ui-chart>/<ui-table> placeholders
+              const siblingArtifactsMap: Record<string, any> = {};
+              artifacts.forEach((a: any) => {
+                if (a.artifact_type === 'CHART' || a.artifact_type === 'TABLE' || a.type === 'chart' || a.type === 'table') {
+                  const aid = a.id || a.dataId || a.title;
+                  if (aid) siblingArtifactsMap[aid] = a;
+                }
+              });
+
               const htmlArtifact = {
                 id: `html-${message.id}`,
                 artifact_type: 'REPORT',
                 type: 'html',
                 title: title,
-                content: { body: htmlCandidate, format: 'html' }
+                content: { body: htmlCandidate, format: 'html', embedded_artifacts: siblingArtifactsMap }
               };
               
               artifacts = [...artifacts, htmlArtifact];
@@ -558,7 +568,20 @@ export function MessageBubble({
               });
             }
           }
-          
+
+          // Ensure ALL HTML/REPORT artifacts carry embedded_artifacts map
+          // so HtmlRenderer can hydrate <ui-chart>/<ui-table> placeholders
+          artifacts = artifacts.map((a: any) => {
+            const isHtmlType = a.artifact_type === 'HTML' || a.artifact_type === 'REPORT' || a.type === 'html' || a.type === 'report';
+            if (isHtmlType && !a.content?.embedded_artifacts && Object.keys(embeddedArtifactsMap).length > 0) {
+              return {
+                ...a,
+                content: { ...(a.content || {}), embedded_artifacts: embeddedArtifactsMap }
+              };
+            }
+            return a;
+          });
+
           const hasArtifacts = artifacts.length > 0;
 
           return !isUser && hasArtifacts && (
