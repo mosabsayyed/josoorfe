@@ -113,47 +113,62 @@ The Planning Lab is a multi-mode UI component for strategic planning, interventi
 
 ---
 
-## Graph Integration (Skeleton)
+## Graph Integration — RiskPlan Schema (CONFIRMED)
 
-### Planned Schema (L4 Task Level)
+### RiskPlan Node — Attached to EntityRisk
+
+**Intervention plans attach to RISKS (not capabilities).** The node type is `RiskPlan`, following the same L1/L2/L3 pattern as all other SST nodes.
 
 ```cypher
-// Capability → Plan relationship
-(EntityCapability)-[:HAS_PLAN]->(Plan)
+// Risk → RiskPlan relationship (intervention response to a risk)
+(EntityRisk)-[:HAS_RISK_PLAN]->(RiskPlan)
 
-// Plan node properties
-Plan {
+// RiskPlan follows the standard SST 3-level hierarchy:
+// L1 = Sponsor (who owns this plan)
+RiskPlan:L1 {
   id: String,
-  stakeholder_owner_id: String,
-  deliverables: [String],
-  start_date: Date,
-  end_date: Date,
-  hard_end_date: Date,
-  new_risks: String,
+  level: 'L1',
+  name: String,           // Plan name
+  sponsor: String,        // Stakeholder owner name
+  sponsor_id: String,     // Link to stakeholder node
+  status: String,         // 'active' | 'completed' | 'cancelled'
   created_at: Timestamp,
   last_updated: Timestamp
 }
 
-// Plan dependencies
-(Plan)-[:DEPENDS_ON]->(Plan)
-
-// Stakeholder ownership
-(Plan)-[:OWNED_BY]->(Stakeholder)
-
-// Future: L4 Task-level breakdown
-(Plan)-[:HAS_TASK]->(Task)
-Task {
+// L2 = Deliverable (what gets produced)
+RiskPlan:L2 {
   id: String,
-  name: String,
+  level: 'L2',
+  name: String,           // Deliverable name
+  start_date: Date,
+  end_date: Date,
+  hard_end_date: Date,
+  status: String,         // 'not-started' | 'in-progress' | 'completed' | 'blocked'
+  parent_id: String       // Links to L1
+}
+
+// L3 = Task (work items)
+RiskPlan:L3 {
+  id: String,
+  level: 'L3',
+  name: String,           // Task name
   start_date: Date,
   end_date: Date,
   owner: String,
-  status: String  // 'not-started' | 'in-progress' | 'completed' | 'blocked'
+  status: String,         // 'not-started' | 'in-progress' | 'completed' | 'blocked'
+  parent_id: String       // Links to L2
 }
 
-// Gantt chart visualization (future)
-// Tasks link to each other with dependencies
-(Task)-[:PRECEDES]->(Task)
+// Hierarchy
+(RiskPlan:L1)-[:PARENT_OF]->(RiskPlan:L2)
+(RiskPlan:L2)-[:PARENT_OF]->(RiskPlan:L3)
+
+// Task dependencies (for Gantt)
+(RiskPlan:L3)-[:PRECEDES]->(RiskPlan:L3)
+
+// Plan dependencies across risks
+(RiskPlan:L1)-[:DEPENDS_ON]->(RiskPlan:L1)
 ```
 
 ### Skeleton Functions (Implemented)
