@@ -250,73 +250,249 @@ export function invalidateEnterpriseCache(): void {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// CHAIN EXTRACTION HELPERS
+// CHAIN EXTRACTION — domain_id based, multi-hop graph traversal
 // ═══════════════════════════════════════════════════════════════════════════
 
 /**
- * Extract typed nodes from a chain response, keyed by nId for link resolution.
+ * Chain node format:
+ *   id: "EntityCapability:2.1.1:2025" (composite)
+ *   labels: ["EntityCapability"]
+ *   properties: { id: "EntityCapability:2.1.1:2025", domain_id: "2.1.1", name: "...", ... }
+ * Chain link format:
+ *   source: "EntityCapability:2.1.1:2025", target: "EntityRisk:2.1.1:2025", type: "MONITORED_BY"
+ *
+ * Topology is MULTI-HOP (not all entities link directly to caps):
+ *   build_oversight: Cap→Risk→PolicyTool→Objective, Cap→ITSystem←Project
+ *   integrated_oversight: Cap→Risk→Performance, Cap→Org/Process/IT, PolicyTool→Cap
+ *
+ * Strategy: build undirected adjacency graph, BFS from each cap to find all
+ * reachable entities, then associate by domain_id match or graph proximity.
  */
-function extractChainNodes(chainData: { nodes: any[]; links: any[] }) {
-  const byLabel = new Map<string, Map<string, any>>(); // label -> nId -> props
-  const nIdToBizId = new Map<string, string>(); // nId -> business ID (for caps)
+interface ChainNode {
+  compositeId: string;   // e.g. "EntityCapability:2.1.1:2025"
+  label: string;         // e.g. "EntityCapability"
+  domainId: string;      // e.g. "2.1.1" (business ID)
+  props: any;            // all properties
+}
+
+interface ChainResult {
+  nodeById: Map<string, ChainNode>;  // compositeId -> ChainNode
+  adjacency: Map<string, Set<string>>; // undirected adjacency (compositeId -> neighbors)
+  capNodes: ChainNode[];  // EntityCapability nodes only
+}
+
+function parseChain(chainData: { nodes: any[]; links: any[] }): ChainResult {
+  const nodeById = new Map<string, ChainNode>();
+  const adjacency = new Map<string, Set<string>>();
+  const capNodes: ChainNode[] = [];
 
   for (const n of chainData.nodes) {
     const props = n.nProps || n.properties || {};
     const labels: string[] = n.nLabels || n.labels || [];
-    const nId = String(n.nId ?? n.id ?? '');
-    const primaryLabel = labels.find(l => l !== 'Resource') || labels[0] || 'Unknown';
+    const compositeId = String(n.nId ?? n.id ?? '');
+    const label = labels.find(l => l !== 'Resource') || labels[0] || 'Unknown';
+    const domainId = props.domain_id || compositeId.split(':')[1] || '';
 
-    if (!byLabel.has(primaryLabel)) byLabel.set(primaryLabel, new Map());
-    byLabel.get(primaryLabel)!.set(nId, props);
-
-    if (primaryLabel === 'EntityCapability') {
-      nIdToBizId.set(nId, props.id || nId);
-    }
+    const cn: ChainNode = { compositeId, label, domainId, props };
+    nodeById.set(compositeId, cn);
+    if (label === 'EntityCapability') capNodes.push(cn);
   }
 
-  return { byLabel, nIdToBizId, links: chainData.links || [] };
+  // Build undirected adjacency
+  for (const link of (chainData.links || [])) {
+    const src = String(link.sourceId ?? link.source ?? '');
+    const tgt = String(link.targetId ?? link.target ?? '');
+    if (!adjacency.has(src)) adjacency.set(src, new Set());
+    if (!adjacency.has(tgt)) adjacency.set(tgt, new Set());
+    adjacency.get(src)!.add(tgt);
+    adjacency.get(tgt)!.add(src);
+  }
+
+  return { nodeById, adjacency, capNodes };
 }
 
 /**
- * Resolve chain links: find all links of a given type,
- * map source/target nIds to the extracted node maps.
- * Returns array of { sourceBizId, targetProps } pairs.
+ * Follow specific link from a node. Returns all neighbor composite IDs
+ * connected via the given link type (either direction).
  */
-function resolveChainLinks(
-  chain: ReturnType<typeof extractChainNodes>,
-  linkType: string,
-  sourceLabel: string,
-  targetLabel: string
-): { sourceBizId: string; targetProps: any }[] {
-  const results: { sourceBizId: string; targetProps: any }[] = [];
-  const sourceNodes = chain.byLabel.get(sourceLabel);
-  const targetNodes = chain.byLabel.get(targetLabel);
-  if (!sourceNodes || !targetNodes) return results;
+function followLink(chain: ChainResult, fromId: string, linkType: string): string[] {
+  const results: string[] = [];
+  const neighbors = chain.adjacency.get(fromId);
+  if (!neighbors) return results;
 
+  // Check actual links for type match
   for (const link of chain.links) {
     const rType = link.rType ?? link.type ?? '';
     if (rType !== linkType) continue;
+    const src = String(link.sourceId ?? link.source ?? '');
+    const tgt = String(link.targetId ?? link.target ?? '');
+    if (src === fromId) results.push(tgt);
+    if (tgt === fromId) results.push(src);
+  }
+  return results;
+}
 
-    const srcNid = String(link.sourceId ?? link.source ?? '');
-    const tgtNid = String(link.targetId ?? link.target ?? '');
+/**
+ * Get node props by composite ID, only if it matches expected label.
+ */
+function getNodeIfLabel(chain: ChainResult, compositeId: string, label: string): any | null {
+  const node = chain.nodeById.get(compositeId);
+  return (node && node.label === label) ? node.props : null;
+}
 
-    // Source is the "from" node, target is the "to" node
-    const sourceBizId = chain.nIdToBizId.get(srcNid);
-    const targetProps = targetNodes.get(tgtNid);
+/**
+ * For each EntityCapability in the chain, follow SPECIFIC link paths to find
+ * related entities. No blind BFS — each entity type has a known path.
+ *
+ * Direct (1 hop from cap):
+ *   Cap → ROLE_GAPS → OrgUnit
+ *   Cap → KNOWLEDGE_GAPS → Process
+ *   Cap → AUTOMATION_GAPS → ITSystem
+ *   Cap ↔ MONITORED_BY ↔ Risk
+ *   PolicyTool → SETS_PRIORITIES → Cap (reversed)
+ *
+ * 2 hops (through risk or ITSystem):
+ *   Cap → Risk → INFORMS → Performance
+ *   Cap → Risk → INFORMS → PolicyTool
+ *   Cap → ITSystem ← CLOSE_GAPS ← Project
+ *
+ * 3 hops (through risk → policyTool):
+ *   Cap → Risk → PolicyTool → GOVERNED_BY → Objective
+ */
+function extractChainOverlays(chainData: { nodes: any[]; links: any[] }): Map<string, any> {
+  const chain = parseChain(chainData);
+  const overlayByCapId = new Map<string, any>();
 
-    if (sourceBizId && targetProps) {
-      results.push({ sourceBizId, targetProps });
-    }
-
-    // Also check reverse direction (chains may have either direction)
-    const revSourceBizId = chain.nIdToBizId.get(tgtNid);
-    const revTargetProps = targetNodes.get(srcNid);
-    if (!sourceBizId && revSourceBizId && revTargetProps) {
-      results.push({ sourceBizId: revSourceBizId, targetProps: revTargetProps });
-    }
+  // Pre-index links by type for faster lookup
+  const linksByType = new Map<string, { src: string; tgt: string }[]>();
+  for (const link of (chainData.links || [])) {
+    const rType = link.rType ?? link.type ?? '';
+    if (!linksByType.has(rType)) linksByType.set(rType, []);
+    const src = String(link.sourceId ?? link.source ?? '');
+    const tgt = String(link.targetId ?? link.target ?? '');
+    linksByType.get(rType)!.push({ src, tgt });
   }
 
-  return results;
+  /** Find neighbors of `fromId` via `linkType` (either direction) */
+  function neighbors(fromId: string, linkType: string): string[] {
+    const links = linksByType.get(linkType) || [];
+    const result: string[] = [];
+    for (const { src, tgt } of links) {
+      if (src === fromId) result.push(tgt);
+      if (tgt === fromId) result.push(src);
+    }
+    return result;
+  }
+
+  for (const cap of chain.capNodes) {
+    const overlay: any = {};
+    const capId = cap.compositeId;
+
+    // ── 1-hop: Risk (MONITORED_BY) ──
+    const riskIds = neighbors(capId, 'MONITORED_BY');
+    for (const rid of riskIds) {
+      const riskProps = getNodeIfLabel(chain, rid, 'EntityRisk');
+      if (riskProps && (riskProps.domain_id || '') === cap.domainId) {
+        overlay.risk = riskProps;
+        break;
+      }
+    }
+    // Fallback: take first risk if domain_id didn't match
+    if (!overlay.risk && riskIds.length > 0) {
+      const riskProps = getNodeIfLabel(chain, riskIds[0], 'EntityRisk');
+      if (riskProps) overlay.risk = riskProps;
+    }
+
+    // ── 1-hop: OrgUnit (ROLE_GAPS) ──
+    const orgIds = neighbors(capId, 'ROLE_GAPS');
+    const orgs: any[] = [];
+    for (const oid of orgIds) {
+      const p = getNodeIfLabel(chain, oid, 'EntityOrgUnit');
+      if (p) orgs.push({ ...p, type: 'OrgUnit' });
+    }
+
+    // ── 1-hop: Process (KNOWLEDGE_GAPS) ──
+    const procIds = neighbors(capId, 'KNOWLEDGE_GAPS');
+    const procs: any[] = [];
+    for (const pid of procIds) {
+      const p = getNodeIfLabel(chain, pid, 'EntityProcess');
+      if (p) procs.push({ ...p, type: 'Process' });
+    }
+
+    // ── 1-hop: ITSystem (AUTOMATION_GAPS) ──
+    const itIds = neighbors(capId, 'AUTOMATION_GAPS');
+    const its: any[] = [];
+    for (const iid of itIds) {
+      const p = getNodeIfLabel(chain, iid, 'EntityITSystem');
+      if (p) its.push({ ...p, type: 'ITSystem' });
+    }
+
+    const entities = [...orgs, ...procs, ...its];
+    if (entities.length > 0) overlay.operatingEntities = entities;
+
+    // ── 1-hop reversed: PolicyTool → SETS_PRIORITIES → Cap ──
+    const polDirectIds = neighbors(capId, 'SETS_PRIORITIES');
+    const policyTools: any[] = [];
+    for (const pid of polDirectIds) {
+      const p = getNodeIfLabel(chain, pid, 'SectorPolicyTool');
+      if (p) policyTools.push(p);
+    }
+
+    // ── 2-hop: Cap → Risk → INFORMS → Performance/PolicyTool ──
+    for (const rid of riskIds) {
+      const riskNode = chain.nodeById.get(rid);
+      if (!riskNode || riskNode.label !== 'EntityRisk') continue;
+
+      const informsIds = neighbors(rid, 'INFORMS');
+      for (const iid of informsIds) {
+        const perfProps = getNodeIfLabel(chain, iid, 'SectorPerformance');
+        if (perfProps) {
+          if (!overlay.performanceTargets) overlay.performanceTargets = [];
+          overlay.performanceTargets.push(perfProps);
+        }
+        const polProps = getNodeIfLabel(chain, iid, 'SectorPolicyTool');
+        if (polProps && !policyTools.find((p: any) => p.domain_id === polProps.domain_id)) {
+          policyTools.push(polProps);
+        }
+      }
+    }
+
+    if (policyTools.length > 0) overlay.policyTools = policyTools;
+
+    // ── 2-hop: Cap → ITSystem ← CLOSE_GAPS ← Project ──
+    const projects: any[] = [];
+    for (const iid of itIds) {
+      const closeGapsIds = neighbors(iid, 'CLOSE_GAPS');
+      for (const pid of closeGapsIds) {
+        const projProps = getNodeIfLabel(chain, pid, 'EntityProject');
+        if (projProps) projects.push(projProps);
+      }
+    }
+    if (projects.length > 0) overlay.linkedProjects = projects;
+
+    // ── 3-hop: Cap → Risk → PolicyTool → GOVERNED_BY → Objective ──
+    const objectives: any[] = [];
+    for (const pol of policyTools) {
+      // Find the composite ID of this policy tool
+      const polNode = Array.from(chain.nodeById.values()).find(
+        n => n.label === 'SectorPolicyTool' && n.domainId === pol.domain_id
+      );
+      if (!polNode) continue;
+
+      const govIds = neighbors(polNode.compositeId, 'GOVERNED_BY');
+      for (const gid of govIds) {
+        const objProps = getNodeIfLabel(chain, gid, 'SectorObjective');
+        if (objProps && !objectives.find((o: any) => o.domain_id === objProps.domain_id)) {
+          objectives.push(objProps);
+        }
+      }
+    }
+    if (objectives.length > 0) overlay.objectives = objectives;
+
+    overlayByCapId.set(cap.domainId, overlay);
+  }
+
+  return overlayByCapId;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -383,120 +559,72 @@ function filterAndBuildGraph(raw: RawEnterpriseData, year: number | 'all', quart
     nodes.push(node);
   });
 
-  // Step 5: Extract chain data
-  const intChain = raw.chainIntegrated?.nodes ? extractChainNodes(raw.chainIntegrated) : null;
-  const buildChain = raw.chainBuild?.nodes ? extractChainNodes(raw.chainBuild) : null;
-
-  // Step 6: Attach overlay data from chains to capability nodes
+  // Step 5: Extract chain overlays via BFS (domain_id based, multi-hop)
   const nodeByBizId = new Map<string, NeoGraphNode>();
   for (const node of nodes) {
     nodeByBizId.set(node.id, node);
   }
 
-  const activeChains = [intChain, buildChain].filter(Boolean) as ReturnType<typeof extractChainNodes>[];
+  const chainDatasets = [raw.chainIntegrated, raw.chainBuild].filter(d => d?.nodes);
+  for (const chainData of chainDatasets) {
+    const overlays = extractChainOverlays(chainData);
 
-  // Risk via MONITORED_BY (from both chains) - SUPPLEMENTS composite key matching
-  for (const chain of activeChains) {
-    const riskLinks = resolveChainLinks(chain, 'MONITORED_BY', 'EntityCapability', 'EntityRisk');
-    for (const { sourceBizId, targetProps } of riskLinks) {
-      const node = nodeByBizId.get(sourceBizId);
-      if (node && !(node as any).risk) {
-        (node as any).risk = targetProps;
+    for (const [capDomainId, overlay] of overlays) {
+      const node = nodeByBizId.get(capDomainId);
+      if (!node) continue;
+
+      // Risk — supplement composite key match
+      if (overlay.risk && !(node as any).risk) {
+        (node as any).risk = overlay.risk;
       }
-    }
-  }
 
-  // Projects from build_oversight (CLOSE_GAPS)
-  if (buildChain) {
-    const projectLinks = resolveChainLinks(buildChain, 'CLOSE_GAPS', 'EntityCapability', 'EntityProject');
-    for (const { sourceBizId, targetProps } of projectLinks) {
-      const node = nodeByBizId.get(sourceBizId);
-      if (node) {
+      // Projects — merge, dedup by domain_id
+      if (overlay.linkedProjects) {
         if (!(node as any).linkedProjects) (node as any).linkedProjects = [];
-        (node as any).linkedProjects.push(targetProps);
-      }
-    }
-  }
-
-  // Operating entities from integrated_oversight (ROLE_GAPS, KNOWLEDGE_GAPS, AUTOMATION_GAPS)
-  for (const linkType of ['ROLE_GAPS', 'KNOWLEDGE_GAPS', 'AUTOMATION_GAPS']) {
-    for (const entityLabel of ['EntityOrgUnit', 'EntityProcess', 'EntityITSystem']) {
-      for (const chain of activeChains) {
-        const entLinks = resolveChainLinks(chain, linkType, 'EntityCapability', entityLabel);
-        for (const { sourceBizId, targetProps } of entLinks) {
-          const node = nodeByBizId.get(sourceBizId);
-          if (node) {
-            if (!(node as any).operatingEntities) (node as any).operatingEntities = [];
-            const enriched = { ...targetProps, type: entityLabel.replace('Entity', '') };
-            const existing = (node as any).operatingEntities;
-            if (!existing.find((e: any) => e.id === enriched.id)) {
-              existing.push(enriched);
-            }
+        for (const p of overlay.linkedProjects) {
+          if (!(node as any).linkedProjects.find((x: any) => x.domain_id === p.domain_id)) {
+            (node as any).linkedProjects.push(p);
           }
         }
       }
-    }
-  }
 
-  // Performance targets from chains (INFORMS + SETS_TARGETS)
-  for (const chain of activeChains) {
-    const perfLinks = resolveChainLinks(chain, 'INFORMS', 'EntityCapability', 'SectorPerformance');
-    for (const { sourceBizId, targetProps } of perfLinks) {
-      const node = nodeByBizId.get(sourceBizId);
-      if (node) {
-        if (!(node as any).performanceTargets) (node as any).performanceTargets = [];
-        if (!(node as any).performanceTargets.find((p: any) => p.id === targetProps.id)) {
-          (node as any).performanceTargets.push(targetProps);
-        }
-      }
-    }
-    const setsLinks = resolveChainLinks(chain, 'SETS_TARGETS', 'EntityCapability', 'SectorPerformance');
-    for (const { sourceBizId, targetProps } of setsLinks) {
-      const node = nodeByBizId.get(sourceBizId);
-      if (node) {
-        if (!(node as any).performanceTargets) (node as any).performanceTargets = [];
-        if (!(node as any).performanceTargets.find((p: any) => p.id === targetProps.id)) {
-          (node as any).performanceTargets.push(targetProps);
-        }
-      }
-    }
-  }
-
-  // Policy tools from chains (SETS_PRIORITIES + INFORMS)
-  for (const chain of activeChains) {
-    for (const linkType of ['SETS_PRIORITIES', 'INFORMS']) {
-      const polLinks = resolveChainLinks(chain, linkType, 'EntityCapability', 'SectorPolicyTool');
-      for (const { sourceBizId, targetProps } of polLinks) {
-        const node = nodeByBizId.get(sourceBizId);
-        if (node) {
-          if (!(node as any).policyTools) (node as any).policyTools = [];
-          if (!(node as any).policyTools.find((p: any) => p.id === targetProps.id)) {
-            (node as any).policyTools.push(targetProps);
+      // Operating entities — merge, dedup by domain_id+type
+      if (overlay.operatingEntities) {
+        if (!(node as any).operatingEntities) (node as any).operatingEntities = [];
+        for (const e of overlay.operatingEntities) {
+          if (!(node as any).operatingEntities.find((x: any) => x.domain_id === e.domain_id && x.type === e.type)) {
+            (node as any).operatingEntities.push(e);
           }
         }
       }
-    }
-  }
 
-  // Objectives from chains (GOVERNED_BY + AGGREGATES_TO)
-  for (const chain of activeChains) {
-    const objLinks = resolveChainLinks(chain, 'GOVERNED_BY', 'EntityCapability', 'SectorObjective');
-    for (const { sourceBizId, targetProps } of objLinks) {
-      const node = nodeByBizId.get(sourceBizId);
-      if (node) {
-        if (!(node as any).objectives) (node as any).objectives = [];
-        if (!(node as any).objectives.find((o: any) => o.id === targetProps.id)) {
-          (node as any).objectives.push(targetProps);
+      // Performance targets — merge, dedup by domain_id
+      if (overlay.performanceTargets) {
+        if (!(node as any).performanceTargets) (node as any).performanceTargets = [];
+        for (const p of overlay.performanceTargets) {
+          if (!(node as any).performanceTargets.find((x: any) => x.domain_id === p.domain_id)) {
+            (node as any).performanceTargets.push(p);
+          }
         }
       }
-    }
-    const aggLinks = resolveChainLinks(chain, 'AGGREGATES_TO', 'EntityCapability', 'SectorObjective');
-    for (const { sourceBizId, targetProps } of aggLinks) {
-      const node = nodeByBizId.get(sourceBizId);
-      if (node) {
+
+      // Policy tools — merge, dedup by domain_id
+      if (overlay.policyTools) {
+        if (!(node as any).policyTools) (node as any).policyTools = [];
+        for (const p of overlay.policyTools) {
+          if (!(node as any).policyTools.find((x: any) => x.domain_id === p.domain_id)) {
+            (node as any).policyTools.push(p);
+          }
+        }
+      }
+
+      // Objectives — merge, dedup by domain_id
+      if (overlay.objectives) {
         if (!(node as any).objectives) (node as any).objectives = [];
-        if (!(node as any).objectives.find((o: any) => o.id === targetProps.id)) {
-          (node as any).objectives.push(targetProps);
+        for (const o of overlay.objectives) {
+          if (!(node as any).objectives.find((x: any) => x.domain_id === o.domain_id)) {
+            (node as any).objectives.push(o);
+          }
         }
       }
     }

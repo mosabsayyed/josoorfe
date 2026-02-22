@@ -1,7 +1,7 @@
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { L3Capability, L2Capability } from '../../../types/enterprise';
 import { getL3StatusColor, getStatusLabel } from '../../../utils/enterpriseStatusUtils';
-import { GaugeCard } from '../sector/GaugeCard';
 import './CapabilityDetailPanel.css';
 
 interface CapabilityDetailPanelProps {
@@ -42,6 +42,46 @@ const sectionTitleStyle: React.CSSProperties = {
 };
 const gridStyle: React.CSSProperties = { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' };
 
+/** Get band color from band string */
+function bandColor(band?: string): string {
+  if (!band) return '#475569';
+  const b = band.toLowerCase();
+  return b === 'red' ? '#ef4444' : b === 'amber' ? '#f59e0b' : '#10b981';
+}
+
+/** Get band background tint */
+function bandBg(band?: string): string {
+  const c = bandColor(band);
+  return c === '#ef4444' ? 'rgba(239,68,68,0.1)' : c === '#f59e0b' ? 'rgba(245,158,11,0.1)' : 'rgba(16,185,129,0.1)';
+}
+
+/** Get band border */
+function bandBorder(band?: string): string {
+  const c = bandColor(band);
+  return c === '#ef4444' ? 'rgba(239,68,68,0.2)' : c === '#f59e0b' ? 'rgba(245,158,11,0.2)' : 'rgba(16,185,129,0.2)';
+}
+
+/** Exposure color by threshold */
+function exposureColor(pct: number): string {
+  return pct > 65 ? '#ef4444' : pct > 35 ? '#f59e0b' : '#10b981';
+}
+
+/** Achievement color by threshold */
+function achievementColor(pct: number): string {
+  return pct >= 70 ? '#10b981' : pct >= 40 ? '#f59e0b' : '#ef4444';
+}
+
+/** Project helper: compute display values */
+function projectDisplayValues(proj: any) {
+  const isPlanned = proj.status === 'planned' || proj.status === 'not_started' || proj.status === 'not-started';
+  const rawPct = proj.progress_percentage;
+  const pctRaw = rawPct != null ? (typeof rawPct === 'object' && 'low' in rawPct ? rawPct.low : Number(rawPct)) : null;
+  const pct = isPlanned ? 0 : (pctRaw != null ? (pctRaw <= 1 && pctRaw > 0 ? Math.round(pctRaw * 100) : Math.round(pctRaw)) : null);
+  const isOverdue = !isPlanned && proj.end_date && proj.status !== 'complete' && proj.status !== 'completed' && new Date(proj.end_date) < new Date();
+  const color = isPlanned ? '#475569' : isOverdue ? '#ef4444' : pct != null && pct >= 100 ? '#10b981' : '#3b82f6';
+  return { isPlanned, pct, isOverdue, color };
+}
+
 export function CapabilityDetailPanel({ l3, l2, onClose, selectedYear, selectedQuarter, onAIAnalysis }: CapabilityDetailPanelProps) {
   const { t } = useTranslation();
 
@@ -50,15 +90,23 @@ export function CapabilityDetailPanel({ l3, l2, onClose, selectedYear, selectedQ
     return <L2DetailView l2={l2} onClose={onClose} selectedYear={selectedYear} selectedQuarter={selectedQuarter} onAIAnalysis={onAIAnalysis} />;
   }
 
-  // L3 view (existing code)
+  // L3 view
   if (!l3) return null;
+  return <L3DetailView l3={l3} onClose={onClose} onAIAnalysis={onAIAnalysis} />;
+}
+
+/** ═══════════════════════════════════════════════════════════
+ *  L3 DETAIL VIEW — Organized by executive decision flow
+ *  ═══════════════════════════════════════════════════════════ */
+function L3DetailView({ l3, onClose, onAIAnalysis }: { l3: L3Capability; onClose: () => void; onAIAnalysis?: () => void }) {
+  const { t } = useTranslation();
+  const [riskDetailsOpen, setRiskDetailsOpen] = useState<boolean>(false);
+
   const statusColor = getL3StatusColor(l3);
   const statusLabel = getStatusLabel(l3);
   const cap = l3.rawCapability || {};
   const risk = l3.rawRisk;
   const maturityGap = l3.target_maturity_level - l3.maturity_level;
-
-  // Pre-loaded from initial enterprise query — no extra DB calls
   const projects: any[] = cap.linkedProjects || [];
   const entities: any[] = cap.operatingEntities || [];
 
@@ -68,7 +116,7 @@ export function CapabilityDetailPanel({ l3, l2, onClose, selectedYear, selectedQ
         style={{ width: '420px', maxWidth: '90vw', height: '100vh', position: 'relative', animation: 'slideInRight 0.2s ease-out' }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header — same as SectorDetailsPanel */}
+        {/* ── HEADER (unchanged) ── */}
         <div className="details-header">
           <div className="header-content" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <div className="header-text">
@@ -120,499 +168,343 @@ export function CapabilityDetailPanel({ l3, l2, onClose, selectedYear, selectedQ
           </div>
         </div>
 
-        {/* Scrollable Content */}
+        {/* ── SCROLLABLE CONTENT ── */}
         <div className="details-content">
 
-          {/* ════════════════════════════════════════════
-              GROUP 1: CAPABILITY IDENTITY
-              SST EntityCapability: description, owner, status, level, parent_id
-              ════════════════════════════════════════════ */}
-          <h3 style={sectionTitleStyle}>{t('josoor.enterprise.detailPanel.capabilityIdentity')}</h3>
-
-          {/* Description */}
-          {cap.description && (
-            <div style={{ marginBottom: '1.5rem' }}>
-              <p style={{ color: 'var(--component-text-secondary)', lineHeight: '1.6', fontSize: '14px', margin: 0 }}>
-                {cap.description}
-              </p>
-            </div>
-          )}
-
-          {/* Identity metrics grid */}
-          <div style={gridStyle}>
-            {cap.owner && (
-              <div>
-                <div style={labelStyle}>{t('josoor.enterprise.detailPanel.owner')}</div>
-                <div style={valueLargeStyle}>{fmtVal(cap.owner)}</div>
-              </div>
-            )}
-            <div>
-              <div style={labelStyle}>{t('josoor.enterprise.detailPanel.status')}</div>
-              <div style={{ ...valueLargeStyle, color: statusColor }}>{capitalize(cap.status)}</div>
-            </div>
-          </div>
-
-          <div style={gridStyle}>
-            <div>
-              <div style={labelStyle}>{t('josoor.enterprise.detailPanel.level')}</div>
-              <div style={valueStyle}>{fmtVal(cap.level)}</div>
-            </div>
-            {cap.parent_id && (
-              <div>
-                <div style={labelStyle}>{t('josoor.enterprise.detailPanel.parentId')}</div>
-                <div style={valueStyle}>{fmtVal(cap.parent_id)}</div>
-              </div>
-            )}
-          </div>
-
-          <div style={gridStyle}>
-            <div>
-              <div style={labelStyle}>
-                {l3.mode === 'build' ? t('josoor.enterprise.detailPanel.startOfBuild') : t('josoor.enterprise.detailPanel.startOfOperate')}
-              </div>
-              <div style={valueStyle}>Q{fmtVal(cap.quarter)} {fmtVal(cap.year)}</div>
-            </div>
-          </div>
-
-          {/* ════════════════════════════════════════════
-              GROUP 2: MATURITY ASSESSMENT
-              SST: maturity_level, target_maturity_level → gap
-              ════════════════════════════════════════════ */}
-          <h3 style={sectionTitleStyle}>{t('josoor.enterprise.detailPanel.maturityAssessment')}</h3>
-
-          <div style={gridStyle}>
-            <div>
-              <div style={labelStyle}>{t('josoor.enterprise.detailPanel.currentLevel')}</div>
-              <div style={valueLargeStyle}>{l3.maturity_level} / 5</div>
-            </div>
-            <div>
-              <div style={labelStyle}>{t('josoor.enterprise.detailPanel.targetLevel')}</div>
-              <div style={valueLargeStyle}>{l3.target_maturity_level} / 5</div>
-            </div>
-          </div>
-
-          <div style={{ marginBottom: '1.5rem' }}>
-            <div style={labelStyle}>{t('josoor.enterprise.tooltip.gap')}</div>
-            <div style={{
-              ...valueLargeStyle,
-              color: maturityGap > 2 ? '#ef4444' : maturityGap > 0 ? '#f59e0b' : '#10b981'
-            }}>
-              {maturityGap} {maturityGap === 1 ? t('josoor.enterprise.detailPanel.level_one') : t('josoor.enterprise.detailPanel.level_other')}
-            </div>
-          </div>
-
-          {/* R4: Maturity timeline — due date vs planned date */}
-          {l3.mode === 'build' && cap.dueByDate && (
-            <div style={{
-              background: cap.isLate ? 'rgba(239, 68, 68, 0.05)' : 'rgba(16, 185, 129, 0.05)',
-              border: `1px solid ${cap.isLate ? 'rgba(239, 68, 68, 0.15)' : 'rgba(16, 185, 129, 0.15)'}`,
-              borderRadius: '6px', padding: '12px', marginBottom: '1.5rem'
-            }}>
-              <div style={gridStyle}>
-                <div>
-                  <div style={labelStyle}>{t('josoor.enterprise.detailPanel.dueBy')}</div>
-                  <div style={valueStyle}>{cap.dueByDate}</div>
-                </div>
-                {cap.plannedByDate && (
-                  <div>
-                    <div style={labelStyle}>{t('josoor.enterprise.detailPanel.plannedCompletion')}</div>
-                    <div style={valueStyle}>{cap.plannedByDate}</div>
-                  </div>
-                )}
-              </div>
-              {cap.isLate && (
-                <div style={{
-                  marginTop: '8px', fontSize: '13px', fontWeight: 600,
-                  color: cap.delaySeverity === 'significant' ? '#ef4444' : '#f59e0b'
-                }}>
-                  {t('josoor.enterprise.detailPanel.lateBy', { days: cap.lateByDays })}
-                </div>
-              )}
-              {!cap.isLate && cap.plannedByDate && (
-                <div style={{ marginTop: '8px', fontSize: '13px', fontWeight: 600, color: '#10b981' }}>
-                  {t('josoor.enterprise.detailPanel.onTrack')}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* ════════════════════════════════════════════
-              GROUP 3: RISK PROFILE
-              SST EntityRisk: risk_category, risk_status, risk_owner, risk_reviewer,
-              mitigation_strategy, identified_date, last_review_date
-              ════════════════════════════════════════════ */}
-          {risk ? (
+          {/* ════════════ BUILD MODE ════════════ */}
+          {l3.mode === 'build' && (
             <>
-              <h3 style={sectionTitleStyle}>{t('josoor.enterprise.detailPanel.riskProfile')}</h3>
-
-              <div style={{
-                background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.15)',
-                borderRadius: '6px', padding: '1rem', marginBottom: '1.5rem'
-              }}>
-                <div style={gridStyle}>
-                  {risk.risk_category && (
-                    <div>
-                      <div style={labelStyle}>{t('josoor.enterprise.detailPanel.riskCategory')}</div>
-                      <div style={valueStyle}>{capitalize(risk.risk_category)}</div>
-                    </div>
-                  )}
-                  {risk.risk_status && (
-                    <div>
-                      <div style={labelStyle}>{t('josoor.enterprise.detailPanel.riskStatus')}</div>
-                      <div style={valueStyle}>{capitalize(risk.risk_status)}</div>
-                    </div>
-                  )}
-                </div>
-
-                <div style={gridStyle}>
-                  {risk.risk_owner && (
-                    <div>
-                      <div style={labelStyle}>{t('josoor.enterprise.detailPanel.riskOwner')}</div>
-                      <div style={valueStyle}>{fmtVal(risk.risk_owner)}</div>
-                    </div>
-                  )}
-                  {risk.risk_reviewer && (
-                    <div>
-                      <div style={labelStyle}>{t('josoor.enterprise.detailPanel.riskReviewer')}</div>
-                      <div style={valueStyle}>{fmtVal(risk.risk_reviewer)}</div>
-                    </div>
-                  )}
-                </div>
-
-                {risk.mitigation_strategy && (
-                  <div style={{ marginBottom: '1rem' }}>
-                    <div style={labelStyle}>{t('josoor.enterprise.detailPanel.mitigation')}</div>
-                    <p style={{ fontSize: '14px', lineHeight: '1.6', color: 'var(--component-text-secondary)', margin: '4px 0 0 0' }}>
-                      {risk.mitigation_strategy}
-                    </p>
+              {/* 1. Verdict Card */}
+              {risk ? (
+                <div style={{
+                  background: bandBg(risk.build_band),
+                  border: `1px solid ${bandBorder(risk.build_band)}`,
+                  borderRadius: '6px', padding: '14px 16px', marginBottom: '1.5rem'
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '16px', fontWeight: 700, color: bandColor(risk.build_band) }}>
+                      {risk.build_band || '—'}
+                    </span>
+                    {risk.build_exposure_pct != null && (
+                      <span style={{ fontSize: '16px', fontWeight: 700, color: bandColor(risk.build_band) }}>
+                        {Math.round(risk.build_exposure_pct)}%
+                      </span>
+                    )}
                   </div>
-                )}
+                  {cap.isLate && (
+                    <div style={{ marginTop: '8px', fontSize: '13px', fontWeight: 600, color: '#ef4444' }}>
+                      {t('josoor.enterprise.detailPanel.lateBy', { days: cap.lateByDays })}
+                      {cap.delaySeverity && (
+                        <span style={{ opacity: 0.7, marginLeft: '6px' }}>({capitalize(cap.delaySeverity)})</span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div style={{
+                  background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '6px',
+                  fontSize: '13px', color: 'var(--component-text-muted)', textAlign: 'center', marginBottom: '1.5rem'
+                }}>
+                  {t('josoor.enterprise.detailPanel.noRiskData')}
+                </div>
+              )}
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                  {risk.identified_date && (
+              {/* 2. Timeline */}
+              {cap.dueByDate && (
+                <div style={{
+                  background: cap.isLate ? 'rgba(239,68,68,0.05)' : 'rgba(16,185,129,0.05)',
+                  border: `1px solid ${cap.isLate ? 'rgba(239,68,68,0.15)' : 'rgba(16,185,129,0.15)'}`,
+                  borderRadius: '6px', padding: '12px', marginBottom: '1.5rem'
+                }}>
+                  <div style={gridStyle}>
                     <div>
-                      <div style={labelStyle}>{t('josoor.enterprise.detailPanel.identifiedDate')}</div>
-                      <div style={valueStyle}>{fmtVal(risk.identified_date)}</div>
+                      <div style={labelStyle}>{t('josoor.enterprise.detailPanel.dueBy')}</div>
+                      <div style={valueStyle}>{cap.dueByDate}</div>
                     </div>
-                  )}
-                  {risk.last_review_date && (
-                    <div>
-                      <div style={labelStyle}>{t('josoor.enterprise.detailPanel.lastReview')}</div>
-                      <div style={valueStyle}>{fmtVal(risk.last_review_date)}</div>
+                    {cap.plannedByDate && (
+                      <div>
+                        <div style={labelStyle}>{t('josoor.enterprise.detailPanel.plannedCompletion')}</div>
+                        <div style={valueStyle}>{cap.plannedByDate}</div>
+                      </div>
+                    )}
+                  </div>
+                  {cap.isLate ? (
+                    <div style={{ fontSize: '13px', fontWeight: 600, color: cap.delaySeverity === 'significant' ? '#ef4444' : '#f59e0b' }}>
+                      {t('josoor.enterprise.detailPanel.lateBy', { days: cap.lateByDays })}
                     </div>
-                  )}
+                  ) : cap.plannedByDate ? (
+                    <div style={{ fontSize: '13px', fontWeight: 600, color: '#10b981' }}>
+                      {t('josoor.enterprise.detailPanel.onTrack')}
+                    </div>
+                  ) : null}
+                </div>
+              )}
+
+              {/* 3. Maturity */}
+              <div style={{ marginBottom: '1.5rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                  <span style={labelStyle}>{t('josoor.enterprise.detailPanel.maturityAssessment')}</span>
+                  <span style={{
+                    fontSize: '14px', fontWeight: 600,
+                    color: maturityGap > 2 ? '#ef4444' : maturityGap > 0 ? '#f59e0b' : '#10b981'
+                  }}>
+                    {l3.maturity_level} → {l3.target_maturity_level}
+                  </span>
+                </div>
+                <div style={{ height: '4px', background: 'rgba(255,255,255,0.06)', borderRadius: '2px', overflow: 'hidden' }}>
+                  <div style={{ height: '100%', width: `${(l3.maturity_level / 5) * 100}%`, background: 'var(--component-text-accent)', borderRadius: '2px' }} />
                 </div>
               </div>
 
-              {/* ════════════════════════════════════════════
-                  GROUP 4: RISK SCORING (mode-dependent)
-                  BUILD: build_band, likelihood_of_delay, delay_days, expected_delay_days, build_exposure_pct
-                  EXECUTE: operate_band, people/process/tools scores, operational_health, operate_exposure
-                  ════════════════════════════════════════════ */}
-              <h3 style={sectionTitleStyle}>{t('josoor.enterprise.detailPanel.riskAssessment')}</h3>
-
-              {/* BUILD mode */}
-              {l3.mode === 'build' && (
-                <>
-                  {risk.build_band && (
-                    <div style={{ marginBottom: '1.5rem' }}>
-                      <div style={labelStyle}>{t('josoor.enterprise.detailPanel.buildBand')}</div>
-                      <div style={{
-                        ...valueLargeStyle,
-                        color: risk.build_band?.toLowerCase() === 'red' ? '#ef4444'
-                          : risk.build_band?.toLowerCase() === 'amber' ? '#f59e0b' : '#10b981'
-                      }}>
-                        {risk.build_band}
-                      </div>
-                    </div>
-                  )}
-                  <div style={gridStyle}>
-                    {risk.likelihood_of_delay != null && (
-                      <div>
-                        <div style={labelStyle}>{t('josoor.enterprise.detailPanel.likelihoodOfDelay')}</div>
-                        <div style={valueStyle}>{fmtVal(risk.likelihood_of_delay)}</div>
-                      </div>
-                    )}
-                    {risk.delay_days != null && (
-                      <div>
-                        <div style={labelStyle}>{t('josoor.enterprise.detailPanel.delayDays')}</div>
-                        <div style={valueStyle}>{fmtVal(risk.delay_days)} {t('josoor.enterprise.tooltip.days')}</div>
-                      </div>
-                    )}
-                  </div>
-                  <div style={gridStyle}>
-                    {risk.expected_delay_days != null && (
-                      <div>
-                        <div style={labelStyle}>{t('josoor.enterprise.tooltip.expectedDelay')}</div>
-                        <div style={{ ...valueStyle, color: '#f59e0b' }}>+{fmtVal(risk.expected_delay_days)} {t('josoor.enterprise.tooltip.days')}</div>
-                      </div>
-                    )}
-                    {risk.build_exposure_pct != null && (
-                      <div>
-                        <div style={labelStyle}>
-                          {t('josoor.enterprise.detailPanel.buildExposure')}
-                          <span title={t('josoor.enterprise.detailPanel.buildExposureTooltip')} style={{ cursor: 'help', marginLeft: '4px', opacity: 0.5 }}>ⓘ</span>
-                        </div>
-                        <div style={{
-                          ...valueStyle,
-                          color: risk.build_exposure_pct > 65 ? '#ef4444' : risk.build_exposure_pct > 35 ? '#f59e0b' : '#10b981'
-                        }}>
-                          {Math.round(risk.build_exposure_pct)}%
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </>
+              {/* 4. Description */}
+              {cap.description && (
+                <div style={{ marginBottom: '1.5rem' }}>
+                  <p style={{ color: 'var(--component-text-secondary)', lineHeight: '1.6', fontSize: '14px', margin: 0 }}>
+                    {cap.description}
+                  </p>
+                </div>
               )}
 
-              {/* BUILD mode: Project Deliverables grouped by People/Process/Tools (SST §4.5) */}
-              {l3.mode === 'build' && (
-                <>
-                  <h3 style={sectionTitleStyle}>{t('josoor.enterprise.detailPanel.projectDeliverables')}</h3>
-                  {projects.length === 0 ? (
-                    <div style={{
-                      background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '6px',
-                      fontSize: '13px', color: 'var(--component-text-muted)', textAlign: 'center', marginBottom: '1.5rem'
-                    }}>
-                      {t('josoor.enterprise.detailPanel.noLinkedProjects')}
-                    </div>
-                  ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '1.5rem' }}>
-                      {['People', 'Process', 'Tools'].map(cat => {
-                        const catProjects = projects.filter((p: any) => p.category === cat);
-                        if (catProjects.length === 0) return null;
-                        return (
-                          <div key={cat}>
-                            <div style={{ ...labelStyle, marginBottom: '8px' }}>{cat}</div>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                              {catProjects.map((proj: any) => {
-                                const isPlanned = proj.status === 'planned' || proj.status === 'not_started' || proj.status === 'not-started';
-                                const rawPct = proj.progress_percentage;
-                                const pctRaw = rawPct != null ? (typeof rawPct === 'object' && 'low' in rawPct ? rawPct.low : Number(rawPct)) : null;
-                                // If value is <= 1, treat as decimal (0.47 → 47%), otherwise as integer
-                                // RULE: When planned → always 0%, discard actual %
-                                const pct = isPlanned ? 0 : (pctRaw != null ? (pctRaw <= 1 && pctRaw > 0 ? Math.round(pctRaw * 100) : Math.round(pctRaw)) : null);
-                                // Overdue check: end_date exists, status not complete, end_date < today
-                                const isOverdue = !isPlanned && proj.end_date && proj.status !== 'complete' && proj.status !== 'completed' && new Date(proj.end_date) < new Date();
-                                const projColor = isPlanned ? '#475569' : isOverdue ? '#ef4444' : pct != null && pct >= 100 ? '#10b981' : '#3b82f6';
-                                return (
-                                  <div key={`${proj.id}-${cat}`} style={{
-                                    background: 'rgba(255,255,255,0.03)', border: `1px solid ${isOverdue ? 'rgba(239,68,68,0.2)' : 'rgba(255,255,255,0.06)'}`,
-                                    borderRadius: '6px', padding: '8px 12px'
-                                  }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                                      <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--component-text-primary)' }}>
-                                        <span style={{ opacity: 0.5, marginRight: '6px' }}>{fmtVal(proj.id)}</span>
-                                        {proj.name}
-                                      </span>
-                                      <span style={{ fontSize: '11px', fontWeight: 600, color: projColor }}>
-                                        {isOverdue ? t('josoor.enterprise.detailPanel.overdue') : capitalize(proj.status)}
-                                      </span>
-                                    </div>
-                                    {pct != null && !isPlanned && (
-                                      <div>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
-                                          <span style={{ fontSize: '11px', color: 'var(--component-text-muted)' }}>{t('josoor.enterprise.detailPanel.progress')}</span>
-                                          <span style={{ fontSize: '11px', color: 'var(--component-text-secondary)' }}>{pct}%</span>
-                                        </div>
-                                        <div style={{ height: '3px', background: 'rgba(255,255,255,0.06)', borderRadius: '2px', overflow: 'hidden' }}>
-                                          <div style={{ height: '100%', width: `${Math.min(pct, 100)}%`, background: projColor, borderRadius: '2px' }} />
-                                        </div>
-                                      </div>
-                                    )}
-                                    {proj.end_date && (
-                                      <div style={{ fontSize: '11px', color: 'var(--component-text-muted)', marginTop: '4px' }}>
-                                        {t('josoor.enterprise.detailPanel.endDate')}: {proj.end_date}
-                                      </div>
-                                    )}
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </>
-              )}
-
-              {/* EXECUTE mode */}
-              {l3.mode === 'execute' && (
-                <>
-                  {risk.operate_band && (
-                    <div style={{ marginBottom: '1.5rem' }}>
-                      <div style={labelStyle}>{t('josoor.enterprise.detailPanel.operateBand')}</div>
-                      <div style={{
-                        ...valueLargeStyle,
-                        color: risk.operate_band?.toLowerCase() === 'red' ? '#ef4444'
-                          : risk.operate_band?.toLowerCase() === 'amber' ? '#f59e0b' : '#10b981'
-                      }}>
-                        {risk.operate_band}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Score bars — show actual entity names when available */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '1.5rem' }}>
-                    {[
-                      { key: 'people', val: risk.people_score, entityType: 'OrgUnit' as const },
-                      { key: 'process', val: risk.process_score, entityType: 'Process' as const },
-                      { key: 'tools', val: risk.tools_score, entityType: 'ITSystem' as const }
-                    ].filter(s => s.val != null).map(s => {
-                      const matched = entities.find(e => e.type === s.entityType);
-                      const label = matched ? matched.name : t(`josoor.enterprise.detailPanel.${s.key}`);
-                      return (
-                        <div key={s.key}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                            <span style={labelStyle}>{label}</span>
-                            <span style={valueStyle}>{s.val}/5</span>
-                          </div>
-                          <div style={{ height: '6px', background: 'rgba(255,255,255,0.06)', borderRadius: '3px', overflow: 'hidden' }}>
-                            <div style={{ height: '100%', width: `${(s.val / 5) * 100}%`, background: 'var(--component-text-accent)', borderRadius: '3px' }} />
-                          </div>
+              {/* 5. Projects by Domain */}
+              <h3 style={sectionTitleStyle}>{t('josoor.enterprise.detailPanel.projectDeliverables')}</h3>
+              {projects.length === 0 ? (
+                <div style={{
+                  background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '6px',
+                  fontSize: '13px', color: 'var(--component-text-muted)', textAlign: 'center', marginBottom: '1.5rem'
+                }}>
+                  {t('josoor.enterprise.detailPanel.noLinkedProjects')}
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '1.5rem' }}>
+                  {['People', 'Process', 'Tools'].map(cat => {
+                    const catProjects = projects.filter((p: any) => p.category === cat);
+                    if (catProjects.length === 0) return null;
+                    return (
+                      <div key={cat}>
+                        <div style={{ ...labelStyle, marginBottom: '8px', display: 'flex', justifyContent: 'space-between' }}>
+                          <span>{cat}</span>
+                          <span style={{ color: 'var(--component-text-secondary)' }}>{catProjects.length}</span>
                         </div>
-                      );
-                    })}
-                  </div>
-
-                  <div style={gridStyle}>
-                    {risk.operational_health_pct != null && (
-                      <div>
-                        <div style={labelStyle}>{t('josoor.enterprise.detailPanel.operationalHealth')}</div>
-                        <div style={{
-                          ...valueLargeStyle,
-                          color: risk.operational_health_pct >= 70 ? '#10b981' : risk.operational_health_pct >= 40 ? '#f59e0b' : '#ef4444'
-                        }}>
-                          {Math.round(risk.operational_health_pct)}%
-                        </div>
-                      </div>
-                    )}
-                    {risk.operate_exposure_pct_effective != null && (
-                      <div>
-                        <div style={labelStyle}>
-                          {t('josoor.enterprise.detailPanel.operateExposure')}
-                          <span title={t('josoor.enterprise.detailPanel.operateExposureTooltip')} style={{ cursor: 'help', marginLeft: '4px', opacity: 0.5 }}>ⓘ</span>
-                        </div>
-                        <div style={{
-                          ...valueLargeStyle,
-                          color: risk.operate_exposure_pct_effective > 65 ? '#ef4444' : risk.operate_exposure_pct_effective > 35 ? '#f59e0b' : '#10b981'
-                        }}>
-                          {Math.round(risk.operate_exposure_pct_effective)}%
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {risk.operate_trend_flag && (
-                    <div style={{
-                      background: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.3)',
-                      borderRadius: '4px', padding: '8px 12px', fontSize: '13px', color: '#f59e0b', fontWeight: 600
-                    }}>
-                      {t('josoor.enterprise.tooltip.earlyWarning')}
-                    </div>
-                  )}
-
-                  {/* Operational Footprint — actual entity names (SST §4.4) */}
-                  <h3 style={{ ...sectionTitleStyle, marginTop: '1.5rem' }}>{t('josoor.enterprise.detailPanel.operationalFootprint')}</h3>
-                  {entities.length === 0 ? (
-                    <div style={{
-                      background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '6px',
-                      fontSize: '13px', color: 'var(--component-text-muted)', textAlign: 'center', marginBottom: '1.5rem'
-                    }}>
-                      {t('josoor.enterprise.detailPanel.noOperatingEntities')}
-                    </div>
-                  ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '1.5rem' }}>
-                      {entities.map(ent => {
-                        const typeKey = ent.type === 'OrgUnit' ? 'orgUnit' : ent.type === 'Process' ? 'processEntity' : 'itSystem';
-                        return (
-                          <div key={`${ent.type}-${ent.id}`} style={{
-                            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                            background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)',
-                            borderRadius: '6px', padding: '8px 12px'
-                          }}>
-                            <div>
-                              <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--component-text-primary)' }}>{ent.name}</div>
-                              <div style={{ fontSize: '11px', color: 'var(--component-text-muted)', marginTop: '2px' }}>
-                                {t(`josoor.enterprise.detailPanel.${typeKey}`)}
-                              </div>
-                            </div>
-                            {ent.status && (
-                              <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--component-text-secondary)' }}>
-                                {capitalize(ent.status)}
-                              </span>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-
-                  {/* R5: Performance Targets / KPIs linked to capability (SST §4.3) */}
-                  {(() => {
-                    const perfTargets: any[] = cap.performanceTargets || [];
-                    return perfTargets.length > 0 ? (
-                      <>
-                        <h3 style={{ ...sectionTitleStyle, marginTop: '1.5rem' }}>{t('josoor.enterprise.detailPanel.performanceTargets')}</h3>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '1.5rem' }}>
-                          {perfTargets.map((perf: any) => {
-                            const actual = perf.actual_value != null ? Number(perf.actual_value) : null;
-                            const target = perf.target != null ? Number(perf.target) : null;
-                            const pct = actual != null && target && target > 0 ? Math.round((actual / target) * 100) : null;
-                            const barColor = pct != null ? (pct >= 70 ? '#10b981' : pct >= 40 ? '#f59e0b' : '#ef4444') : '#3b82f6';
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                          {catProjects.map((proj: any) => {
+                            const d = projectDisplayValues(proj);
                             return (
-                              <div key={perf.id} style={{
-                                background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)',
-                                borderRadius: '6px', padding: '10px 14px'
+                              <div key={`${proj.id}-${cat}`} style={{
+                                background: 'rgba(255,255,255,0.03)', border: `1px solid ${d.isOverdue ? 'rgba(239,68,68,0.2)' : 'rgba(255,255,255,0.06)'}`,
+                                borderRadius: '6px', padding: '8px 12px'
                               }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                                  <div>
-                                    <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--component-text-primary)' }}>{perf.name}</div>
-                                    <div style={{ fontSize: '11px', color: 'var(--component-text-muted)', marginTop: '2px' }}>
-                                      {perf.id} • L{fmtVal(perf.level)}
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                                  <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--component-text-primary)' }}>
+                                    {proj.name}
+                                  </span>
+                                  <span style={{ fontSize: '11px', fontWeight: 600, color: d.color }}>
+                                    {d.isOverdue ? t('josoor.enterprise.detailPanel.overdue') : capitalize(proj.status)}
+                                  </span>
+                                </div>
+                                {d.pct != null && !d.isPlanned && (
+                                  <div style={{ marginBottom: '2px' }}>
+                                    <div style={{ height: '4px', background: 'rgba(255,255,255,0.06)', borderRadius: '2px', overflow: 'hidden' }}>
+                                      <div style={{ height: '100%', width: `${Math.min(d.pct, 100)}%`, background: d.color, borderRadius: '2px' }} />
                                     </div>
                                   </div>
-                                  {perf.status && (
-                                    <span style={{ fontSize: '11px', fontWeight: 600, color: barColor }}>
-                                      {capitalize(perf.status)}
-                                    </span>
-                                  )}
-                                </div>
-                                {actual != null && target != null && (
-                                  <div>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
-                                      <span style={{ fontSize: '11px', color: 'var(--component-text-muted)' }}>
-                                        {actual} / {target} {perf.unit || ''}
-                                      </span>
-                                      {pct != null && (
-                                        <span style={{ fontSize: '11px', color: barColor, fontWeight: 600 }}>{pct}%</span>
-                                      )}
-                                    </div>
-                                    <div style={{ height: '4px', background: 'rgba(255,255,255,0.06)', borderRadius: '2px', overflow: 'hidden' }}>
-                                      <div style={{ height: '100%', width: `${Math.min(pct || 0, 100)}%`, background: barColor, borderRadius: '2px' }} />
-                                    </div>
+                                )}
+                                {proj.end_date && (
+                                  <div style={{ fontSize: '11px', color: 'var(--component-text-muted)', marginTop: '2px' }}>
+                                    {t('josoor.enterprise.detailPanel.endDate')}: {proj.end_date}
                                   </div>
                                 )}
                               </div>
                             );
                           })}
                         </div>
-                      </>
-                    ) : null;
-                  })()}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* 6. Strategic Context */}
+              <StrategicContextSection cap={cap} />
+
+              {/* Risk Details (collapsible) */}
+              {risk && (
+                <CollapsibleRiskDetails
+                  risk={risk}
+                  isOpen={riskDetailsOpen}
+                  onToggle={() => setRiskDetailsOpen(!riskDetailsOpen)}
+                />
+              )}
+            </>
+          )}
+
+          {/* ════════════ OPERATE MODE ════════════ */}
+          {l3.mode === 'execute' && (
+            <>
+              {/* 1. Verdict Card */}
+              {risk ? (
+                <div style={{
+                  background: bandBg(risk.operate_band),
+                  border: `1px solid ${bandBorder(risk.operate_band)}`,
+                  borderRadius: '6px', padding: '14px 16px', marginBottom: '1.5rem'
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      {risk.operational_health_pct != null && (
+                        <>
+                          <div style={{ fontSize: '24px', fontWeight: 700, color: 'var(--component-text-primary)' }}>
+                            {Math.round(risk.operational_health_pct)}%
+                          </div>
+                          <div style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--component-text-muted)', letterSpacing: '0.5px' }}>
+                            {t('josoor.enterprise.detailPanel.operationalHealth')}
+                          </div>
+                        </>
+                      )}
+                    </div>
+                    <span style={{ fontSize: '16px', fontWeight: 700, color: bandColor(risk.operate_band) }}>
+                      {risk.operate_band || '—'}
+                    </span>
+                  </div>
+                  {risk.operate_trend_flag && (
+                    <div style={{ marginTop: '8px', fontSize: '13px', fontWeight: 600, color: '#f59e0b' }}>
+                      {t('josoor.enterprise.tooltip.earlyWarning')}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div style={{
+                  background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '6px',
+                  fontSize: '13px', color: 'var(--component-text-muted)', textAlign: 'center', marginBottom: '1.5rem'
+                }}>
+                  {t('josoor.enterprise.detailPanel.noRiskData')}
+                </div>
+              )}
+
+              {/* 2. Scorecard — 3 full-width rows */}
+              {risk && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '1.5rem' }}>
+                  {[
+                    { key: 'people', val: risk.people_score, entityType: 'OrgUnit' as const },
+                    { key: 'process', val: risk.process_score, entityType: 'Process' as const },
+                    { key: 'tools', val: risk.tools_score, entityType: 'ITSystem' as const }
+                  ].filter(s => s.val != null).map(s => {
+                    const matched = entities.find(e => e.type === s.entityType);
+                    const label = matched ? matched.name : t(`josoor.enterprise.detailPanel.${s.key}`);
+                    return (
+                      <div key={s.key}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                          <span style={labelStyle}>{label}</span>
+                          <span style={valueStyle}>{s.val}/5</span>
+                        </div>
+                        <div style={{ height: '8px', background: 'rgba(255,255,255,0.06)', borderRadius: '4px', overflow: 'hidden' }}>
+                          <div style={{ height: '100%', width: `${(s.val / 5) * 100}%`, background: 'var(--component-text-accent)', borderRadius: '4px' }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* 3. Exposure */}
+              {risk && risk.operate_exposure_pct_effective != null && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                  <span style={labelStyle}>
+                    {t('josoor.enterprise.detailPanel.operateExposure')}
+                    <span title={t('josoor.enterprise.detailPanel.operateExposureTooltip')} style={{ cursor: 'help', marginLeft: '4px', opacity: 0.5 }}>ⓘ</span>
+                  </span>
+                  <span style={{
+                    fontSize: '16px', fontWeight: 700,
+                    color: exposureColor(risk.operate_exposure_pct_effective)
+                  }}>
+                    {Math.round(risk.operate_exposure_pct_effective)}%
+                  </span>
+                </div>
+              )}
+
+              {/* 4. Performance KPIs */}
+              {(() => {
+                const perfTargets: any[] = cap.performanceTargets || [];
+                return perfTargets.length > 0 ? (
+                  <>
+                    <h3 style={sectionTitleStyle}>{t('josoor.enterprise.detailPanel.performanceTargets')}</h3>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '1.5rem' }}>
+                      {perfTargets.map((perf: any) => {
+                        const actual = perf.actual_value != null ? Number(perf.actual_value) : null;
+                        const target = perf.target != null ? Number(perf.target) : null;
+                        const pct = actual != null && target && target > 0 ? Math.round((actual / target) * 100) : null;
+                        const barColor = pct != null ? achievementColor(pct) : '#3b82f6';
+                        return (
+                          <div key={perf.id} style={{
+                            background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)',
+                            borderRadius: '6px', padding: '10px 14px'
+                          }}>
+                            <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--component-text-primary)', marginBottom: '4px' }}>
+                              {perf.name}
+                            </div>
+                            {actual != null && target != null && (
+                              <>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                                  <span style={{ fontSize: '13px', color: 'var(--component-text-secondary)' }}>
+                                    {actual} / {target} {perf.unit || ''}
+                                  </span>
+                                  {pct != null && (
+                                    <span style={{ fontSize: '13px', color: barColor, fontWeight: 600 }}>{pct}%</span>
+                                  )}
+                                </div>
+                                <div style={{ height: '8px', background: 'rgba(255,255,255,0.06)', borderRadius: '4px', overflow: 'hidden' }}>
+                                  <div style={{ height: '100%', width: `${Math.min(pct || 0, 100)}%`, background: barColor, borderRadius: '4px' }} />
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </>
+                ) : null;
+              })()}
+
+              {/* 5. Operating Entities */}
+              {entities.length > 0 && (
+                <>
+                  <h3 style={sectionTitleStyle}>{t('josoor.enterprise.detailPanel.operationalFootprint')}</h3>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '1.5rem' }}>
+                    {entities.map(ent => {
+                      const typeKey = ent.type === 'OrgUnit' ? 'orgUnit' : ent.type === 'Process' ? 'processEntity' : 'itSystem';
+                      return (
+                        <div key={`${ent.type}-${ent.id}`} style={{
+                          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                          padding: '6px 0'
+                        }}>
+                          <div>
+                            <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--component-text-primary)' }}>{ent.name}</span>
+                            <span style={{ fontSize: '11px', color: 'var(--component-text-muted)', marginLeft: '8px' }}>
+                              {t(`josoor.enterprise.detailPanel.${typeKey}`)}
+                            </span>
+                          </div>
+                          {ent.status && (
+                            <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--component-text-secondary)' }}>
+                              {capitalize(ent.status)}
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
                 </>
               )}
 
+              {/* 6. Strategic Context */}
+              <StrategicContextSection cap={cap} />
+
+              {/* Risk Details (collapsible) */}
+              {risk && (
+                <CollapsibleRiskDetails
+                  risk={risk}
+                  isOpen={riskDetailsOpen}
+                  onToggle={() => setRiskDetailsOpen(!riskDetailsOpen)}
+                />
+              )}
             </>
-          ) : (
-            /* No risk data */
-            <div style={{
-              background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '6px',
-              fontSize: '13px', color: 'var(--component-text-muted)', textAlign: 'center'
-            }}>
-              {t('josoor.enterprise.detailPanel.noRiskData')}
-            </div>
           )}
         </div>
       </div>
@@ -620,10 +512,122 @@ export function CapabilityDetailPanel({ l3, l2, onClose, selectedYear, selectedQ
   );
 }
 
-/** R9: L2 Upward Chain Detail View */
+/** ═══════════════════════════════════════════════════════════
+ *  STRATEGIC CONTEXT — Shared between build & operate
+ *  ═══════════════════════════════════════════════════════════ */
+function StrategicContextSection({ cap }: { cap: Record<string, any> }) {
+  const { t } = useTranslation();
+  const objectives: any[] = cap.objectives || [];
+  const policyTools: any[] = cap.policyTools || [];
+
+  if (objectives.length === 0 && policyTools.length === 0) return null;
+
+  return (
+    <>
+      <h3 style={sectionTitleStyle}>{t('josoor.enterprise.detailPanel.upwardChain')}</h3>
+      <div style={{ marginBottom: '1.5rem' }}>
+        {objectives.length > 0 && (
+          <div style={{ marginBottom: policyTools.length > 0 ? '8px' : 0 }}>
+            {objectives.map((obj: any, i: number) => (
+              <div key={obj.id || i} style={{ fontSize: '13px', color: 'var(--component-text-secondary)', lineHeight: '1.8' }}>
+                • {obj.name}
+              </div>
+            ))}
+          </div>
+        )}
+        {policyTools.length > 0 && (
+          <div>
+            {policyTools.map((pol: any, i: number) => (
+              <div key={pol.id || i} style={{ fontSize: '13px', color: 'var(--component-text-secondary)', lineHeight: '1.8' }}>
+                • {pol.name}{pol.end_date ? ` — ${pol.end_date}` : ''}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </>
+  );
+}
+
+/** ═══════════════════════════════════════════════════════════
+ *  COLLAPSIBLE RISK DETAILS — Shared between build & operate
+ *  ═══════════════════════════════════════════════════════════ */
+function CollapsibleRiskDetails({ risk, isOpen, onToggle }: { risk: Record<string, any>; isOpen: boolean; onToggle: () => void }) {
+  const { t } = useTranslation();
+
+  return (
+    <div style={{ marginBottom: '1.5rem' }}>
+      <div
+        onClick={onToggle}
+        style={{
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          cursor: 'pointer', padding: '8px 0', userSelect: 'none'
+        }}
+      >
+        <span style={{ fontSize: '12px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--component-text-muted)' }}>
+          {t('josoor.enterprise.detailPanel.riskProfile')} {isOpen ? '▾' : '▸'}
+        </span>
+      </div>
+      {isOpen && (
+        <div style={{
+          background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)',
+          borderRadius: '6px', padding: '12px', marginTop: '4px'
+        }}>
+          <div style={gridStyle}>
+            {risk.risk_category && (
+              <div>
+                <div style={labelStyle}>{t('josoor.enterprise.detailPanel.riskCategory')}</div>
+                <div style={valueStyle}>{capitalize(risk.risk_category)}</div>
+              </div>
+            )}
+            {risk.risk_status && (
+              <div>
+                <div style={labelStyle}>{t('josoor.enterprise.detailPanel.riskStatus')}</div>
+                <div style={valueStyle}>{capitalize(risk.risk_status)}</div>
+              </div>
+            )}
+          </div>
+          {risk.risk_owner && (
+            <div style={{ marginBottom: '1rem' }}>
+              <div style={labelStyle}>{t('josoor.enterprise.detailPanel.riskOwner')}</div>
+              <div style={valueStyle}>{fmtVal(risk.risk_owner)}</div>
+            </div>
+          )}
+          {risk.mitigation_strategy && (
+            <div style={{ marginBottom: '1rem' }}>
+              <div style={labelStyle}>{t('josoor.enterprise.detailPanel.mitigation')}</div>
+              <p style={{ fontSize: '14px', lineHeight: '1.6', color: 'var(--component-text-secondary)', margin: '4px 0 0 0' }}>
+                {risk.mitigation_strategy}
+              </p>
+            </div>
+          )}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            {risk.identified_date && (
+              <div>
+                <div style={labelStyle}>{t('josoor.enterprise.detailPanel.identifiedDate')}</div>
+                <div style={valueStyle}>{fmtVal(risk.identified_date)}</div>
+              </div>
+            )}
+            {risk.last_review_date && (
+              <div>
+                <div style={labelStyle}>{t('josoor.enterprise.detailPanel.lastReview')}</div>
+                <div style={valueStyle}>{fmtVal(risk.last_review_date)}</div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** ═══════════════════════════════════════════════════════════
+ *  L2 DETAIL VIEW — Group-level capability panel
+ *  ═══════════════════════════════════════════════════════════ */
 function L2DetailView({ l2, onClose, selectedYear, selectedQuarter, onAIAnalysis }: { l2: L2Capability; onClose: () => void; selectedYear?: number | 'all'; selectedQuarter?: number | 'all'; onAIAnalysis?: () => void }) {
   const { t } = useTranslation();
   const chain = l2.upwardChain;
+  const maturityGap = l2.target_maturity_level - l2.maturity_level;
 
   // Aggregate projects from all L3 children
   const allProjects: any[] = [];
@@ -642,7 +646,7 @@ function L2DetailView({ l2, onClose, selectedYear, selectedQuarter, onAIAnalysis
         style={{ width: '420px', maxWidth: '90vw', height: '100vh', position: 'relative', animation: 'slideInRight 0.2s ease-out' }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
+        {/* ── HEADER (unchanged) ── */}
         <div className="details-header">
           <div className="header-content" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <div className="header-text">
@@ -690,23 +694,26 @@ function L2DetailView({ l2, onClose, selectedYear, selectedQuarter, onAIAnalysis
           </div>
         </div>
 
-        {/* Scrollable Content */}
+        {/* ── SCROLLABLE CONTENT ── */}
         <div className="details-content">
 
-          {/* Maturity */}
-          <h3 style={sectionTitleStyle}>{t('josoor.enterprise.detailPanel.maturityAssessment')}</h3>
-          <div style={gridStyle}>
-            <div>
-              <div style={labelStyle}>{t('josoor.enterprise.detailPanel.currentLevel')}</div>
-              <div style={valueLargeStyle}>{l2.maturity_level} / 5</div>
+          {/* 1. Maturity — compact row */}
+          <div style={{ marginBottom: '1.5rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+              <span style={labelStyle}>{t('josoor.enterprise.detailPanel.maturityAssessment')}</span>
+              <span style={{
+                fontSize: '14px', fontWeight: 600,
+                color: maturityGap > 2 ? '#ef4444' : maturityGap > 0 ? '#f59e0b' : '#10b981'
+              }}>
+                {l2.maturity_level} → {l2.target_maturity_level}
+              </span>
             </div>
-            <div>
-              <div style={labelStyle}>{t('josoor.enterprise.detailPanel.targetLevel')}</div>
-              <div style={valueLargeStyle}>{l2.target_maturity_level} / 5</div>
+            <div style={{ height: '4px', background: 'rgba(255,255,255,0.06)', borderRadius: '2px', overflow: 'hidden' }}>
+              <div style={{ height: '100%', width: `${(l2.maturity_level / 5) * 100}%`, background: 'var(--component-text-accent)', borderRadius: '2px' }} />
             </div>
           </div>
 
-          {/* Description */}
+          {/* 2. Description */}
           {l2.description && (
             <div style={{ marginBottom: '1.5rem' }}>
               <p style={{ color: 'var(--component-text-secondary)', lineHeight: '1.6', fontSize: '14px', margin: 0 }}>
@@ -715,171 +722,111 @@ function L2DetailView({ l2, onClose, selectedYear, selectedQuarter, onAIAnalysis
             </div>
           )}
 
-          {/* Upward Chain Tree */}
-          {chain && (
-            <>
-              <h3 style={sectionTitleStyle}>{t('josoor.enterprise.detailPanel.upwardChain')}</h3>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '1.5rem' }}>
-                {/* This capability */}
-                <div style={{
-                  background: 'rgba(244, 187, 48, 0.1)',
-                  border: '1px solid rgba(244, 187, 48, 0.3)',
-                  borderRadius: '6px', padding: '10px 14px'
-                }}>
-                  <div style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--component-text-accent)', marginBottom: '2px' }}>
-                    {t('josoor.enterprise.detailPanel.capability')}
-                  </div>
-                  <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--component-text-primary)' }}>
-                    {l2.id} — {l2.name}
-                  </div>
-                </div>
-
-                {/* Arrow */}
-                <div style={{ textAlign: 'center', color: 'var(--component-text-muted)', fontSize: '16px' }}>&#x2191;</div>
-
-                {/* PolicyTools */}
-                {chain.policyTools.length > 0 && chain.policyTools.map(pol => (
-                  <div key={pol.id} style={{
-                    background: 'rgba(99, 102, 241, 0.08)', border: '1px solid rgba(99, 102, 241, 0.2)',
-                    borderRadius: '6px', padding: '10px 14px'
-                  }}>
-                    <div style={{ fontSize: '11px', textTransform: 'uppercase', color: '#818cf8', marginBottom: '2px' }}>
-                      {t('josoor.enterprise.detailPanel.policyTool')}
-                    </div>
-                    <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--component-text-primary)' }}>
-                      {pol.id} — {pol.name}
-                    </div>
-                    {pol.end_date && (
-                      <div style={{ fontSize: '11px', color: 'var(--component-text-muted)', marginTop: '2px' }}>
-                        {t('josoor.enterprise.detailPanel.endDate')}: {pol.end_date}
-                      </div>
-                    )}
-                  </div>
-                ))}
-
-                {/* Performance targets */}
-                {chain.performanceTargets.length > 0 && chain.performanceTargets.map(perf => (
-                  <div key={perf.id} style={{
-                    background: 'rgba(16, 185, 129, 0.08)', border: '1px solid rgba(16, 185, 129, 0.2)',
-                    borderRadius: '6px', padding: '10px 14px'
-                  }}>
-                    <div style={{ fontSize: '11px', textTransform: 'uppercase', color: '#10b981', marginBottom: '2px' }}>
-                      {t('josoor.enterprise.detailPanel.performanceTarget')}
-                    </div>
-                    <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--component-text-primary)' }}>
-                      {perf.id} — {perf.name}
-                    </div>
-                    {perf.actual_value != null && perf.target != null && (
-                      <div style={{ fontSize: '12px', color: 'var(--component-text-secondary)', marginTop: '4px' }}>
-                        {perf.actual_value} / {perf.target} {perf.unit || ''}
-                      </div>
-                    )}
-                  </div>
-                ))}
-
-                {/* Arrow to objectives */}
-                {chain.objectives.length > 0 && (
-                  <div style={{ textAlign: 'center', color: 'var(--component-text-muted)', fontSize: '16px' }}>&#x2191;</div>
-                )}
-
-                {/* Objectives */}
-                {chain.objectives.map(obj => (
-                  <div key={obj.id} style={{
-                    background: 'rgba(245, 158, 11, 0.08)', border: '1px solid rgba(245, 158, 11, 0.2)',
-                    borderRadius: '6px', padding: '10px 14px'
-                  }}>
-                    <div style={{ fontSize: '11px', textTransform: 'uppercase', color: '#f59e0b', marginBottom: '2px' }}>
-                      {t('josoor.enterprise.detailPanel.objective')}
-                    </div>
-                    <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--component-text-primary)' }}>
-                      {obj.id} — {obj.name}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </>
-          )}
-
-          {/* KPI Gauges */}
+          {/* 3. KPI Dashboard — full-width cards with bars (NOT GaugeCard) */}
           {chain && chain.performanceTargets.length > 0 && (
             <>
-              <h3 style={sectionTitleStyle}>{t('josoor.enterprise.detailPanel.kpiGauges')}</h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', marginBottom: '1.5rem' }}>
+              <h3 style={sectionTitleStyle}>{t('josoor.enterprise.detailPanel.performanceTargets')}</h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '1.5rem' }}>
                 {chain.performanceTargets.map(perf => {
-                  const val = perf.actual_value != null && perf.target
-                    ? Math.round((perf.actual_value / perf.target) * 100)
-                    : 0;
-                  const status: 'green' | 'amber' | 'red' = val >= 70 ? 'green' : val >= 40 ? 'amber' : 'red';
+                  const actual = perf.actual_value != null ? Number(perf.actual_value) : null;
+                  const target = perf.target != null ? Number(perf.target) : null;
+                  const pct = actual != null && target && target > 0 ? Math.round((actual / target) * 100) : null;
+                  const barColor = pct != null ? achievementColor(pct) : '#3b82f6';
                   return (
-                    <GaugeCard
-                      key={perf.id}
-                      label={perf.name}
-                      value={val}
-                      status={status}
-                      delta=""
-                      baseValue={0}
-                      qMinus1={0}
-                      qPlus1={0}
-                      endValue={100}
-                      level={2}
-                    />
+                    <div key={perf.id} style={{
+                      background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)',
+                      borderRadius: '6px', padding: '12px 14px'
+                    }}>
+                      <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--component-text-primary)', marginBottom: '6px' }}>
+                        {perf.name}
+                      </div>
+                      {actual != null && target != null && (
+                        <>
+                          <div style={{ fontSize: '18px', fontWeight: 700, color: 'var(--component-text-primary)', marginBottom: '6px' }}>
+                            {actual} / {target} {perf.unit || ''}
+                          </div>
+                          <div style={{ height: '10px', background: 'rgba(255,255,255,0.06)', borderRadius: '5px', overflow: 'hidden', marginBottom: '4px' }}>
+                            <div style={{ height: '100%', width: `${Math.min(pct || 0, 100)}%`, background: barColor, borderRadius: '5px' }} />
+                          </div>
+                          {pct != null && (
+                            <div style={{ fontSize: '13px', fontWeight: 600, color: barColor, textAlign: 'right' }}>
+                              {pct}%
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
                   );
                 })}
               </div>
             </>
           )}
 
-          {/* Projects & Status */}
-          <h3 style={sectionTitleStyle}>{t('josoor.enterprise.detailPanel.projectsStatus')}</h3>
-          {allProjects.length === 0 ? (
-            <div style={{
-              background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '6px',
-              fontSize: '13px', color: 'var(--component-text-muted)', textAlign: 'center', marginBottom: '1.5rem'
-            }}>
-              {t('josoor.enterprise.detailPanel.noLinkedProjects')}
-            </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '1.5rem' }}>
-              {allProjects.map((proj: any) => {
-                const isPlanned = proj.status === 'planned' || proj.status === 'not_started' || proj.status === 'not-started';
-                const rawPct = proj.progress_percentage;
-                const pctRaw = rawPct != null ? (typeof rawPct === 'object' && 'low' in rawPct ? rawPct.low : Number(rawPct)) : null;
-                const pct = isPlanned ? 0 : (pctRaw != null ? (pctRaw <= 1 && pctRaw > 0 ? Math.round(pctRaw * 100) : Math.round(pctRaw)) : null);
-                const isOverdue = !isPlanned && proj.end_date && proj.status !== 'complete' && proj.status !== 'completed' && new Date(proj.end_date) < new Date();
-                const projColor = isPlanned ? '#475569' : isOverdue ? '#ef4444' : pct != null && pct >= 100 ? '#10b981' : '#3b82f6';
-                return (
-                  <div key={proj.id} style={{
-                    background: 'rgba(255,255,255,0.03)', border: `1px solid ${isOverdue ? 'rgba(239,68,68,0.2)' : 'rgba(255,255,255,0.06)'}`,
-                    borderRadius: '6px', padding: '8px 12px'
-                  }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                      <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--component-text-primary)' }}>
-                        <span style={{ opacity: 0.5, marginRight: '6px' }}>{proj.id}</span>
-                        {proj.name}
+          {/* 4. Upward Chain — compact breadcrumb pills */}
+          {chain && (chain.objectives.length > 0 || chain.policyTools.length > 0) && (
+            <>
+              <h3 style={sectionTitleStyle}>{t('josoor.enterprise.detailPanel.upwardChain')}</h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '1.5rem' }}>
+                {/* Build paths: each objective → each policy tool → this capability */}
+                {chain.objectives.length > 0 ? (
+                  chain.objectives.map(obj => (
+                    <div key={obj.id} style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                      {/* Objective pill */}
+                      <span style={{
+                        background: 'rgba(245,158,11,0.15)', color: '#f59e0b',
+                        fontSize: '12px', fontWeight: 600, padding: '4px 10px', borderRadius: '12px', whiteSpace: 'nowrap'
+                      }}>
+                        {obj.name}
                       </span>
-                      <span style={{ fontSize: '11px', fontWeight: 600, color: projColor }}>
-                        {isOverdue ? t('josoor.enterprise.detailPanel.overdue') : capitalize(proj.status)}
+                      <span style={{ color: 'var(--component-text-muted)', fontSize: '12px' }}>→</span>
+                      {/* Policy tool pills (if any) */}
+                      {chain.policyTools.length > 0 ? chain.policyTools.map(pol => (
+                        <span key={pol.id} style={{ display: 'contents' }}>
+                          <span style={{
+                            background: 'rgba(99,102,241,0.15)', color: '#818cf8',
+                            fontSize: '12px', fontWeight: 600, padding: '4px 10px', borderRadius: '12px', whiteSpace: 'nowrap'
+                          }}>
+                            {pol.name}
+                          </span>
+                          <span style={{ color: 'var(--component-text-muted)', fontSize: '12px' }}>→</span>
+                        </span>
+                      )) : null}
+                      {/* This capability pill */}
+                      <span style={{
+                        background: 'rgba(244,187,48,0.15)', color: 'var(--component-text-accent)',
+                        fontSize: '12px', fontWeight: 600, padding: '4px 10px', borderRadius: '12px', whiteSpace: 'nowrap'
+                      }}>
+                        {l2.name}
                       </span>
                     </div>
-                    {pct != null && !isPlanned && (
-                      <div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
-                          <span style={{ fontSize: '11px', color: 'var(--component-text-muted)' }}>{t('josoor.enterprise.detailPanel.progress')}</span>
-                          <span style={{ fontSize: '11px', color: 'var(--component-text-secondary)' }}>{pct}%</span>
-                        </div>
-                        <div style={{ height: '3px', background: 'rgba(255,255,255,0.06)', borderRadius: '2px', overflow: 'hidden' }}>
-                          <div style={{ height: '100%', width: `${Math.min(pct, 100)}%`, background: projColor, borderRadius: '2px' }} />
-                        </div>
-                      </div>
-                    )}
+                  ))
+                ) : (
+                  /* No objectives, just show policy tools → capability */
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                    {chain.policyTools.map(pol => (
+                      <span key={pol.id} style={{ display: 'contents' }}>
+                        <span style={{
+                          background: 'rgba(99,102,241,0.15)', color: '#818cf8',
+                          fontSize: '12px', fontWeight: 600, padding: '4px 10px', borderRadius: '12px', whiteSpace: 'nowrap'
+                        }}>
+                          {pol.name}
+                        </span>
+                        <span style={{ color: 'var(--component-text-muted)', fontSize: '12px' }}>→</span>
+                      </span>
+                    ))}
+                    <span style={{
+                      background: 'rgba(244,187,48,0.15)', color: 'var(--component-text-accent)',
+                      fontSize: '12px', fontWeight: 600, padding: '4px 10px', borderRadius: '12px', whiteSpace: 'nowrap'
+                    }}>
+                      {l2.name}
+                    </span>
                   </div>
-                );
-              })}
-            </div>
+                )}
+              </div>
+            </>
           )}
 
-          {/* L3 Children summary */}
+          {/* 5. L3 Children (kept as-is from original) */}
           <h3 style={sectionTitleStyle}>{t('josoor.enterprise.detailPanel.l3Capabilities')}</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '1.5rem' }}>
             {l2.l3.map(l3 => {
@@ -904,6 +851,50 @@ function L2DetailView({ l2, onClose, selectedYear, selectedQuarter, onAIAnalysis
               );
             })}
           </div>
+
+          {/* 6. Projects (kept as-is from original) */}
+          <h3 style={sectionTitleStyle}>{t('josoor.enterprise.detailPanel.projectsStatus')}</h3>
+          {allProjects.length === 0 ? (
+            <div style={{
+              background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '6px',
+              fontSize: '13px', color: 'var(--component-text-muted)', textAlign: 'center', marginBottom: '1.5rem'
+            }}>
+              {t('josoor.enterprise.detailPanel.noLinkedProjects')}
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '1.5rem' }}>
+              {allProjects.map((proj: any) => {
+                const d = projectDisplayValues(proj);
+                return (
+                  <div key={proj.id} style={{
+                    background: 'rgba(255,255,255,0.03)', border: `1px solid ${d.isOverdue ? 'rgba(239,68,68,0.2)' : 'rgba(255,255,255,0.06)'}`,
+                    borderRadius: '6px', padding: '8px 12px'
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                      <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--component-text-primary)' }}>
+                        <span style={{ opacity: 0.5, marginRight: '6px' }}>{proj.id}</span>
+                        {proj.name}
+                      </span>
+                      <span style={{ fontSize: '11px', fontWeight: 600, color: d.color }}>
+                        {d.isOverdue ? t('josoor.enterprise.detailPanel.overdue') : capitalize(proj.status)}
+                      </span>
+                    </div>
+                    {d.pct != null && !d.isPlanned && (
+                      <div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
+                          <span style={{ fontSize: '11px', color: 'var(--component-text-muted)' }}>{t('josoor.enterprise.detailPanel.progress')}</span>
+                          <span style={{ fontSize: '11px', color: 'var(--component-text-secondary)' }}>{d.pct}%</span>
+                        </div>
+                        <div style={{ height: '3px', background: 'rgba(255,255,255,0.06)', borderRadius: '2px', overflow: 'hidden' }}>
+                          <div style={{ height: '100%', width: `${Math.min(d.pct, 100)}%`, background: d.color, borderRadius: '2px' }} />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
     </div>

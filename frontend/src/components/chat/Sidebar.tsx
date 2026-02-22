@@ -47,23 +47,26 @@ interface QuickAction {
  */
 const quickActions: QuickAction[] = [];
 
-const deskItems = [
-  { id: 'sector-desk', label: { en: 'Sector Observatory', ar: 'مرصد القطاع' }, icon: '/icons/demo.png', path: '/josoor' },
-  { id: 'enterprise-desk', label: { en: 'Enterprise Capabilities', ar: 'قدرات المؤسسة' }, icon: '/icons/twin.png', path: '/josoor' },
-  { id: 'controls-desk', label: { en: 'Control Signals', ar: 'إشارات التحكم' }, icon: '/icons/architecture.png', path: '/josoor' },
-  { id: 'planning-desk', label: { en: 'Planning Lab', ar: 'مختبر التخطيط' }, icon: '/icons/approach.png', path: '/josoor' },
-  { id: 'reporting-desk', label: { en: 'Reporting Hub', ar: 'مركز التقارير' }, icon: '/icons/chat.png', path: '/josoor' },
+const oversightItems = [
+  { id: 'sector-desk', label: { en: 'Observe', ar: 'رصد' }, icon: '/icons/demo.png', path: '/josoor' },
+  { id: 'enterprise-desk', label: { en: 'Decide', ar: 'قرار' }, icon: '/icons/twin.png', path: '/josoor' },
+  { id: 'planning-desk', label: { en: 'Deliver', ar: 'تنفيذ' }, icon: '/icons/agenticAI.png', path: '/josoor' },
 ];
 
-const contentItems = [
-  { id: 'knowledge', label: { en: 'Multimedia Tutorials', ar: 'الدروس المتعددة الوسائط' }, icon: '/icons/josoor.png' },
-  { id: 'explorer', label: { en: 'Graph Explorer', ar: 'مستكشف الرسم البياني' }, icon: '/icons/demo.png' },
-  { id: 'roadmap', label: { en: 'Roadmap', ar: 'خارطة الطريق' }, icon: '/icons/approach.png' },
+const manageItems = [
+  { id: 'controls-desk', label: { en: 'Signals', ar: 'إشارات' }, icon: '/icons/new.png', path: '/josoor' },
+  { id: 'reporting-desk', label: { en: 'Reporting', ar: 'تقارير' }, icon: '/icons/reports.png', path: '/josoor' },
+  { id: 'explorer', label: { en: 'Graph', ar: 'رسم بياني' }, icon: '/icons/dbgraph.png' },
+];
+
+const referItems = [
+  { id: 'knowledge', label: { en: 'Tutorials', ar: 'دروس' }, icon: '/icons/icon-guide.png' },
+  { id: 'chat', label: { en: 'Expert Chat', ar: 'محادثة الخبير' }, icon: '/icons/expertchat.png' },
 ];
 
 const adminItems = [
-  { id: 'settings', label: { en: 'Settings', ar: 'الإعدادات' }, icon: '/icons/menu.png' },
-  { id: 'observability', label: { en: 'Observability', ar: 'المراقبة' }, icon: '/icons/architecture.png' },
+  { id: 'settings', label: { en: 'Settings', ar: 'الإعدادات' }, icon: '/icons/adminsetting.png' },
+  { id: 'observability', label: { en: 'Observability', ar: 'المراقبة' }, icon: '/icons/observability.png' },
 ];
 
 interface SidebarProps {
@@ -306,19 +309,23 @@ export function Sidebar({
           </button>
 
           {!collapsed && (
-            <div style={{ display: 'block', color: 'var(--component-text-accent)', margin: '0 auto', font: '600 18px __Inter_d65c78, sans-serif' }}>
-              {t('josoor.chat.josoor')}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', margin: '0 auto' }}>
+              <img src="/icons/josoor.png" alt="Josoor" style={{ width: '40px', height: '40px', objectFit: 'contain', flexShrink: 0 }} />
+              <span style={{ color: 'var(--component-text-accent)', font: '700 20px __Inter_d65c78, sans-serif', lineHeight: '40px' }}>
+                {t('josoor.chat.josoor')}
+              </span>
             </div>
           )}
         </div>
 
         {/* Sections */}
-        {renderSection(t('josoor.sidebar.governanceOversight'), deskItems, { isFirst: true })}
-        {renderSection(t('josoor.sidebar.references'), contentItems)}
+        {renderSection(t('josoor.sidebar.oversight'), oversightItems, { isFirst: true })}
+        {renderSection(t('josoor.sidebar.manage'), manageItems)}
+        {renderSection(t('josoor.sidebar.refer'), referItems)}
       </div>
 
-      {/* Conversations - only if not collapsed */}
-      {!collapsed && (
+      {/* Chat sub-list: New Chat + conversation history under Expert Chat */}
+      {!collapsed && activeView === 'chat' && (
         <div
           style={{
             flex: 1,
@@ -361,42 +368,6 @@ export function Sidebar({
             </div>
           </button>
 
-          {/* Graph Chat Button */}
-          <button
-            title={t('josoor.chat.graphChat')}
-            onClick={() =>
-              onQuickAction?.({ id: 'chat', label: { en: 'Graph Chat', ar: 'دردشة الرسم البياني' }, icon: '/icons/chat.png' })
-            }
-            className="quickaction-item clickable"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              backgroundColor: 'rgba(0, 0, 0, 0)',
-              borderRadius: '4px',
-              color: 'var(--component-text-primary)',
-              gap: '8px',
-              justifyContent: 'flex-start',
-              width: '100%',
-              padding: '6px 0',
-              fontWeight: 400,
-              fontSize: '13px',
-              lineHeight: '1.4',
-              fontFamily: language === 'ar' ? 'var(--component-font-family-ar)' : 'var(--component-font-family)',
-              border: '1px solid rgba(0, 0, 0, 0)',
-              cursor: 'pointer'
-            }}
-          >
-            <img
-              src="/icons/chat.png"
-              alt={t('josoor.chat.graphChat')}
-              className="sidebar-quickaction-icon sidebar-quickaction-large"
-              style={{ display: 'block', fontWeight: '600', height: '24px', width: '24px', objectFit: 'cover' }}
-            />
-            <div className="quickaction-meta" style={{ display: 'flex', alignItems: 'flex-start', flexDirection: 'column' }}>
-              <span className="quickaction-title" style={{ display: 'block', fontSize: '14px' }}>{t('josoor.chat.graphChat')}</span>
-            </div>
-          </button>
-
           <div className="conversations-card" style={{ marginRight: '-0', padding: '5px 10px 5px 0' }}>
             <button onClick={() => setShowConversations(!showConversations)} className="conversations-header clickable">
               <span className="conversations-title">{translations.conversations}</span>
@@ -425,7 +396,28 @@ export function Sidebar({
       {/* Admin Section - moved after Graph Chat */}
       {!collapsed && (
         <div style={{ padding: collapsed ? '0' : '0 20px' }}>
-          {renderSection(t('josoor.sidebar.admin'), adminItems, { marginTop: 12, marginBottom: 20 })}
+          {renderSection(t('josoor.sidebar.admin'), adminItems, { marginTop: 12, marginBottom: 12 })}
+        </div>
+      )}
+
+      {/* Copyright Footer */}
+      {!collapsed && (
+        <div style={{
+          padding: '12px 20px 16px',
+          borderTop: '1px solid rgba(255,255,255,0.08)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          flexShrink: 0
+        }}>
+          <img
+            src="https://cdn.builder.io/api/v1/image/assets%2Fdcb6338cd56942dd9d0d7f3bbd865659%2Fe4fa8a9e49344786befd964c7169a6de"
+            alt="AI Twin Tech"
+            style={{ width: '24px', height: '24px', objectFit: 'cover', borderRadius: '4px' }}
+          />
+          <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', fontWeight: 500 }}>
+            {t('josoor.sidebar.copyright')}
+          </span>
         </div>
       )}
     </aside>

@@ -113,7 +113,9 @@ export const FrameHeader: React.FC<FrameHeaderProps> = ({
             direction: isRTL ? 'rtl' : 'ltr'
         }}>
             {/* Title Section */}
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <img src="/icons/josoor.png" alt="Josoor" style={{ width: '36px', height: '36px', objectFit: 'contain' }} />
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
                 <h2 style={{
                     color: 'var(--text-primary)',
                     fontSize: '1.25rem',
@@ -131,6 +133,7 @@ export const FrameHeader: React.FC<FrameHeaderProps> = ({
                     fontWeight: 500
                 }}>
                     {subtitle}
+                </div>
                 </div>
             </div>
 

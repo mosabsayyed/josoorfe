@@ -183,24 +183,11 @@ export const ChatContainer = memo(function ChatContainer({
   return (
     <div className="chat-container-root">
       <div className="chat-top-controls" style={{ display: "flex", alignItems: "center", fontWeight: "400", justifyContent: "space-between", padding: "8px 16px", gap: "16px", backgroundColor: 'var(--component-panel-bg)', borderBottom: '1px solid rgba(255, 255, 255, 0.1)', height: '60px' }}>
-        {/* LEFT: Logo, App Name & Title */}
+        {/* LEFT: Title */}
         <div dir={effectiveLanguage === 'ar' ? 'rtl' : 'ltr'} style={{ display: "flex", alignItems: "center", gap: "12px", color: 'var(--component-text-primary)' }}>
-          <img
-            loading="lazy"
-            src="https://cdn.builder.io/api/v1/image/assets%2Fdcb6338cd56942dd9d0d7f3bbd865659%2Fe4fa8a9e49344786befd964c7169a6de"
-            style={{ aspectRatio: "1", objectFit: "cover", objectPosition: "center", width: "40px", height: "40px", overflow: "hidden", margin: "-5px auto" }}
-          />
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ font: "700 16px __Inter_d65c78, sans-serif", color: 'var(--component-text-primary)' }}>AI Twin Tech</span>
-              {title && (
-                <>
-                  <div style={{ width: '1px', height: '16px', backgroundColor: 'rgba(255,255,255,0.2)', margin: '0 4px' }} />
-                  <span style={{ color: 'var(--component-text-accent)', fontSize: '14px', fontWeight: 600 }}>{title}</span>
-                </>
-              )}
-            </div>
-          </div>
+          {title && (
+            <span style={{ color: 'var(--component-text-accent)', fontSize: '14px', fontWeight: 600 }}>{title}</span>
+          )}
         </div>
 
         {/* RIGHT: Controls */}
