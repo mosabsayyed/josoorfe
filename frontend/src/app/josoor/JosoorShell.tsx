@@ -13,6 +13,7 @@ import type {
     ConversationSummary,
     Message as APIMessage,
 } from "../../types/api";
+import type { InterventionContext } from '../../components/desks/PlanningDesk';
 
 const SectorDesk = React.lazy(() => import('../../components/desks/SectorDesk').then(m => ({ default: m.SectorDesk })));
 const ControlsDesk = React.lazy(() => import('../../components/desks/ControlsDesk').then(m => ({ default: m.ControlsDesk })));
@@ -58,6 +59,7 @@ export default function JosoorShell() {
 
     // Active View State
     const [activeView, setActiveView] = useState<JosoorView>('sector-desk');
+    const [interventionContext, setInterventionContext] = useState<InterventionContext | null>(null);
 
     useEffect(() => {
         console.log('JosoorShell activeView changed to:', activeView);
@@ -221,6 +223,17 @@ export default function JosoorShell() {
         setIsCanvasOpen(true);
     }, []);
 
+    const handleIntervene = useCallback((ctx: InterventionContext) => {
+        setInterventionContext(ctx);
+        setActiveView('planning-desk');
+    }, []);
+
+    useEffect(() => {
+        if (activeView !== 'planning-desk') {
+            setInterventionContext(null);
+        }
+    }, [activeView]);
+
     // Sync title/subtitle based on activeView
     const getHeaderMeta = () => {
         switch (activeView) {
@@ -299,8 +312,8 @@ export default function JosoorShell() {
                             <Suspense fallback={<div style={{ padding: '2rem', color: 'white' }}>{t('josoor.common.loadingView')}</div>}>
                                 {activeView === 'sector-desk' && <SectorDesk year={year} quarter={quarter} />}
                                 {activeView === 'controls-desk' && <ControlsDesk />}
-                                {activeView === 'planning-desk' && <PlanningDesk />}
-                                {activeView === 'enterprise-desk' && <EnterpriseDesk year={year} quarter={quarter} />}
+                                {activeView === 'planning-desk' && <PlanningDesk interventionContext={interventionContext} onClearContext={() => setInterventionContext(null)} />}
+                                {activeView === 'enterprise-desk' && <EnterpriseDesk year={year} quarter={quarter} onIntervene={handleIntervene} />}
                                 {activeView === 'reporting-desk' && <ReportingDesk />}
                                 {activeView === 'knowledge' && <TutorialsDesk />}
                                 {activeView === 'roadmap' && <div className="p-10 text-xl" style={{ color: 'white' }}>{t('josoor.shell.roadmapComingSoon')}</div>}

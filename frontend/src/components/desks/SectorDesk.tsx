@@ -650,8 +650,8 @@ export const SectorDesk: React.FC<SectorDeskProps> = ({ year: propYear, quarter:
 
         try {
             const response = await chatService.sendMessage({
-                query: `Prepare a comprehensive strategic brief on the transformation progress for ${selectedYear}`,
-                desk_type: 'sector_desk'
+                query: `Strategic brief for ${selectedYear}`,
+                prompt_key: 'sector_desk_strategy_brief'
             });
 
             if (response.llm_payload?.answer) {

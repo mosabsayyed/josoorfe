@@ -325,7 +325,7 @@ export function Sidebar({
       </div>
 
       {/* Chat sub-list: New Chat + conversation history under Expert Chat */}
-      {!collapsed && activeView === 'chat' && (
+      {!collapsed && (
         <div
           style={{
             flex: 1,

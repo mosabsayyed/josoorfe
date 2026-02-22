@@ -192,6 +192,8 @@ interface RawEnterpriseData {
   risks: any[];          // ALL EntityRisk from MCP Cypher
   chainIntegrated: any;  // integrated_oversight chain response {nodes, links}
   chainBuild: any;       // build_oversight chain response {nodes, links}
+  chainOperate: any;     // operate_oversight chain response {nodes, links}
+  processMetrics: any[]; // EntityProcess metrics linked via KNOWLEDGE_GAPS
 }
 
 let _rawDataCache: RawEnterpriseData | null = null;
@@ -210,7 +212,7 @@ async function fetchAllEnterpriseData(): Promise<RawEnterpriseData> {
   _rawDataPromise = (async () => {
     console.log('[EnterpriseService] Fetching ALL data via MCP Cypher + chains (one-time)');
 
-    const [capRows, riskRows, chainIntegrated, chainBuild] = await Promise.all([
+    const [capRows, riskRows, chainIntegrated, chainBuild, chainOperate, processMetricRows] = await Promise.all([
       runCypher(`
         MATCH (c:EntityCapability)
         RETURN c { .id, .name, .level, .year, .quarter, .status, .description,
@@ -227,15 +229,22 @@ async function fetchAllEnterpriseData(): Promise<RawEnterpriseData> {
                    .prev_operational_health_pct, .prev2_operational_health_pct,
                    .operate_trend_flag } AS risk
       `),
-      graphService.getBusinessChain('integrated_oversight', { excludeEmbeddings: 'true' }),
-      graphService.getBusinessChain('build_oversight', { excludeEmbeddings: 'true' })
+      graphService.getBusinessChain('integrated_oversight', { year: '0', excludeEmbeddings: 'true' }),
+      graphService.getBusinessChain('build_oversight', { year: '0', excludeEmbeddings: 'true' }),
+      graphService.getBusinessChain('operate_oversight', { year: '0', excludeEmbeddings: 'true' }),
+      runCypher(`
+        MATCH (c:EntityCapability {level: 'L3'})-[:KNOWLEDGE_GAPS]->(p:EntityProcess {level: 'L3'})
+        WHERE p.metric_name IS NOT NULL
+        RETURN c.id AS cap_id, p { .id, .name, .metric_name, .actual, .target, .baseline, .unit, .metric_type, .indicator_type, .trend, .aggregation_method } AS proc
+      `)
     ]);
 
     const caps = capRows.map((r: any) => r.cap);
     const risks = riskRows.map((r: any) => r.risk);
-    console.log(`[EnterpriseService] Fetched: ${caps.length} caps, ${risks.length} risks, integrated: ${chainIntegrated?.nodes?.length || 0} nodes, build: ${chainBuild?.nodes?.length || 0} nodes`);
+    const processMetrics = processMetricRows || [];
+    console.log(`[EnterpriseService] Fetched: ${caps.length} caps, ${risks.length} risks, ${processMetrics.length} process metrics, integrated: ${chainIntegrated?.nodes?.length || 0} nodes, build: ${chainBuild?.nodes?.length || 0} nodes, operate: ${chainOperate?.nodes?.length || 0} nodes`);
 
-    _rawDataCache = { caps, risks, chainIntegrated, chainBuild };
+    _rawDataCache = { caps, risks, chainIntegrated, chainBuild, chainOperate, processMetrics };
     _rawDataPromise = null;
     return _rawDataCache;
   })();
@@ -439,7 +448,21 @@ function extractChainOverlays(chainData: { nodes: any[]; links: any[] }): Map<st
     }
 
     // ── 2-hop: Cap → Risk → INFORMS → Performance/PolicyTool ──
+    // Also check Risk L2 parents: Cap → Risk(L3) ← PARENT_OF ← Risk(L2) → INFORMS
+    // (operate_oversight has INFORMS on L2 risk, not L3)
+    const allRiskIds = new Set(riskIds);
     for (const rid of riskIds) {
+      const riskNode = chain.nodeById.get(rid);
+      if (!riskNode || riskNode.label !== 'EntityRisk') continue;
+      // Find L2 risk parents via PARENT_OF (parent → child, so parent is neighbor)
+      const parentIds = neighbors(rid, 'PARENT_OF');
+      for (const pid of parentIds) {
+        const parentNode = chain.nodeById.get(pid);
+        if (parentNode?.label === 'EntityRisk') allRiskIds.add(pid);
+      }
+    }
+
+    for (const rid of allRiskIds) {
       const riskNode = chain.nodeById.get(rid);
       if (!riskNode || riskNode.label !== 'EntityRisk') continue;
 
@@ -448,7 +471,9 @@ function extractChainOverlays(chainData: { nodes: any[]; links: any[] }): Map<st
         const perfProps = getNodeIfLabel(chain, iid, 'SectorPerformance');
         if (perfProps) {
           if (!overlay.performanceTargets) overlay.performanceTargets = [];
-          overlay.performanceTargets.push(perfProps);
+          if (!overlay.performanceTargets.find((p: any) => p.domain_id === perfProps.domain_id)) {
+            overlay.performanceTargets.push(perfProps);
+          }
         }
         const polProps = getNodeIfLabel(chain, iid, 'SectorPolicyTool');
         if (polProps && !policyTools.find((p: any) => p.domain_id === polProps.domain_id)) {
@@ -473,7 +498,6 @@ function extractChainOverlays(chainData: { nodes: any[]; links: any[] }): Map<st
     // ── 3-hop: Cap → Risk → PolicyTool → GOVERNED_BY → Objective ──
     const objectives: any[] = [];
     for (const pol of policyTools) {
-      // Find the composite ID of this policy tool
       const polNode = Array.from(chain.nodeById.values()).find(
         n => n.label === 'SectorPolicyTool' && n.domainId === pol.domain_id
       );
@@ -487,6 +511,36 @@ function extractChainOverlays(chainData: { nodes: any[]; links: any[] }): Map<st
         }
       }
     }
+
+    // ── operate path: Performance → (L1 parent) → AGGREGATES_TO → Objective ──
+    if (overlay.performanceTargets) {
+      for (const perf of overlay.performanceTargets) {
+        // Find the composite ID of this performance node
+        const perfNode = Array.from(chain.nodeById.values()).find(
+          n => n.label === 'SectorPerformance' && n.domainId === perf.domain_id
+        );
+        if (!perfNode) continue;
+
+        // Check AGGREGATES_TO directly and via L1 parent
+        const perfIds = [perfNode.compositeId];
+        const parentIds = neighbors(perfNode.compositeId, 'PARENT_OF');
+        for (const pid of parentIds) {
+          const pNode = chain.nodeById.get(pid);
+          if (pNode?.label === 'SectorPerformance') perfIds.push(pid);
+        }
+
+        for (const pid of perfIds) {
+          const aggIds = neighbors(pid, 'AGGREGATES_TO');
+          for (const aid of aggIds) {
+            const objProps = getNodeIfLabel(chain, aid, 'SectorObjective');
+            if (objProps && !objectives.find((o: any) => o.domain_id === objProps.domain_id)) {
+              objectives.push(objProps);
+            }
+          }
+        }
+      }
+    }
+
     if (objectives.length > 0) overlay.objectives = objectives;
 
     overlayByCapId.set(cap.domainId, overlay);
@@ -565,7 +619,7 @@ function filterAndBuildGraph(raw: RawEnterpriseData, year: number | 'all', quart
     nodeByBizId.set(node.id, node);
   }
 
-  const chainDatasets = [raw.chainIntegrated, raw.chainBuild].filter(d => d?.nodes);
+  const chainDatasets = [raw.chainIntegrated, raw.chainBuild, raw.chainOperate].filter(d => d?.nodes);
   for (const chainData of chainDatasets) {
     const overlays = extractChainOverlays(chainData);
 
@@ -630,13 +684,25 @@ function filterAndBuildGraph(raw: RawEnterpriseData, year: number | 'all', quart
     }
   }
 
+  // Step 6: Attach process metrics from direct Cypher query
+  for (const pm of (raw.processMetrics || [])) {
+    const capId = pm.cap_id;
+    const proc = pm.proc;
+    if (!capId || !proc) continue;
+    const node = nodeByBizId.get(capId);
+    if (!node) continue;
+    if (!(node as any).processMetrics) (node as any).processMetrics = [];
+    (node as any).processMetrics.push(proc);
+  }
+
   const l1Count = nodes.filter(n => n.level === 'L1').length;
   const l2Count = nodes.filter(n => n.level === 'L2').length;
   const l3Count = nodes.filter(n => n.level === 'L3').length;
   const withRisk = nodes.filter(n => (n as any).risk).length;
   const withProjects = nodes.filter(n => (n as any).linkedProjects?.length > 0).length;
   const withEntities = nodes.filter(n => (n as any).operatingEntities?.length > 0).length;
-  console.log(`[EnterpriseService] Result: ${nodes.length} caps (L1:${l1Count}, L2:${l2Count}, L3:${l3Count}), risk: ${withRisk}, projects: ${withProjects}, entities: ${withEntities}`);
+  const withProcessMetrics = nodes.filter(n => (n as any).processMetrics?.length > 0).length;
+  console.log(`[EnterpriseService] Result: ${nodes.length} caps (L1:${l1Count}, L2:${l2Count}, L3:${l3Count}), risk: ${withRisk}, projects: ${withProjects}, entities: ${withEntities}, processMetrics: ${withProcessMetrics}`);
 
   return { nodes, links: [] };
 }
@@ -863,12 +929,26 @@ function buildL2(l2Node: NeoGraphNode, l3Nodes: NeoGraphNode[]): L2Capability {
     l3.parent_id === l2BusinessId
   );
 
-  // R9: Collect upward chain data from L2 node
-  const policyTools = ((l2Node as any).policyTools || []).filter((p: any) => p != null);
-  const performanceTargets = ((l2Node as any).performanceTargets || []).filter((p: any) => p != null);
-  const objectives = ((l2Node as any).objectives || []).filter((o: any) => o != null);
+  // R9: Collect upward chain data from L2 node + aggregate from L3 children
+  const policyTools = [...((l2Node as any).policyTools || []).filter((p: any) => p != null)];
+  const performanceTargets = [...((l2Node as any).performanceTargets || []).filter((p: any) => p != null)];
+  const objectives = [...((l2Node as any).objectives || []).filter((o: any) => o != null)];
+
+  // Aggregate overlay data from L3 children (chain overlays attach to L3, not L2)
+  for (const l3 of l3Children) {
+    for (const pt of ((l3 as any).policyTools || [])) {
+      if (pt && !policyTools.find((p: any) => p.domain_id === pt.domain_id)) policyTools.push(pt);
+    }
+    for (const perf of ((l3 as any).performanceTargets || [])) {
+      if (perf && !performanceTargets.find((p: any) => p.domain_id === perf.domain_id)) performanceTargets.push(perf);
+    }
+    for (const obj of ((l3 as any).objectives || [])) {
+      if (obj && !objectives.find((o: any) => o.domain_id === obj.domain_id)) objectives.push(obj);
+    }
+  }
+
   // Deduplicate objectives by id
-  const uniqueObjectives = objectives.filter((o: any, i: number, arr: any[]) => arr.findIndex((x: any) => x.id === o.id) === i);
+  const uniqueObjectives = objectives.filter((o: any, i: number, arr: any[]) => arr.findIndex((x: any) => x.id === o.id || x.domain_id === o.domain_id) === i);
 
   const l3Caps = l3Children.map(l3Node => buildL3(l3Node));
 
@@ -925,6 +1005,7 @@ function buildL3(l3Node: NeoGraphNode): L3Capability {
   l3Cap.rawCapability.operatingEntities = (l3Node as any).operatingEntities || [];
   l3Cap.rawCapability.performanceTargets = (l3Node as any).performanceTargets || [];
   l3Cap.rawCapability.policyTools = (l3Node as any).policyTools || [];
+  l3Cap.rawCapability.processMetrics = (l3Node as any).processMetrics || [];
 
   // R4: Late detection — compare latest project end_date vs PolicyTool end_date
   const policyTools = (l3Node as any).policyTools || [];

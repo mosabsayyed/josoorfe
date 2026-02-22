@@ -323,6 +323,75 @@ function L3DetailView({ l3, onClose, onAIAnalysis }: { l3: L3Capability; onClose
                 </div>
               )}
 
+              {/* 5b. Process Metrics */}
+              {(() => {
+                const processMetrics: any[] = cap.processMetrics || [];
+                return processMetrics.length > 0 ? (
+                  <>
+                    <h3 style={sectionTitleStyle}>{t('josoor.enterprise.detailPanel.processMetrics')}</h3>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '1.5rem' }}>
+                      {processMetrics.map((pm: any) => {
+                        const actual = pm.actual != null ? Number(pm.actual) : null;
+                        const target = pm.target != null ? Number(pm.target) : null;
+                        const baseline = pm.baseline != null ? Number(pm.baseline) : null;
+                        const isLowerBetter = pm.metric_type === 'cycle_time' || pm.metric_type === 'cost';
+                        let pct: number | null = null;
+                        if (actual != null && target != null && baseline != null && baseline !== target) {
+                          if (isLowerBetter) {
+                            pct = Math.round(((baseline - actual) / (baseline - target)) * 100);
+                          } else {
+                            pct = Math.round(((actual - (baseline || 0)) / (target - (baseline || 0))) * 100);
+                          }
+                          pct = Math.max(0, Math.min(pct, 100));
+                        } else if (actual != null && target != null && target > 0) {
+                          pct = isLowerBetter ? Math.round((target / actual) * 100) : Math.round((actual / target) * 100);
+                          pct = Math.max(0, Math.min(pct, 100));
+                        }
+                        const barColor = pct != null ? (pct >= 70 ? '#10b981' : pct >= 40 ? '#f59e0b' : '#ef4444') : '#3b82f6';
+                        const trendIcon = pm.trend === 'improving' ? '\u2191' : pm.trend === 'declining' ? '\u2193' : '\u2192';
+                        const trendColor = pm.trend === 'improving' ? '#10b981' : pm.trend === 'declining' ? '#ef4444' : '#f59e0b';
+                        return (
+                          <div key={pm.id} style={{
+                            background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)',
+                            borderRadius: '6px', padding: '10px 14px'
+                          }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                              <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--component-text-primary)' }}>
+                                {pm.metric_name || pm.name}
+                              </div>
+                              <span style={{ fontSize: '14px', fontWeight: 600, color: trendColor }}>{trendIcon}</span>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '6px' }}>
+                              <span style={{ fontSize: '20px', fontWeight: 700, color: 'var(--component-text-primary)' }}>
+                                {actual != null ? actual : '\u2014'}
+                              </span>
+                              <span style={{ fontSize: '13px', color: 'var(--component-text-muted)' }}>
+                                {t('josoor.enterprise.detailPanel.target')}: {target != null ? target : '\u2014'} {pm.unit || ''}
+                              </span>
+                            </div>
+                            {pct != null && (
+                              <div style={{ height: '8px', background: 'rgba(255,255,255,0.06)', borderRadius: '4px', overflow: 'hidden' }}>
+                                <div style={{ height: '100%', width: `${pct}%`, background: barColor, borderRadius: '4px' }} />
+                              </div>
+                            )}
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px' }}>
+                              <span style={{ fontSize: '11px', color: 'var(--component-text-muted)' }}>
+                                {pm.metric_type ? pm.metric_type.replace('_', ' ') : ''}
+                              </span>
+                              {pm.indicator_type && (
+                                <span style={{ fontSize: '11px', color: 'var(--component-text-muted)', fontStyle: 'italic' }}>
+                                  {pm.indicator_type}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </>
+                ) : null;
+              })()}
+
               {/* 6. Strategic Context */}
               <StrategicContextSection cap={cap} />
 
@@ -455,6 +524,75 @@ function L3DetailView({ l3, onClose, onAIAnalysis }: { l3: L3Capability; onClose
                                 </div>
                               </>
                             )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </>
+                ) : null;
+              })()}
+
+              {/* 4b. Process Metrics */}
+              {(() => {
+                const processMetrics: any[] = cap.processMetrics || [];
+                return processMetrics.length > 0 ? (
+                  <>
+                    <h3 style={sectionTitleStyle}>{t('josoor.enterprise.detailPanel.processMetrics')}</h3>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '1.5rem' }}>
+                      {processMetrics.map((pm: any) => {
+                        const actual = pm.actual != null ? Number(pm.actual) : null;
+                        const target = pm.target != null ? Number(pm.target) : null;
+                        const baseline = pm.baseline != null ? Number(pm.baseline) : null;
+                        const isLowerBetter = pm.metric_type === 'cycle_time' || pm.metric_type === 'cost';
+                        let pct: number | null = null;
+                        if (actual != null && target != null && baseline != null && baseline !== target) {
+                          if (isLowerBetter) {
+                            pct = Math.round(((baseline - actual) / (baseline - target)) * 100);
+                          } else {
+                            pct = Math.round(((actual - (baseline || 0)) / (target - (baseline || 0))) * 100);
+                          }
+                          pct = Math.max(0, Math.min(pct, 100));
+                        } else if (actual != null && target != null && target > 0) {
+                          pct = isLowerBetter ? Math.round((target / actual) * 100) : Math.round((actual / target) * 100);
+                          pct = Math.max(0, Math.min(pct, 100));
+                        }
+                        const barColor = pct != null ? (pct >= 70 ? '#10b981' : pct >= 40 ? '#f59e0b' : '#ef4444') : '#3b82f6';
+                        const trendIcon = pm.trend === 'improving' ? '\u2191' : pm.trend === 'declining' ? '\u2193' : '\u2192';
+                        const trendColor = pm.trend === 'improving' ? '#10b981' : pm.trend === 'declining' ? '#ef4444' : '#f59e0b';
+                        return (
+                          <div key={pm.id} style={{
+                            background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)',
+                            borderRadius: '6px', padding: '10px 14px'
+                          }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                              <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--component-text-primary)' }}>
+                                {pm.metric_name || pm.name}
+                              </div>
+                              <span style={{ fontSize: '14px', fontWeight: 600, color: trendColor }}>{trendIcon}</span>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '6px' }}>
+                              <span style={{ fontSize: '20px', fontWeight: 700, color: 'var(--component-text-primary)' }}>
+                                {actual != null ? actual : '\u2014'}
+                              </span>
+                              <span style={{ fontSize: '13px', color: 'var(--component-text-muted)' }}>
+                                {t('josoor.enterprise.detailPanel.target')}: {target != null ? target : '\u2014'} {pm.unit || ''}
+                              </span>
+                            </div>
+                            {pct != null && (
+                              <div style={{ height: '8px', background: 'rgba(255,255,255,0.06)', borderRadius: '4px', overflow: 'hidden' }}>
+                                <div style={{ height: '100%', width: `${pct}%`, background: barColor, borderRadius: '4px' }} />
+                              </div>
+                            )}
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px' }}>
+                              <span style={{ fontSize: '11px', color: 'var(--component-text-muted)' }}>
+                                {pm.metric_type ? pm.metric_type.replace('_', ' ') : ''}
+                              </span>
+                              {pm.indicator_type && (
+                                <span style={{ fontSize: '11px', color: 'var(--component-text-muted)', fontStyle: 'italic' }}>
+                                  {pm.indicator_type}
+                                </span>
+                              )}
+                            </div>
                           </div>
                         );
                       })}
@@ -640,6 +778,17 @@ function L2DetailView({ l2, onClose, selectedYear, selectedQuarter, onAIAnalysis
     });
   });
 
+  // Aggregate process metrics from all L3 children
+  const allProcessMetrics: any[] = [];
+  l2.l3.forEach(l3 => {
+    const metrics = l3.rawCapability?.processMetrics || [];
+    metrics.forEach((pm: any) => {
+      if (!allProcessMetrics.find(m => m.id === pm.id)) {
+        allProcessMetrics.push(pm);
+      }
+    });
+  });
+
   return (
     <div className="detail-panel-overlay" onClick={onClose}>
       <div className="sector-details-panel drawer visible"
@@ -721,6 +870,123 @@ function L2DetailView({ l2, onClose, selectedYear, selectedQuarter, onAIAnalysis
               </p>
             </div>
           )}
+
+          {/* 2b. Process Metrics — L2 Composite Aggregation from L3 children */}
+          {allProcessMetrics.length > 0 && (() => {
+            // --- Compute per-metric achievement percentages ---
+            const metricAchievements: { metric: any; pct: number; isLowerBetter: boolean }[] = [];
+            allProcessMetrics.forEach(pm => {
+              const actual = pm.actual != null ? Number(pm.actual) : null;
+              const target = pm.target != null ? Number(pm.target) : null;
+              const isLowerBetter = pm.metric_type === 'cycle_time' || pm.metric_type === 'cost';
+              if (actual != null && target != null && target > 0) {
+                const raw = isLowerBetter ? (target / actual) * 100 : (actual / target) * 100;
+                metricAchievements.push({ metric: pm, pct: Math.max(0, Math.min(Math.round(raw), 100)), isLowerBetter });
+              }
+            });
+
+            // --- Group by metric_type and compute per-type scores ---
+            const typeWeights: Record<string, number> = { quality: 35, throughput: 25, cycle_time: 25, volume: 10, cost: 5 };
+            const typeLabels: Record<string, string> = { quality: 'Quality', throughput: 'Throughput', cycle_time: 'Efficiency', volume: 'Volume', cost: 'Cost' };
+            const grouped: Record<string, { pcts: number[]; metrics: any[] }> = {};
+            metricAchievements.forEach(({ metric, pct }) => {
+              const mType = metric.metric_type || 'other';
+              if (!grouped[mType]) grouped[mType] = { pcts: [], metrics: [] };
+              grouped[mType].pcts.push(pct);
+              grouped[mType].metrics.push({ ...metric, _pct: pct });
+            });
+
+            const typeSummaries = Object.entries(grouped).map(([mType, { pcts, metrics }]) => {
+              const avg = Math.round(pcts.reduce((s, v) => s + v, 0) / pcts.length);
+              return { type: mType, label: typeLabels[mType] || mType, score: avg, weight: typeWeights[mType] || 5, metrics };
+            });
+
+            // --- Compute weighted composite score ---
+            let totalWeight = 0;
+            let weightedSum = 0;
+            typeSummaries.forEach(ts => { weightedSum += ts.score * ts.weight; totalWeight += ts.weight; });
+            const compositeScore = totalWeight > 0 ? Math.round(weightedSum / totalWeight) : 0;
+            const compositeColor = compositeScore >= 70 ? '#10b981' : compositeScore >= 40 ? '#f59e0b' : '#ef4444';
+
+            return (
+              <>
+                <h3 style={sectionTitleStyle}>{t('josoor.enterprise.detailPanel.compositeScore')}</h3>
+
+                {/* --- Prominent composite score --- */}
+                <div style={{
+                  background: 'rgba(255,255,255,0.03)', border: `1px solid ${compositeColor}33`,
+                  borderRadius: '8px', padding: '16px', marginBottom: '16px', textAlign: 'center'
+                }}>
+                  <div style={{ fontSize: '36px', fontWeight: 800, color: compositeColor, lineHeight: 1.1 }}>
+                    {compositeScore}%
+                  </div>
+                  <div style={{
+                    height: '8px', background: 'rgba(255,255,255,0.06)', borderRadius: '4px',
+                    overflow: 'hidden', marginTop: '10px'
+                  }}>
+                    <div style={{ height: '100%', width: `${compositeScore}%`, background: compositeColor, borderRadius: '4px', transition: 'width 0.4s ease' }} />
+                  </div>
+                </div>
+
+                {/* --- Breakdown by metric type --- */}
+                <h4 style={{ ...sectionTitleStyle, fontSize: '13px', marginBottom: '8px', marginTop: '0' }}>
+                  {t('josoor.enterprise.detailPanel.breakdown')}
+                </h4>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '16px' }}>
+                  {typeSummaries.map(ts => {
+                    const clr = ts.score >= 70 ? '#10b981' : ts.score >= 40 ? '#f59e0b' : '#ef4444';
+                    return (
+                      <div key={ts.type} style={{
+                        display: 'flex', alignItems: 'center', gap: '10px', padding: '6px 10px',
+                        background: 'rgba(255,255,255,0.02)', borderRadius: '4px'
+                      }}>
+                        <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--component-text-secondary)', width: '80px', flexShrink: 0 }}>
+                          {ts.label}
+                        </span>
+                        <div style={{ flex: 1, height: '6px', background: 'rgba(255,255,255,0.06)', borderRadius: '3px', overflow: 'hidden' }}>
+                          <div style={{ height: '100%', width: `${ts.score}%`, background: clr, borderRadius: '3px' }} />
+                        </div>
+                        <span style={{ fontSize: '13px', fontWeight: 700, color: clr, width: '36px', textAlign: 'right', flexShrink: 0 }}>
+                          {ts.score}%
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* --- Compact contributing metrics list --- */}
+                <h4 style={{ ...sectionTitleStyle, fontSize: '13px', marginBottom: '6px', marginTop: '0' }}>
+                  {t('josoor.enterprise.detailPanel.contributingMetrics')} ({allProcessMetrics.length})
+                </h4>
+                <div style={{
+                  display: 'flex', flexDirection: 'column', gap: '2px', marginBottom: '1.5rem',
+                  background: 'rgba(255,255,255,0.02)', borderRadius: '6px', padding: '8px 10px'
+                }}>
+                  {metricAchievements.map(({ metric: pm, pct }) => (
+                    <div key={pm.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '3px 0' }}>
+                      <span style={{ fontSize: '12px', color: 'var(--component-text-secondary)', flex: 1 }}>
+                        {pm.metric_name || pm.name}
+                      </span>
+                      <span style={{ fontSize: '12px', color: 'var(--component-text-muted)', whiteSpace: 'nowrap', marginLeft: '8px' }}>
+                        {pm.actual != null ? pm.actual : '\u2014'} → {pm.target != null ? pm.target : '\u2014'} {pm.unit || ''}
+                      </span>
+                    </div>
+                  ))}
+                  {/* Show metrics that couldn't compute a percentage */}
+                  {allProcessMetrics.filter(pm => !metricAchievements.find(ma => ma.metric.id === pm.id)).map(pm => (
+                    <div key={pm.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '3px 0' }}>
+                      <span style={{ fontSize: '12px', color: 'var(--component-text-muted)', flex: 1 }}>
+                        {pm.metric_name || pm.name}
+                      </span>
+                      <span style={{ fontSize: '12px', color: 'var(--component-text-muted)', whiteSpace: 'nowrap', marginLeft: '8px' }}>
+                        {pm.actual != null ? pm.actual : '\u2014'} {pm.unit || ''}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </>
+            );
+          })()}
 
           {/* 3. KPI Dashboard — full-width cards with bars (NOT GaugeCard) */}
           {chain && chain.performanceTargets.length > 0 && (

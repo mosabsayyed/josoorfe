@@ -1,7 +1,7 @@
 # Enterprise Ontology + Risk Engine v1.1 — Single Source of Truth (SST)
 
-**Status:** Authoritative (locked)  
-**Version:** 1.1  
+**Status:** Authoritative (locked)
+**Version:** 1.2
 **Scope:** Node taxonomy, relationship semantics, cross-domain constraints, chain query library, and Risk Engine behavior.
 
 ---
@@ -41,6 +41,7 @@ All traversals must adhere to these world-model constraints. **DENY BY DEFAULT**
    - `SectorPerformance L2` ↔ `EntityCapability L2`
    - `EntityRisk L2` → `SectorPolicyTool L2` (BUILD)
    - `EntityRisk L2` → `SectorPerformance L2` (OPERATE)
+   - `EntityProcess L3` → `SectorPerformance L2` (FEEDS_INTO — process metrics feed sector KPIs)
 4) **Hierarchy**: Vertical movements are always preceded with a `PARENT_OF` relationship movement vertical movement across levels (L1-L2-L3).
 
 ---
@@ -85,8 +86,9 @@ Properties: id, name, year, level, quarter, parent_id, parent_year, risk_status,
 **EntityOrgUnit**  
 Properties: id, name, year, level, quarter, parent_id, parent_year, type, head_of_unit, headcount, location, budget, annual_budget, gap
 
-**EntityProcess**  
-Properties: id, name, year, level, quarter, description
+**EntityProcess**
+Properties: id, name, year, level, quarter, description, metric_name, actual, target, baseline, unit, metric_type, indicator_type, trend, aggregation_method
+*Process metric fields (L3 only):* metric_name (e.g. "Avg Days to Issue License"), actual/target/baseline (numeric), unit ("days"/"count"/"%"/"SAR"), metric_type ("cycle_time"/"throughput"/"volume"/"quality"/"cost"), indicator_type ("leading"/"lagging"/"coincident"), trend ("improving"/"stable"/"declining"), aggregation_method ("avg"/"sum"/"min"/"max"/"weighted_avg")
 
 **EntityITSystem**  
 Properties: id, name, year, level, quarter, owner, vendor, integration_level, criticality
@@ -164,7 +166,7 @@ L3 = Team
 **EntityProcess:**
 L1 = Process Category
 L2 = Process Group
-L3 = Process Cluster
+L3 = Executable Process (with process metrics: actual, target, baseline, unit, trend)
 
 **EntityITSystem:**
 L1 = Main Platform
@@ -230,9 +232,10 @@ These are the REAL and ONLY direct world relations. Any missing label/type/direc
 - EntityProcess `-[:OPERATES]->` EntityCapability  
 - EntityITSystem `-[:OPERATES]->` EntityCapability  
 - EntityCultureHealth `-[:MONITORS_FOR]->` EntityOrgUnit  
-- EntityOrgUnit `-[:APPLY]->` EntityProcess  
-- EntityProcess `-[:AUTOMATION]->` EntityITSystem  
-- EntityITSystem `-[:DEPENDS_ON]->` EntityVendor  
+- EntityOrgUnit `-[:APPLY]->` EntityProcess
+- EntityProcess `-[:AUTOMATION]->` EntityITSystem
+- EntityProcess `-[:FEEDS_INTO]->` SectorPerformance (**L3→L2 cross-domain bridge: process metrics feed sector KPIs**)
+- EntityITSystem `-[:DEPENDS_ON]->` EntityVendor
 
 ### 4.5 Transforming capabilities
 - EntityOrgUnit `-[:GAPS_SCOPE]->` EntityProject  
@@ -616,7 +619,7 @@ RETURN DISTINCT
     "SETS_PRIORITIES", "SETS_TARGETS", "EXECUTES", "REPORTS",
     "MONITORED_BY", "INFORMS",
     "ROLE_GAPS", "KNOWLEDGE_GAPS", "AUTOMATION_GAPS",
-    "OPERATES", "MONITORS_FOR", "APPLY", "AUTOMATION", "DEPENDS_ON",
+    "OPERATES", "MONITORS_FOR", "APPLY", "AUTOMATION", "FEEDS_INTO", "DEPENDS_ON",
     "GAPS_SCOPE", "CLOSE_GAPS",
     "ADOPTION_RISKS", "INCREASE_ADOPTION"
   ],

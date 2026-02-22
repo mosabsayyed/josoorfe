@@ -28,9 +28,10 @@ interface EnterpriseDeskProps {
   year?: string;
   quarter?: string;
   focusCapId?: string | null;
+  onIntervene?: (ctx: any) => void;
 }
 
-export function EnterpriseDesk({ year = '2025', quarter = 'Q1', focusCapId }: EnterpriseDeskProps) {
+export function EnterpriseDesk({ year = '2025', quarter = 'Q1', focusCapId, onIntervene }: EnterpriseDeskProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
 
@@ -210,7 +211,7 @@ export function EnterpriseDesk({ year = '2025', quarter = 'Q1', focusCapId }: En
     try {
       const response = await chatService.sendMessage({
         query: prompt,
-        desk_type: 'sector_desk'
+        prompt_key: 'risk_advisory'
       });
 
       if (response.llm_payload?.answer) {

@@ -1,13 +1,43 @@
-import { useState } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { AlertTriangle, TrendingDown, TrendingUp, Plus, Pause, ArrowUpDown, Users, Zap } from 'lucide-react';
+import { AlertTriangle, TrendingDown, TrendingUp, Plus, Pause, ArrowUpDown, Users, Zap, Loader2, CheckCircle, XCircle } from 'lucide-react';
+import { Gantt } from 'wx-react-gantt';
+import { chatService } from '../../services/chatService';
+import { parsePlanResponse, InterventionPlan, PlanDeliverable, PlanTask } from '../../utils/planParser';
+import { createRiskPlan } from '../../services/planningService';
 import './PlanningDesk.css';
 
 type PlanningMode = 'intervention' | 'strategic-reset' | 'scenario';
 
-export function PlanningDesk() {
+export interface InterventionContext {
+  riskId: string;
+  riskName: string;
+  capabilityId: string;
+  capabilityName: string;
+  band: string;
+  exposurePct: number;
+  selectedOption: {
+    id: string;
+    title: string;
+    description: string;
+  };
+}
+
+interface PlanningDeskProps {
+  interventionContext?: InterventionContext | null;
+  onClearContext?: () => void;
+}
+
+export function PlanningDesk({ interventionContext, onClearContext }: PlanningDeskProps) {
   const { t } = useTranslation();
   const [selectedMode, setSelectedMode] = useState<PlanningMode>('intervention');
+
+  // Auto-switch to intervention when context arrives
+  useEffect(() => {
+    if (interventionContext) {
+      setSelectedMode('intervention');
+    }
+  }, [interventionContext]);
 
   const modeButtons: { id: PlanningMode; label: string; description: string }[] = [
     { id: 'intervention', label: t('josoor.planning.interventionPlanning'), description: t('josoor.planning.inYearTacticalAdjustments') },
@@ -46,7 +76,12 @@ export function PlanningDesk() {
 
       {/* Content Area */}
       <div className="planning-content">
-        {selectedMode === 'intervention' && <InterventionPlanning />}
+        {selectedMode === 'intervention' && (
+          <InterventionPlanning
+            context={interventionContext}
+            onClearContext={onClearContext}
+          />
+        )}
         {selectedMode === 'strategic-reset' && <StrategicReset />}
         {selectedMode === 'scenario' && <ScenarioSimulation />}
       </div>
@@ -54,288 +89,278 @@ export function PlanningDesk() {
   );
 }
 
-// A) Intervention Planning (In-Year)
-function InterventionPlanning() {
+// ─── Intervention Planning (In-Year) ────────────────────────────────
+
+interface InterventionPlanningProps {
+  context?: InterventionContext | null;
+  onClearContext?: () => void;
+}
+
+function InterventionPlanning({ context, onClearContext }: InterventionPlanningProps) {
   const { t } = useTranslation();
-  const [interventions, setInterventions] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [narrative, setNarrative] = useState<string>('');
+  const [plan, setPlan] = useState<InterventionPlan | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [isCommitted, setIsCommitted] = useState(false);
 
-  const addIntervention = (type: string) => {
-    setInterventions([
-      ...interventions,
-      {
-        id: Date.now(),
-        type,
-        loadImpact: type === 'Add Project' ? 1 : -1,
-        riskImpact: -12,
-        delayImpact: -8,
-        confidence: 'Medium',
-      },
-    ]);
-  };
+  // Call LLM when context arrives
+  useEffect(() => {
+    if (!context) return;
 
-  return (
-    <div className="intervention-container">
-      {/* 1. Context Header (locked, non-editable) */}
-      <div className="context-header">
-        <div className="context-label">
-          {t('josoor.planning.contextLocked')}
-        </div>
-        <div className="context-grid">
-          <div>
-            <div className="field-label">{t('josoor.planning.capability')}</div>
-            <div className="field-value">{t('josoor.planning.plantOperations')}</div>
-            <div className="field-subtext">{t('josoor.planning.l2L3Expandable')}</div>
-          </div>
-          <div>
-            <div className="field-label">{t('josoor.planning.mode')}</div>
-            <div className="flex items-center gap-2">
-              <span className="status-badge-build">{t('josoor.planning.build')}</span>
-            </div>
-          </div>
-          <div>
-            <div className="field-label">{t('josoor.planning.trigger')}</div>
-            <div className="space-y-0.5">
-              <div className="flex items-center gap-1 text-8px">
-                <div className="w-1.5 h-1.5 rounded-full bg-red" />
-                <span className="text-slate-200">{t('josoor.planning.riskExposure68')}</span>
-              </div>
-              <div className="flex items-center gap-1 text-8px">
-                <div className="w-1.5 h-1.5 rounded-full bg-amber" />
-                <span className="text-slate-200">{t('josoor.planning.saturation5Active')}</span>
-              </div>
-              <div className="text-slate-500 text-7px mt-1">
-                {t('josoor.planning.sourceControlSignals')}
-              </div>
-            </div>
-          </div>
+    let cancelled = false;
+
+    const generatePlan = async () => {
+      setIsLoading(true);
+      setError(null);
+      setNarrative('');
+      setPlan(null);
+      setIsCommitted(false);
+
+      try {
+        const userPrompt = `Generate an intervention plan for risk "${context.riskName}" on capability "${context.capabilityName}".
+Risk band: ${context.band}, Exposure: ${context.exposurePct}%.
+Selected intervention strategy: "${context.selectedOption.title}" — ${context.selectedOption.description}.
+Produce a structured plan with deliverables and tasks.`;
+
+        const response = await chatService.sendMessage({
+          query: userPrompt,
+          prompt_key: 'intervention_planning',
+        });
+
+        if (cancelled) return;
+
+        const answer = response.llm_payload?.answer || response.message || response.answer || '';
+        const parsed = parsePlanResponse(answer);
+
+        setNarrative(parsed.narrative);
+        setPlan(parsed.plan);
+
+        if (!parsed.plan) {
+          setError(t('josoor.planning.planParseError') || 'Could not parse plan from AI response.');
+        }
+      } catch (err: any) {
+        if (!cancelled) {
+          console.error('[InterventionPlanning] LLM call failed:', err);
+          setError(err.message || 'Failed to generate plan');
+        }
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    };
+
+    generatePlan();
+    return () => { cancelled = true; };
+  }, [context, t]);
+
+  // Convert plan to Gantt data format
+  const ganttData = useMemo(() => {
+    if (!plan) return { tasks: [], links: [], scales: [] };
+
+    const tasks: any[] = [];
+    const links: any[] = [];
+    let linkId = 1;
+
+    plan.deliverables.forEach((del: PlanDeliverable) => {
+      // Add deliverable as a summary row
+      tasks.push({
+        id: del.id,
+        text: del.name,
+        start: new Date(del.start_date),
+        end: new Date(del.end_date),
+        type: 'summary',
+        open: true,
+      });
+
+      del.tasks.forEach((task: PlanTask) => {
+        tasks.push({
+          id: task.id,
+          text: `${task.name} (${task.owner})`,
+          start: new Date(task.start_date),
+          end: new Date(task.end_date),
+          parent: del.id,
+          type: 'task',
+        });
+
+        // Add dependency links
+        if (task.depends_on && task.depends_on.length > 0) {
+          task.depends_on.forEach((depId: string) => {
+            links.push({
+              id: linkId++,
+              source: depId,
+              target: task.id,
+              type: 'e2s',
+            });
+          });
+        }
+      });
+    });
+
+    const scales = [
+      { unit: 'month', step: 1, format: 'MMMM yyyy' },
+      { unit: 'week', step: 1, format: 'wo' },
+    ];
+
+    return { tasks, links, scales };
+  }, [plan]);
+
+  // Handle commit
+  const handleCommit = useCallback(async () => {
+    if (!plan || !context) return;
+
+    try {
+      await createRiskPlan(context.riskId, plan);
+      setIsCommitted(true);
+    } catch (err: any) {
+      console.error('[InterventionPlanning] Commit failed:', err);
+      setError(err.message || 'Failed to commit plan');
+    }
+  }, [plan, context]);
+
+  // Handle cancel
+  const handleCancel = useCallback(() => {
+    setPlan(null);
+    setNarrative('');
+    setError(null);
+    setIsCommitted(false);
+    onClearContext?.();
+  }, [onClearContext]);
+
+  // ── No context: show placeholder ──
+  if (!context) {
+    return (
+      <div className="intervention-container">
+        <div className="intervention-placeholder">
+          <AlertTriangle className="placeholder-icon" />
+          <p className="placeholder-text">{t('josoor.planning.noRiskSelected')}</p>
         </div>
       </div>
+    );
+  }
 
-      <div className="canvas-layout">
-        {/* 2. Constraint Canvas (center/left) */}
-        <div className="canvas-col">
-          <h3 className="section-title">
-            {t('josoor.planning.constraintCanvas')}
-          </h3>
+  // ── Loading state ──
+  if (isLoading) {
+    return (
+      <div className="intervention-container">
+        <RiskContextHeader context={context} />
+        <div className="intervention-loading">
+          <Loader2 className="loading-spinner" />
+          <p className="loading-text">{t('josoor.planning.generatingPlan')}</p>
+        </div>
+      </div>
+    );
+  }
 
-          {/* Capability State Block */}
-          <div className="planning-block">
-            <div className="block-header-green">
-              {t('josoor.planning.capabilityState')}
-            </div>
-            <div className="cap-state-grid">
-              <div>
-                <div className="field-label">{t('josoor.planning.maturity')}</div>
-                <div className="field-value text-14px">3 / 5</div>
-              </div>
-              <div>
-                <div className="field-label">{t('josoor.planning.trend')}</div>
-                <div className="value-trend-down">
-                  <TrendingDown className="w-3 h-3" />
-                  {t('josoor.planning.declining')}
-                </div>
-              </div>
-              <div>
-                <div className="field-label">{t('josoor.planning.allowedLoad')}</div>
-                <div className="field-value text-14px">{t('josoor.planning.threeProjects')}</div>
-              </div>
-              <div>
-                <div className="field-label">{t('josoor.planning.currentLoad')}</div>
-                <div className="value-alert">
-                  <span className="value-large-red">5</span>
-                  <AlertTriangle className="w-3 h-3 text-red" />
-                </div>
-              </div>
+  // ── Committed state ──
+  if (isCommitted) {
+    return (
+      <div className="intervention-container">
+        <RiskContextHeader context={context} />
+        <div className="intervention-committed">
+          <CheckCircle className="committed-icon" />
+          <p className="committed-text">{t('josoor.planning.planCommitted')}</p>
+          <button className="btn-intervention-secondary" onClick={handleCancel}>
+            {t('josoor.planning.backToPlanning') || 'Back to Planning'}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Main: narrative + Gantt ──
+  return (
+    <div className="intervention-container">
+      {/* Risk Context Header */}
+      <RiskContextHeader context={context} />
+
+      {/* Error */}
+      {error && (
+        <div className="intervention-error">
+          <XCircle className="error-icon" />
+          <span>{error}</span>
+        </div>
+      )}
+
+      {/* Narrative */}
+      {narrative && (
+        <div className="intervention-narrative">
+          <div className="block-header-red">{t('josoor.planning.planNarrative')}</div>
+          <div
+            className="narrative-content"
+            dangerouslySetInnerHTML={{ __html: narrative }}
+          />
+        </div>
+      )}
+
+      {/* Gantt Chart */}
+      {plan && ganttData.tasks.length > 0 && (
+        <div className="intervention-gantt-section">
+          <div className="gantt-header">
+            <div className="block-header-red">{t('josoor.planning.editGantt')}</div>
+            <div className="gantt-actions">
+              <button className="btn-intervention-secondary" onClick={handleCancel}>
+                {t('josoor.planning.cancelPlan')}
+              </button>
+              <button className="btn-intervention-primary" onClick={handleCommit}>
+                {t('josoor.planning.commitPlan')}
+              </button>
             </div>
           </div>
-
-          {/* Footprint Stress Block */}
-          <div className="planning-block">
-            <div className="block-header-amber">
-              {t('josoor.planning.footprintStress')}
-            </div>
-            <div className="space-y-1.5">
-              <div className="stress-row">
-                <span className="stress-label">{t('josoor.planning.orgGap')}</span>
-                <span className="badge-amber">
-                  {t('josoor.planning.medium')}
-                </span>
-              </div>
-              <div className="stress-row">
-                <span className="stress-label">{t('josoor.planning.processGap')}</span>
-                <span className="badge-red">{t('josoor.planning.high')}</span>
-              </div>
-              <div className="stress-row">
-                <span className="stress-label">{t('josoor.planning.itGap')}</span>
-                <span className="badge-green">{t('josoor.planning.low')}</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Risk Constraints Block */}
-          <div className="planning-block">
-            <div className="block-header-red">
-              {t('josoor.planning.riskConstraints')}
-            </div>
-            <div className="space-y-1.5">
-              <div className="risk-row">
-                <div className="field-label mb-0.5">{t('josoor.planning.risk')}</div>
-                <div className="risk-value-flex">
-                  <div className="dot-red" />
-                  <span className="text-slate-200 text-10px font-bold">{t('josoor.planning.delayDesalination')}</span>
-                </div>
-              </div>
-              <div className="risk-row">
-                <div className="field-label mb-0.5">{t('josoor.planning.affects')}</div>
-                <div className="text-slate-200 text-9px">{t('josoor.planning.policyToolPT01')}</div>
-              </div>
-              <div className="risk-row">
-                <div className="field-label mb-0.5">{t('josoor.planning.toleranceRemaining')}</div>
-                <div className="value-large-red">{t('josoor.planning.eighteenDays')}</div>
-              </div>
-            </div>
+          <div className="gantt-container">
+            <Gantt tasks={ganttData.tasks} links={ganttData.links} scales={ganttData.scales} />
           </div>
         </div>
+      )}
 
-        {/* 3. Intervention Builder (right panel) */}
-        <div className="canvas-col">
-          <div className="builder-header">
-            <h3 className="section-title">
-              {t('josoor.planning.interventionBuilder')}
-            </h3>
-            <div className="builder-count">{interventions.length} {t('josoor.planning.interventions')}</div>
-          </div>
-
-          {/* Add Intervention Buttons */}
-          <div className="planning-block">
-            <div className="block-header-gray">
-              {t('josoor.planning.addIntervention')}
-            </div>
-            <div className="add-btn-grid">
-              <button
-                onClick={() => addIntervention('Add Project')}
-                className="btn-add-intervention"
-              >
-                <Plus className="w-3 h-3" />
-                {t('josoor.planning.addProject')}
-              </button>
-              <button
-                onClick={() => addIntervention('Pause Project')}
-                className="btn-add-intervention"
-              >
-                <Pause className="w-3 h-3" />
-                {t('josoor.planning.pauseProject')}
-              </button>
-              <button
-                onClick={() => addIntervention('Resequence')}
-                className="btn-add-intervention"
-              >
-                <ArrowUpDown className="w-3 h-3" />
-                {t('josoor.planning.resequence')}
-              </button>
-              <button
-                onClick={() => addIntervention('Adjust Adoption')}
-                className="btn-add-intervention"
-              >
-                <Users className="w-3 h-3" />
-                {t('josoor.planning.adjustAdoption')}
-              </button>
-              <button
-                onClick={() => addIntervention('Escalate Policy')}
-                className="btn-add-intervention btn-span-2"
-              >
-                <Zap className="w-3 h-3" />
-                {t('josoor.planning.escalatePolicyTarget')}
-              </button>
-            </div>
-          </div>
-
-          {/* Intervention Cards */}
-          <div className="cards-list">
-            {interventions.map((intervention, idx) => (
-              <div
-                key={intervention.id}
-                className="intervention-card"
-              >
-                <div className="card-header">
-                  <div className="card-title">
-                    {t('josoor.planning.intervention')} {idx + 1}
-                  </div>
-                  <button
-                    onClick={() =>
-                      setInterventions(interventions.filter((i) => i.id !== intervention.id))
-                    }
-                    className="card-remove"
-                  >
-                    {t('josoor.planning.remove')}
-                  </button>
-                </div>
-                <div className="space-y-1.5">
-                  <div>
-                    <div className="field-label mb-0.5">{t('josoor.planning.type')}</div>
-                    <div className="text-slate-200 text-10px font-bold">{intervention.type}</div>
-                  </div>
-                  <div className="impact-preview">
-                    <div className="block-header-gray block-header-tight">
-                      {t('josoor.planning.impactPreview')}
-                    </div>
-                    <div className="impact-grid">
-                      <div className="impact-row">
-                        <span className="text-gray">{t('josoor.planning.load')}:</span>
-                        <span
-                          className={`impact-val-bold ${intervention.loadImpact > 0 ? 'text-red' : 'text-green'
-                            }`}
-                        >
-                          {intervention.loadImpact > 0 ? '+' : ''}
-                          {intervention.loadImpact}
-                        </span>
-                      </div>
-                      <div className="impact-row">
-                        <span className="text-gray">{t('josoor.planning.risk')}:</span>
-                        <span className="text-green impact-val-bold">{intervention.riskImpact}%</span>
-                      </div>
-                      <div className="impact-row">
-                        <span className="text-gray">{t('josoor.planning.delay')}:</span>
-                        <span className="text-green impact-val-bold">
-                          {intervention.delayImpact}d
-                        </span>
-                      </div>
-                      <div className="impact-row">
-                        <span className="text-gray">{t('josoor.planning.confidence')}:</span>
-                        <span className="text-amber impact-val-bold">{intervention.confidence}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Resulting State Preview */}
-          {interventions.length > 0 && (
-            <div className="resulting-state">
-              <div className="block-header-green">
-                {t('josoor.planning.resultingStatePreview')}
-              </div>
-              <div>
-                <div className="resulting-row">
-                  <span className="text-gray">{t('josoor.planning.newExposureBand')}:</span>
-                  <span className="text-green impact-val-bold">{t('josoor.planning.exposureBandValue')}</span>
-                </div>
-                <div className="resulting-row">
-                  <span className="text-gray">{t('josoor.planning.newLoad')}:</span>
-                  <span className="text-green impact-val-bold">
-                    {5 + interventions.reduce((sum, i) => sum + i.loadImpact, 0)} {t('josoor.planning.projects')}
-                  </span>
-                </div>
-                <div className="resulting-row">
-                  <span className="text-gray">{t('josoor.planning.residualRisk')}:</span>
-                  <span className="text-amber impact-val-bold">{t('josoor.planning.medium')}</span>
-                </div>
-              </div>
-            </div>
-          )}
+      {/* If plan was null but we have narrative — show just the action buttons */}
+      {!plan && narrative && (
+        <div className="gantt-actions" style={{ marginTop: '1rem' }}>
+          <button className="btn-intervention-secondary" onClick={handleCancel}>
+            {t('josoor.planning.cancelPlan')}
+          </button>
         </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Risk Context Header Sub-Component ──────────────────────────────
+
+function RiskContextHeader({ context }: { context: InterventionContext }) {
+  const { t } = useTranslation();
+
+  const bandColor = context.band === 'Red' ? '#ef4444'
+    : context.band === 'Amber' ? '#f59e0b'
+    : context.band === 'Yellow' ? '#eab308'
+    : '#10b981';
+
+  return (
+    <div className="risk-context-header" style={{ borderColor: bandColor }}>
+      <div className="risk-context-label" style={{ color: bandColor }}>
+        {t('josoor.planning.riskContext')}
+      </div>
+      <div className="risk-context-grid">
+        <div>
+          <div className="field-label">{t('josoor.planning.risk')}</div>
+          <div className="field-value">{context.riskName}</div>
+        </div>
+        <div>
+          <div className="field-label">{t('josoor.planning.capability')}</div>
+          <div className="field-value">{context.capabilityName}</div>
+        </div>
+        <div>
+          <div className="field-label">{t('josoor.planning.riskBand') || 'Band'}</div>
+          <div className="field-value" style={{ color: bandColor }}>{context.band}</div>
+        </div>
+        <div>
+          <div className="field-label">{t('josoor.planning.exposure') || 'Exposure'}</div>
+          <div className="field-value">{context.exposurePct}%</div>
+        </div>
+      </div>
+      <div className="risk-context-strategy">
+        <div className="field-label">{t('josoor.planning.selectedStrategy')}</div>
+        <div className="strategy-value">{context.selectedOption.title}</div>
+        <div className="strategy-desc">{context.selectedOption.description}</div>
       </div>
     </div>
   );

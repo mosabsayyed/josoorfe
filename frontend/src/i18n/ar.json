@@ -429,7 +429,22 @@
       "worstCase": "أسوأ حالة",
       "mostLikely": "الأكثر احتمالاً",
       "runSimulation": "تشغيل المحاكاة",
-      "reset": "إعادة تعيين"
+      "reset": "إعادة تعيين",
+      "generatingPlan": "جاري إنشاء خطة التدخل...",
+      "commitPlan": "اعتماد الخطة",
+      "cancelPlan": "إلغاء",
+      "sponsor": "الراعي",
+      "task": "المهمة",
+      "noRiskSelected": "انتقل إلى قرار → اختر مخاطر حمراء → انقر تدخل",
+      "planNarrative": "ملخص الخطة",
+      "editGantt": "تعديل الجدول الزمني",
+      "riskContext": "سياق المخاطر",
+      "selectedStrategy": "الاستراتيجية المختارة",
+      "planCommitted": "تم اعتماد الخطة بنجاح",
+      "dependsOn": "يعتمد على",
+      "addTask": "إضافة مهمة",
+      "removeTask": "حذف مهمة",
+      "addDeliverable": "إضافة مخرج"
     },
     "reporting": {
       "title": "مكتب التقارير",
@@ -656,7 +671,12 @@
         "aiAnalysis": "تحليل المخاطر بالذكاء الاصطناعي",
         "aiAnalysisTitle": "تحليل المخاطر بالذكاء الاصطناعي",
         "generatingAnalysis": "جارٍ إنشاء التحليل بالذكاء الاصطناعي...",
-        "analysisFailed": "فشل التحليل. يرجى المحاولة مرة أخرى."
+        "analysisFailed": "فشل التحليل. يرجى المحاولة مرة أخرى.",
+        "processMetrics": "مقاييس العمليات",
+        "target": "المستهدف",
+        "compositeScore": "مؤشر أداء العمليات",
+        "breakdown": "التفصيل",
+        "contributingMetrics": "المقاييس المساهمة"
       },
       "tooltip": {
         "mode": "الوضع:",

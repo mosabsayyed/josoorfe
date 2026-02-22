@@ -432,7 +432,22 @@
       "worstCase": "Worst Case",
       "mostLikely": "Most Likely",
       "runSimulation": "Run Simulation",
-      "reset": "Reset"
+      "reset": "Reset",
+      "generatingPlan": "Generating intervention plan...",
+      "commitPlan": "Commit Plan",
+      "cancelPlan": "Cancel",
+      "sponsor": "Sponsor",
+      "task": "Task",
+      "noRiskSelected": "Navigate to Decide → select a red risk → click Intervene",
+      "planNarrative": "Plan Summary",
+      "editGantt": "Edit Timeline",
+      "riskContext": "Risk Context",
+      "selectedStrategy": "Selected Strategy",
+      "planCommitted": "Plan committed successfully",
+      "dependsOn": "Depends On",
+      "addTask": "Add Task",
+      "removeTask": "Remove Task",
+      "addDeliverable": "Add Deliverable"
     },
     "reporting": {
       "title": "Reporting Desk",
@@ -659,7 +674,12 @@
         "aiAnalysis": "AI Risk Analysis",
         "aiAnalysisTitle": "AI Risk Analysis",
         "generatingAnalysis": "Generating AI Analysis...",
-        "analysisFailed": "Analysis failed. Please try again."
+        "analysisFailed": "Analysis failed. Please try again.",
+        "processMetrics": "Process Metrics",
+        "target": "Target",
+        "compositeScore": "Process Performance Score",
+        "breakdown": "Breakdown",
+        "contributingMetrics": "Contributing Metrics"
       },
       "tooltip": {
         "mode": "Mode:",
