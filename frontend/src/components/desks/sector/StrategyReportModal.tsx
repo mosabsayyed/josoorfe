@@ -8,6 +8,7 @@ import remarkGfm from 'remark-gfm';
 import { htmlToMarkdown } from '../../../utils/htmlToMarkdown';
 import { StrategyReportChartRenderer } from './StrategyReportChartRenderer';
 import { Artifact } from '../../../types/api';
+import { InterventionOption } from '../../../utils/optionsParser';
 
 interface StrategyReportModalProps {
     isOpen: boolean;
@@ -15,14 +16,100 @@ interface StrategyReportModalProps {
     htmlContent: string;
     artifacts?: Artifact[];
     onContinueInChat: () => void;
+    interventionOptions?: InterventionOption[] | null;
+    onSelectOption?: (option: InterventionOption) => void;
 }
+
+// OptionCard extracted to avoid hook-in-callback issues with hover state
+const OptionCard: React.FC<{
+    option: InterventionOption;
+    onSelect?: (option: InterventionOption) => void;
+    t: (key: string) => string;
+}> = ({ option, onSelect, t }) => {
+    const [hovered, setHovered] = React.useState(false);
+
+    return (
+        <button
+            onClick={() => onSelect?.(option)}
+            onMouseEnter={() => setHovered(true)}
+            onMouseLeave={() => setHovered(false)}
+            style={{
+                display: 'block',
+                width: '100%',
+                textAlign: 'left',
+                background: 'var(--component-panel-bg)',
+                border: `1px solid ${hovered ? 'var(--component-text-accent)' : 'var(--component-panel-border)'}`,
+                borderLeft: '3px solid var(--component-text-accent)',
+                borderRadius: '8px',
+                padding: '14px 16px',
+                cursor: 'pointer',
+                boxShadow: hovered ? '0 0 12px rgba(244,187,48,0.15)' : 'none',
+                transition: 'border-color 0.2s, box-shadow 0.2s'
+            }}
+        >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{
+                        margin: '0 0 6px 0',
+                        fontSize: '0.9rem',
+                        fontWeight: 700,
+                        color: 'var(--component-text-primary)',
+                        lineHeight: 1.3
+                    }}>
+                        {option.title}
+                    </p>
+                    {option.description && (
+                        <p style={{
+                            margin: '0 0 10px 0',
+                            fontSize: '0.82rem',
+                            color: 'var(--component-text-secondary)',
+                            lineHeight: 1.5
+                        }}>
+                            {option.description}
+                        </p>
+                    )}
+                    <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+                        {option.impact && (
+                            <span style={{ fontSize: '0.75rem', color: 'var(--component-text-secondary)' }}>
+                                <span style={{ color: 'var(--component-text-accent)', fontWeight: 600 }}>
+                                    {t('josoor.enterprise.impact') || 'Impact'}:{' '}
+                                </span>
+                                {option.impact}
+                            </span>
+                        )}
+                        {option.timeline && (
+                            <span style={{ fontSize: '0.75rem', color: 'var(--component-text-secondary)' }}>
+                                <span style={{ color: 'var(--component-text-accent)', fontWeight: 600 }}>
+                                    {t('josoor.enterprise.timeline') || 'Timeline'}:{' '}
+                                </span>
+                                {option.timeline}
+                            </span>
+                        )}
+                    </div>
+                </div>
+                <span style={{
+                    flexShrink: 0,
+                    fontSize: '0.8rem',
+                    fontWeight: 700,
+                    color: 'var(--component-text-accent)',
+                    whiteSpace: 'nowrap',
+                    paddingTop: '2px'
+                }}>
+                    {t('josoor.enterprise.selectOption') || 'Select'} →
+                </span>
+            </div>
+        </button>
+    );
+};
 
 const StrategyReportModal: React.FC<StrategyReportModalProps> = ({
     isOpen,
     onClose,
     htmlContent,
     artifacts = [],
-    onContinueInChat
+    onContinueInChat,
+    interventionOptions,
+    onSelectOption
 }) => {
     const { t } = useTranslation();
     // Create artifact lookup map by ID for inline rendering
@@ -167,33 +254,65 @@ const StrategyReportModal: React.FC<StrategyReportModalProps> = ({
                                     );
                                 })}
                             </div>
+
+                            {/* Intervention Options Section */}
+                            {interventionOptions && interventionOptions.length > 0 && (
+                                <div style={{
+                                    padding: '24px',
+                                    borderTop: '1px solid var(--component-panel-border)',
+                                    marginTop: '8px'
+                                }}>
+                                    <p style={{
+                                        margin: '0 0 16px 0',
+                                        fontSize: '0.7rem',
+                                        fontWeight: 700,
+                                        letterSpacing: '0.12em',
+                                        textTransform: 'uppercase',
+                                        color: 'var(--component-text-accent)'
+                                    }}>
+                                        {t('josoor.enterprise.chooseIntervention') || 'Choose an Intervention Strategy'}
+                                    </p>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                        {interventionOptions.map((option) => (
+                                            <OptionCard
+                                                key={option.id}
+                                                option={option}
+                                                onSelect={onSelectOption}
+                                                t={t}
+                                            />
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
                         {/* Footer / Actions */}
                         <div className="josoor-modal-footer">
-                            <button
-                                onClick={onContinueInChat}
-                                style={{
-                                    background: 'var(--component-text-accent)',
-                                    border: 'none',
-                                    color: 'black',
-                                    padding: '10px 20px',
-                                    borderRadius: '8px',
-                                    fontSize: '0.9rem',
-                                    cursor: 'pointer',
-                                    fontWeight: 700,
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '8px',
-                                    boxShadow: '0 4px 15px rgba(244,187,48,0.2)',
-                                    transition: 'transform 0.2s'
-                                }}
-                                onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-1px)'}
-                                onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
-                            >
-                                <span>{t('josoor.sector.continueExploration')}</span>
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
-                            </button>
+                            {(!interventionOptions || interventionOptions.length === 0) && (
+                                <button
+                                    onClick={onContinueInChat}
+                                    style={{
+                                        background: 'var(--component-text-accent)',
+                                        border: 'none',
+                                        color: 'black',
+                                        padding: '10px 20px',
+                                        borderRadius: '8px',
+                                        fontSize: '0.9rem',
+                                        cursor: 'pointer',
+                                        fontWeight: 700,
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '8px',
+                                        boxShadow: '0 4px 15px rgba(244,187,48,0.2)',
+                                        transition: 'transform 0.2s'
+                                    }}
+                                    onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-1px)'}
+                                    onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+                                >
+                                    <span>{t('josoor.sector.continueExploration')}</span>
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                                </button>
+                            )}
                         </div>
                     </motion.div>
                 </div>

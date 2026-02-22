@@ -15,6 +15,7 @@ import { CapabilityMatrix } from './enterprise/CapabilityMatrix';
 import { CapabilityTooltip } from './enterprise/CapabilityTooltip';
 import { CapabilityDetailPanel } from './enterprise/CapabilityDetailPanel';
 import StrategyReportModal from './sector/StrategyReportModal';
+import { parseOptionsResponse, InterventionOption } from '../../utils/optionsParser';
 
 import './enterprise/EnterpriseDesk.css';
 
@@ -41,6 +42,7 @@ export function EnterpriseDesk({ year = '2025', quarter = 'Q1', focusCapId, onIn
   const [riskReportHtml, setRiskReportHtml] = useState('');
   const [riskArtifacts, setRiskArtifacts] = useState<Artifact[]>([]);
   const [riskConversationId, setRiskConversationId] = useState<number | null>(null);
+  const [riskOptions, setRiskOptions] = useState<InterventionOption[] | null>(null);
 
   // Filter state (single source of truth)
   const [selectedOverlay, setSelectedOverlay] = useState<OverlayType>('none');
@@ -177,6 +179,28 @@ export function EnterpriseDesk({ year = '2025', quarter = 'Q1', focusCapId, onIn
     setSelectedL2(null);
   };
 
+  const handleSelectOption = (option: InterventionOption) => {
+    const cap = selectedL3;
+    if (!cap || !onIntervene) return;
+
+    onIntervene({
+      riskId: cap.rawRisk?.id || cap.id || '',
+      riskName: cap.rawRisk?.name || cap.name || '',
+      capabilityId: cap.id || '',
+      capabilityName: cap.name || '',
+      band: cap.rawRisk?.band || '',
+      exposurePct: cap.exposure_percent || 0,
+      selectedOption: {
+        id: option.id,
+        title: option.title,
+        description: option.description,
+      },
+    });
+
+    setIsRiskModalOpen(false);
+    setRiskOptions(null);
+  };
+
   // Get all L3s (respecting filters) for insight panel
   const allL3s = useMemo(() => {
     const l3List: L3Capability[] = [];
@@ -220,7 +244,9 @@ export function EnterpriseDesk({ year = '2025', quarter = 'Q1', focusCapId, onIn
         const cleanAnswer = response.metadata?.llm_payload?.answer ||
                            response.llm_payload.answer;
 
-        setRiskReportHtml(cleanAnswer);
+        const parsed = parseOptionsResponse(cleanAnswer);
+        setRiskReportHtml(parsed.narrative);
+        setRiskOptions(parsed.options);
         setRiskArtifacts(processedArtifacts);
         if (response.conversation_id) {
           setRiskConversationId(response.conversation_id);
@@ -362,14 +388,19 @@ export function EnterpriseDesk({ year = '2025', quarter = 'Q1', focusCapId, onIn
       {/* AI Risk Analysis Modal */}
       <StrategyReportModal
         isOpen={isRiskModalOpen}
-        onClose={() => setIsRiskModalOpen(false)}
+        onClose={() => {
+          setIsRiskModalOpen(false);
+          setRiskOptions(null);
+        }}
         htmlContent={riskReportHtml}
         artifacts={riskArtifacts}
+        interventionOptions={riskOptions}
+        onSelectOption={handleSelectOption}
         onContinueInChat={() => {
           setIsRiskModalOpen(false);
           const chatPath = riskConversationId
-            ? `/chat?conversation_id=${riskConversationId}`
-            : '/chat';
+            ? `/josoor?conversation_id=${riskConversationId}`
+            : '/josoor';
           navigate(chatPath);
         }}
       />
