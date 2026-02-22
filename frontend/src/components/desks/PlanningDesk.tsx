@@ -4,8 +4,17 @@ import { AlertTriangle, TrendingDown, TrendingUp, Plus, Pause, ArrowUpDown, User
 import { Gantt } from 'wx-react-gantt';
 import { chatService } from '../../services/chatService';
 import { parsePlanResponse, InterventionPlan, PlanDeliverable, PlanTask } from '../../utils/planParser';
-import { createRiskPlan } from '../../services/planningService';
 import './PlanningDesk.css';
+
+const createRiskPlan = async (riskId: string, plan: any) => {
+  const res = await fetch('/api/neo4j/risk-plan', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ riskId, plan }),
+  });
+  if (!res.ok) throw new Error(`Failed to create risk plan: ${res.statusText}`);
+  return res.json();
+};
 
 type PlanningMode = 'intervention' | 'strategic-reset' | 'scenario';
 
