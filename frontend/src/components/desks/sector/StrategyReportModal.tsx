@@ -131,7 +131,7 @@ const StrategyReportModal: React.FC<StrategyReportModalProps> = ({
                                                 <StrategyReportChartRenderer
                                                     artifact={artifact}
                                                     width="100%"
-                                                    height={artifact.artifact_type === 'TABLE' ? 'auto' : '380px'}
+                                                    height={artifact.artifact_type === 'TABLE' ? 'auto' : '420px'}
                                                 />
                                             </div>
                                         );

@@ -138,7 +138,7 @@ export function HtmlRenderer({ html, artifact, title, embeddedArtifacts: propArt
             <StrategyReportChartRenderer
               artifact={chartArtifact}
               width="100%"
-              height={chartArtifact.artifact_type === 'TABLE' ? 'auto' : '380px'}
+              height={chartArtifact.artifact_type === 'TABLE' ? 'auto' : '420px'}
             />
           </div>
         );

@@ -128,8 +128,8 @@ export const StrategyReportChartRenderer: React.FC<StrategyReportChartRendererPr
           type: content.chart?.type || 'column',
           backgroundColor: 'transparent',
           style: { fontFamily: 'inherit' },
-          height: 360,
-          margin: [40, 20, 40, 60]
+          height: null,
+          margin: [40, 20, 80, 60]
         },
         title: content.title ? {
           text: content.title.text,
@@ -267,8 +267,7 @@ export const StrategyReportChartRenderer: React.FC<StrategyReportChartRendererPr
       ref={containerRef}
       style={{
         width,
-        height,
-        minHeight: height,
+        minHeight: artifact.artifact_type === 'TABLE' ? 'auto' : '420px',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',

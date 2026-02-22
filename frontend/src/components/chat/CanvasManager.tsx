@@ -175,7 +175,7 @@ export function CanvasManager({ isOpen = false, conversationId = null, artifacts
     if (!currentArtifact) return;
     switch (action) {
       case 'share': shareArtifact(currentArtifact); break;
-      case 'print': printArtifact(); break;
+      case 'print': printArtifact(currentArtifact); break;
       case 'download': downloadArtifact(currentArtifact); break;
     }
   }, [currentArtifact]);
