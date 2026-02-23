@@ -27,6 +27,35 @@ export function CapabilityMatrix({
   highPriorityCapIds
 }: CapabilityMatrixProps) {
   const { t } = useTranslation();
+
+  const getL3KpiPct = (l3: L3Capability): number | null => {
+    const rawCap: any = l3.rawCapability || {};
+    const kpis: any[] = rawCap.l2Kpis || [];
+    if (!kpis.length) return null;
+
+    const matched = kpis.find((entry: any) => (entry?.inputs || []).some((inp: any) => String(inp?.cap_id || '') === String(l3.id))) || kpis[0];
+    const actual = matched?.kpi?.actual_value != null ? Number(matched.kpi.actual_value) : null;
+    const target = matched?.kpi?.target != null ? Number(matched.kpi.target) : null;
+    if (actual == null || target == null || Number.isNaN(actual) || Number.isNaN(target) || target <= 0) return null;
+    return Math.max(0, Math.min(100, Math.round((actual / target) * 100)));
+  };
+
+  const getL2RollupPct = (l2: L2Capability): number | null => {
+    const values = l2.l3
+      .filter(l3 => !isL3Dimmed(l3))
+      .map(getL3KpiPct)
+      .filter((v): v is number => v != null);
+    if (!values.length) return null;
+    return Math.round(values.reduce((sum, v) => sum + v, 0) / values.length);
+  };
+
+  const getL1RollupPct = (l1: L1Capability): number | null => {
+    const values = l1.l2
+      .map(getL2RollupPct)
+      .filter((v): v is number => v != null);
+    if (!values.length) return null;
+    return Math.round(values.reduce((sum, v) => sum + v, 0) / values.length);
+  };
   // Calculate max L3 count across all L2s to determine fixed cell width
   const maxL3Count = useMemo(() => {
     let max = 0;
@@ -63,6 +92,7 @@ export function CapabilityMatrix({
         {capabilityMatrix.map((l1) => {
           const totalL2Count = l1.l2.length;
           const l1Dimmed = isL1Dimmed(l1);
+          const l1Rollup = getL1RollupPct(l1);
 
           return (
             <div key={l1.id} className="capability-row-l1">
@@ -91,12 +121,17 @@ export function CapabilityMatrix({
                       <span className="maturity-slash">/</span>
                       <span className="maturity-target">{l1.target_maturity_level}</span>
                     </div>
+                    <div className="cell-kpi-rollup">
+                      <span className="kpi-rollup-label">KPI</span>
+                      <span className="kpi-rollup-value">{l1Rollup != null ? `${l1Rollup}%` : '—'}</span>
+                    </div>
                   </div>
                 </div>
 
                 {/* L2 and L3 cells */}
                 {l1.l2.map((l2) => {
                   const l2Dimmed = l1Dimmed || isL2Dimmed(l2);
+                  const l2Rollup = getL2RollupPct(l2);
 
                   return (
                     <div key={`l2-row-${l2.id}`} className="l2-row-contents">
@@ -124,6 +159,10 @@ export function CapabilityMatrix({
                             <span className="maturity-value">{l2.maturity_level}</span>
                             <span className="maturity-slash">/</span>
                             <span className="maturity-target">{l2.target_maturity_level}</span>
+                          </div>
+                          <div className="cell-kpi-rollup">
+                            <span className="kpi-rollup-label">KPI</span>
+                            <span className="kpi-rollup-value">{l2Rollup != null ? `${l2Rollup}%` : '—'}</span>
                           </div>
                         </div>
                       </div>

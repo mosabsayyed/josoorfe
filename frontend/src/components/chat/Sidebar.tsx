@@ -321,53 +321,75 @@ export function Sidebar({
         {/* Sections */}
         {renderSection(t('josoor.sidebar.oversight'), oversightItems, { isFirst: true })}
         {renderSection(t('josoor.sidebar.manage'), manageItems)}
-        {renderSection(t('josoor.sidebar.refer'), referItems)}
       </div>
 
-      {/* Chat sub-list: New Chat + conversation history under Expert Chat */}
-      {!collapsed && (
-        <div
-          style={{
-            flex: 1,
-            display: 'flex',
-            flexDirection: 'column',
-            minHeight: 0,
-            marginInlineStart: '20px',
-            maxWidth: '210px',
-            padding: '1px',
-            border: '1px solid rgba(238, 201, 4, 1)',
-            overflowY: 'auto'
-          }}
-        >
-          {/* New Chat Button */}
-          <button
-            title={translations.newChat}
-            onClick={() => onNewChat()}
-            className="quickaction-item clickable"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              backgroundColor: 'rgba(0, 0, 0, 0)',
-              borderRadius: '4px',
-              color: 'var(--component-text-accent)',
-              gap: '8px',
-              justifyContent: 'flex-start',
-              width: '100%',
-              padding: '6px 0',
-              fontWeight: 500,
-              fontSize: '13px',
-              lineHeight: '1.4',
-              fontFamily: language === 'ar' ? 'var(--component-font-family-ar)' : 'var(--component-font-family)',
-              border: '1px solid rgba(0, 0, 0, 0)',
-              cursor: 'pointer'
-            }}
-          >
-            <span style={{ fontSize: '20px', width: '24px', textAlign: 'center' }}>+</span>
-            <div className="quickaction-meta" style={{ display: 'flex', alignItems: 'flex-start', flexDirection: 'column' }}>
-              <span className="quickaction-title" style={{ display: 'block', fontSize: '14px' }}>{translations.newChat}</span>
+      {/* References section — Tutorials, Expert Chat, New Chat + conversation history in one block */}
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          minHeight: 0,
+          flex: collapsed ? undefined : 1,
+          marginInlineStart: collapsed ? '0' : '20px',
+          marginInlineEnd: collapsed ? '0' : '49px',
+          marginTop: '8px',
+          padding: '1px',
+          border: '1px solid rgba(238, 201, 4, 1)',
+          overflowY: 'auto'
+        }}
+      >
+        {!collapsed && (
+          <div className="sidebar-quickactions-title" style={{ fontWeight: "400", paddingInlineStart: '8px' }}>
+            <div style={{
+              display: "inline",
+              fontWeight: 700,
+              fontSize: '18px',
+              lineHeight: '18.2px',
+              fontFamily: language === 'ar' ? 'var(--component-font-heading-ar)' : 'var(--component-font-heading)',
+              color: 'rgba(238, 201, 4, 1)'
+            }}>
+              <span style={{ color: 'rgb(238, 201, 4)' }}>{t('josoor.sidebar.refer')}</span>
             </div>
-          </button>
+          </div>
+        )}
 
+        {referItems.map((item) => {
+          const overrideLabel = item.label?.[language] || item.label?.en || item.label;
+          const isActive = activeView === item.id;
+          return (
+            <button
+              key={item.id}
+              onClick={() => onQuickAction(item)}
+              className={`quickaction-item clickable ${isActive ? 'active' : ''}`}
+              title={overrideLabel}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: collapsed ? 'center' : 'flex-start',
+                backgroundColor: isActive ? 'var(--component-bg-disconnected)' : "rgba(0, 0, 0, 0)",
+                color: 'var(--component-text-primary)',
+                fontSize: "13px",
+                fontWeight: "400",
+                gap: collapsed ? '0' : '8px',
+                padding: "6px 6px",
+                border: "0.8px solid rgba(0, 0, 0, 0)",
+                textAlign: "start",
+                width: '100%',
+                cursor: 'pointer'
+              }}
+            >
+              <img src={item.icon} alt={overrideLabel} className="sidebar-quickaction-icon sidebar-quickaction-large" style={{ display: "block", fontWeight: "600", height: "24px", width: "24px", objectFit: "cover" }} />
+              {!collapsed && (
+                <div className="quickaction-meta" style={{ display: "flex", alignItems: "flex-start", flexDirection: "column" }}>
+                  <span className="quickaction-title" style={{ display: "block", fontSize: "14px" }}>{overrideLabel}</span>
+                </div>
+              )}
+            </button>
+          );
+        })}
+
+        {/* Conversation history */}
+        {!collapsed && (
           <div className="conversations-card" style={{ marginRight: '-0', padding: '5px 10px 5px 0' }}>
             <button onClick={() => setShowConversations(!showConversations)} className="conversations-header clickable">
               <span className="conversations-title">{translations.conversations}</span>
@@ -390,8 +412,8 @@ export function Sidebar({
               </div>
             )}
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Admin Section - moved after Graph Chat */}
       {!collapsed && (

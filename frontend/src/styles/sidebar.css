@@ -18,7 +18,7 @@
 .quickaction-category-title { font-size:12px; font-weight:700; margin-bottom:6px; }
 .quickaction-list { display:flex; flex-direction:column; gap:6px; }
 .quickaction-item { width:100%; display:flex; align-items:center; gap:8px; padding:8px 10px; border-radius: 4px; border:none; background:transparent; cursor:pointer; text-align:left; }
-.sidebar-quickaction-icon.sidebar-quickaction-large { width:28px; height:28px; object-fit:contain; }
+.sidebar-quickaction-icon.sidebar-quickaction-large { width:24px; height:24px; object-fit:contain; }
 .quickaction-meta { display:flex; flex-direction:column; align-items:flex-start; }
 .quickaction-title { font-size:14px; font-weight:600; color: var(--component-text-primary); }
 .quickaction-item { color: var(--component-text-primary); }

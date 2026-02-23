@@ -465,7 +465,91 @@
       "dependsOn": "Depends On",
       "addTask": "Add Task",
       "removeTask": "Remove Task",
-      "addDeliverable": "Add Deliverable"
+      "addDeliverable": "Add Deliverable",
+      "yearEndRealitySnapshot": "Year-End Reality Snapshot",
+      "capabilitiesStabilized": "Capabilities Stabilized",
+      "stabilityRate49": "Stability rate: 49%",
+      "chronicRisks": "Chronic Risks",
+      "persistentAcrossQuarters": "Persistent across quarters",
+      "persistentLeakageChains": "Persistent Leakage Chains",
+      "intentLoss25": "Intent loss > 25%",
+      "overbuiltCapabilities": "Overbuilt Capabilities",
+      "lowUtilization": "Low utilization despite investment",
+      "patternExplorer": "Pattern Explorer",
+      "avgRiskExposure": "Avg. Risk Exposure",
+      "avgLeakage": "Avg. Leakage",
+      "avgLoadUtil": "Avg. Load Utilization",
+      "policyPressure": "Policy Pressure",
+      "perfPressure": "Perf. Pressure",
+      "plantOperations": "Plant Operations",
+      "distributionMgmt": "Distribution Management",
+      "qualityControl": "Quality Control",
+      "assetMaintenance": "Asset Maintenance",
+      "networkPlanning": "Network Planning",
+      "customerService": "Customer Service",
+      "objectiveConsolidationCandidates": "Objective Consolidation Candidates",
+      "considerMergeRedundant": "Consider: Merge Redundant Objectives",
+      "threeObjectivesOverlap": "3 objectives overlap in scope and intent",
+      "considerDropLowImpact": "Consider: Drop Low-Impact Objectives",
+      "twoObjectivesMinimalReturns": "2 objectives showing minimal returns",
+      "considerElevateCritical": "Consider: Elevate Critical Infrastructure",
+      "infrastructureHigherPriority": "Infrastructure gaps require higher priority",
+      "policyMixRebalancing": "Policy Mix Rebalancing",
+      "recommendAddNewPolicy": "Recommend: Add New Policy Tool",
+      "pricingReformLeakage": "Pricing reform to address leakage patterns",
+      "recommendRetireIneffective": "Recommend: Retire Ineffective Tools",
+      "twoToolsNoImpact": "2 tools showing no measurable impact",
+      "recommendRebalancePortfolio": "Recommend: Rebalance Portfolio",
+      "overRelianceRegulatory": "Over-reliance on regulatory approach",
+      "directionResetProposals": "Direction Reset Proposals",
+      "guidanceTightenAmbitious": "Guidance: Tighten Ambitious Targets",
+      "qualityMetricsAchievable": "Quality metrics within achievable range",
+      "guidanceRelaxUnrealistic": "Guidance: Relax Unrealistic Targets",
+      "distributionTargetsUnattainable": "Distribution targets currently unattainable",
+      "guidanceRealignTimelines": "Guidance: Realign Timelines",
+      "phaseInfrastructureGoals": "Phase infrastructure goals across 3 years",
+      "capabilityIntentRecommendations": "Capability Intent Recommendations",
+      "suggestBuildToOperate": "Suggest: Move from Build to Operate",
+      "rationaleStabilization": "Rationale: Achieved stabilization threshold",
+      "suggestOperateToBuild": "Suggest: Move from Operate to Build",
+      "rationaleChronicUnderperformance": "Rationale: Chronic underperformance requires rebuild",
+      "legacySystems": "Legacy Systems",
+      "suggestHoldToDecommission": "Suggest: Move to Decommission",
+      "rationaleLowUtilization": "Rationale: Low utilization, high maintenance cost",
+      "scenarioControls": "Scenario Controls",
+      "changeObjectivePriority": "Change Objective Priority",
+      "waterSecurityHighMedium": "Water Security: High to Medium",
+      "infrastructureMediumHigh": "Infrastructure: Medium to High",
+      "sustainabilityLowMedium": "Sustainability: Low to Medium",
+      "addRemovePolicyTool": "Add / Remove Policy Tool",
+      "addWaterPricingReform": "Add: Water Pricing Reform",
+      "removeLegacyConservation": "Remove: Legacy Conservation Program",
+      "shiftCapabilityMaturity": "Shift Capability Maturity",
+      "plantOps3To4": "Plant Operations: Level 3 to 4",
+      "distribution2To3": "Distribution: Level 2 to 3",
+      "qualityControl4To5": "Quality Control: Level 4 to 5",
+      "injectConstraint": "Inject Constraint",
+      "budgetCut15": "Budget Cut: -15%",
+      "scheduleDelay6Months": "Schedule Delay: +6 Months",
+      "newRegulationStricterQuality": "New Regulation: Stricter Quality Standards",
+      "impactDiffView": "Impact Diff View",
+      "currentState": "Current State",
+      "scenarioState": "Scenario State",
+      "riskExposure": "Risk Exposure",
+      "loadSaturation": "Load Saturation",
+      "leakagePercent": "Leakage %",
+      "capabilitiesEnteringRed": "Capabilities Entering Red",
+      "verdictPanel": "Verdict Panel",
+      "newCriticalCapabilities": "New Critical Capabilities",
+      "dataAnalytics": "Data Analytics",
+      "newBrokenChains": "New Broken Chains",
+      "obj3PT5Leakage": "Obj 3: +5% leakage on distribution chain",
+      "executionFeasibility": "Execution Feasibility",
+      "yes": "Yes",
+      "recommendation": "Recommendation",
+      "viable": "VIABLE",
+      "scenarioReducesCriticalRisks": "This scenario reduces critical risks by 21% while introducing only 2 new chain breaks, all in non-critical paths.",
+      "noApproveButton": "Note: Scenarios are exploratory. No approve/commit button — return to Intervention Planning to act."
     },
     "reporting": {
       "title": "Reporting Desk",
@@ -716,7 +800,7 @@
         "falling": "\u25bc Falling",
         "stable": "\u25a0 Stable",
         "externalPressure": "External Pressure:",
-        "policyTools": "Policy Tools:",
+        "policyTools": "Delivery Programs:",
         "performanceTargets": "Performance Targets:",
         "footprintStress": "Footprint Stress:",
         "orgGap": "Org Gap:",
@@ -739,7 +823,9 @@
       "status": "Status",
       "priority": "Priority",
       "aiStrategyBrief": "AI Strategy Brief",
-      "policyTools": "Policy Tools",
+      "policyTools": "Delivery Programs",
+      "objectivesLabel": "Top Objectives",
+      "kpiLabel": "L1 KPI",
       "capacity": "CAPACITY",
       "region": "REGION",
       "investmentValue": "INVESTMENT VALUE",
@@ -760,6 +846,67 @@
       "vibrantSociety": "Vibrant Society",
       "thrivingEconomy": "Thriving Economy",
       "ambitiousNation": "Ambitious Nation",
+      "pillars": {
+        "vibrant": {
+          "title": "Vibrant Society",
+          "objective": "Home ownership 70% by 2030; tourism target 150M visitors"
+        },
+        "thriving": {
+          "title": "Thriving Economy",
+          "objective": "Private sector 65% GDP; FDI 5.7% of GDP by 2030"
+        },
+        "ambitious": {
+          "title": "Ambitious Nation",
+          "objective": "Top 5 e-government; 1M registered volunteers target"
+        },
+        "water": {
+          "title": "Water 2030 Objective",
+          "objective": "Treated wastewater reuse target 70% by 2030"
+        }
+      },
+      "cascade": {
+        "water": {
+          "capabilityBridge": "SWA strategic objectives are treated as capability bundles, deployed through policy tools.",
+          "realDataValue": "Live chain value",
+          "realObjectiveValue": "Derived from live chain relationships",
+          "realPerformanceGroupValue": "Water-linked performance targets",
+          "dropdownLabels": {
+            "pillar": "Pillar",
+            "visionL2": "Vision L2",
+            "visionL3": "Vision L3"
+          },
+          "levelLabels": {
+            "l1": "Sector Objective (Vision L2)",
+            "l2": "Performance Target (Vision L3)"
+          },
+          "pillars": {
+            "vibrant": { "title": "Vibrant Community", "value": "Safe and reliable water for communities" },
+            "thriving": { "title": "Thriving Economy", "value": "Reliable supply for growth and industry" },
+            "ambitious": { "title": "Ambitious Nation", "value": "Smart and transparent water operations" }
+          },
+          "l1": {
+            "sustainableUse": { "title": "Ensure sustainable use of water resources", "value": "Sector share of national pillar target" },
+            "industrialReliability": { "title": "Enable sustainable supply for consumers and industry", "value": "Sector share of national pillar target" },
+            "digitalGovernance": { "title": "Strengthen water-sector governance and oversight", "value": "Sector share of national pillar target" }
+          },
+          "l2": {
+            "reuse": { "title": "Maximize renewable water and treated wastewater reuse", "value": "70% by 2030" },
+            "desal": { "title": "Enhance desalinated water resources", "value": ">16.6M m³/day" },
+            "continuity": { "title": "Improve continuity, pressure, and strategic storage", "value": "Operational performance" },
+            "twinObservatory": { "title": "Scale water twin and observatory capabilities", "value": "AI-enabled real-time operations" }
+          },
+          "l3": {
+            "processLeakage": { "title": "Process: Leakage reports", "value": "NWC field workflow" },
+            "assetPipelines": { "title": "Asset: Transmission network", "value": "+14,000 km pipelines" },
+            "assetRasAlKhair": { "title": "Asset: Ras Al Khair", "value": "2.9M m³/day" },
+            "assetTabukJazan": { "title": "Asset: Tabuk 1 / Jazan 1", "value": "IWP expansion" },
+            "processDelivery": { "title": "Process: Consumer delivery", "value": "Continuity & pressure" },
+            "assetStorage": { "title": "Asset: Strategic storage", "value": "Capacity increase" },
+            "assetTwin": { "title": "Asset: Saudi Water Twin", "value": "Virtual network model" },
+            "processAlerting": { "title": "Process: Risk alerting", "value": "SWA operational response" }
+          }
+        }
+      },
       "activeView": "ACTIVE VIEW",
       "clickToExplore": "CLICK TO EXPLORE",
       "confidentialData": "CONFIDENTIAL DATA",
@@ -847,6 +994,99 @@
       "target": "Target",
       "mining": "Mining",
       "water": "Water",
+      "waterPrograms": {
+        "governance": "Institutional Restructuring & Governance",
+        "infrastructure_desalination": "Infrastructure & Desalination",
+        "circular_reuse": "Circular Economy & Reuse",
+        "digital_ai": "Digital Transformation & AI",
+        "innovation_climate": "Innovation & Climate Action"
+      },
+      "waterExec": {
+        "swaRegulator": {
+          "title": "SWCC → SWA Regulator Transition",
+          "team": "SWA Transformation Office",
+          "output": "Regulatory operating model and sector supervision framework",
+          "kpi": "Regulatory mandate coverage and compliance adoption",
+          "cap": "Policy & Regulation Capability"
+        },
+        "specializedEntities": {
+          "title": "Specialized Entity Governance (NWC/WTTCO/SIO/SWPC)",
+          "team": "SWA + NWC + WTTCO + SIO + SWPC",
+          "output": "Clear value-chain roles and coordinated governance model",
+          "kpi": "Service accountability and inter-entity handoff performance",
+          "cap": "Integrated Water Management Capability"
+        },
+        "desalCapacity": {
+          "title": "Desalination Capacity Expansion Program",
+          "team": "WSM + SWPC + Delivery Partners",
+          "output": "New/expanded plants delivering >16.6M m³/day capacity",
+          "kpi": "Installed desalinated production capacity",
+          "cap": "Supply Reliability Capability"
+        },
+        "transmission": {
+          "title": "Transmission Network Program",
+          "team": "WTTCO Network Operations",
+          "output": "14,000+ km transmission backbone with higher delivery resilience",
+          "kpi": "Daily transmission throughput and continuity hours",
+          "cap": "Network Operations Capability"
+        },
+        "reuse70": {
+          "title": "Treated Wastewater Reuse Program",
+          "team": "NWC Reuse Programs + SIO Integration",
+          "output": "Scaled treated effluent reuse across municipal/industrial/agricultural demand",
+          "kpi": "Treated wastewater reuse rate",
+          "cap": "Circular Water Management Capability"
+        },
+        "groundwater": {
+          "title": "Non-Renewable Groundwater Reduction Program",
+          "team": "SIO + Agricultural Water Management Teams",
+          "output": "Reduced groundwater dependency through reuse substitution",
+          "kpi": "Groundwater consumption reduction rate",
+          "cap": "Resource Sustainability Capability"
+        },
+        "twin": {
+          "title": "Saudi Water Twin Program",
+          "team": "SWA Digital Engineering + Data Teams",
+          "output": "National digital twin for water network planning and optimization",
+          "kpi": "Twin model coverage and planning-cycle impact",
+          "cap": "Digital Planning Capability"
+        },
+        "observatory": {
+          "title": "Saudi Water Observatory Program",
+          "team": "SWA AI Analytics + Service Intelligence Teams",
+          "output": "Real-time analytics for complaints, discourse, and service risk signals",
+          "kpi": "Issue detection lead-time and response acceleration",
+          "cap": "AI Monitoring Capability"
+        },
+        "automation": {
+          "title": "Smart Automation Program (Robotics + Mumtathil)",
+          "team": "Operational Automation & Inspection Teams",
+          "output": "Automated inspections and AI-assisted compliance monitoring",
+          "kpi": "Inspection productivity and violation resolution cycle time",
+          "cap": "Smart Operations Capability"
+        },
+        "carbon2045": {
+          "title": "Carbon Neutrality 2045 Roadmap Program",
+          "team": "SWA Sustainability & Energy Transition Office",
+          "output": "Decarbonization pathways for desalination and water services",
+          "kpi": "Emissions intensity reduction trajectory",
+          "cap": "Climate Transition Capability"
+        },
+        "oasis": {
+          "title": "Water Oasis Research Cluster Program",
+          "team": "Water Oasis Innovation Cluster",
+          "output": "Pilot plants and labs for scalable water-tech innovation",
+          "kpi": "Pilot-to-deployment conversion rate",
+          "cap": "R&D Translation Capability"
+        },
+        "watera": {
+          "title": "WATERA R&D Program",
+          "team": "WATERA Research & Technology Teams",
+          "output": "Advanced technologies (e.g., Zeta) and brine-to-energy solutions",
+          "kpi": "Commercialized innovations and technology adoption index",
+          "cap": "Applied Innovation Capability"
+        }
+      },
       "energy": "Energy",
       "tourism": "Tourism",
       "entertainment": "Entertainment",
@@ -892,6 +1132,9 @@
         "selected": "Selected: {{quarter}} {{year}}"
       },
       "policy": {
+        "capability": "Capability",
+        "active": "Active",
+        "executionProgram": "Execution Program",
         "subToolsLabel": "Sub-tools",
         "toolType": "Tool Type",
         "impactTarget": "Impact Target",
@@ -1003,6 +1246,18 @@
         "placeholder": "Message Noor \u2014 Press Enter to send",
         "attachFile": "Attach file",
         "send": "Send"
+      },
+      "toolbar": {
+        "selectExpert": "Select Expert",
+        "riskAnalyst": "Risk Analyst",
+        "visionExpert": "Senior Analyst",
+        "strategyGeneralist": "Vision Expert",
+        "planningExpert": "Planning Expert",
+        "stakeCommExpert": "StakeComm Expert",
+        "recallMemory": "Recall Memory",
+        "searchVisionDb": "Vision Data",
+        "personaLocked": "Expert locked for this conversation",
+        "tools": "Tools"
       },
       "message": {
         "questions": "Questions:",

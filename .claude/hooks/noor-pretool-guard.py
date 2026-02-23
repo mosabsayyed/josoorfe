@@ -28,50 +28,9 @@ def get_project_root():
     return Path('/home/mosab/projects/josoorfe')
 
 
-def check_neo4j_protections(file_path: str) -> tuple[bool, str]:
-    """
-    Query Neo4j NoorMemory for dynamic file protections.
-    Returns (is_protected, reason)
-    """
-    try:
-        from neo4j import GraphDatabase
-
-        driver = GraphDatabase.driver(
-            'bolt://localhost:7688',
-            auth=('neo4j', 'stagingpassword')
-        )
-
-        with driver.session(database='neo4j') as session:
-            result = session.run("""
-                MATCH (m:NoorMemory)
-                WHERE m.project = 'josoorfe'
-                AND m.type = 'rule'
-                AND m.category = 'file_protection'
-                RETURN m.content AS content, m.keywords AS keywords
-            """)
-
-            records = list(result)
-            driver.close()
-
-            # Check each protection rule
-            for record in records:
-                content = record.get('content', '')
-                keywords = record.get('keywords', [])
-
-                # Check if file path matches any keywords
-                file_name = os.path.basename(file_path)
-                file_rel_path = str(Path(file_path).relative_to(get_project_root()))
-
-                for keyword in keywords or []:
-                    if keyword in file_name or keyword in file_rel_path:
-                        return True, content
-
-            return False, ''
-
-    except Exception as e:
-        # Neo4j failure - don't block based on dynamic rules
-        print(f"Warning: Neo4j query failed: {e}", file=sys.stderr)
-        return False, ''
+def check_dynamic_protections(file_path: str) -> tuple[bool, str]:
+    """Server-agnostic mode: no dynamic DB protections in hook."""
+    return False, ''
 
 
 def is_protected(tool_name: str, file_path: str) -> tuple[bool, str]:
@@ -104,8 +63,8 @@ def is_protected(tool_name: str, file_path: str) -> tuple[bool, str]:
         # NotebookEdit is allowed
         return False, ''
 
-    # Check Neo4j dynamic protections
-    return check_neo4j_protections(file_path)
+    # Dynamic protections disabled in MCP-only mode
+    return check_dynamic_protections(file_path)
 
 
 def main():

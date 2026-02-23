@@ -13,6 +13,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { MessageBubble, ThinkingIndicator } from './MessageBubble';
 import { ChatInput } from './ChatInput';
+import { ChatToolbar } from './ChatToolbar';
 import { CondensationIndicator } from './CondensationIndicator';
 import { ScrollArea } from '../ui/scroll-area';
 import { BarChart3, FileText, Table, MessageSquare, LogOut } from 'lucide-react';
@@ -63,6 +64,12 @@ interface ChatContainerProps {
   title?: string;
   subtitle?: string;
   availableYears?: string[];
+  // Toolbar props
+  selectedPersona?: string | null;
+  onPersonaChange?: (persona: string) => void;
+  isPersonaLocked?: boolean;
+  selectedTools?: string[];
+  onToolsChange?: (tools: string[]) => void;
 }
 
 export const ChatContainer = memo(function ChatContainer({
@@ -84,6 +91,11 @@ export const ChatContainer = memo(function ChatContainer({
   title,
   subtitle,
   availableYears = ['2025', '2026', '2027', '2028', '2029'],
+  selectedPersona,
+  onPersonaChange,
+  isPersonaLocked = false,
+  selectedTools = [],
+  onToolsChange,
 }: ChatContainerProps) {
   const navigate = useNavigate();
   const { t } = useTranslation();
@@ -179,14 +191,22 @@ export const ChatContainer = memo(function ChatContainer({
   };
 
   const hasMessages = displayMessages.length > 0;
+  const hasVisionPrefix = !!title && (title.includes('KSA VISION') || title.includes('رؤية المملكة')) && title.includes('•');
+  const [visionPrefix, visionSuffix] = hasVisionPrefix ? (title || '').split('•').map(part => part.trim()) : ['', ''];
 
   return (
     <div className="chat-container-root">
       <div className="chat-top-controls" style={{ display: "flex", alignItems: "center", fontWeight: "400", justifyContent: "space-between", padding: "8px 16px", gap: "16px", backgroundColor: 'var(--component-panel-bg)', borderBottom: '1px solid rgba(255, 255, 255, 0.1)', height: '60px' }}>
         {/* LEFT: Title */}
         <div dir={effectiveLanguage === 'ar' ? 'rtl' : 'ltr'} style={{ display: "flex", alignItems: "center", gap: "12px", color: 'var(--component-text-primary)' }}>
-          {title && (
+          {title && !hasVisionPrefix && (
             <span style={{ color: 'var(--component-text-accent)', fontSize: '14px', fontWeight: 600 }}>{title}</span>
+          )}
+          {title && hasVisionPrefix && (
+            <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: '8px', color: 'var(--component-text-accent)' }}>
+              <span style={{ fontSize: '20px', fontWeight: 700, lineHeight: '40px' }}>{visionPrefix}</span>
+              <span style={{ fontSize: '14px', fontWeight: 600 }}>{`• ${visionSuffix}`}</span>
+            </span>
           )}
         </div>
 
@@ -495,8 +515,17 @@ export const ChatContainer = memo(function ChatContainer({
               </div>
             </ScrollArea>
 
-            {/* Chat Input - Only show in chat mode */}
+            {/* Toolbar + Chat Input - Only show in chat mode */}
             <div>
+              {onPersonaChange && onToolsChange && (
+                <ChatToolbar
+                  selectedPersona={selectedPersona ?? null}
+                  onPersonaChange={onPersonaChange}
+                  isPersonaLocked={isPersonaLocked}
+                  selectedTools={selectedTools}
+                  onToolsChange={onToolsChange}
+                />
+              )}
               <ChatInput
                 onSend={onSendMessage}
                 disabled={isLoading}

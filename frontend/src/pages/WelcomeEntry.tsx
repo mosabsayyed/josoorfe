@@ -18,7 +18,7 @@ export default function WelcomeEntry() {
       if (seen === 'true') {
         const isAuthenticated = localStorage.getItem('josoor_authenticated') === 'true';
         if (isAuthenticated) {
-          navigate('/chat', { replace: true });
+          navigate('/josoor', { replace: true });
         } else {
           navigate('/landing', { replace: true });
         }

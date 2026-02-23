@@ -1,4 +1,5 @@
 import { PolicyCategory } from '../components/desks/sector/SectorPolicyClassifier';
+import { enrichOntologyNode } from './ontologyValueOverlay';
 
 // Configuration
 // ALIGNMENT FIX: Restored trailing slash per User's working CURL command
@@ -14,7 +15,7 @@ interface JsonRpcRequest {
     };
 }
 
-interface JsonRpcResponse<T = any> {
+interface JsonRpcResponse {
     jsonrpc: '2.0';
     id: number | string;
     result?: {
@@ -128,6 +129,7 @@ export interface L2DetailCap {
   capName: string;
   capLevel: string;
   buildBand: string | null;
+    capParentId?: string | null;
 }
 
 export interface L1RiskAggregation {
@@ -194,6 +196,7 @@ interface SectorGraphResult {
   buildChainData: { nodes: any[]; links: any[] };
   operateChainData: { nodes: any[]; links: any[] };
   svcChainData: { nodes: any[]; links: any[] };
+    policyCapLinks: Array<{ policyId: string; policyYear: string; capId: string; capName: string; capLevel: string; capParentId: string | null }>;
 }
 
 // Module-level cache: fetch once, reuse on re-mount (navigation back)
@@ -227,22 +230,33 @@ export function invalidateSectorCache() {
 async function _fetchSectorGraphDataInternal(): Promise<SectorGraphResult> {
     const baseUrl = window.location.origin;
 
-    console.log('[Neo4jMCP] Fetching Sector Graph Data from 4 sources...');
+    console.log('[Neo4jMCP] Fetching Sector Graph Data from 4 sources + direct links...');
 
     try {
         // SOURCE 2: Direct Cypher → ALL SectorPolicyTool nodes (chains only return a fraction)
-        const allPtQuery = `MATCH (n:SectorPolicyTool) RETURN n { .id, .name, .year, .level, .quarter, .status, .sector, .region, .description, .parent_id, .parent_year, .latitude, .longitude, .asset_type, .sub_category, .category, .priority, .rationale, .fiscal_action, .child_count, .tool_type, .impact_target, .delivery_channel, .cost_of_implementation, .capacity_metric, .completion_date, .investment, .domain_id } as node`;
+        const allPtQuery = `MATCH (n:SectorPolicyTool) RETURN n { .id, .name, .year, .level, .quarter, .status, .sector, .region, .description, .parent_id, .parent_year, .latitude, .longitude, .asset_type, .sub_category, .category, .priority, .rationale, .fiscal_action, .child_count, .tool_type, .impact_target, .delivery_channel, .cost_of_implementation, .capacity_metric, .completion_date, .investment, .domain_id, .mapped_program_id, .mapped_program_label, .mapped_family, .mapped_capability, .mapped_source, .legacy_name } as node`;
         const directCypherPromise = callNeo4jTool('read_neo4j_cypher', { query: allPtQuery }).catch(err => {
             console.error('[Neo4jMCP] Source 2 (Direct Cypher) failed:', err);
             return [];
         });
 
+        const policyCapQuery = `
+MATCH (p:SectorPolicyTool {level:'L2'})-[r:SETS_PRIORITIES|EXECUTES]-(c:EntityCapability {level:'L2'})
+RETURN p { .id, .domain_id, .year, .parent_year } AS policy,
+       c { .id, .domain_id, .name, .level, .parent_id } AS cap
+`;
+        const directPolicyCapPromise = callNeo4jTool('read_neo4j_cypher', { query: policyCapQuery }).catch(err => {
+            console.error('[Neo4jMCP] Direct policy-cap link query failed:', err);
+            return [];
+        });
+
         // SOURCE 1 + 3 + 4: Chain queries — ALL in parallel with Source 2
-        const [svcResp, buildResp, operateResp, directCypherRaw] = await Promise.all([
+        const [svcResp, buildResp, operateResp, directCypherRaw, directPolicyCapRaw] = await Promise.all([
             fetch(`${baseUrl}/api/business-chain/sector_value_chain?year=0&excludeEmbeddings=true`),
             fetch(`${baseUrl}/api/business-chain/build_oversight?year=0&excludeEmbeddings=true`),
             fetch(`${baseUrl}/api/business-chain/operate_oversight?year=0&excludeEmbeddings=true`),
-            directCypherPromise
+            directCypherPromise,
+            directPolicyCapPromise
         ]);
 
         if (!svcResp.ok) throw new Error(`sector_value_chain HTTP ${svcResp.status}`);
@@ -256,7 +270,25 @@ async function _fetchSectorGraphDataInternal(): Promise<SectorGraphResult> {
         ]);
 
         const directCypherNodes = (directCypherRaw?.data || directCypherRaw || []).map((r: any) => r.node || r).filter(Boolean);
+        const directPolicyCapRows = (directPolicyCapRaw?.data || directPolicyCapRaw || []).filter(Boolean);
+        const policyCapLinks = directPolicyCapRows
+            .map((row: any) => {
+                const policy = row.policy || row.p || null;
+                const cap = row.cap || row.c || null;
+                if (!policy || !cap) return null;
+                return {
+                    policyId: nid(policy.domain_id || policy.id),
+                    policyYear: String(policy.year || policy.parent_year || ''),
+                    capId: nid(cap.domain_id || cap.id),
+                    capName: cap.name || '',
+                    capLevel: cap.level || 'L2',
+                    capParentId: cap.parent_id ? nid(cap.parent_id) : null
+                };
+            })
+            .filter((x: any) => !!x && !!x.policyId && !!x.capId);
+
         console.log(`[Neo4jMCP] Source 2 (Direct Cypher): ${directCypherNodes.length} SectorPolicyTool nodes`);
+        console.log(`[Neo4jMCP] Direct policy-cap links: ${policyCapLinks.length}`);
 
         // Extract nodes from chain responses
         // Normalize id to domain_id (short format like "4.0") for frontend consistency
@@ -264,7 +296,7 @@ async function _fetchSectorGraphDataInternal(): Promise<SectorGraphResult> {
             const props = n.properties || {};
             const { embedding, Embedding, embedding_generated_at, ...clean } = props;
             if (clean.domain_id) clean.id = clean.domain_id;
-            return { ...clean, _labels: n.labels };
+            return enrichOntologyNode({ ...clean, _labels: n.labels });
         });
 
         const svcNodes = getChainNodes(svcData);
@@ -314,12 +346,87 @@ async function _fetchSectorGraphDataInternal(): Promise<SectorGraphResult> {
             }, {})
         );
 
-        return { nodes: allNodes, buildChainData: buildData, operateChainData: operateData, svcChainData: svcData };
+        return { nodes: allNodes, buildChainData: buildData, operateChainData: operateData, svcChainData: svcData, policyCapLinks };
 
     } catch (error) {
         console.error('[Neo4jMCP] Failed to fetch sector graph data:', error);
-        return { nodes: [], buildChainData: { nodes: [], links: [] }, operateChainData: { nodes: [], links: [] }, svcChainData: { nodes: [], links: [] } };
+        return { nodes: [], buildChainData: { nodes: [], links: [] }, operateChainData: { nodes: [], links: [] }, svcChainData: { nodes: [], links: [] }, policyCapLinks: [] };
     }
+}
+
+export function appendDirectPolicyCapRows(
+    rows: PolicyToolRiskRow[],
+    policyCapLinks: Array<{ policyId: string; policyYear: string; capId: string; capName: string; capLevel: string; capParentId: string | null }>,
+    allPolicyToolNodes: any[] = []
+): PolicyToolRiskRow[] {
+    if (!policyCapLinks || policyCapLinks.length === 0) return rows;
+
+    const l2NodeById = new Map<string, any>();
+    const l1NodeById = new Map<string, any>();
+    for (const node of allPolicyToolNodes) {
+        const id = nid(node.domain_id || node.id);
+        if (!id) continue;
+        if (node.level === 'L2') {
+            if (!l2NodeById.has(id)) l2NodeById.set(id, node);
+        } else if (node.level === 'L1') {
+            if (!l1NodeById.has(id)) l1NodeById.set(id, node);
+        }
+    }
+
+    const effectiveBandByL2 = new Map<string, string | null>();
+    const existingPolicyCapPairs = new Set<string>();
+    for (const row of rows) {
+        const l2Id = row.l2?.id ? nid(row.l2.id) : '';
+        const capId = row.cap?.id ? nid(row.cap.id) : '';
+        if (l2Id && capId) existingPolicyCapPairs.add(`${l2Id}|${capId}`);
+
+        if (!l2Id) continue;
+        const effectiveBand = row.source === 'operate'
+            ? (row.risk?.operate_band || row.risk?.build_band || null)
+            : (row.risk?.build_band || row.risk?.operate_band || null);
+        if (!effectiveBandByL2.has(l2Id) || (effectiveBandByL2.get(l2Id) !== 'red' && effectiveBand === 'red')) {
+            effectiveBandByL2.set(l2Id, effectiveBand);
+        }
+    }
+
+    const appended: PolicyToolRiskRow[] = [];
+    for (const link of policyCapLinks) {
+        const policyId = nid(link.policyId);
+        const capId = nid(link.capId);
+        if (!policyId || !capId) continue;
+        const pairKey = `${policyId}|${capId}`;
+        if (existingPolicyCapPairs.has(pairKey)) continue;
+
+        const l2Node = l2NodeById.get(policyId);
+        if (!l2Node) continue;
+
+        const l1Id = nid(l2Node.parent_id);
+        const l1Node = l1NodeById.get(l1Id);
+        const band = effectiveBandByL2.get(policyId) || null;
+
+        appended.push({
+            l1: l1Node
+                ? { id: nid(l1Node.domain_id || l1Node.id), name: l1Node.name, year: l1Node.year, level: l1Node.level }
+                : null,
+            l2: { id: policyId, name: l2Node.name, year: l2Node.year, level: 'L2', parent_id: l1Id },
+            cap: { id: capId, name: link.capName || '', level: link.capLevel || 'L2' },
+            risk: {
+                build_band: band,
+                operate_band: band,
+                build_exposure_pct: null,
+                expected_delay_days: null,
+                likelihood_of_delay: null
+            },
+            source: 'build'
+        });
+
+        existingPolicyCapPairs.add(pairKey);
+    }
+
+    if (appended.length > 0) {
+        console.log(`[Neo4jMCP] Appended ${appended.length} direct policy-cap rows`);
+    }
+    return [...rows, ...appended];
 }
 
 /**
@@ -359,6 +466,33 @@ export function extractPolicyRiskFromChain(chainData: { nodes: any[]; links: any
     const informsLinks = parsedLinks.filter((l: any) => l.type === 'INFORMS');
     const monitoredByLinks = parsedLinks.filter((l: any) => l.type === 'MONITORED_BY');
     const parentOfLinks = parsedLinks.filter((l: any) => l.type === 'PARENT_OF');
+
+    // Ontology map: SectorPolicyTool(L2) <-> EntityCapability(L2)
+    const policyL2ToCapL2 = new Map<string, Set<string>>();
+
+    const addPolicyCapLink = (policyElemId: string, capElemId: string) => {
+        const p = nodeByElementId.get(policyElemId);
+        const c = nodeByElementId.get(capElemId);
+        if (!p || !c) return;
+        if (!p._labels?.includes('SectorPolicyTool') || p.level !== 'L2') return;
+        if (!c._labels?.includes('EntityCapability') || c.level !== 'L2') return;
+        if (!policyL2ToCapL2.has(policyElemId)) policyL2ToCapL2.set(policyElemId, new Set());
+        policyL2ToCapL2.get(policyElemId)!.add(capElemId);
+    };
+
+    for (const l of parsedLinks) {
+        if (l.type !== 'SETS_PRIORITIES' && l.type !== 'EXECUTES') continue;
+        addPolicyCapLink(l.sourceElementId, l.targetElementId);
+        addPolicyCapLink(l.targetElementId, l.sourceElementId);
+    }
+
+    // Capability lookup by normalized domain_id/id for L3->L2 normalization
+    const capabilityByDomainId = new Map<string, any>();
+    for (const node of nodeByElementId.values()) {
+        if (!node?._labels?.includes('EntityCapability')) continue;
+        const key = nid(node.domain_id || node.id);
+        if (key) capabilityByDomainId.set(key, node);
+    }
 
     // 4. polToolL2 elementId → risk elementIds (INFORMS: risk → polToolL2)
     //    Only include targets that are SectorPolicyTool nodes (filter out Objectives, Performance, etc.)
@@ -420,11 +554,8 @@ export function extractPolicyRiskFromChain(chainData: { nodes: any[]; links: any
             const riskNode = nodeByElementId.get(riskElemId);
             if (!riskNode) continue;
 
-            // Find capabilities: direct + via L3 children
-            const directCaps = riskToCaps.get(riskElemId) || [];
-            const childRiskIds = riskL2ToL3.get(riskElemId) || [];
-            const childCaps = childRiskIds.flatMap(childId => riskToCaps.get(childId) || []);
-            const allCapIds = [...new Set([...directCaps, ...childCaps])];
+            // STRICT ONTOLOGY: use policy L2 <-> capability L2 relations only
+            const allCapIds = Array.from(policyL2ToCapL2.get(polL2ElemId) || []);
 
             if (allCapIds.length === 0) {
                 rows.push({
@@ -443,10 +574,27 @@ export function extractPolicyRiskFromChain(chainData: { nodes: any[]; links: any
             } else {
                 for (const capElemId of allCapIds) {
                     const capNode = nodeByElementId.get(capElemId);
+                    let capId: string | null = null;
+                    let capName: string | null = null;
+                    let capLevel: string | null = null;
+
+                    if (capNode) {
+                        const rawCapId = nid(capNode.domain_id || capNode.id);
+                        if (capNode.level === 'L2') {
+                            capId = rawCapId;
+                            capName = capNode.name;
+                            capLevel = capNode.level;
+                        } else {
+                            capId = null;
+                            capName = null;
+                            capLevel = null;
+                        }
+                    }
+
                     rows.push({
                         l1: effectiveL1 ? { id: sid(effectiveL1.domain_id || effectiveL1.id), name: effectiveL1.name, year: effectiveL1.year, level: effectiveL1.level } : null,
                         l2: { id: sid(polL2Node.domain_id || polL2Node.id), name: polL2Node.name, year: polL2Node.year, level: polL2Node.level, parent_id: sid(polL2Node.parent_id || effectiveL1?.domain_id || effectiveL1?.id || '') },
-                        cap: capNode ? { id: sid(capNode.domain_id || capNode.id), name: capNode.name, level: capNode.level } : null,
+                        cap: capId && capLevel === 'L2' ? { id: capId, name: capName || '', level: 'L2' } : null,
                         risk: {
                             build_band: riskNode.build_band || null,
                             operate_band: riskNode.operate_band || null,
@@ -702,7 +850,8 @@ export function aggregatePolicyRiskByL1(rows: PolicyToolRiskRow[]): Map<string, 
                     capId: row.cap.id,
                     capName: row.cap.name,
                     capLevel: row.cap.level,
-                    buildBand: band
+                    buildBand: band,
+                    capParentId: null
                 });
             }
         }

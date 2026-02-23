@@ -11,7 +11,7 @@ import { dashboardData } from './sector/SectorDashboardData';
 import { chatService } from '../../services/chatService';
 import { Artifact } from '../../types/api';
 // Removed: buildArtifactsFromTags, extractDatasetBlocks - now handled by chatService
-import { fetchSectorGraphData, L1_CATEGORY_MAP, extractPolicyRiskFromChain, extractOperateRiskForPolicyTools, aggregatePolicyRiskByL1, L1RiskAggregation } from '../../services/neo4jMcpService';
+import { fetchSectorGraphData, L1_CATEGORY_MAP, extractPolicyRiskFromChain, extractOperateRiskForPolicyTools, aggregatePolicyRiskByL1, appendDirectPolicyCapRows, L1RiskAggregation } from '../../services/neo4jMcpService';
 import { SECTOR_POLICY_MOCK_DATA } from './sector/data/SectorPolicyMock';
 import { PolicyToolCounts } from './sector/SectorPolicyClassifier';
 
@@ -78,6 +78,7 @@ export const SectorDesk: React.FC<SectorDeskProps> = ({ year: propYear, quarter:
     const [viewLevel, setViewLevel] = useState<'L1' | 'L2'>('L1');
 
     const hoverTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const lastRegionHoverAtRef = useRef<number>(0);
 
     const [timelineFilter, setTimelineFilter] = useState<'current' | 'future' | 'both'>('both');
     const [priorityFilter, setPriorityFilter] = useState<'major' | 'strategic' | 'both'>('both');
@@ -117,9 +118,11 @@ export const SectorDesk: React.FC<SectorDeskProps> = ({ year: propYear, quarter:
     const [buildChainData, setBuildChainData] = useState<{ nodes: any[]; links: any[] } | null>(null);
     const [operateChainData, setOperateChainData] = useState<{ nodes: any[]; links: any[] } | null>(null);
     const [svcChainData, setSvcChainData] = useState<{ nodes: any[]; links: any[] } | null>(null);
+    const [policyCapLinks, setPolicyCapLinks] = useState<Array<{ policyId: string; policyYear: string; capId: string; capName: string; capLevel: string; capParentId: string | null }>>([]);
 
     // Policy tool detail panel state
     const [selectedPolicyTool, setSelectedPolicyTool] = useState<any>(null);
+    const [waterCascadeL3Items, setWaterCascadeL3Items] = useState<Array<{ id: string; title: string; value: string }>>([]);
 
     // Extract risk data from BOTH chains (build + operate)
     useEffect(() => {
@@ -128,7 +131,8 @@ export const SectorDesk: React.FC<SectorDeskProps> = ({ year: propYear, quarter:
             const buildRows = buildChainData ? extractPolicyRiskFromChain(buildChainData, 'build') : [];
             const operateDirectRows = operateChainData ? extractPolicyRiskFromChain(operateChainData, 'operate') : [];
             const operateMappedRows = (operateChainData && svcChainData) ? extractOperateRiskForPolicyTools(operateChainData, svcChainData, allSectorPolicyToolNodes) : [];
-            const allRows = [...buildRows, ...operateDirectRows, ...operateMappedRows];
+            const chainRows = [...buildRows, ...operateDirectRows, ...operateMappedRows];
+            const allRows = appendDirectPolicyCapRows(chainRows, policyCapLinks, allSectorPolicyToolNodes);
             const l1RiskMap = aggregatePolicyRiskByL1(allRows);
 
             // Fill in missing L2s with null band (grey strip, "Not Started" label)
@@ -149,7 +153,7 @@ export const SectorDesk: React.FC<SectorDeskProps> = ({ year: propYear, quarter:
         } catch (err) {
             console.error('[SectorDesk] Risk data extraction failed:', err);
         }
-    }, [buildChainData, operateChainData, svcChainData, allSectorPolicyToolNodes]);
+    }, [buildChainData, operateChainData, svcChainData, allSectorPolicyToolNodes, policyCapLinks]);
 
     // Sync sector/pillar
     useEffect(() => {
@@ -286,6 +290,7 @@ export const SectorDesk: React.FC<SectorDeskProps> = ({ year: propYear, quarter:
                 setBuildChainData(result.buildChainData);
                 setOperateChainData(result.operateChainData);
                 setSvcChainData(result.svcChainData);
+                setPolicyCapLinks(result.policyCapLinks || []);
 
                 // --- 1. Split Data based on 'sector' field ---
                 // Physical Assets have a sector (e.g. "Water", "Transportation")
@@ -604,12 +609,22 @@ export const SectorDesk: React.FC<SectorDeskProps> = ({ year: propYear, quarter:
             hoverTimeoutRef.current = null;
         }
         if (regionId) {
+            lastRegionHoverAtRef.current = Date.now();
             setHoveredRegion(regionId);
         } else {
+            // Prevent RTL ping-pong: when drawer opens, layout shift can fire a synthetic leave instantly.
+            // Ignore very recent leave events so hover state remains stable.
+            if (Date.now() - lastRegionHoverAtRef.current < 450) {
+                return;
+            }
             hoverTimeoutRef.current = setTimeout(() => {
                 setHoveredRegion(null);
-            }, 300);
+            }, 650);
         }
+    }, []);
+
+    const handleSectorSelect = useCallback((sectorId: string) => {
+        setSelectedSector(sectorId);
     }, []);
 
     const handleAssetSelect = useCallback((asset: GraphNode | null) => {
@@ -638,6 +653,35 @@ export const SectorDesk: React.FC<SectorDeskProps> = ({ year: propYear, quarter:
         return base; // Simplified for now, logic preserved in previous versions if needed
     }, []);
 
+    const visionPillars = useMemo(() => {
+        const base = [
+            {
+                pillar: t('josoor.sector.pillars.vibrant.title'),
+                objective: t('josoor.sector.pillars.vibrant.objective')
+            },
+            {
+                pillar: t('josoor.sector.pillars.thriving.title'),
+                objective: t('josoor.sector.pillars.thriving.objective')
+            },
+            {
+                pillar: t('josoor.sector.pillars.ambitious.title'),
+                objective: t('josoor.sector.pillars.ambitious.objective')
+            }
+        ];
+        if (selectedSector === 'water') {
+            return [
+                ...base,
+                {
+                    pillar: t('josoor.sector.pillars.water.title'),
+                    objective: t('josoor.sector.pillars.water.objective')
+                }
+            ];
+        }
+        return base;
+    }, [selectedSector, t]);
+
+    const headerVisionProps = { visionPillars } as any;
+
     // --- STRATEGIC AI HANDLER ---
     const [isStrategyModalOpen, setIsStrategyModalOpen] = useState(false);
     const [strategyReportHtml, setStrategyReportHtml] = useState<string>('');
@@ -649,9 +693,46 @@ export const SectorDesk: React.FC<SectorDeskProps> = ({ year: propYear, quarter:
         setStrategyArtifacts([]);
 
         try {
+            // --- Build contextual prompt from available data ---
+            const regionId = selectedRegionId || hoveredRegion || 'National';
+            const sector = selectedSector === 'all' ? 'all sectors' : selectedSector;
+
+            const megaRegions: Record<string, string[]> = {
+                'Northern': ['Northern', 'Tabuk', 'Jawf', 'Hail'],
+                'Western': ['Western', 'Makkah', 'Madinah', 'Jazan'],
+                'Eastern': ['Eastern', 'Baha'],
+                'Central': ['Central', 'Riyadh', 'Qassim', 'Asir', 'Najran']
+            };
+            const regionAssets = filteredAssets.filter(a => {
+                if (regionId === 'National') return true;
+                return megaRegions[regionId]?.includes(a.region || '') ?? false;
+            });
+
+            const existing = regionAssets.filter(a => a.status?.toLowerCase() === 'existing').length;
+            const construction = regionAssets.filter(a => a.status?.toLowerCase() === 'under construction').length;
+            const planned = regionAssets.filter(a => a.status?.toLowerCase() === 'planned').length;
+
+            const topAssets = regionAssets.slice(0, 10).map(a =>
+                `- ${a.name || a.id}: ${a.status || '?'} (${a.sector || '?'}${a.capacity_metric ? ', ' + a.capacity_metric : ''})`
+            ).join('\n');
+
+            const query = `Strategic brief for ${sector} in ${regionId} region, year ${selectedYear}.
+
+Context from database:
+- Region: ${regionId}
+- Sector: ${sector}
+- Year: ${selectedYear}
+- Total assets: ${regionAssets.length} (${existing} existing, ${construction} under construction, ${planned} planned)
+
+Key assets:
+${topAssets || '(none loaded)'}
+
+Instructions:
+Assess the current state of plans for ${sector} in the ${regionId} region based on the data above. Advise whether the plans are on track for ${selectedYear}. Identify specific gaps or risks. Recommend realistic areas for improvement with justification. Use the database facts as the foundation, then add your strategic analysis.`;
+
             const response = await chatService.sendMessage({
-                query: `Strategic brief for ${selectedYear}`,
-                prompt_key: 'sector_desk_strategy_brief'
+                query,
+                prompt_key: 'strategy_brief'
             });
 
             if (response.llm_payload?.answer) {
@@ -691,7 +772,7 @@ export const SectorDesk: React.FC<SectorDeskProps> = ({ year: propYear, quarter:
                 <div style={{ flex: '0 0 auto', zIndex: 20 }}>
                     <SectorHeaderNav
                         selectedSector={selectedSector}
-                        onSelectSector={setSelectedSector}
+                        onSelectSector={handleSectorSelect}
                         year={selectedYear}
                         onYearChange={setSelectedYear}
                         timelineFilter={timelineFilter}
@@ -701,6 +782,7 @@ export const SectorDesk: React.FC<SectorDeskProps> = ({ year: propYear, quarter:
                         existingCount={existingCount}
                         plannedCount={plannedCount}
                         nationalKpis={currentRadarKPIs}
+                        {...headerVisionProps}
 
                         // Pass Aggregated Data
                         policyCounts={policyCounts}
@@ -710,12 +792,12 @@ export const SectorDesk: React.FC<SectorDeskProps> = ({ year: propYear, quarter:
                         policyRiskByL1={policyRiskByL1}
                         categoryById={categoryById}
                         onPolicyToolClick={(tool: any) => { setSelectedPolicyTool(tool); setSelectedAsset(null); }}
+                        onWaterCascadeL3Change={setWaterCascadeL3Items}
 
                         onBackToNational={() => {
                             setSelectedRegionId(null);
                             setSelectedAsset(null);
                         }}
-                        onStrategyClick={handleStrategyCheck}
                     />
                 </div>
 
@@ -746,8 +828,8 @@ export const SectorDesk: React.FC<SectorDeskProps> = ({ year: propYear, quarter:
             <div
                 className="sector-details-drawer"
                 style={{
-                    width: selectedPolicyTool || (viewLevel === 'L2' && (selectedRegionId || selectedAsset || hoveredRegion)) || (viewLevel === 'L1' && hoveredRegion) ? '400px' : '0px',
-                    boxShadow: (selectedPolicyTool || (viewLevel === 'L2' && (selectedRegionId || selectedAsset || hoveredRegion)) || (viewLevel === 'L1' && hoveredRegion)) ? '-4px 0 20px rgba(0,0,0,0.3)' : 'none'
+                    width: selectedPolicyTool || selectedAsset || (viewLevel === 'L2' && (selectedRegionId || hoveredRegion)) || (viewLevel === 'L1' && hoveredRegion) ? '400px' : '0px',
+                    boxShadow: (selectedPolicyTool || selectedAsset || (viewLevel === 'L2' && (selectedRegionId || hoveredRegion)) || (viewLevel === 'L1' && hoveredRegion)) ? '-4px 0 20px rgba(0,0,0,0.3)' : 'none'
                 }}
                 onMouseEnter={() => {
                     if (hoverTimeoutRef.current) {
@@ -768,10 +850,11 @@ export const SectorDesk: React.FC<SectorDeskProps> = ({ year: propYear, quarter:
                             selectedPolicyTool={selectedPolicyTool}
                             policyRiskByL1={policyRiskByL1}
                             allPolicyNodes={allSectorPolicyToolNodes}
+                            waterL3Items={selectedSector === 'water' ? waterCascadeL3Items : []}
                             onPolicyToolClose={() => setSelectedPolicyTool(null)}
                             onNavigateToCapability={onNavigateToCapability}
                         />
-                    ) : viewLevel === 'L2' && (selectedRegionId || selectedAsset || hoveredRegion) ? (
+                    ) : selectedAsset ? (
                         <SectorDetailsPanel
                             selectedRegion={selectedRegionId}
                             hoveredRegion={hoveredRegion}
@@ -787,6 +870,27 @@ export const SectorDesk: React.FC<SectorDeskProps> = ({ year: propYear, quarter:
                             assets={filteredAssets}
                             selectedSector={selectedSector}
                             year={Number(selectedYear)}
+                            waterL3Items={selectedSector === 'water' ? waterCascadeL3Items : []}
+                            onStrategyClick={undefined}
+                        />
+                    ) : viewLevel === 'L2' && (selectedRegionId || hoveredRegion) ? (
+                        <SectorDetailsPanel
+                            selectedRegion={selectedRegionId}
+                            hoveredRegion={hoveredRegion}
+                            selectedAsset={selectedAsset}
+                            onBackToNational={() => { setSelectedRegionId(null); setSelectedAsset(null); }}
+                            onAssetClick={(asset) => {
+                                if (asset) {
+                                    setSelectedAsset(asset);
+                                } else {
+                                    setSelectedAsset(null);
+                                }
+                            }}
+                            assets={filteredAssets}
+                            selectedSector={selectedSector}
+                            year={Number(selectedYear)}
+                            waterL3Items={selectedSector === 'water' ? waterCascadeL3Items : []}
+                            onStrategyClick={handleStrategyCheck}
                         />
                     ) : viewLevel === 'L1' && hoveredRegion ? (
                         <SectorDetailsPanel
@@ -824,6 +928,17 @@ export const SectorDesk: React.FC<SectorDeskProps> = ({ year: propYear, quarter:
                             })()}
                             selectedSector={selectedSector}
                             year={Number(selectedYear)}
+                            waterL3Items={selectedSector === 'water' ? waterCascadeL3Items : []}
+                        />
+                    ) : selectedSector === 'water' && waterCascadeL3Items.length > 0 ? (
+                        <SectorDetailsPanel
+                            selectedRegion={null}
+                            hoveredRegion={null}
+                            selectedAsset={null}
+                            assets={filteredAssets}
+                            selectedSector={selectedSector}
+                            year={Number(selectedYear)}
+                            waterL3Items={waterCascadeL3Items}
                         />
                     ) : (
                         <SectorSidebar year={selectedYear} quarter={quarter} />
@@ -846,8 +961,8 @@ export const SectorDesk: React.FC<SectorDeskProps> = ({ year: propYear, quarter:
                 onContinueInChat={() => {
                     setIsStrategyModalOpen(false);
                     const chatPath = strategyConversationId
-                        ? `/chat?conversation_id=${strategyConversationId}`
-                        : '/chat';
+                        ? `/josoor?conversation_id=${strategyConversationId}`
+                        : '/josoor';
                     navigate(chatPath);
                 }}
             />

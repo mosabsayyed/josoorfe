@@ -193,6 +193,51 @@
     opacity: 1;
 }
 
+.sector-icon-img {
+    filter: grayscale(1) opacity(0.8);
+    transition: filter 0.2s ease;
+}
+
+.sector-icon-button.active .sector-icon-img {
+    filter: none;
+}
+
+.sector-icon-button.water-subtle-hint {
+    opacity: 0.7;
+    animation: water-breathe 2.8s ease-in-out infinite;
+}
+
+.sector-icon-button.water-subtle-hint .sector-icon-img {
+    animation: water-icon-breathe 2.8s ease-in-out infinite;
+    will-change: filter;
+}
+
+@keyframes water-breathe {
+    0%,
+    100% {
+        opacity: 0.7;
+        background: var(--component-panel-bg);
+        border-color: var(--component-panel-border);
+        box-shadow: 0 0 0 0 color-mix(in srgb, var(--sector-water) 0%, transparent);
+    }
+    50% {
+        opacity: 0.55;
+        background: color-mix(in srgb, var(--sector-water) 8%, var(--component-panel-bg));
+        border-color: color-mix(in srgb, var(--sector-water) 30%, var(--component-panel-border));
+        box-shadow: 0 0 0 2px color-mix(in srgb, var(--sector-water) 15%, transparent);
+    }
+}
+
+@keyframes water-icon-breathe {
+    0%,
+    100% {
+        filter: grayscale(1) opacity(0.8);
+    }
+    50% {
+        filter: grayscale(0.3) opacity(1) drop-shadow(0 0 5px color-mix(in srgb, var(--sector-water) 45%, transparent));
+    }
+}
+
 .ai-strategy-btn {
     background: var(--component-text-accent);
     color: var(--component-text-on-accent);
@@ -235,6 +280,201 @@
     gap: 12px;
 }
 
+.vision-pillars-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 8px;
+    margin-bottom: 8px;
+    width: 100%;
+}
+
+.vision-pillar-card {
+    border: 1px solid var(--component-panel-border);
+    background: linear-gradient(180deg, rgba(244, 187, 48, 0.08) 0%, rgba(15, 23, 42, 0.35) 42%);
+    padding: 8px 10px;
+    min-height: 68px;
+}
+
+.vision-pillar-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+
+.vision-pillar-tag {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 24px;
+    height: 18px;
+    padding: 0 6px;
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--component-text-on-accent);
+    background: var(--component-text-accent);
+    letter-spacing: 0.3px;
+}
+
+.vision-pillar-title {
+    font-size: 11px;
+    color: var(--component-text-primary);
+    text-transform: uppercase;
+    letter-spacing: 0.45px;
+    font-weight: 700;
+    line-height: 1.15;
+}
+
+.vision-pillar-objective {
+    font-size: 12px;
+    color: var(--component-text-secondary);
+    line-height: 1.35;
+}
+
+.water-cascade-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.water-cascade-tabs {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.water-cascade-tab {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    border: 1px solid var(--component-panel-border);
+    background: var(--component-panel-bg);
+    color: var(--component-text-primary);
+    padding: 8px 10px;
+    cursor: pointer;
+    text-align: start;
+}
+
+.water-cascade-tab.active {
+    border-color: var(--component-text-accent);
+    background: rgba(244, 187, 48, 0.08);
+}
+
+.water-cascade-tab-title {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.35px;
+    font-weight: 700;
+}
+
+.water-cascade-tab-value {
+    font-size: 12px;
+    color: var(--component-text-secondary);
+}
+
+.water-cascade-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.water-cascade-row {
+    border: 1px solid var(--component-panel-border);
+    background: var(--component-panel-bg);
+    padding: 8px;
+}
+
+.water-cascade-level-label {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.45px;
+    color: var(--component-text-muted);
+    margin-bottom: 6px;
+    font-weight: 700;
+}
+
+.water-label-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.water-label-pillar {
+    display: block;
+    margin-bottom: 4px;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--component-text-accent);
+    letter-spacing: 0.3px;
+    white-space: nowrap;
+}
+
+.water-label-objective {
+    color: var(--component-text-accent);
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.water-label-target {
+    color: var(--component-text-accent);
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.water-label-programs {
+    color: var(--component-text-accent);
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.water-cascade-chip-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.water-cascade-chip-list.horizontal {
+    flex-direction: row;
+    flex-wrap: wrap;
+}
+
+.water-cascade-chip-list.horizontal .water-cascade-chip {
+    width: auto;
+    min-width: 220px;
+    flex: 1 1 220px;
+}
+
+.water-cascade-chip {
+    width: 100%;
+    border: 1px solid var(--component-panel-border);
+    background: rgba(255, 255, 255, 0.02);
+    color: var(--component-text-primary);
+    padding: 6px 8px;
+    text-align: start;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    cursor: pointer;
+}
+
+.water-cascade-chip.active {
+    border-color: var(--component-text-accent);
+    background: rgba(244, 187, 48, 0.08);
+}
+
+.water-cascade-chip span {
+    font-size: 11px;
+    line-height: 1.25;
+}
+
+.water-cascade-chip strong {
+    font-size: 12px;
+    color: var(--component-text-accent);
+    line-height: 1.2;
+}
+
+
 .policy-tool-item {
     display: flex;
     align-items: center;
@@ -243,6 +483,14 @@
     background: var(--component-panel-bg);
     border: 1px solid var(--component-panel-border);
     padding: 8px;
+}
+
+.water-program-card {
+    align-items: flex-start;
+}
+
+.water-program-indicator {
+    margin-top: 2px;
 }
 
 .policy-tool-item.disabled {
@@ -259,6 +507,48 @@
     display: flex;
     flex-direction: column;
     gap: 2px;
+}
+
+.water-program-family {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.water-program-trace {
+    font-size: 16px;
+    font-weight: 800;
+    letter-spacing: 0.2px;
+    line-height: 1.1;
+    color: var(--component-text-accent);
+}
+
+.policy-tool-content .output-label.water-program-trace {
+    font-size: 16px;
+    font-weight: 800;
+    letter-spacing: 0.2px;
+    line-height: 1.1;
+    color: var(--component-text-accent);
+}
+
+.water-program-title {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.water-program-name {
+    font-size: 12px;
+    color: var(--component-text-primary);
+    font-weight: 700;
+    line-height: 1.25;
+}
+
+.water-program-hint {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .policy-tool-content .output-label {
@@ -282,7 +572,7 @@
 }
 
 .sector-list-title {
-    font-size: 0.7rem;
+    font-size: 0.8rem;
     font-weight: 700;
     color: var(--component-text-secondary);
     text-transform: uppercase;
@@ -940,4 +1230,67 @@
     text-align: left;
     font-weight: 600;
     letter-spacing: 0.05em;
+}
+
+.water-panel-trace-id {
+    font-size: 14px;
+    color: var(--component-text-accent);
+    font-weight: 700;
+    margin-bottom: 4px;
+    line-height: 1.2;
+}
+
+.water-policy-field-label {
+    font-size: 11px;
+    color: var(--component-text-muted);
+    text-transform: uppercase;
+    margin-bottom: 4px;
+    font-weight: 700;
+    line-height: 1.25;
+    letter-spacing: 0.03em;
+}
+
+.water-policy-field-value {
+    font-size: 13px;
+    color: var(--component-text-primary);
+    font-weight: 600;
+    line-height: 1.35;
+}
+
+.water-policy-field-value-accent {
+    color: var(--component-text-accent);
+    font-weight: 700;
+}
+
+.water-policy-description-value {
+    color: var(--component-text-secondary);
+}
+
+.water-policy-linked-title {
+    font-size: 12px;
+    text-transform: uppercase;
+    color: var(--component-text-accent);
+    letter-spacing: 0.04em;
+    margin-bottom: 6px;
+    font-weight: 700;
+}
+
+.water-policy-linked-item {
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.35;
+    color: var(--component-text-primary);
+}
+
+.water-policy-empty-title {
+    font-size: 13px;
+    color: var(--component-text-primary);
+    margin-bottom: 4px;
+    font-weight: 600;
+}
+
+.water-policy-empty-capability {
+    font-size: 13px;
+    color: var(--component-text-accent);
+    font-weight: 700;
 }

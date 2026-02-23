@@ -2,19 +2,11 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AlertTriangle, TrendingDown, TrendingUp, Plus, Pause, ArrowUpDown, Users, Zap, Loader2, CheckCircle, XCircle } from 'lucide-react';
 import { Gantt } from 'wx-react-gantt';
+import 'wx-react-gantt/dist/gantt.css';
 import { chatService } from '../../services/chatService';
+import { createRiskPlan } from '../../services/planningService';
 import { parsePlanResponse, InterventionPlan, PlanDeliverable, PlanTask } from '../../utils/planParser';
 import './PlanningDesk.css';
-
-const createRiskPlan = async (riskId: string, plan: any) => {
-  const res = await fetch('/api/neo4j/risk-plan', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ riskId, plan }),
-  });
-  if (!res.ok) throw new Error(`Failed to create risk plan: ${res.statusText}`);
-  return res.json();
-};
 
 type PlanningMode = 'intervention' | 'strategic-reset' | 'scenario';
 
@@ -59,7 +51,6 @@ export function PlanningDesk({ interventionContext, onClearContext }: PlanningDe
       {/* Header */}
       <div className="planning-header">
         <h1 className="planning-title">{t('josoor.planning.planningDesk')}</h1>
-        <p className="planning-subtitle">{t('josoor.planning.planningSubtitle')}</p>
       </div>
 
       {/* Mode Selection */}
@@ -162,6 +153,13 @@ Produce a structured plan with deliverables and tasks.`;
     return () => { cancelled = true; };
   }, [context, t]);
 
+  const ganttColumns = [
+    { id: 'text', header: 'Task', flexgrow: 1 },
+    { id: 'owner', header: 'Owner', width: 120, align: 'center' as const },
+    { id: 'start', header: 'Start', align: 'center' as const },
+    { id: 'duration', header: 'Duration', width: 80, align: 'center' as const },
+  ];
+
   // Convert plan to Gantt data format
   const ganttData = useMemo(() => {
     if (!plan) return { tasks: [], links: [], scales: [] };
@@ -184,11 +182,12 @@ Produce a structured plan with deliverables and tasks.`;
       del.tasks.forEach((task: PlanTask) => {
         tasks.push({
           id: task.id,
-          text: `${task.name} (${task.owner})`,
+          text: task.name,
           start: new Date(task.start_date),
           end: new Date(task.end_date),
           parent: del.id,
           type: 'task',
+          owner: task.owner,
         });
 
         // Add dependency links
@@ -293,7 +292,7 @@ Produce a structured plan with deliverables and tasks.`;
       {/* Narrative */}
       {narrative && (
         <div className="intervention-narrative">
-          <div className="block-header-red">{t('josoor.planning.planNarrative')}</div>
+          <div className="block-header-green">{t('josoor.planning.planNarrative')}</div>
           <div
             className="narrative-content"
             dangerouslySetInnerHTML={{ __html: narrative }}
@@ -305,7 +304,7 @@ Produce a structured plan with deliverables and tasks.`;
       {plan && ganttData.tasks.length > 0 && (
         <div className="intervention-gantt-section">
           <div className="gantt-header">
-            <div className="block-header-red">{t('josoor.planning.editGantt')}</div>
+            <div className="block-header-green">{t('josoor.planning.editGantt')}</div>
             <div className="gantt-actions">
               <button className="btn-intervention-secondary" onClick={handleCancel}>
                 {t('josoor.planning.cancelPlan')}
@@ -316,7 +315,14 @@ Produce a structured plan with deliverables and tasks.`;
             </div>
           </div>
           <div className="gantt-container">
-            <Gantt tasks={ganttData.tasks} links={ganttData.links} scales={ganttData.scales} />
+            <Gantt
+              tasks={ganttData.tasks}
+              links={ganttData.links}
+              scales={ganttData.scales}
+              columns={ganttColumns}
+              cellHeight={38}
+              cellBorders="full"
+            />
           </div>
         </div>
       )}
@@ -338,10 +344,10 @@ Produce a structured plan with deliverables and tasks.`;
 function RiskContextHeader({ context }: { context: InterventionContext }) {
   const { t } = useTranslation();
 
-  const bandColor = context.band === 'Red' ? '#ef4444'
-    : context.band === 'Amber' ? '#f59e0b'
-    : context.band === 'Yellow' ? '#eab308'
-    : '#10b981';
+  const bandColor = context.band === 'Red' ? 'var(--component-color-danger)'
+    : context.band === 'Amber' ? 'var(--component-color-warning)'
+    : context.band === 'Yellow' ? 'var(--component-color-warning)'
+    : 'var(--component-text-accent)';
 
   return (
     <div className="risk-context-header" style={{ borderColor: bandColor }}>
@@ -381,42 +387,42 @@ function StrategicReset() {
   return (
     <div className="reset-container">
       {/* 1. Year-End Reality Snapshot (top) */}
-      <div className="mb-6">
+      <div className="section-gap">
         <h3 className="section-title">
           {t('josoor.planning.yearEndRealitySnapshot')}
         </h3>
         <div className="snapshot-grid">
           <div className="snapshot-card">
-            <div className="field-label mb-2">{t('josoor.planning.capabilitiesStabilized')}</div>
+            <div className="field-label">{t('josoor.planning.capabilitiesStabilized')}</div>
             <div className="snapshot-value text-green">22 / 45</div>
-            <div className="field-subtext mt-1">{t('josoor.planning.stabilityRate49')}</div>
+            <div className="field-subtext">{t('josoor.planning.stabilityRate49')}</div>
           </div>
           <div className="snapshot-card">
-            <div className="field-label mb-2">{t('josoor.planning.chronicRisks')}</div>
+            <div className="field-label">{t('josoor.planning.chronicRisks')}</div>
             <div className="snapshot-value text-red">6</div>
-            <div className="field-subtext mt-1">{t('josoor.planning.persistentAcrossQuarters')}</div>
+            <div className="field-subtext">{t('josoor.planning.persistentAcrossQuarters')}</div>
           </div>
           <div className="snapshot-card">
-            <div className="field-label mb-2">{t('josoor.planning.persistentLeakageChains')}</div>
+            <div className="field-label">{t('josoor.planning.persistentLeakageChains')}</div>
             <div className="snapshot-value text-amber">3</div>
-            <div className="field-subtext mt-1">{t('josoor.planning.intentLoss25')}</div>
+            <div className="field-subtext">{t('josoor.planning.intentLoss25')}</div>
           </div>
           <div className="snapshot-card">
-            <div className="field-label mb-2">{t('josoor.planning.overbuiltCapabilities')}</div>
+            <div className="field-label">{t('josoor.planning.overbuiltCapabilities')}</div>
             <div className="snapshot-value text-blue">4</div>
-            <div className="field-subtext mt-1">{t('josoor.planning.lowUtilization')}</div>
+            <div className="field-subtext">{t('josoor.planning.lowUtilization')}</div>
           </div>
         </div>
       </div>
 
       {/* 2. Pattern Explorer (center) */}
-      <div className="mb-6">
+      <div className="section-gap">
         <h3 className="section-title">
           {t('josoor.planning.patternExplorer')}
         </h3>
         <div className="pattern-table-container">
           <table className="pattern-table">
-            <thead className="bg-slate-800">
+            <thead>
               <tr>
                 <th className="pattern-th">
                   {t('josoor.planning.capability')}
@@ -485,10 +491,10 @@ function StrategicReset() {
                       {row.load}%
                     </span>
                   </td>
-                  <td className="pattern-td pattern-td-center font-bold text-slate-300">
+                  <td className="pattern-td pattern-td-center table-cell-bold">
                     {row.policy}
                   </td>
-                  <td className="pattern-td pattern-td-center font-bold text-slate-300">
+                  <td className="pattern-td pattern-td-center table-cell-bold">
                     {row.perf}
                   </td>
                 </tr>
@@ -506,16 +512,16 @@ function StrategicReset() {
           </div>
           <div className="recommendation-list">
             <div className="recommendation-item">
-              <div className="text-slate-200 font-bold mb-1">{t('josoor.planning.considerMergeRedundant')}</div>
-              <div className="text-slate-500 text-8px">{t('josoor.planning.threeObjectivesOverlap')}</div>
+              <div className="recommendation-title">{t('josoor.planning.considerMergeRedundant')}</div>
+              <div className="recommendation-desc">{t('josoor.planning.threeObjectivesOverlap')}</div>
             </div>
             <div className="recommendation-item">
-              <div className="text-slate-200 font-bold mb-1">{t('josoor.planning.considerDropLowImpact')}</div>
-              <div className="text-slate-500 text-8px">{t('josoor.planning.twoObjectivesMinimalReturns')}</div>
+              <div className="recommendation-title">{t('josoor.planning.considerDropLowImpact')}</div>
+              <div className="recommendation-desc">{t('josoor.planning.twoObjectivesMinimalReturns')}</div>
             </div>
             <div className="recommendation-item">
-              <div className="text-slate-200 font-bold mb-1">{t('josoor.planning.considerElevateCritical')}</div>
-              <div className="text-slate-500 text-8px">{t('josoor.planning.infrastructureHigherPriority')}</div>
+              <div className="recommendation-title">{t('josoor.planning.considerElevateCritical')}</div>
+              <div className="recommendation-desc">{t('josoor.planning.infrastructureHigherPriority')}</div>
             </div>
           </div>
         </div>
@@ -526,16 +532,16 @@ function StrategicReset() {
           </div>
           <div className="recommendation-list">
             <div className="recommendation-item">
-              <div className="text-slate-200 font-bold mb-1">{t('josoor.planning.recommendAddNewPolicy')}</div>
-              <div className="text-slate-500 text-8px">{t('josoor.planning.pricingReformLeakage')}</div>
+              <div className="recommendation-title">{t('josoor.planning.recommendAddNewPolicy')}</div>
+              <div className="recommendation-desc">{t('josoor.planning.pricingReformLeakage')}</div>
             </div>
             <div className="recommendation-item">
-              <div className="text-slate-200 font-bold mb-1">{t('josoor.planning.recommendRetireIneffective')}</div>
-              <div className="text-slate-500 text-8px">{t('josoor.planning.twoToolsNoImpact')}</div>
+              <div className="recommendation-title">{t('josoor.planning.recommendRetireIneffective')}</div>
+              <div className="recommendation-desc">{t('josoor.planning.twoToolsNoImpact')}</div>
             </div>
             <div className="recommendation-item">
-              <div className="text-slate-200 font-bold mb-1">{t('josoor.planning.recommendRebalancePortfolio')}</div>
-              <div className="text-slate-500 text-8px">{t('josoor.planning.overRelianceRegulatory')}</div>
+              <div className="recommendation-title">{t('josoor.planning.recommendRebalancePortfolio')}</div>
+              <div className="recommendation-desc">{t('josoor.planning.overRelianceRegulatory')}</div>
             </div>
           </div>
         </div>
@@ -546,16 +552,16 @@ function StrategicReset() {
           </div>
           <div className="recommendation-list">
             <div className="recommendation-item">
-              <div className="text-slate-200 font-bold mb-1">{t('josoor.planning.guidanceTightenAmbitious')}</div>
-              <div className="text-slate-500 text-8px">{t('josoor.planning.qualityMetricsAchievable')}</div>
+              <div className="recommendation-title">{t('josoor.planning.guidanceTightenAmbitious')}</div>
+              <div className="recommendation-desc">{t('josoor.planning.qualityMetricsAchievable')}</div>
             </div>
             <div className="recommendation-item">
-              <div className="text-slate-200 font-bold mb-1">{t('josoor.planning.guidanceRelaxUnrealistic')}</div>
-              <div className="text-slate-500 text-8px">{t('josoor.planning.distributionTargetsUnattainable')}</div>
+              <div className="recommendation-title">{t('josoor.planning.guidanceRelaxUnrealistic')}</div>
+              <div className="recommendation-desc">{t('josoor.planning.distributionTargetsUnattainable')}</div>
             </div>
             <div className="recommendation-item">
-              <div className="text-slate-200 font-bold mb-1">{t('josoor.planning.guidanceRealignTimelines')}</div>
-              <div className="text-slate-500 text-8px">{t('josoor.planning.phaseInfrastructureGoals')}</div>
+              <div className="recommendation-title">{t('josoor.planning.guidanceRealignTimelines')}</div>
+              <div className="recommendation-desc">{t('josoor.planning.phaseInfrastructureGoals')}</div>
             </div>
           </div>
         </div>
@@ -566,19 +572,19 @@ function StrategicReset() {
           </div>
           <div className="recommendation-list">
             <div className="recommendation-item">
-              <div className="text-slate-200 font-bold mb-1">{t('josoor.planning.plantOperations')}</div>
-              <div className="text-slate-500 text-8px">{t('josoor.planning.suggestBuildToOperate')}</div>
-              <div className="text-slate-500 text-8px mt-1">{t('josoor.planning.rationaleStabilization')}</div>
+              <div className="recommendation-title">{t('josoor.planning.plantOperations')}</div>
+              <div className="recommendation-desc">{t('josoor.planning.suggestBuildToOperate')}</div>
+              <div className="recommendation-rationale">{t('josoor.planning.rationaleStabilization')}</div>
             </div>
             <div className="recommendation-item">
-              <div className="text-slate-200 font-bold mb-1">{t('josoor.planning.distributionMgmt')}</div>
-              <div className="text-slate-500 text-8px">{t('josoor.planning.suggestOperateToBuild')}</div>
-              <div className="text-slate-500 text-8px mt-1">{t('josoor.planning.rationaleChronicUnderperformance')}</div>
+              <div className="recommendation-title">{t('josoor.planning.distributionMgmt')}</div>
+              <div className="recommendation-desc">{t('josoor.planning.suggestOperateToBuild')}</div>
+              <div className="recommendation-rationale">{t('josoor.planning.rationaleChronicUnderperformance')}</div>
             </div>
             <div className="recommendation-item">
-              <div className="text-slate-200 font-bold mb-1">{t('josoor.planning.legacySystems')}</div>
-              <div className="text-slate-500 text-8px">{t('josoor.planning.suggestHoldToDecommission')}</div>
-              <div className="text-slate-500 text-8px mt-1">{t('josoor.planning.rationaleLowUtilization')}</div>
+              <div className="recommendation-title">{t('josoor.planning.legacySystems')}</div>
+              <div className="recommendation-desc">{t('josoor.planning.suggestHoldToDecommission')}</div>
+              <div className="recommendation-rationale">{t('josoor.planning.rationaleLowUtilization')}</div>
             </div>
           </div>
         </div>
@@ -614,7 +620,7 @@ function ScenarioSimulation() {
             <div className="block-header-gray">
               {t('josoor.planning.addRemovePolicyTool')}
             </div>
-            <select className="control-select mb-2">
+            <select className="control-select">
               <option>{t('josoor.planning.addWaterPricingReform')}</option>
               <option>{t('josoor.planning.removeLegacyConservation')}</option>
             </select>
@@ -670,21 +676,20 @@ function ScenarioSimulation() {
                 className="impact-row-grid"
               >
                 <div className="impact-cell impact-cell-current">
-                  <div className="field-label mb-1">{row.metric}</div>
-                  <div className="field-value text-14px">{row.current}%</div>
+                  <div className="field-label">{row.metric}</div>
+                  <div className="field-value">{row.current}%</div>
                 </div>
                 <div className="impact-cell">
-                  <div className="field-label mb-1">{row.metric}</div>
-                  <div className="flex items-center gap-2">
-                    <div className="text-green text-14px impact-val-bold">{row.scenario}%</div>
+                  <div className="field-label">{row.metric}</div>
+                  <div className="inline-flex-row">
+                    <div className="scenario-value">{row.scenario}%</div>
                     <div
-                      className={`flex items-center gap-1 text-9px font-bold ${row.delta < 0 ? 'text-green' : 'text-red'
-                        }`}
+                      className={`delta-indicator ${row.delta < 0 ? 'text-green' : 'text-red'}`}
                     >
                       {row.delta < 0 ? (
-                        <TrendingDown className="w-3 h-3" />
+                        <TrendingDown style={{ width: 12, height: 12 }} />
                       ) : (
-                        <TrendingUp className="w-3 h-3" />
+                        <TrendingUp style={{ width: 12, height: 12 }} />
                       )}
                       {Math.abs(row.delta)}
                     </div>
@@ -705,9 +710,9 @@ function ScenarioSimulation() {
             <div className="block-header-gray">
               {t('josoor.planning.newCriticalCapabilities')}
             </div>
-            <div className="space-y-1">
-              <div className="text-slate-200 text-10px">• {t('josoor.planning.networkPlanning')}</div>
-              <div className="text-slate-200 text-10px">• {t('josoor.planning.dataAnalytics')}</div>
+            <div className="stack-sm">
+              <div className="verdict-list-item">• {t('josoor.planning.networkPlanning')}</div>
+              <div className="verdict-list-item">• {t('josoor.planning.dataAnalytics')}</div>
             </div>
           </div>
 
@@ -715,10 +720,10 @@ function ScenarioSimulation() {
             <div className="block-header-gray">
               {t('josoor.planning.newBrokenChains')}
             </div>
-            <div className="space-y-1">
-              <div className="flex items-center gap-2 text-10px">
-                <div className="w-2 h-2 rounded-full bg-red" />
-                <span className="text-slate-200">{t('josoor.planning.obj3PT5Leakage')}</span>
+            <div className="stack-sm">
+              <div className="inline-flex-row">
+                <div className="status-dot status-dot-danger" />
+                <span className="verdict-list-item">{t('josoor.planning.obj3PT5Leakage')}</span>
               </div>
             </div>
           </div>
@@ -727,9 +732,9 @@ function ScenarioSimulation() {
             <div className="block-header-gray">
               {t('josoor.planning.executionFeasibility')}
             </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-green" />
-              <span className="text-green text-11px font-bold">{t('josoor.planning.yes')}</span>
+            <div className="inline-flex-row">
+              <div className="status-dot status-dot-success" />
+              <span className="feasibility-yes">{t('josoor.planning.yes')}</span>
             </div>
           </div>
 
@@ -740,13 +745,13 @@ function ScenarioSimulation() {
             <div className="rec-badge">
               {t('josoor.planning.viable')}
             </div>
-            <div className="text-slate-300 text-9px mt-2 leading-relaxed">
+            <div className="verdict-detail">
               {t('josoor.planning.scenarioReducesCriticalRisks')}
             </div>
           </div>
 
           <div className="planning-block">
-            <div className="text-slate-500 text-8px normal text-center">
+            <div className="disclaimer-text">
               {t('josoor.planning.noApproveButton')}
             </div>
           </div>

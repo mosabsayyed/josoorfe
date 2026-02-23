@@ -39,7 +39,7 @@ export interface ChatRequest {
   conversation_id?: number;
   push_to_graph_server?: boolean;
   desk_type?: 'general_chat' | 'sector_desk' | 'planning_desk' | 'reporting_desk' | 'intervention_planning';
-  prompt_key?: 'strategy_brief' | 'sector_desk_strategy_brief' | 'risk_advisory' | 'intervention_planning';
+  prompt_key?: 'strategy_brief' | 'sector_desk_strategy_brief' | 'risk_advisory' | 'intervention_planning' | 'general_analysis' | 'stakeholder_communication';
   history?: Array<{ role: string; content: string }>;
   file_ids?: string[];
   model_override?: string;

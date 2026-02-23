@@ -29,7 +29,10 @@ def main():
 
         # Print reminder to stdout
         print(f"\nNOOR POST-EDIT: Modified {filename}")
-        print("RULE #0 REMINDER: After completing this task, update context/journal.ipynb and MEMORY.md\n")
+        print("Record change using exact MCP call names:")
+        print("- mcp_noor-memory_add_observations(...)")
+        print("- mcp_noor-memory_create_entities(...) when new concept appears")
+        print("RULE #0 REMINDER: update context/journal.ipynb and MEMORY.md\n")
 
     except Exception:
         # Silently fail - PostToolUse hooks are informational only

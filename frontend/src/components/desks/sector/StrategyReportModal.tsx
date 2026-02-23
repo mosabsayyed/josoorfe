@@ -38,7 +38,9 @@ const OptionCard: React.FC<{
                 width: '100%',
                 textAlign: 'left',
                 background: 'var(--component-panel-bg)',
-                border: `1px solid ${hovered ? 'var(--component-text-accent)' : 'var(--component-panel-border)'}`,
+                borderTop: `1px solid ${hovered ? 'var(--component-text-accent)' : 'var(--component-panel-border)'}`,
+                borderRight: `1px solid ${hovered ? 'var(--component-text-accent)' : 'var(--component-panel-border)'}`,
+                borderBottom: `1px solid ${hovered ? 'var(--component-text-accent)' : 'var(--component-panel-border)'}`,
                 borderLeft: '3px solid var(--component-text-accent)',
                 borderRadius: '8px',
                 padding: '14px 16px',
@@ -239,6 +241,16 @@ const StrategyReportModal: React.FC<StrategyReportModalProps> = ({
                                                     height="auto"
                                                 />
                                             </div>
+                                        );
+                                    }
+
+                                    // If part contains HTML tables, render directly as HTML
+                                    if (part.includes('<table')) {
+                                        return (
+                                            <div
+                                                key={`html-${index}`}
+                                                dangerouslySetInnerHTML={{ __html: part }}
+                                            />
                                         );
                                     }
 

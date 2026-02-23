@@ -90,6 +90,29 @@
     color: var(--component-text-secondary, #D1D5DB);
 }
 
+.cell-kpi-rollup {
+    margin-top: 0.25rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    background: rgba(244, 187, 48, 0.12);
+    border: 1px solid rgba(244, 187, 48, 0.35);
+    padding: 0.1rem 0.35rem;
+}
+
+.kpi-rollup-label {
+    font-size: 9px;
+    color: var(--component-text-muted, #9CA3AF);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.kpi-rollup-value {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--component-text-primary, #F9FAFB);
+}
+
 /* L2 Row */
 .l2-row-contents {
     display: contents;

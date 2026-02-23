@@ -31,6 +31,7 @@ export const PolicyToolsDrawer: React.FC<PolicyToolsDrawerProps> = ({
     toolRiskBands
 }) => {
     const { t } = useTranslation();
+    const isNumericId = (value: any) => /^\d+(?:\.\d+)?$/.test(String(value || '').trim());
     return (
         <AnimatePresence>
             {isOpen && category && (
@@ -64,7 +65,9 @@ export const PolicyToolsDrawer: React.FC<PolicyToolsDrawerProps> = ({
                                         >
                                             <div className="policy-tool-card-main">
                                                 <div className="policy-tool-card-name">
-                                                    <span style={{ opacity: 0.6, marginRight: '8px' }}>{tool.id}</span>
+                                                    {isNumericId(tool.id) && (
+                                                        <span style={{ opacity: 0.6, marginRight: '8px' }}>{tool.id}</span>
+                                                    )}
                                                     {tool.name}
                                                 </div>
                                                 {tool.childCount > 0 && (

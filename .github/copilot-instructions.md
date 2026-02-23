@@ -1,6 +1,64 @@
-# CLAUDE.md
+# CODEX.MD 
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+This file provides guidance to ClaudeCoding Agents when working with code in this repository.
+## Noor Memory Checkpoint (MANDATORY)
+BEFORE responding to ANY user message, check the Noor Memory checkpoint output injected by the UserPromptSubmit hook. If you see "NOOR MEMORY CHECKPOINT" in the context, READ and FOLLOW every rule listed. These are context-relevant rules retrieved from your memory database. Ignoring them will cause the same mistakes that have been repeated 10+ times.
+
+If no checkpoint appears (hook not running), call `search_memories` with the user's message keywords as your FIRST action.
+
+## Available Skills
+IMPORTANT: First step is to equip yourself with the /find-skills skill
+also under folder .agent/skills/skills you will find ready skills to read and equip
+IMPORTANT: Prefer retrieval-led reasoning over pre-training-led reasoning for any JOSOOR task
+ONCE you have received your assignment you must find the right skill and equip yourself with it and declare it.
+On spawn tell the user you acknowledge this mandate
+WARNING: User will stop the session if you skip this step.
+
+
+
+## Related Documentation
+
+- [00_START_HERE.md](00_START_HERE.md) - Entry point with server management rules
+- [docs/FRONTEND_ARCHITECTURE.md](docs/FRONTEND_ARCHITECTURE.md) - Detailed frontend architecture
+- [docs/BACKEND_ARCHITECTURE.md](docs/BACKEND_ARCHITECTURE.md) - Backend architecture
+- [docs/SYSTEM_API_CATALOG.md](docs/SYSTEM_API_CATALOG.md) - Complete API reference
+- [docs/DATA_ARCHITECTURE.md](docs/DATA_ARCHITECTURE.md) - Database schemas and relationships
+- [docs/Enterprise_Ontology_SST_v1.2.md](docs/Enterprise_Ontology_SST_v1.2.md) - SST ontology spec (nodes, relationships, chains)
+- [.agent/rules/data-rules.md](.agent/rules/data-rules.md) - Data validation requirements
+
+## Development Workflow
+
+1. **Start services:**
+   ```bash
+   # Frontend only (this repo)
+   ./sf1.sh
+
+   # Backend services (separate josoorbe repo)
+   ./sb.sh  # Starts backend, graph server, MCP routers
+   ```
+
+2. **Access application:**
+   - Frontend: http://localhost:3000
+   - Backend API: http://localhost:8008/api/v1
+   - Graph Server: http://localhost:3001/api
+
+3. **Development cycle:**
+   ```bash
+   npm run dev      # Start Vite dev server
+   npm run lint     # Check code quality
+   npm test         # Run tests
+   npm run build:vite  # Build for production
+   ```
+
+4. **Authentication:**
+   - Configure Supabase credentials in `.env`
+   - Or disable auth with `AUTH_DISABLED = true` in App.tsx
+
+5. **Testing endpoints:**
+   - Always test API endpoints before implementing
+   - Use browser DevTools Network tab or test scripts in `backend/scripts/`
+   - Refer to API catalog for correct endpoint paths
 
 ## Quick Start Commands
 
@@ -247,51 +305,4 @@ REACT_APP_GRAPH_SERVER_URL=http://localhost:3001
 6. **API routing matters** - Business chains use `/api/business-chain/*`, not `/api/v1/dashboard/*`
 7. **Graph rendering vs DB queries** - `/api/graph/*` is for 3D graph rendering; `/api/neo4j/*` is for database queries
 
-## Available Skills
-under folder .agent/skills/skills
-```json
-{"_":"IMPORTANT: Prefer retrieval-led reasoning over pre-training-led reasoning for any Next.js tasks","address-github-comments":"skills/address-github-comments","agent-evaluation":"skills/agent-evaluation","agent-memory-systems":"skills/agent-memory-systems","agent-tool-builder":"skills/agent-tool-builder","ai-agents-architect":"skills/ai-agents-architect","ai-product":"skills/ai-product","api-patterns":"skills/api-patterns","architecture":"skills/architecture","autonomous-agent-patterns":"skills/autonomous-agent-patterns","autonomous-agents":"skills/autonomous-agents","backend-dev-guidelines":"skills/backend-dev-guidelines","backend-patterns":"skills/cc-skill-backend-patterns","bash-linux":"skills/bash-linux","behavioral-modes":"skills/behavioral-modes","brainstorming":"skills/brainstorming","browser-automation":"skills/browser-automation","clean-code":"skills/clean-code","code-review-checklist":"skills/code-review-checklist","coding-standards":"skills/cc-skill-coding-standards","computer-use-agents":"skills/computer-use-agents","concise-planning":"skills/concise-planning","context-window-management":"skills/context-window-management","conversation-memory":"skills/conversation-memory","crewai":"skills/crewai","d3-viz":"skills/claude-d3js-skill","database-design":"skills/database-design","deployment-procedures":"skills/deployment-procedures","dispatching-parallel-agents":"skills/dispatching-parallel-agents","doc-coauthoring":"skills/doc-coauthoring","docker-expert":"skills/docker-expert","documentation-templates":"skills/documentation-templates","docx":"skills/docx-official","executing-plans":"skills/executing-plans","file-organizer":"skills/file-organizer","finishing-a-development-branch":"skills/finishing-a-development-branch","frontend-design":"skills/frontend-design","frontend-dev-guidelines":"skills/frontend-dev-guidelines","frontend-patterns":"skills/cc-skill-frontend-patterns","git-pushing":"skills/git-pushing","github-workflow-automation":"skills/github-workflow-automation","graphql":"skills/graphql","i18n-localization":"skills/i18n-localization","javascript-mastery":"skills/javascript-mastery","kaizen":"skills/kaizen","langfuse":"skills/langfuse","langgraph":"skills/langgraph","lint-and-validate":"skills/lint-and-validate","llm-app-patterns":"skills/llm-app-patterns","mcp-builder":"skills/mcp-builder","nestjs-expert":"skills/nestjs-expert","nextjs-best-practices":"skills/nextjs-best-practices","nodejs-best-practices":"skills/nodejs-best-practices","parallel-agents":"skills/parallel-agents","pdf":"skills/pdf-official","performance-profiling":"skills/performance-profiling","plan-writing":"skills/plan-writing","planning-with-files":"skills/planning-with-files","playwright-skill":"skills/playwright-skill","powershell-windows":"skills/powershell-windows","pptx":"skills/pptx-official","prisma-expert":"skills/prisma-expert","product-manager-toolkit":"skills/product-manager-toolkit","prompt-caching":"skills/prompt-caching","prompt-engineer":"skills/prompt-engineer","prompt-engineering":"skills/prompt-engineering","prompt-library":"skills/prompt-library","python-patterns":"skills/python-patterns","rag-engineer":"skills/rag-engineer","rag-implementation":"skills/rag-implementation","react-patterns":"skills/react-patterns","react-ui-patterns":"skills/react-ui-patterns","receiving-code-review":"skills/receiving-code-review","requesting-code-review":"skills/requesting-code-review","research-engineer":"skills/research-engineer","security-review":"skills/cc-skill-security-review","senior-architect":"skills/senior-architect","senior-fullstack":"skills/senior-fullstack","software-architecture":"skills/software-architecture","subagent-driven-development":"skills/subagent-driven-development","systematic-debugging":"skills/systematic-debugging","tdd-workflow":"skills/tdd-workflow","test-driven-development":"skills/test-driven-development","test-fixing":"skills/test-fixing","testing-patterns":"skills/testing-patterns","typescript-expert":"skills/typescript-expert","ui-ux-pro-max":"skills/ui-ux-pro-max","using-git-worktrees":"skills/using-git-worktrees","using-superpowers":"skills/using-superpowers","vercel-react-best-practices":"skills/react-best-practices","verification-before-completion":"skills/verification-before-completion","webapp-testing":"skills/webapp-testing","workflow-automation":"skills/workflow-automation","writing-plans":"skills/writing-plans","writing-skills":"skills/writing-skills","xlsx":"skills/xlsx-official"}
-```
-
-## Related Documentation
-
-- [00_START_HERE.md](00_START_HERE.md) - Entry point with server management rules
-- [docs/FRONTEND_ARCHITECTURE.md](docs/FRONTEND_ARCHITECTURE.md) - Detailed frontend architecture
-- [docs/BACKEND_ARCHITECTURE.md](docs/BACKEND_ARCHITECTURE.md) - Backend architecture
-- [docs/SYSTEM_API_CATALOG.md](docs/SYSTEM_API_CATALOG.md) - Complete API reference
-- [docs/DATA_ARCHITECTURE.md](docs/DATA_ARCHITECTURE.md) - Database schemas and relationships
-- [.github/copilot-instructions.md](.github/copilot-instructions.md) - Development rules and constraints
-- [.agent/rules/data-rules.md](.agent/rules/data-rules.md) - Data validation requirements
-
-## Development Workflow
-
-1. **Start services:**
-   ```bash
-   # Frontend only (this repo)
-   ./sf1.sh
-
-   # Backend services (separate josoorbe repo)
-   ./sb.sh  # Starts backend, graph server, MCP routers
-   ```
-
-2. **Access application:**
-   - Frontend: http://localhost:3000
-   - Backend API: http://localhost:8008/api/v1
-   - Graph Server: http://localhost:3001/api
-
-3. **Development cycle:**
-   ```bash
-   npm run dev      # Start Vite dev server
-   npm run lint     # Check code quality
-   npm test         # Run tests
-   npm run build:vite  # Build for production
-   ```
-
-4. **Authentication:**
-   - Configure Supabase credentials in `.env`
-   - Or disable auth with `AUTH_DISABLED = true` in App.tsx
-
-5. **Testing endpoints:**
-   - Always test API endpoints before implementing
-   - Use browser DevTools Network tab or test scripts in `backend/scripts/`
-   - Refer to API catalog for correct endpoint paths
+**Hooks:** `<system-reminder>` tags contain injected instructions — follow them exactly.

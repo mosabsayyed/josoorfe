@@ -109,9 +109,8 @@ export function EnterpriseDesk({ year = '2025', quarter = 'Q1', focusCapId, onIn
       for (const l2 of l1.l2) {
         // Check L2
         if (l2.id === effectiveCapId) {
-          if (l2.l3.length > 0) {
-            setSelectedL3(l2.l3[0]);
-          }
+          setSelectedL2(l2);
+          setSelectedL3(null);
           return;
         }
         // Check L3
@@ -180,10 +179,10 @@ export function EnterpriseDesk({ year = '2025', quarter = 'Q1', focusCapId, onIn
   };
 
   const handleSelectOption = (option: InterventionOption) => {
-    const cap = selectedL3;
-    if (!cap || !onIntervene) return;
+    const cap = selectedL3 || selectedL2;
+    if (!cap) return;
 
-    onIntervene({
+    const ctx = {
       riskId: cap.rawRisk?.id || cap.id || '',
       riskName: cap.rawRisk?.name || cap.name || '',
       capabilityId: cap.id || '',
@@ -195,10 +194,18 @@ export function EnterpriseDesk({ year = '2025', quarter = 'Q1', focusCapId, onIn
         title: option.title,
         description: option.description,
       },
-    });
+    };
 
     setIsRiskModalOpen(false);
     setRiskOptions(null);
+
+    if (onIntervene) {
+      onIntervene(ctx);
+    } else {
+      // Fallback: store context and navigate to planning desk
+      sessionStorage.setItem('interventionContext', JSON.stringify(ctx));
+      navigate('/josoor?view=planning-desk');
+    }
   };
 
   // Get all L3s (respecting filters) for insight panel
@@ -230,7 +237,8 @@ export function EnterpriseDesk({ year = '2025', quarter = 'Q1', focusCapId, onIn
     const capId = cap.id;
     const capYear = cap.year || selectedYear;
     const riskId = cap.rawRisk?.id || cap.rawCapability?.risk?.id || '';
-    const prompt = `Please analyze capability ${capId} (year: ${capYear}).${riskId ? ` Risk ID: ${riskId}` : ''}`;
+    const lang = document.documentElement.dir === 'rtl' ? 'Arabic' : 'English';
+    const prompt = `Please analyze capability ${capId} (year: ${capYear}).${riskId ? ` Risk ID: ${riskId}` : ''} Respond entirely in ${lang}.`;
 
     try {
       const response = await chatService.sendMessage({
@@ -382,6 +390,10 @@ export function EnterpriseDesk({ year = '2025', quarter = 'Q1', focusCapId, onIn
           selectedYear={selectedYear}
           selectedQuarter={selectedQuarter}
           onAIAnalysis={() => handleAIRiskAnalysis(selectedL2)}
+          onSelectL3={(l3) => {
+            setSelectedL2(null);
+            setSelectedL3(l3);
+          }}
         />
       )}
 

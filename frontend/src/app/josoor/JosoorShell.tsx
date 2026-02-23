@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, memo, useContext, useRef, Suspense } from "react";
-import { useLocation, useNavigate, UNSAFE_DataRouterContext as DataRouterContext, Outlet } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { graphService } from '../../services/graphService';
 import { Sidebar, ChatContainer } from "../../components/chat";
@@ -56,6 +56,9 @@ export default function JosoorShell() {
     const [isCanvasOpen, setIsCanvasOpen] = useState(false);
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
     const [streamingMessage, setStreamingMessage] = useState<APIMessage | null>(null);
+    const [selectedPersona, setSelectedPersona] = useState<string | null>('general_analysis');
+    const [selectedTools, setSelectedTools] = useState<string[]>(['recall_memory', 'search_ksa_facts']);
+    const [isPersonaLocked, setIsPersonaLocked] = useState(false);
 
     // Active View State
     const [activeView, setActiveView] = useState<JosoorView>('sector-desk');
@@ -125,6 +128,41 @@ export default function JosoorShell() {
         loadConversations();
     }, [loadConversations]);
 
+    useEffect(() => {
+        const params = new URLSearchParams(location.search);
+
+        // Handle ?view=planning-desk with sessionStorage intervention context
+        const viewParam = params.get('view');
+        if (viewParam === 'planning-desk') {
+            const stored = sessionStorage.getItem('interventionContext');
+            if (stored) {
+                try {
+                    setInterventionContext(JSON.parse(stored));
+                    sessionStorage.removeItem('interventionContext');
+                } catch (e) { /* ignore parse errors */ }
+            }
+            setActiveView('planning-desk');
+            return;
+        }
+
+        const conversationIdParam = params.get('conversation_id');
+        if (!conversationIdParam) return;
+
+        const parsedId = parseInt(conversationIdParam, 10);
+        if (Number.isNaN(parsedId)) return;
+
+        setActiveConversationId(parsedId);
+        setActiveView('chat');
+    }, [location.search]);
+
+    useEffect(() => {
+        const params = new URLSearchParams(location.search);
+        const capabilityId = params.get('cap');
+        if (!capabilityId) return;
+
+        setActiveView('enterprise-desk');
+    }, [location.search]);
+
     // Load Messages (Copied from ChatAppPage)
     useEffect(() => {
         const loadMessages = async () => {
@@ -168,13 +206,22 @@ export default function JosoorShell() {
         setIsLoading(true);
 
         try {
+            // Prefix query with tool instructions if tools are selected
+            const toolPrefix = selectedTools.length > 0
+                ? selectedTools.map(t => `prioritize using ${t}`).join(', ') + '. '
+                : '';
             const basics: any = {
-                query: messageText,
+                query: toolPrefix + messageText,
                 conversation_id: activeConversationId && activeConversationId > 0 ? activeConversationId : undefined,
-                push_to_graph_server: options?.push_to_graph_server
+                push_to_graph_server: options?.push_to_graph_server,
+                ...(selectedPersona && { prompt_key: selectedPersona }),
+                language,
             };
 
             const response = await chatService.sendMessage(basics);
+            if (selectedPersona && !isPersonaLocked) {
+                setIsPersonaLocked(true);
+            }
             let answer = response.llm_payload?.answer || response.message || response.answer || "";
             const assistantMsg: APIMessage = {
                 id: Date.now(),
@@ -194,7 +241,7 @@ export default function JosoorShell() {
         } finally {
             setIsLoading(false);
         }
-    }, [activeConversationId, loadConversations, t]);
+    }, [activeConversationId, selectedTools, selectedPersona, isPersonaLocked, loadConversations, t]);
 
     const handleNewChat = useCallback(() => {
         setActiveConversationId(null);
@@ -234,6 +281,12 @@ export default function JosoorShell() {
         }
     }, [activeView]);
 
+    useEffect(() => {
+        setSelectedPersona(null);
+        setIsPersonaLocked(false);
+        setSelectedTools(['recall_memory', 'search_ksa_facts']);
+    }, [activeConversationId]);
+
     // Sync title/subtitle based on activeView
     const getHeaderMeta = () => {
         switch (activeView) {
@@ -254,6 +307,10 @@ export default function JosoorShell() {
     };
 
     const { title, subtitle } = getHeaderMeta();
+    const displayTitle = activeView === 'chat'
+        ? title
+        : `${t('josoor.sector.ksaVision')} 2030 • ${title}`;
+    const displaySubtitle = subtitle;
 
     return (
         <div className="josoor-shell" style={{ display: 'flex', width: '100vw', height: '100vh', overflow: 'hidden', backgroundColor: 'var(--bg-primary)' }}>
@@ -274,11 +331,11 @@ export default function JosoorShell() {
                     onDeleteConversation={handleDeleteConversation}
                     onQuickAction={(action) => {
                         console.log('JosoorShell received QuickAction:', action);
-                        // Map quick actions to shell views if needed
-                        if (typeof action === 'string') {
-                            setActiveView(action as any);
+                        const actionId = typeof action === 'string' ? action : action.id;
+                        if (actionId === 'chat') {
+                            handleNewChat();
                         } else {
-                            setActiveView(action.id as any);
+                            setActiveView(actionId as any);
                         }
                     }}
                     isCollapsed={!isSidebarOpen}
@@ -304,13 +361,27 @@ export default function JosoorShell() {
                     availableYears={temporalData?.years?.map(String) || ['2025', '2026', '2027', '2028', '2029']}
                     onYearChange={setYear}
                     onQuarterChange={setQuarter}
-                    title={title}
-                    subtitle={subtitle}
+                    title={displayTitle}
+                    subtitle={displaySubtitle}
+                    selectedPersona={selectedPersona}
+                    onPersonaChange={setSelectedPersona}
+                    isPersonaLocked={isPersonaLocked}
+                    selectedTools={selectedTools}
+                    onToolsChange={setSelectedTools}
                 >
                     {activeView !== 'chat' && (
                         <div style={{ flex: 1, height: '100%', overflow: ['settings', 'providers', 'ab-testing', 'monitoring', 'observability'].includes(activeView) ? 'auto' : 'hidden' }}>
                             <Suspense fallback={<div style={{ padding: '2rem', color: 'white' }}>{t('josoor.common.loadingView')}</div>}>
-                                {activeView === 'sector-desk' && <SectorDesk year={year} quarter={quarter} />}
+                                {activeView === 'sector-desk' && (
+                                    <SectorDesk
+                                        year={year}
+                                        quarter={quarter}
+                                        onNavigateToCapability={(capId: string) => {
+                                            setActiveView('enterprise-desk');
+                                            navigate(`/josoor?cap=${encodeURIComponent(capId)}`);
+                                        }}
+                                    />
+                                )}
                                 {activeView === 'controls-desk' && <ControlsDesk />}
                                 {activeView === 'planning-desk' && <PlanningDesk interventionContext={interventionContext} onClearContext={() => setInterventionContext(null)} />}
                                 {activeView === 'enterprise-desk' && <EnterpriseDesk year={year} quarter={quarter} onIntervene={handleIntervene} />}

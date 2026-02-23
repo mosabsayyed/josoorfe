@@ -11,11 +11,12 @@ interface CapabilityDetailPanelProps {
   selectedYear?: number | 'all';
   selectedQuarter?: number | 'all';
   onAIAnalysis?: () => void;
+  onSelectL3?: (l3: L3Capability) => void;
 }
 
 /** Format Neo4j integer objects {low, high} to plain number */
 function fmtVal(val: any): string {
-  if (val == null) return '—';
+  if (val == null) return '\u2014';
   if (typeof val === 'boolean') return val ? 'Yes' : 'No';
   if (typeof val === 'object' && 'low' in val) return String(val.low);
   return String(val);
@@ -24,17 +25,16 @@ function fmtVal(val: any): string {
 /** Capitalize first letter of each word */
 function capitalize(val: any): string {
   const s = fmtVal(val);
-  if (s === '—') return s;
+  if (s === '\u2014') return s;
   return s.replace(/\b\w/g, c => c.toUpperCase());
 }
 
-// Inline style constants (matching SectorDetailsPanel)
+// Inline style constants
 const labelStyle: React.CSSProperties = {
   fontSize: '11px', textTransform: 'uppercase', color: 'var(--component-text-muted)',
   marginBottom: '4px', letterSpacing: '0.5px'
 };
 const valueStyle: React.CSSProperties = { fontSize: '14px', fontWeight: 600, color: 'var(--component-text-primary)' };
-const valueLargeStyle: React.CSSProperties = { fontSize: '16px', fontWeight: 600, color: 'var(--component-text-primary)' };
 const sectionTitleStyle: React.CSSProperties = {
   fontSize: '12px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em',
   color: 'var(--component-text-accent)', margin: '0 0 1rem 0', paddingBottom: '0.5rem',
@@ -55,20 +55,16 @@ function bandBg(band?: string): string {
   return c === '#ef4444' ? 'rgba(239,68,68,0.1)' : c === '#f59e0b' ? 'rgba(245,158,11,0.1)' : 'rgba(16,185,129,0.1)';
 }
 
-/** Get band border */
-function bandBorder(band?: string): string {
-  const c = bandColor(band);
-  return c === '#ef4444' ? 'rgba(239,68,68,0.2)' : c === '#f59e0b' ? 'rgba(245,158,11,0.2)' : 'rgba(16,185,129,0.2)';
-}
-
-/** Exposure color by threshold */
-function exposureColor(pct: number): string {
-  return pct > 65 ? '#ef4444' : pct > 35 ? '#f59e0b' : '#10b981';
-}
-
 /** Achievement color by threshold */
 function achievementColor(pct: number): string {
   return pct >= 70 ? '#10b981' : pct >= 40 ? '#f59e0b' : '#ef4444';
+}
+
+function computeKpiPct(actualVal: any, targetVal: any): number | null {
+  const actual = actualVal != null ? Number(actualVal) : null;
+  const target = targetVal != null ? Number(targetVal) : null;
+  if (actual == null || target == null || Number.isNaN(actual) || Number.isNaN(target) || target <= 0) return null;
+  return Math.max(0, Math.min(100, Math.round((actual / target) * 100)));
 }
 
 /** Project helper: compute display values */
@@ -82,33 +78,114 @@ function projectDisplayValues(proj: any) {
   return { isPlanned, pct, isOverdue, color };
 }
 
-export function CapabilityDetailPanel({ l3, l2, onClose, selectedYear, selectedQuarter, onAIAnalysis }: CapabilityDetailPanelProps) {
-  const { t } = useTranslation();
+// ═══════════════════════════════════════════════════════════
+// SEMI-CIRCULAR GAUGE — inline SVG
+// ═══════════════════════════════════════════════════════════
 
-  // R9: L2 view
-  if (l2) {
-    return <L2DetailView l2={l2} onClose={onClose} selectedYear={selectedYear} selectedQuarter={selectedQuarter} onAIAnalysis={onAIAnalysis} />;
-  }
+function SemiGauge({ value, band, subtitle, centerLabel }: { value: number; band?: string; subtitle?: string; centerLabel?: string }) {
+  const width = 180;
+  const height = 105;
+  const strokeW = 14;
+  const radius = 70;
+  const cx = width / 2;
+  const cy = 90;
+  const circumference = Math.PI * radius;
+  const clamped = Math.max(0, Math.min(100, value));
+  const dashOffset = circumference - (clamped / 100) * circumference;
+  const color = bandColor(band);
 
-  // L3 view
-  if (!l3) return null;
-  return <L3DetailView l3={l3} onClose={onClose} onAIAnalysis={onAIAnalysis} />;
+  // Arc from left to right (semi-circle)
+  const x1 = cx - radius;
+  const x2 = cx + radius;
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', margin: '0.5rem 0 1rem' }}>
+      <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
+        {/* Background track */}
+        <path
+          d={`M ${x1} ${cy} A ${radius} ${radius} 0 0 1 ${x2} ${cy}`}
+          fill="none"
+          stroke="rgba(255,255,255,0.08)"
+          strokeWidth={strokeW}
+          strokeLinecap="round"
+        />
+        {/* Filled arc */}
+        <path
+          d={`M ${x1} ${cy} A ${radius} ${radius} 0 0 1 ${x2} ${cy}`}
+          fill="none"
+          stroke={color}
+          strokeWidth={strokeW}
+          strokeLinecap="round"
+          strokeDasharray={circumference}
+          strokeDashoffset={dashOffset}
+          style={{ transition: 'stroke-dashoffset 0.6s ease' }}
+        />
+        {/* Center value */}
+        <text x={cx} y={cy - 20} textAnchor="middle" fill="var(--component-text-primary)" fontSize="28" fontWeight="700">
+          {centerLabel || `${Math.round(value)}%`}
+        </text>
+        {/* Band label */}
+        {band && (
+          <text x={cx} y={cy - 2} textAnchor="middle" fill={color} fontSize="12" fontWeight="600"
+            style={{ textTransform: 'uppercase' } as any}>
+            {band.toUpperCase()}
+          </text>
+        )}
+      </svg>
+      {subtitle && (
+        <div style={{ fontSize: '12px', color: 'var(--component-text-muted)', marginTop: '2px', textAlign: 'center' }}>
+          {subtitle}
+        </div>
+      )}
+    </div>
+  );
 }
 
-/** ═══════════════════════════════════════════════════════════
- *  L3 DETAIL VIEW — Organized by executive decision flow
- *  ═══════════════════════════════════════════════════════════ */
-function L3DetailView({ l3, onClose, onAIAnalysis }: { l3: L3Capability; onClose: () => void; onAIAnalysis?: () => void }) {
-  const { t } = useTranslation();
-  const [riskDetailsOpen, setRiskDetailsOpen] = useState<boolean>(false);
+// ═══════════════════════════════════════════════════════════
+// MATURITY BLOCKS — visual 1-5 scale
+// ═══════════════════════════════════════════════════════════
 
-  const statusColor = getL3StatusColor(l3);
-  const statusLabel = getStatusLabel(l3);
-  const cap = l3.rawCapability || {};
-  const risk = l3.rawRisk;
-  const maturityGap = l3.target_maturity_level - l3.maturity_level;
-  const projects: any[] = cap.linkedProjects || [];
-  const entities: any[] = cap.operatingEntities || [];
+function MaturityBlocks({ current, target }: { current: number; target: number }) {
+  const gap = target - current;
+  const gapColor = gap > 2 ? '#ef4444' : gap > 0 ? '#f59e0b' : '#10b981';
+
+  return (
+    <div style={{ marginBottom: '1.5rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+        <span style={labelStyle}>MATURITY</span>
+        <span style={{ fontSize: '13px', fontWeight: 600, color: gapColor }}>
+          {current} &rarr; {target} {gap > 0 && <span style={{ opacity: 0.7 }}>(gap: {gap})</span>}
+        </span>
+      </div>
+      <div style={{ display: 'flex', gap: '4px' }}>
+        {[1, 2, 3, 4, 5].map(i => (
+          <div key={i} style={{
+            flex: 1, height: '8px', borderRadius: '2px',
+            background: i <= current
+              ? 'var(--component-text-accent)'
+              : i <= target
+                ? 'rgba(244,187,48,0.2)'
+                : 'rgba(255,255,255,0.06)'
+          }} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════
+// PANEL WRAPPER — shared shell for header, close, AI button
+// ═══════════════════════════════════════════════════════════
+
+function PanelShell({ title, subtitle, subtitleColor, onClose, onAIAnalysis, children }: {
+  title: React.ReactNode;
+  subtitle: string;
+  subtitleColor?: string;
+  onClose: () => void;
+  onAIAnalysis?: () => void;
+  children: React.ReactNode;
+}) {
+  const { t } = useTranslation();
 
   return (
     <div className="detail-panel-overlay" onClick={onClose}>
@@ -116,580 +193,54 @@ function L3DetailView({ l3, onClose, onAIAnalysis }: { l3: L3Capability; onClose
         style={{ width: '420px', maxWidth: '90vw', height: '100vh', position: 'relative', animation: 'slideInRight 0.2s ease-out' }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* ── HEADER (unchanged) ── */}
         <div className="details-header">
           <div className="header-content" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <div className="header-text">
-              <h2 className="details-title" style={{ textTransform: 'none' }}>
-                <span style={{ opacity: 0.6, marginRight: '8px' }}>{l3.id}</span>
-                {l3.name}
-              </h2>
+              <h2 className="details-title" style={{ textTransform: 'none' }}>{title}</h2>
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginTop: '4px' }}>
-                <span className="details-subtitle" style={{ color: statusColor, fontWeight: 600 }}>
-                  {capitalize(statusLabel)}
-                </span>
-                <span style={{ color: 'var(--component-text-muted)' }}>•</span>
-                <span className="details-subtitle" style={{ color: 'var(--component-text-muted)' }}>
-                  {l3.mode === 'build' ? t('josoor.enterprise.build') : t('josoor.enterprise.operate')}
+                <span className="details-subtitle" style={{ color: subtitleColor || 'var(--component-text-muted)' }}>
+                  {subtitle}
                 </span>
               </div>
             </div>
-            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-              {onAIAnalysis && (
-                <button
-                  onClick={(e) => { e.stopPropagation(); onAIAnalysis(); }}
-                  title={t('josoor.enterprise.detailPanel.aiAnalysis')}
-                  style={{
-                    background: 'var(--component-text-accent)',
-                    color: 'var(--component-text-on-accent)',
-                    border: 'none',
-                    padding: '6px 12px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '6px',
-                    height: '36px',
-                    transition: 'all 0.2s ease',
-                    cursor: 'pointer',
-                  }}
-                  onMouseEnter={(e) => { e.currentTarget.style.filter = 'brightness(1.1)'; e.currentTarget.style.transform = 'scale(1.03)'; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.filter = 'none'; e.currentTarget.style.transform = 'scale(1)'; }}
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                    <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                  <span style={{ fontSize: '0.75rem', fontWeight: 700, whiteSpace: 'nowrap', letterSpacing: '0.02em', lineHeight: 1 }}>
-                    {t('josoor.enterprise.detailPanel.aiAnalysis')}
-                  </span>
-                </button>
-              )}
-              <button onClick={onClose} className="back-button">&#x2715;</button>
-            </div>
+            <button onClick={onClose} className="back-button">&#x2715;</button>
           </div>
+          {onAIAnalysis && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onAIAnalysis(); }}
+              title={t('josoor.enterprise.detailPanel.aiAnalysis')}
+              style={{
+                background: 'var(--component-text-accent)',
+                color: 'var(--component-text-on-accent)',
+                border: 'none', padding: '6px 12px',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+                height: '36px', transition: 'all 0.2s ease', cursor: 'pointer',
+                marginTop: '10px', width: '100%', borderRadius: '4px',
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.filter = 'brightness(1.1)'; e.currentTarget.style.transform = 'scale(1.01)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.filter = 'none'; e.currentTarget.style.transform = 'scale(1)'; }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              <span style={{ fontSize: '0.75rem', fontWeight: 700, whiteSpace: 'nowrap', letterSpacing: '0.02em', lineHeight: 1 }}>
+                {t('josoor.enterprise.detailPanel.aiAnalysis')}
+              </span>
+            </button>
+          )}
         </div>
-
-        {/* ── SCROLLABLE CONTENT ── */}
         <div className="details-content">
-
-          {/* ════════════ BUILD MODE ════════════ */}
-          {l3.mode === 'build' && (
-            <>
-              {/* 1. Verdict Card */}
-              {risk ? (
-                <div style={{
-                  background: bandBg(risk.build_band),
-                  border: `1px solid ${bandBorder(risk.build_band)}`,
-                  borderRadius: '6px', padding: '14px 16px', marginBottom: '1.5rem'
-                }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: '16px', fontWeight: 700, color: bandColor(risk.build_band) }}>
-                      {risk.build_band || '—'}
-                    </span>
-                    {risk.build_exposure_pct != null && (
-                      <span style={{ fontSize: '16px', fontWeight: 700, color: bandColor(risk.build_band) }}>
-                        {Math.round(risk.build_exposure_pct)}%
-                      </span>
-                    )}
-                  </div>
-                  {cap.isLate && (
-                    <div style={{ marginTop: '8px', fontSize: '13px', fontWeight: 600, color: '#ef4444' }}>
-                      {t('josoor.enterprise.detailPanel.lateBy', { days: cap.lateByDays })}
-                      {cap.delaySeverity && (
-                        <span style={{ opacity: 0.7, marginLeft: '6px' }}>({capitalize(cap.delaySeverity)})</span>
-                      )}
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div style={{
-                  background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '6px',
-                  fontSize: '13px', color: 'var(--component-text-muted)', textAlign: 'center', marginBottom: '1.5rem'
-                }}>
-                  {t('josoor.enterprise.detailPanel.noRiskData')}
-                </div>
-              )}
-
-              {/* 2. Timeline */}
-              {cap.dueByDate && (
-                <div style={{
-                  background: cap.isLate ? 'rgba(239,68,68,0.05)' : 'rgba(16,185,129,0.05)',
-                  border: `1px solid ${cap.isLate ? 'rgba(239,68,68,0.15)' : 'rgba(16,185,129,0.15)'}`,
-                  borderRadius: '6px', padding: '12px', marginBottom: '1.5rem'
-                }}>
-                  <div style={gridStyle}>
-                    <div>
-                      <div style={labelStyle}>{t('josoor.enterprise.detailPanel.dueBy')}</div>
-                      <div style={valueStyle}>{cap.dueByDate}</div>
-                    </div>
-                    {cap.plannedByDate && (
-                      <div>
-                        <div style={labelStyle}>{t('josoor.enterprise.detailPanel.plannedCompletion')}</div>
-                        <div style={valueStyle}>{cap.plannedByDate}</div>
-                      </div>
-                    )}
-                  </div>
-                  {cap.isLate ? (
-                    <div style={{ fontSize: '13px', fontWeight: 600, color: cap.delaySeverity === 'significant' ? '#ef4444' : '#f59e0b' }}>
-                      {t('josoor.enterprise.detailPanel.lateBy', { days: cap.lateByDays })}
-                    </div>
-                  ) : cap.plannedByDate ? (
-                    <div style={{ fontSize: '13px', fontWeight: 600, color: '#10b981' }}>
-                      {t('josoor.enterprise.detailPanel.onTrack')}
-                    </div>
-                  ) : null}
-                </div>
-              )}
-
-              {/* 3. Maturity */}
-              <div style={{ marginBottom: '1.5rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                  <span style={labelStyle}>{t('josoor.enterprise.detailPanel.maturityAssessment')}</span>
-                  <span style={{
-                    fontSize: '14px', fontWeight: 600,
-                    color: maturityGap > 2 ? '#ef4444' : maturityGap > 0 ? '#f59e0b' : '#10b981'
-                  }}>
-                    {l3.maturity_level} → {l3.target_maturity_level}
-                  </span>
-                </div>
-                <div style={{ height: '4px', background: 'rgba(255,255,255,0.06)', borderRadius: '2px', overflow: 'hidden' }}>
-                  <div style={{ height: '100%', width: `${(l3.maturity_level / 5) * 100}%`, background: 'var(--component-text-accent)', borderRadius: '2px' }} />
-                </div>
-              </div>
-
-              {/* 4. Description */}
-              {cap.description && (
-                <div style={{ marginBottom: '1.5rem' }}>
-                  <p style={{ color: 'var(--component-text-secondary)', lineHeight: '1.6', fontSize: '14px', margin: 0 }}>
-                    {cap.description}
-                  </p>
-                </div>
-              )}
-
-              {/* 5. Projects by Domain */}
-              <h3 style={sectionTitleStyle}>{t('josoor.enterprise.detailPanel.projectDeliverables')}</h3>
-              {projects.length === 0 ? (
-                <div style={{
-                  background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '6px',
-                  fontSize: '13px', color: 'var(--component-text-muted)', textAlign: 'center', marginBottom: '1.5rem'
-                }}>
-                  {t('josoor.enterprise.detailPanel.noLinkedProjects')}
-                </div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '1.5rem' }}>
-                  {['People', 'Process', 'Tools'].map(cat => {
-                    const catProjects = projects.filter((p: any) => p.category === cat);
-                    if (catProjects.length === 0) return null;
-                    return (
-                      <div key={cat}>
-                        <div style={{ ...labelStyle, marginBottom: '8px', display: 'flex', justifyContent: 'space-between' }}>
-                          <span>{cat}</span>
-                          <span style={{ color: 'var(--component-text-secondary)' }}>{catProjects.length}</span>
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                          {catProjects.map((proj: any) => {
-                            const d = projectDisplayValues(proj);
-                            return (
-                              <div key={`${proj.id}-${cat}`} style={{
-                                background: 'rgba(255,255,255,0.03)', border: `1px solid ${d.isOverdue ? 'rgba(239,68,68,0.2)' : 'rgba(255,255,255,0.06)'}`,
-                                borderRadius: '6px', padding: '8px 12px'
-                              }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                                  <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--component-text-primary)' }}>
-                                    {proj.name}
-                                  </span>
-                                  <span style={{ fontSize: '11px', fontWeight: 600, color: d.color }}>
-                                    {d.isOverdue ? t('josoor.enterprise.detailPanel.overdue') : capitalize(proj.status)}
-                                  </span>
-                                </div>
-                                {d.pct != null && !d.isPlanned && (
-                                  <div style={{ marginBottom: '2px' }}>
-                                    <div style={{ height: '4px', background: 'rgba(255,255,255,0.06)', borderRadius: '2px', overflow: 'hidden' }}>
-                                      <div style={{ height: '100%', width: `${Math.min(d.pct, 100)}%`, background: d.color, borderRadius: '2px' }} />
-                                    </div>
-                                  </div>
-                                )}
-                                {proj.end_date && (
-                                  <div style={{ fontSize: '11px', color: 'var(--component-text-muted)', marginTop: '2px' }}>
-                                    {t('josoor.enterprise.detailPanel.endDate')}: {proj.end_date}
-                                  </div>
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-
-              {/* 5b. Process Metrics */}
-              {(() => {
-                const processMetrics: any[] = cap.processMetrics || [];
-                return processMetrics.length > 0 ? (
-                  <>
-                    <h3 style={sectionTitleStyle}>{t('josoor.enterprise.detailPanel.processMetrics')}</h3>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '1.5rem' }}>
-                      {processMetrics.map((pm: any) => {
-                        const actual = pm.actual != null ? Number(pm.actual) : null;
-                        const target = pm.target != null ? Number(pm.target) : null;
-                        const baseline = pm.baseline != null ? Number(pm.baseline) : null;
-                        const isLowerBetter = pm.metric_type === 'cycle_time' || pm.metric_type === 'cost';
-                        let pct: number | null = null;
-                        if (actual != null && target != null && baseline != null && baseline !== target) {
-                          if (isLowerBetter) {
-                            pct = Math.round(((baseline - actual) / (baseline - target)) * 100);
-                          } else {
-                            pct = Math.round(((actual - (baseline || 0)) / (target - (baseline || 0))) * 100);
-                          }
-                          pct = Math.max(0, Math.min(pct, 100));
-                        } else if (actual != null && target != null && target > 0) {
-                          pct = isLowerBetter ? Math.round((target / actual) * 100) : Math.round((actual / target) * 100);
-                          pct = Math.max(0, Math.min(pct, 100));
-                        }
-                        const barColor = pct != null ? (pct >= 70 ? '#10b981' : pct >= 40 ? '#f59e0b' : '#ef4444') : '#3b82f6';
-                        const trendIcon = pm.trend === 'improving' ? '\u2191' : pm.trend === 'declining' ? '\u2193' : '\u2192';
-                        const trendColor = pm.trend === 'improving' ? '#10b981' : pm.trend === 'declining' ? '#ef4444' : '#f59e0b';
-                        return (
-                          <div key={pm.id} style={{
-                            background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)',
-                            borderRadius: '6px', padding: '10px 14px'
-                          }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                              <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--component-text-primary)' }}>
-                                {pm.metric_name || pm.name}
-                              </div>
-                              <span style={{ fontSize: '14px', fontWeight: 600, color: trendColor }}>{trendIcon}</span>
-                            </div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '6px' }}>
-                              <span style={{ fontSize: '20px', fontWeight: 700, color: 'var(--component-text-primary)' }}>
-                                {actual != null ? actual : '\u2014'}
-                              </span>
-                              <span style={{ fontSize: '13px', color: 'var(--component-text-muted)' }}>
-                                {t('josoor.enterprise.detailPanel.target')}: {target != null ? target : '\u2014'} {pm.unit || ''}
-                              </span>
-                            </div>
-                            {pct != null && (
-                              <div style={{ height: '8px', background: 'rgba(255,255,255,0.06)', borderRadius: '4px', overflow: 'hidden' }}>
-                                <div style={{ height: '100%', width: `${pct}%`, background: barColor, borderRadius: '4px' }} />
-                              </div>
-                            )}
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px' }}>
-                              <span style={{ fontSize: '11px', color: 'var(--component-text-muted)' }}>
-                                {pm.metric_type ? pm.metric_type.replace('_', ' ') : ''}
-                              </span>
-                              {pm.indicator_type && (
-                                <span style={{ fontSize: '11px', color: 'var(--component-text-muted)', fontStyle: 'italic' }}>
-                                  {pm.indicator_type}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </>
-                ) : null;
-              })()}
-
-              {/* 6. Strategic Context */}
-              <StrategicContextSection cap={cap} />
-
-              {/* Risk Details (collapsible) */}
-              {risk && (
-                <CollapsibleRiskDetails
-                  risk={risk}
-                  isOpen={riskDetailsOpen}
-                  onToggle={() => setRiskDetailsOpen(!riskDetailsOpen)}
-                />
-              )}
-            </>
-          )}
-
-          {/* ════════════ OPERATE MODE ════════════ */}
-          {l3.mode === 'execute' && (
-            <>
-              {/* 1. Verdict Card */}
-              {risk ? (
-                <div style={{
-                  background: bandBg(risk.operate_band),
-                  border: `1px solid ${bandBorder(risk.operate_band)}`,
-                  borderRadius: '6px', padding: '14px 16px', marginBottom: '1.5rem'
-                }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div>
-                      {risk.operational_health_pct != null && (
-                        <>
-                          <div style={{ fontSize: '24px', fontWeight: 700, color: 'var(--component-text-primary)' }}>
-                            {Math.round(risk.operational_health_pct)}%
-                          </div>
-                          <div style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--component-text-muted)', letterSpacing: '0.5px' }}>
-                            {t('josoor.enterprise.detailPanel.operationalHealth')}
-                          </div>
-                        </>
-                      )}
-                    </div>
-                    <span style={{ fontSize: '16px', fontWeight: 700, color: bandColor(risk.operate_band) }}>
-                      {risk.operate_band || '—'}
-                    </span>
-                  </div>
-                  {risk.operate_trend_flag && (
-                    <div style={{ marginTop: '8px', fontSize: '13px', fontWeight: 600, color: '#f59e0b' }}>
-                      {t('josoor.enterprise.tooltip.earlyWarning')}
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div style={{
-                  background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '6px',
-                  fontSize: '13px', color: 'var(--component-text-muted)', textAlign: 'center', marginBottom: '1.5rem'
-                }}>
-                  {t('josoor.enterprise.detailPanel.noRiskData')}
-                </div>
-              )}
-
-              {/* 2. Scorecard — 3 full-width rows */}
-              {risk && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '1.5rem' }}>
-                  {[
-                    { key: 'people', val: risk.people_score, entityType: 'OrgUnit' as const },
-                    { key: 'process', val: risk.process_score, entityType: 'Process' as const },
-                    { key: 'tools', val: risk.tools_score, entityType: 'ITSystem' as const }
-                  ].filter(s => s.val != null).map(s => {
-                    const matched = entities.find(e => e.type === s.entityType);
-                    const label = matched ? matched.name : t(`josoor.enterprise.detailPanel.${s.key}`);
-                    return (
-                      <div key={s.key}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                          <span style={labelStyle}>{label}</span>
-                          <span style={valueStyle}>{s.val}/5</span>
-                        </div>
-                        <div style={{ height: '8px', background: 'rgba(255,255,255,0.06)', borderRadius: '4px', overflow: 'hidden' }}>
-                          <div style={{ height: '100%', width: `${(s.val / 5) * 100}%`, background: 'var(--component-text-accent)', borderRadius: '4px' }} />
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-
-              {/* 3. Exposure */}
-              {risk && risk.operate_exposure_pct_effective != null && (
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                  <span style={labelStyle}>
-                    {t('josoor.enterprise.detailPanel.operateExposure')}
-                    <span title={t('josoor.enterprise.detailPanel.operateExposureTooltip')} style={{ cursor: 'help', marginLeft: '4px', opacity: 0.5 }}>ⓘ</span>
-                  </span>
-                  <span style={{
-                    fontSize: '16px', fontWeight: 700,
-                    color: exposureColor(risk.operate_exposure_pct_effective)
-                  }}>
-                    {Math.round(risk.operate_exposure_pct_effective)}%
-                  </span>
-                </div>
-              )}
-
-              {/* 4. Performance KPIs */}
-              {(() => {
-                const perfTargets: any[] = cap.performanceTargets || [];
-                return perfTargets.length > 0 ? (
-                  <>
-                    <h3 style={sectionTitleStyle}>{t('josoor.enterprise.detailPanel.performanceTargets')}</h3>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '1.5rem' }}>
-                      {perfTargets.map((perf: any) => {
-                        const actual = perf.actual_value != null ? Number(perf.actual_value) : null;
-                        const target = perf.target != null ? Number(perf.target) : null;
-                        const pct = actual != null && target && target > 0 ? Math.round((actual / target) * 100) : null;
-                        const barColor = pct != null ? achievementColor(pct) : '#3b82f6';
-                        return (
-                          <div key={perf.id} style={{
-                            background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)',
-                            borderRadius: '6px', padding: '10px 14px'
-                          }}>
-                            <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--component-text-primary)', marginBottom: '4px' }}>
-                              {perf.name}
-                            </div>
-                            {actual != null && target != null && (
-                              <>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                                  <span style={{ fontSize: '13px', color: 'var(--component-text-secondary)' }}>
-                                    {actual} / {target} {perf.unit || ''}
-                                  </span>
-                                  {pct != null && (
-                                    <span style={{ fontSize: '13px', color: barColor, fontWeight: 600 }}>{pct}%</span>
-                                  )}
-                                </div>
-                                <div style={{ height: '8px', background: 'rgba(255,255,255,0.06)', borderRadius: '4px', overflow: 'hidden' }}>
-                                  <div style={{ height: '100%', width: `${Math.min(pct || 0, 100)}%`, background: barColor, borderRadius: '4px' }} />
-                                </div>
-                              </>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </>
-                ) : null;
-              })()}
-
-              {/* 4b. Process Metrics */}
-              {(() => {
-                const processMetrics: any[] = cap.processMetrics || [];
-                return processMetrics.length > 0 ? (
-                  <>
-                    <h3 style={sectionTitleStyle}>{t('josoor.enterprise.detailPanel.processMetrics')}</h3>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '1.5rem' }}>
-                      {processMetrics.map((pm: any) => {
-                        const actual = pm.actual != null ? Number(pm.actual) : null;
-                        const target = pm.target != null ? Number(pm.target) : null;
-                        const baseline = pm.baseline != null ? Number(pm.baseline) : null;
-                        const isLowerBetter = pm.metric_type === 'cycle_time' || pm.metric_type === 'cost';
-                        let pct: number | null = null;
-                        if (actual != null && target != null && baseline != null && baseline !== target) {
-                          if (isLowerBetter) {
-                            pct = Math.round(((baseline - actual) / (baseline - target)) * 100);
-                          } else {
-                            pct = Math.round(((actual - (baseline || 0)) / (target - (baseline || 0))) * 100);
-                          }
-                          pct = Math.max(0, Math.min(pct, 100));
-                        } else if (actual != null && target != null && target > 0) {
-                          pct = isLowerBetter ? Math.round((target / actual) * 100) : Math.round((actual / target) * 100);
-                          pct = Math.max(0, Math.min(pct, 100));
-                        }
-                        const barColor = pct != null ? (pct >= 70 ? '#10b981' : pct >= 40 ? '#f59e0b' : '#ef4444') : '#3b82f6';
-                        const trendIcon = pm.trend === 'improving' ? '\u2191' : pm.trend === 'declining' ? '\u2193' : '\u2192';
-                        const trendColor = pm.trend === 'improving' ? '#10b981' : pm.trend === 'declining' ? '#ef4444' : '#f59e0b';
-                        return (
-                          <div key={pm.id} style={{
-                            background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)',
-                            borderRadius: '6px', padding: '10px 14px'
-                          }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                              <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--component-text-primary)' }}>
-                                {pm.metric_name || pm.name}
-                              </div>
-                              <span style={{ fontSize: '14px', fontWeight: 600, color: trendColor }}>{trendIcon}</span>
-                            </div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '6px' }}>
-                              <span style={{ fontSize: '20px', fontWeight: 700, color: 'var(--component-text-primary)' }}>
-                                {actual != null ? actual : '\u2014'}
-                              </span>
-                              <span style={{ fontSize: '13px', color: 'var(--component-text-muted)' }}>
-                                {t('josoor.enterprise.detailPanel.target')}: {target != null ? target : '\u2014'} {pm.unit || ''}
-                              </span>
-                            </div>
-                            {pct != null && (
-                              <div style={{ height: '8px', background: 'rgba(255,255,255,0.06)', borderRadius: '4px', overflow: 'hidden' }}>
-                                <div style={{ height: '100%', width: `${pct}%`, background: barColor, borderRadius: '4px' }} />
-                              </div>
-                            )}
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px' }}>
-                              <span style={{ fontSize: '11px', color: 'var(--component-text-muted)' }}>
-                                {pm.metric_type ? pm.metric_type.replace('_', ' ') : ''}
-                              </span>
-                              {pm.indicator_type && (
-                                <span style={{ fontSize: '11px', color: 'var(--component-text-muted)', fontStyle: 'italic' }}>
-                                  {pm.indicator_type}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </>
-                ) : null;
-              })()}
-
-              {/* 5. Operating Entities */}
-              {entities.length > 0 && (
-                <>
-                  <h3 style={sectionTitleStyle}>{t('josoor.enterprise.detailPanel.operationalFootprint')}</h3>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '1.5rem' }}>
-                    {entities.map(ent => {
-                      const typeKey = ent.type === 'OrgUnit' ? 'orgUnit' : ent.type === 'Process' ? 'processEntity' : 'itSystem';
-                      return (
-                        <div key={`${ent.type}-${ent.id}`} style={{
-                          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                          padding: '6px 0'
-                        }}>
-                          <div>
-                            <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--component-text-primary)' }}>{ent.name}</span>
-                            <span style={{ fontSize: '11px', color: 'var(--component-text-muted)', marginLeft: '8px' }}>
-                              {t(`josoor.enterprise.detailPanel.${typeKey}`)}
-                            </span>
-                          </div>
-                          {ent.status && (
-                            <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--component-text-secondary)' }}>
-                              {capitalize(ent.status)}
-                            </span>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </>
-              )}
-
-              {/* 6. Strategic Context */}
-              <StrategicContextSection cap={cap} />
-
-              {/* Risk Details (collapsible) */}
-              {risk && (
-                <CollapsibleRiskDetails
-                  risk={risk}
-                  isOpen={riskDetailsOpen}
-                  onToggle={() => setRiskDetailsOpen(!riskDetailsOpen)}
-                />
-              )}
-            </>
-          )}
+          {children}
         </div>
       </div>
     </div>
   );
 }
 
-/** ═══════════════════════════════════════════════════════════
- *  STRATEGIC CONTEXT — Shared between build & operate
- *  ═══════════════════════════════════════════════════════════ */
-function StrategicContextSection({ cap }: { cap: Record<string, any> }) {
-  const { t } = useTranslation();
-  const objectives: any[] = cap.objectives || [];
-  const policyTools: any[] = cap.policyTools || [];
+// ═══════════════════════════════════════════════════════════
+// COLLAPSIBLE RISK DETAILS
+// ═══════════════════════════════════════════════════════════
 
-  if (objectives.length === 0 && policyTools.length === 0) return null;
-
-  return (
-    <>
-      <h3 style={sectionTitleStyle}>{t('josoor.enterprise.detailPanel.upwardChain')}</h3>
-      <div style={{ marginBottom: '1.5rem' }}>
-        {objectives.length > 0 && (
-          <div style={{ marginBottom: policyTools.length > 0 ? '8px' : 0 }}>
-            {objectives.map((obj: any, i: number) => (
-              <div key={obj.id || i} style={{ fontSize: '13px', color: 'var(--component-text-secondary)', lineHeight: '1.8' }}>
-                • {obj.name}
-              </div>
-            ))}
-          </div>
-        )}
-        {policyTools.length > 0 && (
-          <div>
-            {policyTools.map((pol: any, i: number) => (
-              <div key={pol.id || i} style={{ fontSize: '13px', color: 'var(--component-text-secondary)', lineHeight: '1.8' }}>
-                • {pol.name}{pol.end_date ? ` — ${pol.end_date}` : ''}
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </>
-  );
-}
-
-/** ═══════════════════════════════════════════════════════════
- *  COLLAPSIBLE RISK DETAILS — Shared between build & operate
- *  ═══════════════════════════════════════════════════════════ */
 function CollapsibleRiskDetails({ risk, isOpen, onToggle }: { risk: Record<string, any>; isOpen: boolean; onToggle: () => void }) {
   const { t } = useTranslation();
 
@@ -703,7 +254,7 @@ function CollapsibleRiskDetails({ risk, isOpen, onToggle }: { risk: Record<strin
         }}
       >
         <span style={{ fontSize: '12px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--component-text-muted)' }}>
-          {t('josoor.enterprise.detailPanel.riskProfile')} {isOpen ? '▾' : '▸'}
+          {t('josoor.enterprise.detailPanel.riskProfile')} {isOpen ? '\u25BE' : '\u25B8'}
         </span>
       </div>
       {isOpen && (
@@ -759,409 +310,389 @@ function CollapsibleRiskDetails({ risk, isOpen, onToggle }: { risk: Record<strin
   );
 }
 
-/** ═══════════════════════════════════════════════════════════
- *  L2 KPI COMPUTATION — Domain-specific named KPIs per L2 capability
- *  ═══════════════════════════════════════════════════════════ */
-interface L2ComputedKPI {
-  name: string;
-  nameAr: string;
-  value: number;
-  target: number;
-  formula: string;
-  inputs: Array<{
-    name: string;
-    actual: number;
-    target: number;
-    unit: string;
-    achievement: number;
-  }>;
-}
+// ═══════════════════════════════════════════════════════════
+// PROJECTS SECTION — grouped by People/Process/Tools
+// ═══════════════════════════════════════════════════════════
 
-function computeL2KPI(l2Id: string, childMetrics: any[]): L2ComputedKPI | null {
-  if (!childMetrics || childMetrics.length === 0) return null;
+function ProjectsSection({ projects }: { projects: any[] }) {
+  const { t } = useTranslation();
 
-  // Helper: compute achievement % for a single metric
-  const metricAchievement = (pm: any): { actual: number; target: number; pct: number; unit: string; name: string } | null => {
-    const actual = pm.actual != null ? Number(pm.actual) : null;
-    const target = pm.target != null ? Number(pm.target) : null;
-    if (actual == null || target == null || target === 0) return null;
-    const isLowerBetter = pm.metric_type === 'cycle_time' || pm.metric_type === 'cost';
-    const raw = isLowerBetter ? (target / actual) * 100 : (actual / target) * 100;
-    return {
-      actual,
-      target,
-      pct: Math.max(0, Math.round(raw * 10) / 10),
-      unit: pm.unit || '',
-      name: pm.metric_name || pm.name || ''
-    };
-  };
-
-  // Helper: find metric by type or partial name match from children
-  const findByType = (type: string): any | undefined => childMetrics.find(m => m.metric_type === type);
-  const findByName = (partial: string): any | undefined => childMetrics.find(m => (m.metric_name || m.name || '').toLowerCase().includes(partial.toLowerCase()));
-
-  // Strip sub-IDs (e.g. "2.1" from "2.1.1") — we match on the L2 id
-  const id = l2Id.trim();
-
-  // ──────────────────────────────────────────────
-  // 1. Policy Development (L2 "2.1")
-  // ──────────────────────────────────────────────
-  if (id === '2.1') {
-    const pm = findByName('Policies Drafted') || findByName('policy') || findByType('throughput');
-    const m = pm ? metricAchievement(pm) : null;
-    const value = m ? Math.round(m.pct * 10) / 10 : 0;
-    return {
-      name: 'Policy Output Rate',
-      nameAr: 'معدل إنتاج السياسات',
-      value: Math.round(value),
-      target: 100,
-      formula: 'Actual / Target policies drafted',
-      inputs: m ? [{ name: m.name, actual: m.actual, target: m.target, unit: m.unit, achievement: Math.round(m.pct) }] : []
-    };
+  if (projects.length === 0) {
+    return (
+      <div style={{
+        background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '6px',
+        fontSize: '13px', color: 'var(--component-text-muted)', textAlign: 'center', marginBottom: '1.5rem'
+      }}>
+        {t('josoor.enterprise.detailPanel.noLinkedProjects')}
+      </div>
+    );
   }
 
-  // ──────────────────────────────────────────────
-  // 2. Water Quality Management (L2 "4.6")
-  // ──────────────────────────────────────────────
-  if (id === '4.6') {
-    const qualityPm = findByType('quality');
-    const cyclePm = findByType('cycle_time');
-    const qm = qualityPm ? metricAchievement(qualityPm) : null;
-    const cm = cyclePm ? metricAchievement(cyclePm) : null;
+  // Group by pillar (People/Process/Tools) — derived from relationship path, not a property
+  const pillars = ['People', 'Process', 'Tools'];
+  const hasPillars = projects.some((p: any) => p._pillar);
 
-    let value = 0;
-    const inputs: L2ComputedKPI['inputs'] = [];
-    if (qm) inputs.push({ name: qm.name, actual: qm.actual, target: qm.target, unit: qm.unit, achievement: Math.round(qm.pct) });
-    if (cm) inputs.push({ name: cm.name, actual: cm.actual, target: cm.target, unit: cm.unit, achievement: Math.round(cm.pct) });
-
-    if (qm && cm) {
-      value = Math.round(qm.pct * 0.6 + cm.pct * 0.4);
-    } else if (qm) {
-      value = Math.round(qm.pct);
-    } else if (cm) {
-      value = Math.round(cm.pct);
-    }
-
-    return {
-      name: 'Service Quality Index',
-      nameAr: 'مؤشر جودة الخدمة',
-      value,
-      target: 95,
-      formula: 'Quality 60% + Resolution Speed 40%',
-      inputs
-    };
+  if (!hasPillars) {
+    // Fallback: flat list if pillar info not available
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '1.5rem' }}>
+        {projects.map((proj: any, idx: number) => (
+          <ProjectCard key={proj.domain_id || proj.id || idx} proj={proj} />
+        ))}
+      </div>
+    );
   }
-
-  // ──────────────────────────────────────────────
-  // 3. Licensing (L2 "4.7")
-  // ──────────────────────────────────────────────
-  if (id === '4.7') {
-    const cyclePm = findByType('cycle_time');
-    const throughputPm = findByType('throughput');
-    const qualityPm = findByType('quality');
-    const cm = cyclePm ? metricAchievement(cyclePm) : null;
-    const tm = throughputPm ? metricAchievement(throughputPm) : null;
-    const qm = qualityPm ? metricAchievement(qualityPm) : null;
-
-    const inputs: L2ComputedKPI['inputs'] = [];
-    if (cm) inputs.push({ name: cm.name, actual: cm.actual, target: cm.target, unit: cm.unit, achievement: Math.round(cm.pct) });
-    if (tm) inputs.push({ name: tm.name, actual: tm.actual, target: tm.target, unit: tm.unit, achievement: Math.round(tm.pct) });
-    if (qm) inputs.push({ name: qm.name, actual: qm.actual, target: qm.target, unit: qm.unit, achievement: Math.round(qm.pct) });
-
-    let value = 0;
-    const parts: number[] = [];
-    if (cm) parts.push(cm.pct * 0.4);
-    if (tm) parts.push(tm.pct * 0.35);
-    if (qm) parts.push(qm.pct * 0.25);
-    if (parts.length > 0) {
-      // Normalize if not all parts present
-      const totalWeight = (cm ? 0.4 : 0) + (tm ? 0.35 : 0) + (qm ? 0.25 : 0);
-      value = Math.round(parts.reduce((s, v) => s + v, 0) / totalWeight);
-    }
-
-    return {
-      name: 'Licensing Efficiency Index',
-      nameAr: 'مؤشر كفاءة التراخيص',
-      value,
-      target: 90,
-      formula: 'Speed 40% + Volume 35% + Accuracy 25%',
-      inputs
-    };
-  }
-
-  // ──────────────────────────────────────────────
-  // 4. Water Production (L2 "5.1")
-  // ──────────────────────────────────────────────
-  if (id === '5.1') {
-    const qualityPm = findByType('quality');
-    const volumePm = findByType('volume') || findByType('throughput');
-    const qm = qualityPm ? metricAchievement(qualityPm) : null;
-    const vm = volumePm ? metricAchievement(volumePm) : null;
-
-    const inputs: L2ComputedKPI['inputs'] = [];
-    if (qm) inputs.push({ name: qm.name, actual: qm.actual, target: qm.target, unit: qm.unit, achievement: Math.round(qm.pct) });
-    if (vm) inputs.push({ name: vm.name, actual: vm.actual, target: vm.target, unit: vm.unit, achievement: Math.round(vm.pct) });
-
-    let value = 0;
-    if (qm && vm) {
-      value = Math.round(qm.pct * 0.5 + vm.pct * 0.5);
-    } else if (qm) {
-      value = Math.round(qm.pct);
-    } else if (vm) {
-      value = Math.round(vm.pct);
-    }
-
-    return {
-      name: 'Production Performance Index',
-      nameAr: 'مؤشر أداء الإنتاج',
-      value,
-      target: 95,
-      formula: 'Efficiency 50% + Output Volume 50%',
-      inputs
-    };
-  }
-
-  // ──────────────────────────────────────────────
-  // 5. Fallback — any other L2 with process metrics
-  // ──────────────────────────────────────────────
-  const inputs: L2ComputedKPI['inputs'] = [];
-  let sum = 0;
-  let count = 0;
-  childMetrics.forEach(pm => {
-    const m = metricAchievement(pm);
-    if (m) {
-      inputs.push({ name: m.name, actual: m.actual, target: m.target, unit: m.unit, achievement: Math.round(m.pct) });
-      sum += m.pct;
-      count++;
-    }
-  });
-  const value = count > 0 ? Math.round(sum / count) : 0;
-
-  return {
-    name: 'Process Health Score',
-    nameAr: 'مؤشر صحة العمليات',
-    value,
-    target: 85,
-    formula: 'Average of all process achievements',
-    inputs
-  };
-}
-
-/** ═══════════════════════════════════════════════════════════
- *  L2 DETAIL VIEW — Group-level capability panel
- *  ═══════════════════════════════════════════════════════════ */
-function L2DetailView({ l2, onClose, selectedYear, selectedQuarter, onAIAnalysis }: { l2: L2Capability; onClose: () => void; selectedYear?: number | 'all'; selectedQuarter?: number | 'all'; onAIAnalysis?: () => void }) {
-  const { t, i18n } = useTranslation();
-  const chain = l2.upwardChain;
-  const maturityGap = l2.target_maturity_level - l2.maturity_level;
-
-  // Aggregate projects from all L3 children
-  const allProjects: any[] = [];
-  l2.l3.forEach(l3 => {
-    const projects = l3.rawCapability?.linkedProjects || [];
-    projects.forEach((p: any) => {
-      if (!allProjects.find(ep => ep.id === p.id)) {
-        allProjects.push(p);
-      }
-    });
-  });
-
-  // Aggregate process metrics from all L3 children
-  const allProcessMetrics: any[] = [];
-  l2.l3.forEach(l3 => {
-    const metrics = l3.rawCapability?.processMetrics || [];
-    metrics.forEach((pm: any) => {
-      if (!allProcessMetrics.find(m => m.id === pm.id)) {
-        allProcessMetrics.push(pm);
-      }
-    });
-  });
 
   return (
-    <div className="detail-panel-overlay" onClick={onClose}>
-      <div className="sector-details-panel drawer visible"
-        style={{ width: '420px', maxWidth: '90vw', height: '100vh', position: 'relative', animation: 'slideInRight 0.2s ease-out' }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* ── HEADER (unchanged) ── */}
-        <div className="details-header">
-          <div className="header-content" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            <div className="header-text">
-              <h2 className="details-title" style={{ textTransform: 'none' }}>
-                <span style={{ opacity: 0.6, marginRight: '8px' }}>{l2.id}</span>
-                {l2.name}
-              </h2>
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginTop: '4px' }}>
-                <span className="details-subtitle" style={{ color: 'var(--component-text-muted)' }}>
-                  {t('josoor.enterprise.detailPanel.l2Capability')}
-                </span>
-              </div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '1.5rem' }}>
+      {pillars.map(pillar => {
+        const pillarProjects = projects.filter((p: any) => p._pillar === pillar);
+        if (pillarProjects.length === 0) return null;
+        return (
+          <div key={pillar}>
+            <div style={{ ...labelStyle, marginBottom: '8px', display: 'flex', justifyContent: 'space-between' }}>
+              <span>{pillar}</span>
+              <span style={{ color: 'var(--component-text-secondary)' }}>{pillarProjects.length}</span>
             </div>
-            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-              {onAIAnalysis && (
-                <button
-                  onClick={(e) => { e.stopPropagation(); onAIAnalysis(); }}
-                  title={t('josoor.enterprise.detailPanel.aiAnalysis')}
-                  style={{
-                    background: 'var(--component-text-accent)',
-                    color: 'var(--component-text-on-accent)',
-                    border: 'none',
-                    padding: '6px 12px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '6px',
-                    height: '36px',
-                    transition: 'all 0.2s ease',
-                    cursor: 'pointer',
-                  }}
-                  onMouseEnter={(e) => { e.currentTarget.style.filter = 'brightness(1.1)'; e.currentTarget.style.transform = 'scale(1.03)'; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.filter = 'none'; e.currentTarget.style.transform = 'scale(1)'; }}
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                    <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                  <span style={{ fontSize: '0.75rem', fontWeight: 700, whiteSpace: 'nowrap', letterSpacing: '0.02em', lineHeight: 1 }}>
-                    {t('josoor.enterprise.detailPanel.aiAnalysis')}
-                  </span>
-                </button>
-              )}
-              <button onClick={onClose} className="back-button">&#x2715;</button>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              {pillarProjects.map((proj: any, idx: number) => (
+                <ProjectCard key={proj.domain_id || proj.id || idx} proj={proj} />
+              ))}
             </div>
           </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function ProjectCard({ proj }: { proj: any }) {
+  const { t } = useTranslation();
+  const d = projectDisplayValues(proj);
+  return (
+    <div style={{
+      background: 'rgba(255,255,255,0.03)', border: `1px solid ${d.isOverdue ? 'rgba(239,68,68,0.2)' : 'rgba(255,255,255,0.06)'}`,
+      borderRadius: '6px', padding: '8px 12px'
+    }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+        <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--component-text-primary)' }}>
+          {proj.name}
+        </span>
+        <span style={{ fontSize: '11px', fontWeight: 600, color: d.color }}>
+          {d.isOverdue ? t('josoor.enterprise.detailPanel.overdue') : capitalize(proj.status)}
+        </span>
+      </div>
+      {d.pct != null && !d.isPlanned && (
+        <div style={{ height: '4px', background: 'rgba(255,255,255,0.06)', borderRadius: '2px', overflow: 'hidden' }}>
+          <div style={{ height: '100%', width: `${Math.min(d.pct, 100)}%`, background: d.color, borderRadius: '2px' }} />
         </div>
+      )}
+      {proj.end_date && (
+        <div style={{ fontSize: '11px', color: 'var(--component-text-muted)', marginTop: '4px' }}>
+          {proj.end_date}
+        </div>
+      )}
+    </div>
+  );
+}
 
-        {/* ── SCROLLABLE CONTENT ── */}
-        <div className="details-content">
+// ═══════════════════════════════════════════════════════════
+// MAIN EXPORT
+// ═══════════════════════════════════════════════════════════
 
-          {/* 1. Maturity — compact row */}
-          <div style={{ marginBottom: '1.5rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-              <span style={labelStyle}>{t('josoor.enterprise.detailPanel.maturityAssessment')}</span>
-              <span style={{
-                fontSize: '14px', fontWeight: 600,
-                color: maturityGap > 2 ? '#ef4444' : maturityGap > 0 ? '#f59e0b' : '#10b981'
-              }}>
-                {l2.maturity_level} → {l2.target_maturity_level}
-              </span>
+export function CapabilityDetailPanel({ l3, l2, onClose, selectedYear, selectedQuarter, onAIAnalysis, onSelectL3 }: CapabilityDetailPanelProps) {
+  if (l2) {
+    return <L2DetailView l2={l2} onClose={onClose} selectedYear={selectedYear} selectedQuarter={selectedQuarter} onAIAnalysis={onAIAnalysis} onSelectL3={onSelectL3} />;
+  }
+  if (!l3) return null;
+  return <L3DetailView l3={l3} onClose={onClose} onAIAnalysis={onAIAnalysis} />;
+}
+
+// ═══════════════════════════════════════════════════════════
+// L3 DETAIL VIEW — BUILD + OPERATE modes
+// ═══════════════════════════════════════════════════════════
+
+function L3DetailView({ l3, onClose, onAIAnalysis }: { l3: L3Capability; onClose: () => void; onAIAnalysis?: () => void }) {
+  const { t } = useTranslation();
+  const [riskDetailsOpen, setRiskDetailsOpen] = useState(false);
+
+  const statusColor = getL3StatusColor(l3);
+  const statusLabel = getStatusLabel(l3);
+  const cap = l3.rawCapability || {};
+  const risk = l3.rawRisk;
+  const projects: any[] = cap.linkedProjects || [];
+  const entities: any[] = cap.operatingEntities || [];
+  const isBuild = l3.mode === 'build';
+  const l3Kpis: any[] = cap.l2Kpis || [];
+  const primaryL3Kpi = l3Kpis.find((entry: any) => (entry?.inputs || []).some((inp: any) => String(inp?.cap_id || '') === String(l3.id))) || l3Kpis[0] || null;
+  const l3KpiPct = primaryL3Kpi ? computeKpiPct(primaryL3Kpi.kpi?.actual_value, primaryL3Kpi.kpi?.target) : null;
+  const l3KpiBand = l3KpiPct != null ? (l3KpiPct >= 70 ? 'green' : l3KpiPct >= 40 ? 'amber' : 'red') : undefined;
+  const l3KpiActual = primaryL3Kpi?.kpi?.actual_value != null ? Number(primaryL3Kpi.kpi.actual_value) : null;
+  const l3KpiTarget = primaryL3Kpi?.kpi?.target != null ? Number(primaryL3Kpi.kpi.target) : null;
+  const l3KpiUnit = primaryL3Kpi?.kpi?.unit || '';
+  const l3KpiCenterLabel = l3KpiActual != null ? `${l3KpiActual}${l3KpiUnit === '%' ? '%' : ''}` : undefined;
+  const l3Inputs = (primaryL3Kpi?.inputs || []).filter((inp: any) => String(inp?.cap_id || '') === String(l3.id));
+
+  const headerTitle = (
+    <>
+      <span style={{ opacity: 0.6, marginRight: '8px' }}>{l3.id}</span>
+      {l3.name}
+    </>
+  );
+
+  const modeLabel = isBuild ? t('josoor.enterprise.build') : t('josoor.enterprise.operate');
+  const subtitle = `${modeLabel} \u00B7 ${capitalize(statusLabel)}`;
+
+  const L3KpiSection = (
+    <>
+      {primaryL3Kpi && l3KpiPct != null ? (
+        <>
+          <SemiGauge
+            value={l3KpiPct}
+            band={l3KpiBand}
+            centerLabel={l3KpiCenterLabel}
+            subtitle={`${primaryL3Kpi.kpi?.name || 'L2 KPI'} \u00B7 ${l3KpiPct}% achievement (${l3KpiActual ?? '\u2014'} / ${l3KpiTarget ?? '\u2014'} ${l3KpiUnit})`}
+          />
+
+          <div style={{
+            background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
+            borderRadius: '8px', padding: '12px', marginBottom: '1.25rem'
+          }}>
+            <div style={{ ...labelStyle, marginBottom: '6px' }}>KPI Connectivity</div>
+            <div style={{ fontSize: '13px', color: 'var(--component-text-primary)', marginBottom: '8px', lineHeight: 1.5 }}>
+              {`L3 Process Metrics (${l3Inputs.length}) \u2192 L2 KPI (${primaryL3Kpi.kpi?.name || primaryL3Kpi.kpi?.id || '\u2014'}) \u2192 Sector Performance (${primaryL3Kpi.kpi?.id || primaryL3Kpi.kpi?.domain_id || '\u2014'})`}
             </div>
-            <div style={{ height: '4px', background: 'rgba(255,255,255,0.06)', borderRadius: '2px', overflow: 'hidden' }}>
-              <div style={{ height: '100%', width: `${(l2.maturity_level / 5) * 100}%`, background: 'var(--component-text-accent)', borderRadius: '2px' }} />
+            {primaryL3Kpi.kpi?.formula_description && (
+              <div style={{ fontSize: '12px', color: 'var(--component-text-secondary)', fontStyle: 'italic', marginBottom: '8px' }}>
+                {primaryL3Kpi.kpi.formula_description}
+              </div>
+            )}
+            {l3Inputs.length > 0 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                {l3Inputs.map((inp: any, idx: number) => (
+                  <div key={`${inp.id || idx}_${inp.cap_id || ''}`} style={{ fontSize: '12px', color: 'var(--component-text-secondary)' }}>
+                    {`${inp.cap_id || l3.id} \u00B7 ${inp.metric_name || inp.name || inp.id}: ${inp.actual ?? '\u2014'} / ${inp.target ?? '\u2014'} ${inp.unit || ''}`}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </>
+      ) : (
+        <div style={{
+          background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '6px',
+          fontSize: '13px', color: 'var(--component-text-muted)', textAlign: 'center', marginBottom: '1.5rem'
+        }}>
+          No linked KPI data found for this capability.
+        </div>
+      )}
+    </>
+  );
+
+  return (
+    <PanelShell
+      title={headerTitle}
+      subtitle={subtitle}
+      subtitleColor={statusColor}
+      onClose={onClose}
+      onAIAnalysis={onAIAnalysis}
+    >
+      {/* ════════════ BUILD MODE ════════════ */}
+      {isBuild && (
+        <>
+          {/* 1. Build mode focus: delivery timeline + projects (no running KPI gauge) */}
+          <div style={{
+            background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)',
+            borderRadius: '6px', padding: '10px', marginBottom: '1rem'
+          }}>
+            <div style={{ ...labelStyle, marginBottom: '4px' }}>Build Mode</div>
+            <div style={{ fontSize: '13px', color: 'var(--component-text-secondary)' }}>
+              This capability is in build track. Delivery projects and timeline are the primary signal.
             </div>
           </div>
 
-          {/* 2. Description */}
-          {l2.description && (
-            <div style={{ marginBottom: '1.5rem' }}>
-              <p style={{ color: 'var(--component-text-secondary)', lineHeight: '1.6', fontSize: '14px', margin: 0 }}>
-                {l2.description}
-              </p>
+          {/* 2. Timeline */}
+          {cap.dueByDate && (
+            <div style={{
+              background: cap.isLate ? 'rgba(239,68,68,0.05)' : 'rgba(16,185,129,0.05)',
+              border: `1px solid ${cap.isLate ? 'rgba(239,68,68,0.15)' : 'rgba(16,185,129,0.15)'}`,
+              borderRadius: '6px', padding: '12px', marginBottom: '1.5rem'
+            }}>
+              <div style={gridStyle}>
+                <div>
+                  <div style={labelStyle}>{t('josoor.enterprise.detailPanel.dueBy')}</div>
+                  <div style={valueStyle}>{cap.dueByDate}</div>
+                </div>
+                {cap.plannedByDate && (
+                  <div>
+                    <div style={labelStyle}>{t('josoor.enterprise.detailPanel.plannedCompletion')}</div>
+                    <div style={valueStyle}>{cap.plannedByDate}</div>
+                  </div>
+                )}
+              </div>
+              {cap.isLate ? (
+                <div style={{ fontSize: '13px', fontWeight: 600, color: cap.delaySeverity === 'significant' ? '#ef4444' : '#f59e0b' }}>
+                  {t('josoor.enterprise.detailPanel.lateBy', { days: cap.lateByDays })}
+                  {cap.delaySeverity && (
+                    <span style={{ opacity: 0.7, marginLeft: '6px' }}>({capitalize(cap.delaySeverity)})</span>
+                  )}
+                </div>
+              ) : cap.plannedByDate ? (
+                <div style={{ fontSize: '13px', fontWeight: 600, color: '#10b981' }}>
+                  {t('josoor.enterprise.detailPanel.onTrack')}
+                </div>
+              ) : null}
             </div>
           )}
 
-          {/* 2b. Process Metrics — L2 Domain-Specific KPI */}
-          {allProcessMetrics.length > 0 && (() => {
-            const kpi = computeL2KPI(l2.id, allProcessMetrics);
-            if (!kpi) return null;
-            const isAr = i18n.language === 'ar';
-            const kpiName = isAr ? kpi.nameAr : kpi.name;
-            const kpiColor = kpi.value >= 70 ? '#10b981' : kpi.value >= 40 ? '#f59e0b' : '#ef4444';
+          {/* 3. Maturity */}
+          <MaturityBlocks current={l3.maturity_level} target={l3.target_maturity_level} />
+
+          {/* 4. Projects */}
+          <h3 style={sectionTitleStyle}>{t('josoor.enterprise.detailPanel.projectDeliverables')}</h3>
+          <ProjectsSection projects={projects} />
+
+          {/* 5. Risk Details (collapsible) */}
+          {risk && (
+            <CollapsibleRiskDetails
+              risk={risk}
+              isOpen={riskDetailsOpen}
+              onToggle={() => setRiskDetailsOpen(!riskDetailsOpen)}
+            />
+          )}
+        </>
+      )}
+
+      {/* ════════════ OPERATE MODE ════════════ */}
+      {!isBuild && (
+        <>
+          {/* 1. KPI Achievement Gauge + explicit KPI connectivity */}
+          {L3KpiSection}
+
+          {/* 2. Three Pillars */}
+          {risk && (risk.people_score != null || risk.process_score != null || risk.tools_score != null) && (
+            <div style={{ marginBottom: '1.5rem' }}>
+              <h3 style={sectionTitleStyle}>{t('josoor.enterprise.detailPanel.threePillars', 'Three Pillars')}</h3>
+              {[
+                { label: t('josoor.enterprise.detailPanel.people'), val: risk.people_score },
+                { label: t('josoor.enterprise.detailPanel.process'), val: risk.process_score },
+                { label: t('josoor.enterprise.detailPanel.tools'), val: risk.tools_score }
+              ].filter(s => s.val != null).map(s => {
+                const isWeakest = s.val === Math.min(
+                  ...[risk.people_score, risk.process_score, risk.tools_score].filter((v: any) => v != null)
+                ) && (risk.people_score !== risk.process_score || risk.process_score !== risk.tools_score);
+                return (
+                  <div key={s.label} style={{ marginBottom: '10px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                      <span style={{ ...labelStyle, marginBottom: 0, color: isWeakest ? '#f59e0b' : 'var(--component-text-muted)' }}>
+                        {s.label} {isWeakest && '\u26A0'}
+                      </span>
+                      <span style={valueStyle}>{s.val}/5</span>
+                    </div>
+                    <div style={{ height: '8px', background: 'rgba(255,255,255,0.06)', borderRadius: '4px', overflow: 'hidden' }}>
+                      <div style={{
+                        height: '100%', width: `${(s.val / 5) * 100}%`,
+                        background: isWeakest ? '#f59e0b' : 'var(--component-text-accent)',
+                        borderRadius: '4px', transition: 'width 0.4s ease'
+                      }} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* 3. Process Metrics */}
+          {(() => {
+            const processMetrics: any[] = cap.processMetrics || [];
+            if (processMetrics.length === 0) return null;
 
             return (
               <>
                 <h3 style={sectionTitleStyle}>{t('josoor.enterprise.detailPanel.processMetrics')}</h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '1.5rem' }}>
+                  {processMetrics.map((pm: any) => {
+                    const actual = pm.actual != null ? Number(pm.actual) : null;
+                    const target = pm.target != null ? Number(pm.target) : null;
+                    const baseline = pm.baseline != null ? Number(pm.baseline) : null;
+                    const isLowerBetter = pm.metric_type === 'cycle_time' || pm.metric_type === 'cost';
+                    let pct: number | null = null;
+                    if (actual != null && target != null && baseline != null && baseline !== target) {
+                      pct = isLowerBetter
+                        ? Math.round(((baseline - actual) / (baseline - target)) * 100)
+                        : Math.round(((actual - (baseline || 0)) / (target - (baseline || 0))) * 100);
+                      pct = Math.max(0, Math.min(pct, 100));
+                    } else if (actual != null && target != null && target > 0) {
+                      pct = isLowerBetter ? Math.round((target / actual) * 100) : Math.round((actual / target) * 100);
+                      pct = Math.max(0, Math.min(pct, 100));
+                    }
+                    const barColor = pct != null ? achievementColor(pct) : '#3b82f6';
+                    const trendIcon = pm.trend === 'improving' ? '\u2191' : pm.trend === 'declining' ? '\u2193' : '\u2192';
+                    const trendColor = pm.trend === 'improving' ? '#10b981' : pm.trend === 'declining' ? '#ef4444' : '#f59e0b';
 
-                {/* --- KPI Header + Value --- */}
-                <div style={{
-                  background: 'rgba(255,255,255,0.03)', border: `1px solid ${kpiColor}33`,
-                  borderRadius: '8px', padding: '16px', marginBottom: '12px'
-                }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '10px' }}>
-                    <span style={{ fontSize: '16px', fontWeight: 700, color: 'var(--component-text-primary)' }}>
-                      {kpiName}
-                    </span>
-                    <span style={{ fontSize: '28px', fontWeight: 800, color: kpiColor, lineHeight: 1 }}>
-                      {kpi.value}%
-                    </span>
-                  </div>
-
-                  {/* Wide progress bar */}
-                  <div style={{ height: '8px', background: 'rgba(255,255,255,0.06)', borderRadius: '4px', overflow: 'hidden', marginBottom: '6px' }}>
-                    <div style={{ height: '100%', width: `${Math.min(kpi.value, 100)}%`, background: kpiColor, borderRadius: '4px', transition: 'width 0.4s ease' }} />
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: '12px', color: 'var(--component-text-muted)' }}>
-                      {kpi.value}% / {kpi.target}% {t('josoor.enterprise.detailPanel.target').toLowerCase()}
-                    </span>
-                    <span style={{ fontSize: '11px', color: 'var(--component-text-muted)', fontStyle: 'italic' }}>
-                      {kpi.formula}
-                    </span>
-                  </div>
-                </div>
-
-                {/* --- Input metrics from L3 children --- */}
-                {kpi.inputs.length > 0 && (
-                  <div style={{
-                    display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '1.5rem',
-                    background: 'rgba(255,255,255,0.02)', borderRadius: '6px', padding: '8px 10px'
-                  }}>
-                    {kpi.inputs.map((inp, idx) => {
-                      const inpColor = inp.achievement >= 70 ? '#10b981' : inp.achievement >= 40 ? '#f59e0b' : '#ef4444';
-                      return (
-                        <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '3px 0' }}>
-                          <span style={{ fontSize: '12px', color: 'var(--component-text-secondary)', flex: 1, minWidth: 0 }}>
-                            {inp.name}
-                          </span>
-                          <span style={{ fontSize: '12px', color: 'var(--component-text-muted)', whiteSpace: 'nowrap' }}>
-                            {inp.actual} → {inp.target} {inp.unit}
-                          </span>
-                          <div style={{ width: '40px', height: '4px', background: 'rgba(255,255,255,0.06)', borderRadius: '2px', overflow: 'hidden', flexShrink: 0 }}>
-                            <div style={{ height: '100%', width: `${Math.min(inp.achievement, 100)}%`, background: inpColor, borderRadius: '2px' }} />
+                    return (
+                      <div key={pm.id} style={{
+                        background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)',
+                        borderRadius: '6px', padding: '10px 14px'
+                      }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                          <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--component-text-primary)' }}>
+                            {pm.metric_name || pm.name}
                           </div>
-                          <span style={{ fontSize: '11px', fontWeight: 600, color: inpColor, width: '32px', textAlign: 'right', flexShrink: 0 }}>
-                            {inp.achievement}%
+                          <span style={{ fontSize: '14px', fontWeight: 600, color: trendColor }}>{trendIcon}</span>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '6px' }}>
+                          <span style={{ fontSize: '20px', fontWeight: 700, color: 'var(--component-text-primary)' }}>
+                            {actual != null ? actual : '\u2014'}
+                          </span>
+                          <span style={{ fontSize: '13px', color: 'var(--component-text-muted)' }}>
+                            {t('josoor.enterprise.detailPanel.target')}: {target != null ? target : '\u2014'} {pm.unit || ''}
                           </span>
                         </div>
-                      );
-                    })}
-                  </div>
-                )}
+                        {pct != null && (
+                          <div style={{ height: '8px', background: 'rgba(255,255,255,0.06)', borderRadius: '4px', overflow: 'hidden' }}>
+                            <div style={{ height: '100%', width: `${pct}%`, background: barColor, borderRadius: '4px' }} />
+                          </div>
+                        )}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px' }}>
+                          <span style={{ fontSize: '11px', color: 'var(--component-text-muted)' }}>
+                            {pm.metric_type ? pm.metric_type.replace('_', ' ') : ''}
+                          </span>
+                          {pm.indicator_type && (
+                            <span style={{ fontSize: '11px', color: 'var(--component-text-muted)', fontStyle: 'italic' }}>
+                              {pm.indicator_type}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </>
             );
           })()}
 
-          {/* 3. KPI Dashboard — full-width cards with bars (NOT GaugeCard) */}
-          {chain && chain.performanceTargets.length > 0 && (
+          {/* 4. Operating Entities */}
+          {entities.length > 0 && (
             <>
-              <h3 style={sectionTitleStyle}>{t('josoor.enterprise.detailPanel.performanceTargets')}</h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '1.5rem' }}>
-                {chain.performanceTargets.map(perf => {
-                  const actual = perf.actual_value != null ? Number(perf.actual_value) : null;
-                  const target = perf.target != null ? Number(perf.target) : null;
-                  const pct = actual != null && target && target > 0 ? Math.round((actual / target) * 100) : null;
-                  const barColor = pct != null ? achievementColor(pct) : '#3b82f6';
+              <h3 style={sectionTitleStyle}>{t('josoor.enterprise.detailPanel.operationalFootprint')}</h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '1.5rem' }}>
+                {entities.map(ent => {
+                  const typeKey = ent.type === 'OrgUnit' ? 'orgUnit' : ent.type === 'Process' ? 'processEntity' : 'itSystem';
                   return (
-                    <div key={perf.id} style={{
-                      background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)',
-                      borderRadius: '6px', padding: '12px 14px'
+                    <div key={`${ent.type}-${ent.id}`} style={{
+                      display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0'
                     }}>
-                      <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--component-text-primary)', marginBottom: '6px' }}>
-                        {perf.name}
+                      <div>
+                        <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--component-text-primary)' }}>{ent.name}</span>
+                        <span style={{ fontSize: '11px', color: 'var(--component-text-muted)', marginLeft: '8px' }}>
+                          {t(`josoor.enterprise.detailPanel.${typeKey}`)}
+                        </span>
                       </div>
-                      {actual != null && target != null && (
-                        <>
-                          <div style={{ fontSize: '18px', fontWeight: 700, color: 'var(--component-text-primary)', marginBottom: '6px' }}>
-                            {actual} / {target} {perf.unit || ''}
-                          </div>
-                          <div style={{ height: '10px', background: 'rgba(255,255,255,0.06)', borderRadius: '5px', overflow: 'hidden', marginBottom: '4px' }}>
-                            <div style={{ height: '100%', width: `${Math.min(pct || 0, 100)}%`, background: barColor, borderRadius: '5px' }} />
-                          </div>
-                          {pct != null && (
-                            <div style={{ fontSize: '13px', fontWeight: 600, color: barColor, textAlign: 'right' }}>
-                              {pct}%
-                            </div>
-                          )}
-                        </>
+                      {ent.status && (
+                        <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--component-text-secondary)' }}>
+                          {capitalize(ent.status)}
+                        </span>
                       )}
                     </div>
                   );
@@ -1170,141 +701,314 @@ function L2DetailView({ l2, onClose, selectedYear, selectedQuarter, onAIAnalysis
             </>
           )}
 
-          {/* 4. Upward Chain — compact breadcrumb pills */}
-          {chain && (chain.objectives.length > 0 || chain.policyTools.length > 0) && (
-            <>
-              <h3 style={sectionTitleStyle}>{t('josoor.enterprise.detailPanel.upwardChain')}</h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '1.5rem' }}>
-                {/* Build paths: each objective → each policy tool → this capability */}
-                {chain.objectives.length > 0 ? (
-                  chain.objectives.map(obj => (
-                    <div key={obj.id} style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                      {/* Objective pill */}
-                      <span style={{
-                        background: 'rgba(245,158,11,0.15)', color: '#f59e0b',
-                        fontSize: '12px', fontWeight: 600, padding: '4px 10px', borderRadius: '12px', whiteSpace: 'nowrap'
-                      }}>
-                        {obj.name}
-                      </span>
-                      <span style={{ color: 'var(--component-text-muted)', fontSize: '12px' }}>→</span>
-                      {/* Policy tool pills (if any) */}
-                      {chain.policyTools.length > 0 ? chain.policyTools.map(pol => (
-                        <span key={pol.id} style={{ display: 'contents' }}>
-                          <span style={{
-                            background: 'rgba(99,102,241,0.15)', color: '#818cf8',
-                            fontSize: '12px', fontWeight: 600, padding: '4px 10px', borderRadius: '12px', whiteSpace: 'nowrap'
-                          }}>
-                            {pol.name}
-                          </span>
-                          <span style={{ color: 'var(--component-text-muted)', fontSize: '12px' }}>→</span>
-                        </span>
-                      )) : null}
-                      {/* This capability pill */}
-                      <span style={{
-                        background: 'rgba(244,187,48,0.15)', color: 'var(--component-text-accent)',
-                        fontSize: '12px', fontWeight: 600, padding: '4px 10px', borderRadius: '12px', whiteSpace: 'nowrap'
-                      }}>
-                        {l2.name}
-                      </span>
-                    </div>
-                  ))
-                ) : (
-                  /* No objectives, just show policy tools → capability */
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                    {chain.policyTools.map(pol => (
-                      <span key={pol.id} style={{ display: 'contents' }}>
-                        <span style={{
-                          background: 'rgba(99,102,241,0.15)', color: '#818cf8',
-                          fontSize: '12px', fontWeight: 600, padding: '4px 10px', borderRadius: '12px', whiteSpace: 'nowrap'
-                        }}>
-                          {pol.name}
-                        </span>
-                        <span style={{ color: 'var(--component-text-muted)', fontSize: '12px' }}>→</span>
-                      </span>
-                    ))}
-                    <span style={{
-                      background: 'rgba(244,187,48,0.15)', color: 'var(--component-text-accent)',
-                      fontSize: '12px', fontWeight: 600, padding: '4px 10px', borderRadius: '12px', whiteSpace: 'nowrap'
-                    }}>
-                      {l2.name}
-                    </span>
-                  </div>
+          {/* 5. Risk Details (collapsible) */}
+          {risk && (
+            <CollapsibleRiskDetails
+              risk={risk}
+              isOpen={riskDetailsOpen}
+              onToggle={() => setRiskDetailsOpen(!riskDetailsOpen)}
+            />
+          )}
+        </>
+      )}
+    </PanelShell>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════
+// L2 DETAIL VIEW — Group-level capability panel
+// ═══════════════════════════════════════════════════════════
+
+function L2DetailView({ l2, onClose, selectedYear, selectedQuarter, onAIAnalysis, onSelectL3 }: {
+  l2: L2Capability; onClose: () => void;
+  selectedYear?: number | 'all'; selectedQuarter?: number | 'all';
+  onAIAnalysis?: () => void;
+  onSelectL3?: (l3: L3Capability) => void;
+}) {
+  const { t } = useTranslation();
+
+  // Aggregate projects from all L3 children (deduped)
+  const allProjects: any[] = [];
+  (l2.l3 || []).forEach(l3 => {
+    const projects = l3.rawCapability?.linkedProjects || [];
+    projects.forEach((p: any) => {
+      if (!allProjects.find(ep => ep.id === p.id)) allProjects.push(p);
+    });
+  });
+
+  // Aggregate L2 KPIs from L3 children (deduped by kpi.id + year)
+  const allL2Kpis: any[] = [];
+  (l2.l3 || []).forEach(l3 => {
+    const kpis = l3.rawCapability?.l2Kpis || [];
+    kpis.forEach((k: any) => {
+      const kpiKey = `${k.kpi?.id}_${k.kpi?.year}`;
+      if (!allL2Kpis.find(existing => `${existing.kpi?.id}_${existing.kpi?.year}` === kpiKey)) {
+        allL2Kpis.push(k);
+      }
+    });
+  });
+
+  // MVP rule: L2 has exactly ONE KPI. Prefer KPI id that matches L2 id, fallback to first.
+  const primaryKpi = allL2Kpis.find((k: any) => String(k?.kpi?.id || '') === String(l2.id)) || allL2Kpis[0] || null;
+  const kpiActual = primaryKpi?.kpi?.actual_value != null ? Number(primaryKpi.kpi.actual_value) : null;
+  const kpiTarget = primaryKpi?.kpi?.target != null ? Number(primaryKpi.kpi.target) : null;
+  const kpiPct = kpiActual != null && kpiTarget && kpiTarget > 0
+    ? Math.min(Math.round((kpiActual / kpiTarget) * 100), 100)
+    : null;
+  const gaugeBand = kpiPct != null
+    ? (kpiPct >= 70 ? 'green' : kpiPct >= 40 ? 'amber' : 'red')
+    : undefined;
+  const kpiCenterLabel = kpiActual != null ? `${kpiActual}${primaryKpi?.kpi?.unit === '%' ? '%' : ''}` : undefined;
+  const sectorPerfCount = Math.max(l2.upwardChain?.performanceTargets?.length || 0, primaryKpi ? 1 : 0);
+  const objectiveCount = l2.upwardChain?.objectives?.length || 0;
+
+  const openL3ById = (capId?: string) => {
+    if (!capId) return;
+    const target = l2.l3.find((entry) => String(entry.id) === String(capId));
+    if (target && onSelectL3) onSelectL3(target);
+  };
+
+  const headerTitle = (
+    <>
+      <span style={{ opacity: 0.6, marginRight: '8px' }}>{l2.id}</span>
+      {l2.name}
+    </>
+  );
+
+  return (
+    <PanelShell
+      title={headerTitle}
+      subtitle={t('josoor.enterprise.detailPanel.l2Capability')}
+      onClose={onClose}
+      onAIAnalysis={onAIAnalysis}
+    >
+      {/* 1. L3 Children (top-level drilldown) */}
+      <h3 style={sectionTitleStyle}>{t('josoor.enterprise.detailPanel.l3Capabilities')}</h3>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '1.5rem' }}>
+        {(l2.l3 || []).map(l3 => {
+          const rawStatus = String(l3.rawCapability?.status || '').toLowerCase();
+          const isNotDue = l3.mode === 'build' && (
+            l3.build_status === 'not-due' ||
+            rawStatus === 'planned' || rawStatus === 'not_started' || rawStatus === 'not-started' || rawStatus === 'future' || rawStatus === 'pipeline'
+          );
+          const l3StatusColor = l3.mode === 'execute'
+            ? (l3.execute_status === 'issues' ? '#ef4444' : l3.execute_status === 'at-risk' ? '#f59e0b' : l3.execute_status === 'ontrack' ? '#10b981' : '#475569')
+            : (l3.build_status?.includes('issues') ? '#ef4444' : l3.build_status?.includes('atrisk') ? '#f59e0b' : l3.build_status === 'in-progress-ontrack' ? '#10b981' : l3.build_status === 'planned' ? '#10b981' : '#475569');
+          return (
+            <div key={l3.id}
+              onClick={() => onSelectL3 && onSelectL3(l3)}
+              style={{
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                background: isNotDue ? 'rgba(148,163,184,0.10)' : 'rgba(255,255,255,0.03)',
+                border: isNotDue ? '1px solid rgba(148,163,184,0.30)' : '1px solid rgba(255,255,255,0.06)',
+                borderRadius: '6px', padding: '8px 12px', opacity: isNotDue ? 0.72 : 1,
+                cursor: onSelectL3 ? 'pointer' : 'default'
+              }}>
+              <div>
+                <span style={{ opacity: 0.5, marginRight: '6px', fontSize: '12px' }}>{l3.id}</span>
+                <span style={{ fontSize: '13px', fontWeight: 600, color: isNotDue ? 'var(--component-text-muted)' : 'var(--component-text-primary)' }}>
+                  {l3.name}
+                </span>
+                {isNotDue && (
+                  <span style={{ marginLeft: '8px', fontSize: '11px', color: 'var(--component-text-muted)' }}>
+                    (Not due)
+                  </span>
                 )}
               </div>
-            </>
-          )}
-
-          {/* 5. L3 Children (kept as-is from original) */}
-          <h3 style={sectionTitleStyle}>{t('josoor.enterprise.detailPanel.l3Capabilities')}</h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '1.5rem' }}>
-            {l2.l3.map(l3 => {
-              const l3StatusColor = l3.mode === 'execute'
-                ? (l3.execute_status === 'issues' ? '#ef4444' : l3.execute_status === 'at-risk' ? '#f59e0b' : l3.execute_status === 'ontrack' ? '#10b981' : '#475569')
-                : (l3.build_status?.includes('issues') ? '#ef4444' : l3.build_status?.includes('atrisk') ? '#f59e0b' : l3.build_status === 'in-progress-ontrack' ? '#10b981' : l3.build_status === 'planned' ? '#10b981' : '#475569');
-              return (
-                <div key={l3.id} style={{
-                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                  background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)',
-                  borderRadius: '6px', padding: '8px 12px'
-                }}>
-                  <div>
-                    <span style={{ opacity: 0.5, marginRight: '6px', fontSize: '12px' }}>{l3.id}</span>
-                    <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--component-text-primary)' }}>{l3.name}</span>
-                  </div>
-                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                    <span style={{ fontSize: '11px', color: 'var(--component-text-muted)' }}>{l3.maturity_level}/{l3.target_maturity_level}</span>
-                    <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: l3StatusColor }} />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* 6. Projects (kept as-is from original) */}
-          <h3 style={sectionTitleStyle}>{t('josoor.enterprise.detailPanel.projectsStatus')}</h3>
-          {allProjects.length === 0 ? (
-            <div style={{
-              background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '6px',
-              fontSize: '13px', color: 'var(--component-text-muted)', textAlign: 'center', marginBottom: '1.5rem'
-            }}>
-              {t('josoor.enterprise.detailPanel.noLinkedProjects')}
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <span style={{ fontSize: '11px', color: 'var(--component-text-muted)' }}>{l3.maturity_level}/{l3.target_maturity_level}</span>
+                <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: isNotDue ? '#64748b' : l3StatusColor }} />
+              </div>
             </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '1.5rem' }}>
-              {allProjects.map((proj: any) => {
-                const d = projectDisplayValues(proj);
-                return (
-                  <div key={proj.id} style={{
-                    background: 'rgba(255,255,255,0.03)', border: `1px solid ${d.isOverdue ? 'rgba(239,68,68,0.2)' : 'rgba(255,255,255,0.06)'}`,
-                    borderRadius: '6px', padding: '8px 12px'
-                  }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                      <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--component-text-primary)' }}>
-                        <span style={{ opacity: 0.5, marginRight: '6px' }}>{proj.id}</span>
-                        {proj.name}
+          );
+        })}
+      </div>
+
+      {/* 1. KPI Achievement Gauge — single L2 KPI */}
+      {kpiPct != null && primaryKpi?.kpi ? (
+        <SemiGauge
+          value={kpiPct}
+          band={gaugeBand}
+          centerLabel={kpiCenterLabel}
+          subtitle={`${primaryKpi.kpi.name} \u00B7 ${kpiPct}% achievement (${kpiActual ?? '\u2014'} / ${kpiTarget ?? '\u2014'} ${primaryKpi.kpi.unit || ''})`}
+        />
+      ) : null}
+
+      {/* 2. Maturity */}
+      <MaturityBlocks current={l2.maturity_level} target={l2.target_maturity_level} />
+
+      {/* 3. L2 KPI (single for MVP) */}
+      {primaryKpi?.kpi && (() => {
+        const kpi = primaryKpi.kpi;
+        const inputs = primaryKpi.inputs;
+        const inputList = Array.isArray(inputs) ? inputs : [];
+        const contributorCaps = Array.from(new Set(inputList.map((inp: any) => inp.cap_id).filter(Boolean)));
+        const lowerBetterCount = inputList.filter((inp: any) => inp.metric_type === 'cycle_time' || inp.metric_type === 'cost').length;
+        const businessLogicShort = inputList.length > 0
+          ? `${kpi.name} is driven by ${inputList.length} L3 process metric${inputList.length > 1 ? 's' : ''} from ${contributorCaps.length || 1} contributing capability${(contributorCaps.length || 1) > 1 ? 'ies' : 'y'}. ${lowerBetterCount > 0 ? `${lowerBetterCount} metric${lowerBetterCount > 1 ? 's use' : ' uses'} lower-is-better scoring.` : 'Higher achievement on these metrics improves the KPI.'}`
+          : `${kpi.name} is calculated from linked L3 process metrics.`;
+
+        return (
+          <div key={`${kpi.id || kpi.domain_id}_${kpi.year || ''}`} style={{ marginBottom: '1.5rem' }}>
+            <h3 style={sectionTitleStyle}>L2 Formula & Inputs</h3>
+
+            {/* L3 Input metrics */}
+            {inputs && inputs.length > 0 && (
+              <div style={{
+                display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '0.5rem',
+                background: 'rgba(255,255,255,0.02)', borderRadius: '6px', padding: '8px 10px'
+              }}>
+                <div style={{ ...labelStyle, marginBottom: '4px' }}>L3 Inputs</div>
+                {inputs.map((inp: any, idx: number) => {
+                  const inpActual = inp.actual != null ? Number(inp.actual) : null;
+                  const inpTarget = inp.target != null ? Number(inp.target) : null;
+                  const isLowerBetter = inp.metric_type === 'cycle_time' || inp.metric_type === 'cost';
+                  let inpPct = 0;
+                  if (inpActual != null && inpTarget != null && inpTarget > 0) {
+                    inpPct = isLowerBetter ? Math.round((inpTarget / inpActual) * 100) : Math.round((inpActual / inpTarget) * 100);
+                    inpPct = Math.max(0, Math.min(inpPct, 100));
+                  }
+                  const inpColor = achievementColor(inpPct);
+                  return (
+                    <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '3px 0' }}>
+                      <span style={{ fontSize: '12px', color: 'var(--component-text-secondary)', flex: 1, minWidth: 0 }}>
+                        {inp.metric_name || inp.name}
                       </span>
-                      <span style={{ fontSize: '11px', fontWeight: 600, color: d.color }}>
-                        {d.isOverdue ? t('josoor.enterprise.detailPanel.overdue') : capitalize(proj.status)}
+                      <span style={{ fontSize: '12px', color: 'var(--component-text-muted)', whiteSpace: 'nowrap' }}>
+                        {inpActual} &rarr; {inpTarget} {inp.unit}
+                      </span>
+                      <div style={{ width: '40px', height: '4px', background: 'rgba(255,255,255,0.06)', borderRadius: '2px', overflow: 'hidden', flexShrink: 0 }}>
+                        <div style={{ height: '100%', width: `${Math.min(inpPct, 100)}%`, background: inpColor, borderRadius: '2px' }} />
+                      </div>
+                      <span style={{ fontSize: '11px', fontWeight: 600, color: inpColor, width: '32px', textAlign: 'right', flexShrink: 0 }}>
+                        {inpPct}%
                       </span>
                     </div>
-                    {d.pct != null && !d.isPlanned && (
-                      <div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
-                          <span style={{ fontSize: '11px', color: 'var(--component-text-muted)' }}>{t('josoor.enterprise.detailPanel.progress')}</span>
-                          <span style={{ fontSize: '11px', color: 'var(--component-text-secondary)' }}>{d.pct}%</span>
-                        </div>
-                        <div style={{ height: '3px', background: 'rgba(255,255,255,0.06)', borderRadius: '2px', overflow: 'hidden' }}>
-                          <div style={{ height: '100%', width: `${Math.min(d.pct, 100)}%`, background: d.color, borderRadius: '2px' }} />
-                        </div>
-                      </div>
-                    )}
+                  );
+                })}
+              </div>
+            )}
+
+            <div style={{
+              background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)',
+              borderRadius: '6px', padding: '10px', marginTop: '8px'
+            }}>
+              <div style={{ ...labelStyle, marginBottom: '6px' }}>Business Logic (Short)</div>
+              <div style={{ fontSize: '13px', color: 'var(--component-text-primary)', marginBottom: '6px', lineHeight: 1.5 }}>
+                {businessLogicShort}
+              </div>
+              {kpi.formula_description && (
+                <div style={{ fontSize: '12px', color: 'var(--component-text-muted)', fontStyle: 'italic', marginBottom: '8px', lineHeight: 1.5 }}>
+                  {kpi.formula_description}
+                </div>
+              )}
+
+              {inputList.length > 0 && (
+                <div>
+                  <div style={{ ...labelStyle, marginBottom: '6px' }}>L3 References</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    {inputList.map((inp: any, idx: number) => (
+                      <button
+                        key={`formula-ref-${idx}`}
+                        type="button"
+                        onClick={() => openL3ById(inp.cap_id)}
+                        style={{
+                          fontSize: '12px', color: 'var(--component-text-secondary)', lineHeight: 1.5,
+                          background: 'transparent', border: 'none', padding: 0, textAlign: 'left',
+                          cursor: onSelectL3 && inp.cap_id ? 'pointer' : 'default',
+                          textDecoration: onSelectL3 && inp.cap_id ? 'underline' : 'none'
+                        }}
+                      >
+                        {`${inp.cap_id || 'L3'} · ${inp.metric_name || inp.name || inp.id} (${inp.actual ?? '—'} / ${inp.target ?? '—'} ${inp.unit || ''})`}
+                      </button>
+                    ))}
                   </div>
-                );
-              })}
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* 4. Upward chain links: L3 metrics -> L2 KPI -> Sector Performance -> Objective */}
+      {primaryKpi && (
+        <div style={{ marginBottom: '1.5rem' }}>
+          <h3 style={sectionTitleStyle}>Upward Links</h3>
+          <div style={{
+            background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
+            borderRadius: '8px', padding: '12px', marginBottom: '10px'
+          }}>
+            <div style={{ fontSize: '13px', color: 'var(--component-text-primary)', lineHeight: 1.5 }}>
+              {`L3 Process Metrics (${primaryKpi.inputs?.length || 0}) \u2192 L2 KPI (${primaryKpi.kpi?.name || primaryKpi.kpi?.id || '\u2014'}) \u2192 Sector Performance (${l2.upwardChain?.performanceTargets?.length || 0}) \u2192 Sector Objectives (${l2.upwardChain?.objectives?.length || 0})`}
+            </div>
+          </div>
+
+          {(l2.upwardChain?.performanceTargets?.length || 0) > 0 ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              {l2.upwardChain?.performanceTargets.map((perf: any, idx: number) => (
+                <div key={`${perf.id || perf.domain_id || idx}`} style={{
+                  background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)',
+                  borderRadius: '6px', padding: '8px 10px'
+                }}>
+                  <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--component-text-primary)' }}>
+                    {`${perf.id || perf.domain_id || '\u2014'} \u00B7 ${perf.name || 'Sector Performance'}`}
+                  </div>
+                  <div style={{ fontSize: '12px', color: 'var(--component-text-secondary)' }}>
+                    {`Actual ${perf.actual_value ?? '\u2014'} / Target ${perf.target ?? '\u2014'} ${perf.unit || ''}`}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div style={{ fontSize: '12px', color: 'var(--component-text-muted)' }}>
+              No Sector Performance link found for this L2 in current data window.
             </div>
           )}
         </div>
-      </div>
-    </div>
+      )}
+
+      {/* 6. Projects (aggregated from L3 children) */}
+      <h3 style={sectionTitleStyle}>{t('josoor.enterprise.detailPanel.projectsStatus')}</h3>
+      {allProjects.length === 0 ? (
+        <div style={{
+          background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '6px',
+          fontSize: '13px', color: 'var(--component-text-muted)', textAlign: 'center', marginBottom: '1.5rem'
+        }}>
+          {t('josoor.enterprise.detailPanel.noLinkedProjects')}
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '1.5rem' }}>
+          {allProjects.map((proj: any) => {
+            const d = projectDisplayValues(proj);
+            return (
+              <div key={proj.id} style={{
+                background: 'rgba(255,255,255,0.03)', border: `1px solid ${d.isOverdue ? 'rgba(239,68,68,0.2)' : 'rgba(255,255,255,0.06)'}`,
+                borderRadius: '6px', padding: '8px 12px'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                  <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--component-text-primary)' }}>
+                    {proj.name}
+                  </span>
+                  <span style={{ fontSize: '11px', fontWeight: 600, color: d.color }}>
+                    {d.isOverdue ? t('josoor.enterprise.detailPanel.overdue') : capitalize(proj.status)}
+                  </span>
+                </div>
+                {d.pct != null && !d.isPlanned && (
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
+                      <span style={{ fontSize: '11px', color: 'var(--component-text-muted)' }}>{t('josoor.enterprise.detailPanel.progress')}</span>
+                      <span style={{ fontSize: '11px', color: 'var(--component-text-secondary)' }}>{d.pct}%</span>
+                    </div>
+                    <div style={{ height: '3px', background: 'rgba(255,255,255,0.06)', borderRadius: '2px', overflow: 'hidden' }}>
+                      <div style={{ height: '100%', width: `${Math.min(d.pct, 100)}%`, background: d.color, borderRadius: '2px' }} />
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </PanelShell>
   );
 }

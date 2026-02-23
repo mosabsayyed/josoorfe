@@ -194,6 +194,7 @@ interface RawEnterpriseData {
   chainBuild: any;       // build_oversight chain response {nodes, links}
   chainOperate: any;     // operate_oversight chain response {nodes, links}
   processMetrics: any[]; // EntityProcess metrics linked via KNOWLEDGE_GAPS
+  l2Kpis: any[];         // L2 KPIs from FEEDS_INTO path (EntityProcess→SectorPerformance)
 }
 
 let _rawDataCache: RawEnterpriseData | null = null;
@@ -212,7 +213,7 @@ async function fetchAllEnterpriseData(): Promise<RawEnterpriseData> {
   _rawDataPromise = (async () => {
     console.log('[EnterpriseService] Fetching ALL data via MCP Cypher + chains (one-time)');
 
-    const [capRows, riskRows, chainIntegrated, chainBuild, chainOperate, processMetricRows] = await Promise.all([
+    const [capRows, riskRows, chainIntegrated, chainBuild, chainOperate, processMetricRows, l2KpiRows] = await Promise.all([
       runCypher(`
         MATCH (c:EntityCapability)
         RETURN c { .id, .name, .level, .year, .quarter, .status, .description,
@@ -235,16 +236,34 @@ async function fetchAllEnterpriseData(): Promise<RawEnterpriseData> {
       runCypher(`
         MATCH (c:EntityCapability {level: 'L3'})-[:KNOWLEDGE_GAPS]->(p:EntityProcess {level: 'L3'})
         WHERE p.metric_name IS NOT NULL
-        RETURN c.id AS cap_id, p { .id, .name, .metric_name, .actual, .target, .baseline, .unit, .metric_type, .indicator_type, .trend, .aggregation_method } AS proc
+        RETURN c.id AS cap_id, c.year AS cap_year, p { .id, .name, .year, .metric_name, .actual, .target, .baseline, .unit, .metric_type, .indicator_type, .trend, .aggregation_method } AS proc
+      `),
+      runCypher(`
+        MATCH (cap:EntityCapability {level: 'L3'})-[:KNOWLEDGE_GAPS]->(proc:EntityProcess {level: 'L3'})-[:FEEDS_INTO]->(perf:SectorPerformance {level: 'L2'})
+        WHERE proc.metric_name IS NOT NULL AND proc.year = perf.year AND cap.year = proc.year
+        RETURN perf.id AS perf_id, perf.year AS perf_year,
+               perf { .id, .domain_id, .name, .year, .actual_value, .target, .unit, .formula_description } AS kpi,
+               collect({
+                 id: proc.id,
+                 year: proc.year,
+                 metric_name: proc.metric_name,
+                 actual: proc.actual,
+                 target: proc.target,
+                 unit: proc.unit,
+                 metric_type: proc.metric_type,
+                 cap_id: cap.id,
+                 cap_name: cap.name
+               }) AS inputs
       `)
     ]);
 
     const caps = capRows.map((r: any) => r.cap);
     const risks = riskRows.map((r: any) => r.risk);
     const processMetrics = processMetricRows || [];
-    console.log(`[EnterpriseService] Fetched: ${caps.length} caps, ${risks.length} risks, ${processMetrics.length} process metrics, integrated: ${chainIntegrated?.nodes?.length || 0} nodes, build: ${chainBuild?.nodes?.length || 0} nodes, operate: ${chainOperate?.nodes?.length || 0} nodes`);
+    const l2Kpis = l2KpiRows || [];
+    console.log(`[EnterpriseService] Fetched: ${caps.length} caps, ${risks.length} risks, ${processMetrics.length} process metrics, ${l2Kpis.length} L2 KPIs, integrated: ${chainIntegrated?.nodes?.length || 0} nodes, build: ${chainBuild?.nodes?.length || 0} nodes, operate: ${chainOperate?.nodes?.length || 0} nodes`);
 
-    _rawDataCache = { caps, risks, chainIntegrated, chainBuild, chainOperate, processMetrics };
+    _rawDataCache = { caps, risks, chainIntegrated, chainBuild, chainOperate, processMetrics, l2Kpis };
     _rawDataPromise = null;
     return _rawDataCache;
   })();
@@ -343,10 +362,22 @@ function followLink(chain: ChainResult, fromId: string, linkType: string): strin
 
 /**
  * Get node props by composite ID, only if it matches expected label.
+ * Ensures year from composite ID (e.g. "EntityProject:1.1.1:2025") is in props.
  */
 function getNodeIfLabel(chain: ChainResult, compositeId: string, label: string): any | null {
   const node = chain.nodeById.get(compositeId);
-  return (node && node.label === label) ? node.props : null;
+  if (!node || node.label !== label) return null;
+  const props = node.props;
+  // Extract year from composite ID if not already in props
+  if (props && !props.year) {
+    const parts = compositeId.split(':');
+    const lastPart = parts[parts.length - 1];
+    const parsed = parseInt(lastPart, 10);
+    if (parsed >= 2020 && parsed <= 2040) {
+      props.year = parsed;
+    }
+  }
+  return props;
 }
 
 /**
@@ -484,15 +515,24 @@ function extractChainOverlays(chainData: { nodes: any[]; links: any[] }): Map<st
 
     if (policyTools.length > 0) overlay.policyTools = policyTools;
 
-    // ── 2-hop: Cap → ITSystem ← CLOSE_GAPS ← Project ──
+    // ── 2-hop: Cap → Entity ← CLOSE_GAPS ← Project ──
+    // Projects link through ALL three entity types, not just ITSystem
+    // The entity type determines the pillar: OrgUnit=People, Process=Process, ITSystem=Tools
     const projects: any[] = [];
-    for (const iid of itIds) {
-      const closeGapsIds = neighbors(iid, 'CLOSE_GAPS');
-      for (const pid of closeGapsIds) {
-        const projProps = getNodeIfLabel(chain, pid, 'EntityProject');
-        if (projProps) projects.push(projProps);
+    const addProjectsFromEntity = (entityIds: string[], pillar: string) => {
+      for (const eid of entityIds) {
+        const closeGapsIds = neighbors(eid, 'CLOSE_GAPS');
+        for (const pid of closeGapsIds) {
+          const projProps = getNodeIfLabel(chain, pid, 'EntityProject');
+          if (projProps && !projects.find((p: any) => p.domain_id === projProps.domain_id && p._pillar === pillar)) {
+            projects.push({ ...projProps, _pillar: pillar });
+          }
+        }
       }
-    }
+    };
+    addProjectsFromEntity(orgIds, 'People');
+    addProjectsFromEntity(procIds, 'Process');
+    addProjectsFromEntity(itIds, 'Tools');
     if (projects.length > 0) overlay.linkedProjects = projects;
 
     // ── 3-hop: Cap → Risk → PolicyTool → GOVERNED_BY → Objective ──
@@ -543,7 +583,10 @@ function extractChainOverlays(chainData: { nodes: any[]; links: any[] }): Map<st
 
     if (objectives.length > 0) overlay.objectives = objectives;
 
-    overlayByCapId.set(cap.domainId, overlay);
+    // Key by domainId + year so each year gets its own overlay
+    const capYear = cap.props?.year;
+    const overlayKey = capYear ? `${cap.domainId}__${capYear}` : cap.domainId;
+    overlayByCapId.set(overlayKey, overlay);
   }
 
   return overlayByCapId;
@@ -623,19 +666,27 @@ function filterAndBuildGraph(raw: RawEnterpriseData, year: number | 'all', quart
   for (const chainData of chainDatasets) {
     const overlays = extractChainOverlays(chainData);
 
-    for (const [capDomainId, overlay] of overlays) {
+    for (const [overlayKey, overlay] of overlays) {
+      // overlayKey is "domainId__year" or just "domainId"
+      const parts = overlayKey.split('__');
+      const capDomainId = parts[0];
+      const overlayYear = parts[1] ? parseInt(parts[1], 10) : null;
       const node = nodeByBizId.get(capDomainId);
       if (!node) continue;
+      // Only attach overlay if its year matches the node's year
+      if (overlayYear && node.year && overlayYear !== node.year) continue;
 
       // Risk — supplement composite key match
       if (overlay.risk && !(node as any).risk) {
         (node as any).risk = overlay.risk;
       }
 
-      // Projects — merge, dedup by domain_id
+      // Projects — merge, dedup by domain_id, filter by year
       if (overlay.linkedProjects) {
         if (!(node as any).linkedProjects) (node as any).linkedProjects = [];
         for (const p of overlay.linkedProjects) {
+          // Only attach projects matching the capability's year (or if no year set)
+          if (p.year && node.year && p.year !== node.year) continue;
           if (!(node as any).linkedProjects.find((x: any) => x.domain_id === p.domain_id)) {
             (node as any).linkedProjects.push(p);
           }
@@ -685,14 +736,60 @@ function filterAndBuildGraph(raw: RawEnterpriseData, year: number | 'all', quart
   }
 
   // Step 6: Attach process metrics from direct Cypher query
+  // Match by cap_id AND year — only attach the process for the node's year, dedup by process ID
   for (const pm of (raw.processMetrics || [])) {
     const capId = pm.cap_id;
+    const capYear = pm.cap_year;
     const proc = pm.proc;
     if (!capId || !proc) continue;
     const node = nodeByBizId.get(capId);
     if (!node) continue;
+    // Only attach if capability year matches the node's year
+    if (capYear && node.year && capYear !== node.year) continue;
+    // Only attach if process year matches the node's year
+    if (proc.year && node.year && proc.year !== node.year) continue;
     if (!(node as any).processMetrics) (node as any).processMetrics = [];
+    // Dedup: don't add same process ID twice
+    if ((node as any).processMetrics.find((existing: any) => existing.id === proc.id)) continue;
     (node as any).processMetrics.push(proc);
+  }
+
+  // Step 7: Attach L2 KPI data (FEEDS_INTO path) — keyed by perf_id + year
+  const l2KpiMap = new Map<string, { kpi: any; inputs: any[] }>();
+  for (const row of (raw.l2Kpis || [])) {
+    const perfId = row.perf_id || row.kpi?.id;
+    const perfYear = row.perf_year || row.kpi?.year;
+    if (!perfId) continue;
+    const key = `${perfId}_${perfYear || ''}`;
+    if (!l2KpiMap.has(key)) {
+      l2KpiMap.set(key, { kpi: row.kpi, inputs: row.inputs || [] });
+    } else {
+      // Merge inputs from multiple rows
+      const existing = l2KpiMap.get(key)!;
+      for (const inp of (row.inputs || [])) {
+        if (!existing.inputs.find((i: any) => i.id === inp.id && i.cap_id === inp.cap_id)) {
+          existing.inputs.push(inp);
+        }
+      }
+    }
+  }
+  // Attach to nodes — match by process ID AND year
+  for (const node of nodes) {
+    const nodeYear = node.year;
+    const procMetrics = (node as any).processMetrics || [];
+    for (const pm of procMetrics) {
+      for (const [key, data] of l2KpiMap) {
+        const kpiYear = data.kpi?.year;
+        // Only attach KPIs from the same year as the capability node
+        if (kpiYear && nodeYear && kpiYear !== nodeYear) continue;
+        if (data.inputs.find((inp: any) => inp.id === pm.id)) {
+          if (!(node as any).l2Kpis) (node as any).l2Kpis = [];
+          if (!(node as any).l2Kpis.find((k: any) => (k.kpi.id || k.kpi.domain_id) === (data.kpi.id || data.kpi.domain_id) && k.kpi.year === kpiYear)) {
+            (node as any).l2Kpis.push(data);
+          }
+        }
+      }
+    }
   }
 
   const l1Count = nodes.filter(n => n.level === 'L1').length;
@@ -998,14 +1095,16 @@ function buildL3(l3Node: NeoGraphNode): L3Capability {
   };
 
   // Store raw capability properties for detail panel (exclude internal fields)
-  const { risk: _risk, embedding: _emb, vector: _vec, elementId: _eid, linkedProjects: _lp, operatingEntities: _oe, performanceTargets: _pt, policyTools: _pol, ...capProps } = l3Node as any;
+  const { risk: _risk, embedding: _emb, vector: _vec, elementId: _eid, linkedProjects: _lp, operatingEntities: _oe, performanceTargets: _pt, policyTools: _pol, objectives: _obj, ...capProps } = l3Node as any;
   l3Cap.rawCapability = capProps;
   // Store linked data from initial query (no extra DB calls needed)
   l3Cap.rawCapability.linkedProjects = (l3Node as any).linkedProjects || [];
   l3Cap.rawCapability.operatingEntities = (l3Node as any).operatingEntities || [];
-  l3Cap.rawCapability.performanceTargets = (l3Node as any).performanceTargets || [];
-  l3Cap.rawCapability.policyTools = (l3Node as any).policyTools || [];
+  // NOTE: performanceTargets, policyTools, objectives are NOT attached to L3 rawCapability
+  // They come from chain traversal and produce garbage data at L3 level.
+  // They are only meaningful at L2 level (attached via buildL2 upwardChain).
   l3Cap.rawCapability.processMetrics = (l3Node as any).processMetrics || [];
+  l3Cap.rawCapability.l2Kpis = (l3Node as any).l2Kpis || [];
 
   // R4: Late detection — compare latest project end_date vs PolicyTool end_date
   const policyTools = (l3Node as any).policyTools || [];
@@ -1053,15 +1152,21 @@ function buildL3(l3Node: NeoGraphNode): L3Capability {
 
   // Derive build/execute status from risk bands (SST v1.2 thresholds: Green≤35%, Amber≤65%, Red>65%)
   const risk = l3Node.risk;
+  const rawStatus = String(l3Node.status || '').toLowerCase();
+  const isFutureBuild = mode === 'build' && ['planned', 'not_started', 'not-started', 'future', 'pipeline'].includes(rawStatus);
   if (risk) {
     if (mode === 'build') {
-      const band = risk.build_band?.toLowerCase();
-      if (band === 'red') {
-        l3Cap.build_status = 'in-progress-issues';
-      } else if (band === 'amber') {
-        l3Cap.build_status = 'in-progress-atrisk';
+      if (isFutureBuild) {
+        l3Cap.build_status = 'not-due';
       } else {
-        l3Cap.build_status = 'in-progress-ontrack';
+        const band = risk.build_band?.toLowerCase();
+        if (band === 'red') {
+          l3Cap.build_status = 'in-progress-issues';
+        } else if (band === 'amber') {
+          l3Cap.build_status = 'in-progress-atrisk';
+        } else {
+          l3Cap.build_status = 'in-progress-ontrack';
+        }
       }
     } else if (mode === 'execute') {
       const band = risk.operate_band?.toLowerCase();

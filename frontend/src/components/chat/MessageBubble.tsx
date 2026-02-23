@@ -403,7 +403,7 @@ export function MessageBubble({
             <div className="compaction-indicator-line"></div>
           </div>
         )}
-        <div className={`message-bubble ${isUser ? 'message-bubble--user' : 'message-bubble--bot'} clickable`}>
+        <div className={`message-bubble ${isUser ? 'message-bubble--user' : 'message-bubble--bot'} clickable`} dir={language === 'ar' ? 'rtl' : 'ltr'}>
           <div className="message-bubble-inner">
             {/* Thinking Process (Reasoning) */}
             {!isUser && message.metadata?.memory_process?.thought_trace && (
