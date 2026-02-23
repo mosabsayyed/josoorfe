@@ -5,7 +5,7 @@ import { InterventionPlan } from '../utils/planParser';
  * POST /api/risk-plan
  */
 export async function createRiskPlan(riskId: string, plan: InterventionPlan): Promise<{ planId?: string }> {
-  const response = await fetch('/api/risk-plan', {
+  const response = await fetch('/api/neo4j/risk-plan', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ riskId, plan }),
@@ -25,7 +25,7 @@ export async function createRiskPlan(riskId: string, plan: InterventionPlan): Pr
  * GET /api/risk-plan/:riskId
  */
 export async function fetchRiskPlan(riskId: string): Promise<InterventionPlan | null> {
-  const response = await fetch(`/api/risk-plan/${encodeURIComponent(riskId)}`);
+  const response = await fetch(`/api/neo4j/risk-plan/${encodeURIComponent(riskId)}`);
 
   if (response.status === 404) return null;
 
