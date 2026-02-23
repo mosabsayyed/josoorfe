@@ -59,7 +59,6 @@ export function NeoGraph({
             width: entry.contentRect.width,
             height: entry.contentRect.height
           };
-          console.log('[NeoGraph] Dimensions updated:', newDimensions);
           setDimensions(newDimensions);
         }
       }
@@ -74,7 +73,6 @@ export function NeoGraph({
     if (highlightIds && highlightIds.length > 0) {
       return highlightIds.includes(node.id) ? '#EF4444' : (isDark ? 'rgba(75,85,99,0.2)' : 'rgba(200,200,200,0.2)');
     }
-    // Diagnostic Coloring: Critical nodes are RED
     if (node.properties?.status === 'critical') return '#EF4444';
     if (nodeColor) return nodeColor(node);
     if (legendConfig && legendConfig.colors) {
@@ -83,65 +81,75 @@ export function NeoGraph({
         return legendConfig.colors[type];
       }
     }
-    return node.color || (isDark ? '#D4AF37' : '#1a365d'); // Default to gold for nodes in dark mode
+    return node.color || (isDark ? '#D4AF37' : '#1a365d');
   };
 
   // 2. Link Visualization
   const resolveLinkColor = (link: any) => {
     if (link.properties?.status === 'critical' || link.properties?.virtual) return '#EF4444';
-    return isDark ? '#FFFFFF' : '#000000';
+    return 'rgba(255,255,255,0.1)';
   };
 
-  const resolveLinkWidth = (link: any) => {
-    return (link.properties?.status === 'critical' || link.properties?.virtual) ? 3 : 2;
-  };
-
-  // 3. Deep Clone to protect cache and handle graphData format
+  // 3. Deep Clone + Fibonacci sphere placement (fx/fy/fz)
   const graphData = React.useMemo(() => {
     if (!data || !data.nodes) return { nodes: [], links: [] };
+
+    const nodeCount = data.nodes.length;
+    const radius = Math.max(120, nodeCount * 2);
+    const goldenRatio = (1 + Math.sqrt(5)) / 2;
+
+    const nodes = data.nodes.map((n, i) => {
+      const theta = Math.acos(1 - 2 * (i + 0.5) / nodeCount);
+      const phi = 2 * Math.PI * i / goldenRatio;
+      return {
+        ...n,
+        fx: radius * Math.sin(theta) * Math.cos(phi),
+        fy: radius * Math.sin(theta) * Math.sin(phi),
+        fz: radius * Math.cos(theta),
+      };
+    });
+
     return {
-      nodes: data.nodes.map(n => ({ ...n })),
+      nodes,
       links: data.links ? data.links.map(l => ({ ...l })) : []
     };
   }, [data]);
+
+  // Click zoom handler
+  const handleNodeClick = (node: any) => {
+    if (onNodeClick) onNodeClick(node);
+
+    const fg = graphRef.current;
+    if (!fg || !is3D) return;
+
+    const distance = 40;
+    const distRatio = 1 + distance / Math.hypot(node.x, node.y, node.z);
+    fg.cameraPosition(
+      { x: node.x * distRatio, y: node.y * distRatio, z: node.z * distRatio },
+      node,
+      3000
+    );
+  };
 
   const commonProps = {
     ref: graphRef,
     width: dimensions.width,
     height: dimensions.height,
     graphData: graphData,
-    nodeLabel: null, // Disable default tooltip to use our custom one
+    nodeLabel: null,
     nodeColor: resolveNodeColor,
     nodeRelSize: 6,
-    // Fix Sphere Rendering: Ensure resolution is high enough or use custom object if needed
-    nodeResolution: 16,
     linkColor: resolveLinkColor,
-    linkWidth: resolveLinkWidth,
+    linkOpacity: 0.2,
+    linkWidth: 1,
     linkDirectionalArrowLength: 3,
     linkDirectionalArrowRelPos: 1,
     linkCurvature: 0.1,
-    linkOpacity: 1,
     backgroundColor: "rgba(0,0,0,0)",
     onNodeHover: setHoverNode,
-    onNodeClick: (node: any) => onNodeClick && onNodeClick(node),
+    onNodeClick: handleNodeClick,
     cooldownTicks: 100,
-    // FIX: Removed onEngineStop which was forcing camera reset on every stabilize
-    // onEngineStop: () => { graphRef.current?.zoomToFit(400, 40); },
-    onNodeDragEnd: (node: any) => { node.fx = node.x; node.fy = node.y; node.fz = node.z; },
     linkLineDash: (link: any) => (link.properties?.status === 'critical' || link.properties?.virtual) ? [5, 5] : null,
-  };
-
-  // 3D force-directed physics configuration for sphere layout
-  const physics3DProps = {
-    forceEngine: "d3" as const,
-    d3AlphaDecay: 0.02,
-    d3VelocityDecay: 0.3,
-    cooldownTicks: 200,
-    d3Force: {
-      charge: { strength: -120 },
-      center: { strength: 0.1 },
-      collision: { radius: 5, strength: 0.5 }
-    }
   };
 
   return (
@@ -158,7 +166,7 @@ export function NeoGraph({
       </div>
 
       {(dimensions.width > 0 && dimensions.height > 0) ? (
-        is3D ? <ForceGraph3D {...commonProps} {...physics3DProps} /> : <ForceGraph2D {...commonProps} />
+        is3D ? <ForceGraph3D {...commonProps} /> : <ForceGraph2D {...commonProps} />
       ) : (
         <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           {t('josoor.dashboard.graph.preparingCanvas')}
@@ -190,11 +198,10 @@ export function NeoGraph({
                 <strong style={{ color: '#D4AF37' }}>{t('josoor.dashboard.graph.id')}</strong> <code>{hoverNode.properties?.id || hoverNode.id}</code>
               </p>
             </div>
-            {/* Orphan/Bastard Flags */}
             {(hoverNode.orphan || hoverNode.bastard) && (
-              <div style={{ 
-                marginTop: '0.75rem', 
-                padding: '0.5rem', 
+              <div style={{
+                marginTop: '0.75rem',
+                padding: '0.5rem',
                 background: 'rgba(239, 68, 68, 0.1)',
                 border: '1px solid rgba(239, 68, 68, 0.3)',
                 borderRadius: '0.25rem'

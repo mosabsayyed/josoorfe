@@ -87,6 +87,7 @@ const normalizeGraphData = (data: { nodes: any[], links: any[] }) => {
         const props = n.properties || {};
         const displayId = props.id || n.id || props.kpi_id || props.code || null;
         const displayName = props.name || displayId || eid;
+
         return {
             id: eid, elementId: eid, labels, label: labels[0] || 'Unknown',
             name: displayId ? `${displayId}: ${displayName}` : displayName,
@@ -478,7 +479,8 @@ export function ExplorerDesk({ year = '2025', quarter = 'All' }: ExplorerDeskPro
                         </div>
                     )}
                 </div>
-                {displayData && <GraphDataTable data={displayData} isDark={isDark} />}
+                {/* Debug tables hidden — kept for future diagnostics */}
+                {/* {displayData && <GraphDataTable data={displayData} isDark={isDark} />} */}
             </div>
         </div>
     );
