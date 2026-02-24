@@ -78,7 +78,9 @@ export default function LandingPage() {
       title: t('claims.title'),
       subtitle: t('claims.subtitle'),
       canvasLabel: t('claims.canvasLabel'),
+      canvasLabel2: t('claims.canvasLabel2'),
       canvasDesc: t('claims.canvasDesc'),
+      imageLabels: (t('claims.imageLabels', { returnObjects: true }) as string[]),
       items: (t('claims.items', { returnObjects: true }) as Array<{ punchline: string; desc: string }>),
     },
     promise: {

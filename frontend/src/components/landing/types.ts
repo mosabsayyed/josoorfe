@@ -25,7 +25,9 @@ export interface ClaimsContent {
   title: string;
   subtitle: string;
   canvasLabel: string;
+  canvasLabel2: string;
   canvasDesc: string;
+  imageLabels: string[];
   items: ClaimItem[];
 }
 

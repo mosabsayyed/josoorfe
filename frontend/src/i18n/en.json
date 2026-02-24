@@ -9,7 +9,7 @@
   "nav": {
     "links": ["Signal", "Platform", "Why Us", "Promise", "Architecture"],
     "cta": "Apply for Beta",
-    "logo": "Josoor"
+    "logo": "JOSOOR"
   },
   "aitoia": {
     "tag": "The Challenge",
@@ -36,8 +36,8 @@
       }
     ],
     "innovationTag": "The Innovation",
-    "innovationTitle": "Writing the Book on Public Sector AI Transformations",
-    "innovationSubtitle": "From AI to Intelligent Architecture: Phase 1 Built to Win",
+    "innovationTitle": "Writing the Book on Public Sector Transformations",
+    "innovationSubtitle": "In the Era of AI: Phase (1) Intelligent Architectures Built to Win",
     "phaseTag": "JOSOOR Phase 1",
     "iaTitle": "Intelligent Systems Architecture ...",
     "iaSubtitle": "Accelerated Predictable Outcomes",
@@ -60,15 +60,23 @@
     ]
   },
   "claims": {
-    "tag": "What Makes Jusur Distinctive?",
+    "tag": "What Makes JOSOOR Distinctive?",
     "title": "See the difference",
-    "subtitle": "What makes Josoor fundamentally different",
+    "subtitle": "What makes JOSOOR fundamentally different",
     "canvasLabel": "AI-Native, Human-Intuitive",
+    "canvasLabel2": "From Black Box to Glass Box",
     "canvasDesc": "Every structure is machine-native. Every interface is human-intuitive.",
+    "imageLabels": [
+      "Vision Access",
+      "Agent Orchestration",
+      "Cognitive Reasoning",
+      "Knowledge Graph",
+      "Sovereign Infrastructure"
+    ],
     "items": [
       {
         "punchline": "One Instance, Any Entity",
-        "desc": "One Josoor instance adapts to any government entity without rebuilding"
+        "desc": "One JOSOOR instance adapts to any government entity without rebuilding"
       },
       {
         "punchline": "Vision 2030 KPIs Built In",
@@ -129,7 +137,7 @@
     "modes": [
       {
         "title": "Watch",
-        "desc": "Not just what's red — catches what <em>looks green but is quietly declining</em>. Training drops, HR shrugs, Josoor traces the chain to the Minister's phone. You find out now, not in 3 months."
+        "desc": "Not just what's red — catches what <em>looks green but is quietly declining</em>. Training drops, HR shrugs, JOSOOR traces the chain to the Minister's phone. You find out now, not in 3 months."
       },
       {
         "title": "Decide",
@@ -173,7 +181,7 @@
   "architecture": {
     "tag": "The Architecture",
     "title": "Designed around data you have today",
-    "intro": "No new data lake. No 18-month integration. Josoor is an <b>overlay</b> that builds bridges between your existing systems and stakeholders — a true information superhighway traversed by powerful LLMs, transforming <b>data complexity into strategic insights</b> and siloed stakeholders into an aligned powerhouse.",
+    "intro": "No new data lake. No 18-month integration. JOSOOR is an <b>overlay</b> that builds bridges between your existing systems and stakeholders — a true information superhighway traversed by powerful LLMs, transforming <b>data complexity into strategic insights</b> and siloed stakeholders into an aligned powerhouse.",
     "engines": [
       {
         "title": "BUILD — Are we building on time?",
@@ -184,9 +192,9 @@
         "desc": "Scores people + process + tools. Two consecutive drops, even while green? <b>Forced amber.</b> Catches decline before red."
       }
     ],
-    "pyramidFrontLabel": "Your organization's data — click to see what Josoor builds behind it",
+    "pyramidFrontLabel": "Your organization's data — click to see what JOSOOR builds behind it",
     "pyramidFlipHintBack": "Click to see your data layers",
-    "pyramidFlipHintFront": "Click the pyramid to see Josoor's ontology behind it",
+    "pyramidFlipHintFront": "Click the pyramid to see JOSOOR's ontology behind it",
     "twinEngines": "Twin Engines",
     "vision2030Compatible": "Vision 2030 Compatible",
     "alignedNationalStandards": "Aligned with National Standards",
@@ -216,7 +224,7 @@
       "cogDesc": "KPI cascade"
     },
     "back": {
-      "header": "Josoor's Enterprise Ontology — mapped to your layers",
+      "header": "JOSOOR's Enterprise Ontology — mapped to your layers",
       "strategyLayer": "Strategy Layer",
       "strategyLeft": ["Objectives", "KPIs"],
       "strategyRight": ["Adaa Targets", "V2030 Goals"],
@@ -243,7 +251,7 @@
   "beta": {
     "tag": "Beta Launch",
     "title": "Ready to hear more?",
-    "subtitle": "Josoor is in its private limited beta phase. Register your interest now",
+    "subtitle": "JOSOOR is in its private limited beta phase. Register your interest now",
     "note": "Limited spots. KSA government entities only. We'll respond within 48 hours.",
     "form": {
       "name": "Full name",
