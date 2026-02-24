@@ -213,16 +213,8 @@ export function MessageBubble({
       });
 
 
-      // LOG TRACE
-      console.log('[MessageBubble] Parsed structuredVisualizationResponse:', {
-        cleanAnswer,
-        artifactCount: artifacts.length,
-        firstArtifact: artifacts[0]
-      });
-
       return { answer: cleanAnswer, artifacts };
     } catch (e) {
-      console.error('[MessageBubble] structuredVisualizationResponse parsing error', e);
       return null;
     }
   })();
@@ -374,13 +366,6 @@ export function MessageBubble({
       return acc;
     }, {});
 
-    // DEBUG: Log artifact map creation
-    console.log('[MessageBubble] embeddedArtifactsMap created:', {
-      artifactCount: artifacts.length,
-      mapKeys: Object.keys(map),
-      messageId: message.id
-    });
-
     return map;
   }, [structuredVisualizationResponse, message.metadata?.llm_payload?.artifacts, message.id]);
 
@@ -444,15 +429,6 @@ export function MessageBubble({
                 )}
               </div>
             ) : (() => {
-              // DEBUG: Log routing decision
-              console.log('[MessageBubble] Routing decision:', {
-                messageId: message.id,
-                structuredViz: !!structuredVisualizationResponse,
-                contentIsHTML: contentIsHTML,
-                contentIsJSONLike: contentIsJSONLike,
-                hasError: !!message.metadata?.error,
-                contentPreview: message.content?.substring(0, 100)
-              });
               return null;
             })() || structuredVisualizationResponse ? (
               // Structured visualization response - render the answer (cleaned HTML/markdown)
@@ -560,12 +536,6 @@ export function MessageBubble({
               };
               
               artifacts = [...artifacts, htmlArtifact];
-              
-              console.log('[MessageBubble] Created HTML artifact:', {
-                messageId: message.id,
-                title,
-                artifactId: htmlArtifact.id
-              });
             }
           }
 
