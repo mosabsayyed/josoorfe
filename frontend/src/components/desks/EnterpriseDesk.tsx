@@ -252,12 +252,8 @@ export function EnterpriseDesk({ year = '2025', quarter = 'Q1', focusCapId, onIn
         : cap.build_status === 'in-progress-ontrack' ? 'Green' : 'Unknown');
     const exposure = cap.exposure_percent != null ? `${cap.exposure_percent}%` : 'N/A';
 
-    // IDs and references stay in English so the backend can look them up correctly
-    const refs = `Capability: "${capName}" (capability_id: ${capId}, year: ${capYear}, mode: ${capMode}${riskId ? `, risk_id: ${riskId}` : ''}). Risk band: ${riskBand}, exposure: ${exposure}.`;
-
-    const prompt = language === 'ar'
-      ? `${refs}\nأريد تحليل مخاطر لهذه القدرة. ابدأ ببطاقة القدرة وحالة المخاطر الحالية. إذا كانت الحالة مخطط أو لم يحن موعدها فلا حاجة لتحليل — اذكر ذلك فقط. إذا كانت خضراء فقدّم ملخصاً صحياً مختصراً. إذا كانت صفراء أو حمراء فقدّم تحليلاً كاملاً مع خيارات التدخل المتاحة.`
-      : `${refs}\nI need a risk analysis for this capability. Start with the capability card showing current risk status. If the status is Planned or Not-Due, there is nothing to analyze — just state that. If Green, provide a brief health summary and keep it short. If Amber or Red, provide full analysis with available intervention options.`;
+    const lang = document.documentElement.dir === 'rtl' ? 'Arabic' : 'English';
+    const prompt = `Please analyze capability ${capId} (year: ${capYear}).${riskId ? ` Risk ID: ${riskId}` : ''} Respond entirely in ${lang}.`;
 
     try {
       const response = await chatService.sendMessage({
