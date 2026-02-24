@@ -1,10 +1,10 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { AlertTriangle, TrendingDown, TrendingUp, Plus, Pause, ArrowUpDown, Users, Zap, Loader2, CheckCircle, XCircle } from 'lucide-react';
+import { AlertTriangle, TrendingDown, TrendingUp, Plus, Pause, ArrowUpDown, Users, Zap, Loader2, CheckCircle, XCircle, ArrowLeft } from 'lucide-react';
 import { Gantt } from 'wx-react-gantt';
 import 'wx-react-gantt/dist/gantt.css';
 import { chatService } from '../../services/chatService';
-import { createRiskPlan } from '../../services/planningService';
+import { createRiskPlan, fetchAllRiskPlans, fetchRiskPlan, RiskPlanSummary } from '../../services/planningService';
 import { parsePlanResponse, InterventionPlan, PlanDeliverable, PlanTask } from '../../utils/planParser';
 import './PlanningDesk.css';
 
@@ -217,13 +217,13 @@ Produce a structured plan with deliverables and tasks.`;
     if (!plan || !context) return;
 
     try {
-      await createRiskPlan(context.riskId, plan);
+      await createRiskPlan(context.riskId, plan, narrative);
       setIsCommitted(true);
     } catch (err: any) {
       console.error('[InterventionPlanning] Commit failed:', err);
       setError(err.message || 'Failed to commit plan');
     }
-  }, [plan, context]);
+  }, [plan, context, narrative]);
 
   // Handle cancel
   const handleCancel = useCallback(() => {
@@ -234,13 +234,215 @@ Produce a structured plan with deliverables and tasks.`;
     onClearContext?.();
   }, [onClearContext]);
 
-  // ── No context: show placeholder ──
+  // ── No context: show existing plans or placeholder ──
+  const [allPlans, setAllPlans] = useState<RiskPlanSummary[]>([]);
+  const [plansLoading, setPlansLoading] = useState(false);
+
+  // ── Selected plan detail view ──
+  const [selectedPlanRiskId, setSelectedPlanRiskId] = useState<string | null>(null);
+  const [selectedPlan, setSelectedPlan] = useState<InterventionPlan | null>(null);
+  const [selectedPlanLoading, setSelectedPlanLoading] = useState(false);
+
+  useEffect(() => {
+    if (!selectedPlanRiskId) { setSelectedPlan(null); return; }
+    let cancelled = false;
+    setSelectedPlanLoading(true);
+    fetchRiskPlan(selectedPlanRiskId)
+      .then((p) => { if (!cancelled) setSelectedPlan(p); })
+      .catch(() => { if (!cancelled) setSelectedPlan(null); })
+      .finally(() => { if (!cancelled) setSelectedPlanLoading(false); });
+    return () => { cancelled = true; };
+  }, [selectedPlanRiskId]);
+
+  // Gantt data for selected plan detail view
+  const selectedGanttData = useMemo(() => {
+    if (!selectedPlan) return { tasks: [], links: [], scales: [] };
+    const tasks: any[] = [];
+    const links: any[] = [];
+    let linkId = 1;
+    selectedPlan.deliverables.forEach((del: PlanDeliverable) => {
+      tasks.push({
+        id: del.id, text: del.name,
+        start: new Date(del.start_date), end: new Date(del.end_date),
+        type: 'summary', open: true,
+      });
+      del.tasks.forEach((task: PlanTask) => {
+        tasks.push({
+          id: task.id, text: task.name,
+          start: new Date(task.start_date), end: new Date(task.end_date),
+          parent: del.id, type: 'task', owner: task.owner,
+        });
+        if (task.depends_on?.length) {
+          task.depends_on.forEach((depId: string) => {
+            links.push({ id: linkId++, source: depId, target: task.id, type: 'e2s' });
+          });
+        }
+      });
+    });
+    const scales = [
+      { unit: 'month', step: 1, format: 'MMMM yyyy' },
+      { unit: 'week', step: 1, format: 'wo' },
+    ];
+    return { tasks, links, scales };
+  }, [selectedPlan]);
+
+  useEffect(() => {
+    if (context) return;
+    let cancelled = false;
+    setPlansLoading(true);
+    fetchAllRiskPlans()
+      .then((plans) => { if (!cancelled) setAllPlans(plans); })
+      .catch(() => { if (!cancelled) setAllPlans([]); })
+      .finally(() => { if (!cancelled) setPlansLoading(false); });
+    return () => { cancelled = true; };
+  }, [context]);
+
   if (!context) {
+    // Loading plans
+    if (plansLoading) {
+      return (
+        <div className="intervention-container">
+          <div className="intervention-loading">
+            <Loader2 className="loading-spinner" />
+            <p className="loading-text">Loading plans...</p>
+          </div>
+        </div>
+      );
+    }
+
+    // No plans exist — original placeholder
+    if (allPlans.length === 0) {
+      return (
+        <div className="intervention-container">
+          <div className="intervention-placeholder">
+            <AlertTriangle className="placeholder-icon" />
+            <p className="placeholder-text">{t('josoor.planning.noRiskSelected')}</p>
+          </div>
+        </div>
+      );
+    }
+
+    // ── Selected plan detail view ──
+    if (selectedPlanRiskId) {
+      if (selectedPlanLoading) {
+        return (
+          <div className="intervention-container">
+            <div className="intervention-loading">
+              <Loader2 className="loading-spinner" />
+              <p className="loading-text">Loading plan details...</p>
+            </div>
+          </div>
+        );
+      }
+
+      if (!selectedPlan) {
+        return (
+          <div className="intervention-container">
+            <button className="btn-intervention-secondary" onClick={() => setSelectedPlanRiskId(null)} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
+              <ArrowLeft style={{ width: 16, height: 16 }} /> Back to plans
+            </button>
+            <div className="intervention-placeholder">
+              <AlertTriangle className="placeholder-icon" />
+              <p className="placeholder-text">Plan not found or could not be loaded.</p>
+            </div>
+          </div>
+        );
+      }
+
+      // Find the summary card for extra metadata
+      const summaryCard = allPlans.find((p) => p.riskId === selectedPlanRiskId);
+
+      return (
+        <div className="intervention-container">
+          {/* Back button */}
+          <button className="btn-intervention-secondary" onClick={() => setSelectedPlanRiskId(null)} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
+            <ArrowLeft style={{ width: 16, height: 16 }} /> Back to plans
+          </button>
+
+          {/* Plan header info */}
+          <div className="planning-block" style={{ marginBottom: '1rem' }}>
+            <div className="block-header-green">{selectedPlan.name}</div>
+            <div className="recommendation-desc" style={{ padding: '0.75rem 1rem' }}>
+              {selectedPlan.sponsor && <span>Sponsor: {selectedPlan.sponsor}</span>}
+              {summaryCard?.status && (
+                <span style={{ marginLeft: '1rem' }}>
+                  Status: <span className={`badge-${summaryCard.status === 'Active' ? 'green' : summaryCard.status === 'Draft' ? 'amber' : 'green'}`}>{summaryCard.status}</span>
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Narrative */}
+          {selectedPlan.narrative && (
+            <div className="intervention-narrative">
+              <div className="block-header-green">{t('josoor.planning.planNarrative')}</div>
+              <div
+                className="narrative-content"
+                dangerouslySetInnerHTML={{ __html: selectedPlan.narrative }}
+              />
+            </div>
+          )}
+
+          {/* Gantt Chart */}
+          {selectedGanttData.tasks.length > 0 && (
+            <div className="intervention-gantt-section">
+              <div className="gantt-header">
+                <div className="block-header-green">{t('josoor.planning.editGantt')}</div>
+              </div>
+              <div className="gantt-container">
+                <Gantt
+                  tasks={selectedGanttData.tasks}
+                  links={selectedGanttData.links}
+                  scales={selectedGanttData.scales}
+                  columns={ganttColumns}
+                  cellHeight={38}
+                  cellBorders="full"
+                />
+              </div>
+            </div>
+          )}
+
+        </div>
+      );
+    }
+
+    // Plans exist — show summary list
     return (
       <div className="intervention-container">
-        <div className="intervention-placeholder">
-          <AlertTriangle className="placeholder-icon" />
-          <p className="placeholder-text">{t('josoor.planning.noRiskSelected')}</p>
+        <div className="planning-block">
+          <div className="block-header-green">Existing Risk Plans</div>
+          <div className="recommendation-list">
+            {allPlans.map((p) => (
+              <div
+                key={p.id}
+                className="recommendation-item"
+                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem', cursor: p.riskId ? 'pointer' : 'default' }}
+                onClick={() => { if (p.riskId) setSelectedPlanRiskId(p.riskId); }}
+              >
+                <div style={{ flex: 1 }}>
+                  <div className="recommendation-title">{p.name}</div>
+                  <div className="recommendation-desc">
+                    {p.sponsor ? `Sponsor: ${p.sponsor}` : 'No sponsor'}
+                    {' · '}
+                    {p.deliverableCount} deliverable{p.deliverableCount !== 1 ? 's' : ''}
+                    {' · '}
+                    {p.taskCount} task{p.taskCount !== 1 ? 's' : ''}
+                  </div>
+                  {p.createdAt && (
+                    <div className="recommendation-desc" style={{ fontSize: '0.75rem', opacity: 0.7 }}>
+                      Created: {new Date(p.createdAt).toLocaleDateString()}
+                    </div>
+                  )}
+                </div>
+                <span
+                  className={`badge-${p.status === 'Active' ? 'green' : p.status === 'Draft' ? 'amber' : 'green'}`}
+                  style={{ whiteSpace: 'nowrap' }}
+                >
+                  {p.status || 'Active'}
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     );

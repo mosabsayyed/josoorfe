@@ -23,6 +23,7 @@ export interface PlanDeliverable {
 export interface InterventionPlan {
   name: string;
   sponsor: string;
+  narrative?: string;
   risk_id?: string;
   capability_id?: string;
   deliverables: PlanDeliverable[];

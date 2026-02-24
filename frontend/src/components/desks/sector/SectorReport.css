@@ -75,7 +75,7 @@ table.josoor-table,
 .josoor-report-content td {
     padding: 0.75rem;
     border: 1px solid var(--component-panel-border);
-    text-align: left;
+    text-align: inherit;
     word-break: break-word;
     /* Ensure compatibility */
     overflow-wrap: anywhere;
