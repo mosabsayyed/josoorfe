@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { AlertTriangle, TrendingDown, TrendingUp, Plus, Pause, ArrowUpDown, Users, Zap, Loader2, CheckCircle, XCircle, ArrowLeft } from 'lucide-react';
+import { useLanguage } from '../../contexts/LanguageContext';
+import { AlertTriangle, TrendingDown, TrendingUp, Plus, Pause, ArrowUpDown, Users, Zap, Loader2, CheckCircle, XCircle } from 'lucide-react';
 import { Gantt } from 'wx-react-gantt';
 import 'wx-react-gantt/dist/gantt.css';
 import { chatService } from '../../services/chatService';
@@ -98,6 +99,7 @@ interface InterventionPlanningProps {
 
 function InterventionPlanning({ context, onClearContext }: InterventionPlanningProps) {
   const { t } = useTranslation();
+  const { language } = useLanguage();
   const [isLoading, setIsLoading] = useState(false);
   const [narrative, setNarrative] = useState<string>('');
   const [plan, setPlan] = useState<InterventionPlan | null>(null);
@@ -118,14 +120,14 @@ function InterventionPlanning({ context, onClearContext }: InterventionPlanningP
       setIsCommitted(false);
 
       try {
-        const userPrompt = `Generate an intervention plan for risk "${context.riskName}" on capability "${context.capabilityName}".
-Risk band: ${context.band}, Exposure: ${context.exposurePct}%.
-Selected intervention strategy: "${context.selectedOption.title}" — ${context.selectedOption.description}.
-Produce a structured plan with deliverables and tasks.`;
+        const userPrompt = language === 'ar'
+          ? `أريد خطة تدخل للمخاطر "${context.riskName}" التي تؤثر على القدرة "${context.capabilityName}". نطاق المخاطر ${context.band} ونسبة التعرض ${context.exposurePct}%. اخترت استراتيجية "${context.selectedOption.title}": ${context.selectedOption.description}. أنشئ خطة منظمة تتضمن المخرجات الرئيسية والمهام التفصيلية لكل مخرج.`
+          : `I need an intervention plan for risk "${context.riskName}" affecting capability "${context.capabilityName}". Risk band is ${context.band}, exposure is ${context.exposurePct}%. The chosen strategy is "${context.selectedOption.title}": ${context.selectedOption.description}. Create a structured plan with key deliverables and detailed tasks for each deliverable.`;
 
         const response = await chatService.sendMessage({
           query: userPrompt,
           prompt_key: 'intervention_planning',
+          language,
         });
 
         if (cancelled) return;
@@ -217,13 +219,13 @@ Produce a structured plan with deliverables and tasks.`;
     if (!plan || !context) return;
 
     try {
-      await createRiskPlan(context.riskId, plan, narrative);
+      await createRiskPlan(context.riskId, plan);
       setIsCommitted(true);
     } catch (err: any) {
       console.error('[InterventionPlanning] Commit failed:', err);
       setError(err.message || 'Failed to commit plan');
     }
-  }, [plan, context, narrative]);
+  }, [plan, context]);
 
   // Handle cancel
   const handleCancel = useCallback(() => {
@@ -234,218 +236,9 @@ Produce a structured plan with deliverables and tasks.`;
     onClearContext?.();
   }, [onClearContext]);
 
-  // ── No context: show existing plans or placeholder ──
-  const [allPlans, setAllPlans] = useState<RiskPlanSummary[]>([]);
-  const [plansLoading, setPlansLoading] = useState(false);
-
-  // ── Selected plan detail view ──
-  const [selectedPlanRiskId, setSelectedPlanRiskId] = useState<string | null>(null);
-  const [selectedPlan, setSelectedPlan] = useState<InterventionPlan | null>(null);
-  const [selectedPlanLoading, setSelectedPlanLoading] = useState(false);
-
-  useEffect(() => {
-    if (!selectedPlanRiskId) { setSelectedPlan(null); return; }
-    let cancelled = false;
-    setSelectedPlanLoading(true);
-    fetchRiskPlan(selectedPlanRiskId)
-      .then((p) => { if (!cancelled) setSelectedPlan(p); })
-      .catch(() => { if (!cancelled) setSelectedPlan(null); })
-      .finally(() => { if (!cancelled) setSelectedPlanLoading(false); });
-    return () => { cancelled = true; };
-  }, [selectedPlanRiskId]);
-
-  // Gantt data for selected plan detail view
-  const selectedGanttData = useMemo(() => {
-    if (!selectedPlan) return { tasks: [], links: [], scales: [] };
-    const tasks: any[] = [];
-    const links: any[] = [];
-    let linkId = 1;
-    selectedPlan.deliverables.forEach((del: PlanDeliverable) => {
-      tasks.push({
-        id: del.id, text: del.name,
-        start: new Date(del.start_date), end: new Date(del.end_date),
-        type: 'summary', open: true,
-      });
-      del.tasks.forEach((task: PlanTask) => {
-        tasks.push({
-          id: task.id, text: task.name,
-          start: new Date(task.start_date), end: new Date(task.end_date),
-          parent: del.id, type: 'task', owner: task.owner,
-        });
-        if (task.depends_on?.length) {
-          task.depends_on.forEach((depId: string) => {
-            links.push({ id: linkId++, source: depId, target: task.id, type: 'e2s' });
-          });
-        }
-      });
-    });
-    const scales = [
-      { unit: 'month', step: 1, format: 'MMMM yyyy' },
-      { unit: 'week', step: 1, format: 'wo' },
-    ];
-    return { tasks, links, scales };
-  }, [selectedPlan]);
-
-  useEffect(() => {
-    if (context) return;
-    let cancelled = false;
-    setPlansLoading(true);
-    fetchAllRiskPlans()
-      .then((plans) => { if (!cancelled) setAllPlans(plans); })
-      .catch(() => { if (!cancelled) setAllPlans([]); })
-      .finally(() => { if (!cancelled) setPlansLoading(false); });
-    return () => { cancelled = true; };
-  }, [context]);
-
+  // ── No context: show saved plans list ──
   if (!context) {
-    // Loading plans
-    if (plansLoading) {
-      return (
-        <div className="intervention-container">
-          <div className="intervention-loading">
-            <Loader2 className="loading-spinner" />
-            <p className="loading-text">Loading plans...</p>
-          </div>
-        </div>
-      );
-    }
-
-    // No plans exist — original placeholder
-    if (allPlans.length === 0) {
-      return (
-        <div className="intervention-container">
-          <div className="intervention-placeholder">
-            <AlertTriangle className="placeholder-icon" />
-            <p className="placeholder-text">{t('josoor.planning.noRiskSelected')}</p>
-          </div>
-        </div>
-      );
-    }
-
-    // ── Selected plan detail view ──
-    if (selectedPlanRiskId) {
-      if (selectedPlanLoading) {
-        return (
-          <div className="intervention-container">
-            <div className="intervention-loading">
-              <Loader2 className="loading-spinner" />
-              <p className="loading-text">Loading plan details...</p>
-            </div>
-          </div>
-        );
-      }
-
-      if (!selectedPlan) {
-        return (
-          <div className="intervention-container">
-            <button className="btn-intervention-secondary" onClick={() => setSelectedPlanRiskId(null)} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
-              <ArrowLeft style={{ width: 16, height: 16 }} /> Back to plans
-            </button>
-            <div className="intervention-placeholder">
-              <AlertTriangle className="placeholder-icon" />
-              <p className="placeholder-text">Plan not found or could not be loaded.</p>
-            </div>
-          </div>
-        );
-      }
-
-      // Find the summary card for extra metadata
-      const summaryCard = allPlans.find((p) => p.riskId === selectedPlanRiskId);
-
-      return (
-        <div className="intervention-container">
-          {/* Back button */}
-          <button className="btn-intervention-secondary" onClick={() => setSelectedPlanRiskId(null)} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
-            <ArrowLeft style={{ width: 16, height: 16 }} /> Back to plans
-          </button>
-
-          {/* Plan header info */}
-          <div className="planning-block" style={{ marginBottom: '1rem' }}>
-            <div className="block-header-green">{selectedPlan.name}</div>
-            <div className="recommendation-desc" style={{ padding: '0.75rem 1rem' }}>
-              {selectedPlan.sponsor && <span>Sponsor: {selectedPlan.sponsor}</span>}
-              {summaryCard?.status && (
-                <span style={{ marginLeft: '1rem' }}>
-                  Status: <span className={`badge-${summaryCard.status === 'Active' ? 'green' : summaryCard.status === 'Draft' ? 'amber' : 'green'}`}>{summaryCard.status}</span>
-                </span>
-              )}
-            </div>
-          </div>
-
-          {/* Narrative */}
-          {selectedPlan.narrative && (
-            <div className="intervention-narrative">
-              <div className="block-header-green">{t('josoor.planning.planNarrative')}</div>
-              <div
-                className="narrative-content"
-                dangerouslySetInnerHTML={{ __html: selectedPlan.narrative }}
-              />
-            </div>
-          )}
-
-          {/* Gantt Chart */}
-          {selectedGanttData.tasks.length > 0 && (
-            <div className="intervention-gantt-section">
-              <div className="gantt-header">
-                <div className="block-header-green">{t('josoor.planning.editGantt')}</div>
-              </div>
-              <div className="gantt-container">
-                <Gantt
-                  tasks={selectedGanttData.tasks}
-                  links={selectedGanttData.links}
-                  scales={selectedGanttData.scales}
-                  columns={ganttColumns}
-                  cellHeight={38}
-                  cellBorders="full"
-                />
-              </div>
-            </div>
-          )}
-
-        </div>
-      );
-    }
-
-    // Plans exist — show summary list
-    return (
-      <div className="intervention-container">
-        <div className="planning-block">
-          <div className="block-header-green">Existing Risk Plans</div>
-          <div className="recommendation-list">
-            {allPlans.map((p) => (
-              <div
-                key={p.id}
-                className="recommendation-item"
-                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem', cursor: p.riskId ? 'pointer' : 'default' }}
-                onClick={() => { if (p.riskId) setSelectedPlanRiskId(p.riskId); }}
-              >
-                <div style={{ flex: 1 }}>
-                  <div className="recommendation-title">{p.name}</div>
-                  <div className="recommendation-desc">
-                    {p.sponsor ? `Sponsor: ${p.sponsor}` : 'No sponsor'}
-                    {' · '}
-                    {p.deliverableCount} deliverable{p.deliverableCount !== 1 ? 's' : ''}
-                    {' · '}
-                    {p.taskCount} task{p.taskCount !== 1 ? 's' : ''}
-                  </div>
-                  {p.createdAt && (
-                    <div className="recommendation-desc" style={{ fontSize: '0.75rem', opacity: 0.7 }}>
-                      Created: {new Date(p.createdAt).toLocaleDateString()}
-                    </div>
-                  )}
-                </div>
-                <span
-                  className={`badge-${p.status === 'Active' ? 'green' : p.status === 'Draft' ? 'amber' : 'green'}`}
-                  style={{ whiteSpace: 'nowrap' }}
-                >
-                  {p.status || 'Active'}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
+    return <SavedPlansList />;
   }
 
   // ── Loading state ──
@@ -536,6 +329,249 @@ Produce a structured plan with deliverables and tasks.`;
             {t('josoor.planning.cancelPlan')}
           </button>
         </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Saved Plans List ────────────────────────────────────────────────
+
+function SavedPlansList() {
+  const { t } = useTranslation();
+  const [plans, setPlans] = useState<RiskPlanSummary[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedPlan, setSelectedPlan] = useState<{ riskId: string; plan: InterventionPlan } | null>(null);
+  const [loadingPlanId, setLoadingPlanId] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const result = await fetchAllRiskPlans();
+        if (!cancelled) setPlans(result);
+      } catch (err: any) {
+        if (!cancelled) setError(err.message || 'Failed to load plans');
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    };
+    load();
+    return () => { cancelled = true; };
+  }, []);
+
+  const handleViewPlan = async (summary: RiskPlanSummary) => {
+    setLoadingPlanId(summary.riskId);
+    try {
+      const plan = await fetchRiskPlan(summary.riskId);
+      if (plan) {
+        setSelectedPlan({ riskId: summary.riskId, plan });
+      } else {
+        setError('Plan data not found');
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to load plan details');
+    } finally {
+      setLoadingPlanId(null);
+    }
+  };
+
+  // ── Detail view for a selected plan ──
+  if (selectedPlan) {
+    const { plan } = selectedPlan;
+    const ganttTasks: any[] = [];
+    const ganttLinks: any[] = [];
+    let linkId = 1;
+
+    plan.deliverables.forEach((del: PlanDeliverable) => {
+      ganttTasks.push({
+        id: del.id,
+        text: del.name,
+        start: new Date(del.start_date),
+        end: new Date(del.end_date),
+        type: 'summary',
+        open: true,
+      });
+      del.tasks.forEach((task: PlanTask) => {
+        ganttTasks.push({
+          id: task.id,
+          text: task.name,
+          start: new Date(task.start_date),
+          end: new Date(task.end_date),
+          parent: del.id,
+          type: 'task',
+          owner: task.owner,
+        });
+        if (task.depends_on?.length) {
+          task.depends_on.forEach((depId: string) => {
+            ganttLinks.push({ id: linkId++, source: depId, target: task.id, type: 'e2s' });
+          });
+        }
+      });
+    });
+
+    const ganttColumns = [
+      { id: 'text', header: 'Task', flexgrow: 1 },
+      { id: 'owner', header: 'Owner', width: 120, align: 'center' as const },
+      { id: 'start', header: 'Start', align: 'center' as const },
+      { id: 'duration', header: 'Duration', width: 80, align: 'center' as const },
+    ];
+
+    const scales = [
+      { unit: 'month', step: 1, format: 'MMMM yyyy' },
+      { unit: 'week', step: 1, format: 'wo' },
+    ];
+
+    return (
+      <div className="intervention-container">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+          <button
+            className="btn-intervention-secondary"
+            onClick={() => setSelectedPlan(null)}
+            style={{ padding: '6px 14px' }}
+          >
+            ← {t('josoor.planning.backToPlanning') || 'Back'}
+          </button>
+          <h3 style={{ margin: 0, color: 'var(--component-text-primary)', fontSize: '16px' }}>
+            {plan.name}
+          </h3>
+        </div>
+
+        {plan.sponsor && (
+          <div style={{ fontSize: '13px', color: 'var(--component-text-secondary)', marginBottom: '12px' }}>
+            {t('josoor.planning.sponsor') || 'Sponsor'}: {plan.sponsor}
+          </div>
+        )}
+
+        <div style={{ fontSize: '12px', color: 'var(--component-text-muted)', marginBottom: '16px' }}>
+          {plan.deliverables.length} {t('josoor.planning.deliverables') || 'deliverables'} · {plan.deliverables.reduce((sum, d) => sum + d.tasks.length, 0)} {t('josoor.planning.tasks') || 'tasks'}
+        </div>
+
+        {ganttTasks.length > 0 && (
+          <div className="gantt-container">
+            <Gantt
+              tasks={ganttTasks}
+              links={ganttLinks}
+              scales={scales}
+              columns={ganttColumns}
+              cellHeight={38}
+              cellBorders="full"
+            />
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // ── List view ──
+  return (
+    <div className="intervention-container">
+      <h3 style={{ color: 'var(--component-text-primary)', fontSize: '16px', marginBottom: '16px' }}>
+        {t('josoor.planning.savedPlans') || 'Saved Plans'}
+      </h3>
+
+      {isLoading && (
+        <div className="intervention-loading">
+          <Loader2 className="loading-spinner" />
+          <p className="loading-text">{t('josoor.planning.loadingPlans') || 'Loading plans...'}</p>
+        </div>
+      )}
+
+      {error && (
+        <div className="intervention-error">
+          <XCircle className="error-icon" />
+          <span>{error}</span>
+        </div>
+      )}
+
+      {!isLoading && !error && plans.length === 0 && (
+        <div className="intervention-placeholder">
+          <AlertTriangle className="placeholder-icon" />
+          <p className="placeholder-text">{t('josoor.planning.noPlansYet') || 'No saved plans yet.'}</p>
+          <p style={{ color: 'var(--component-text-muted)', fontSize: '12px', marginTop: '8px' }}>
+            {t('josoor.planning.noRiskSelected')}
+          </p>
+        </div>
+      )}
+
+      {!isLoading && plans.length > 0 && (
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+            <thead>
+              <tr style={{ borderBottom: '1px solid var(--component-panel-border)' }}>
+                <th style={{ textAlign: 'left', padding: '8px 10px', color: 'var(--component-text-muted)', fontWeight: 600, fontSize: '11px', textTransform: 'uppercase' }}>
+                  {t('josoor.planning.risk') || 'Risk'}
+                </th>
+                <th style={{ textAlign: 'left', padding: '8px 10px', color: 'var(--component-text-muted)', fontWeight: 600, fontSize: '11px', textTransform: 'uppercase' }}>
+                  {t('josoor.planning.planName') || 'Plan'}
+                </th>
+                <th style={{ textAlign: 'center', padding: '8px 10px', color: 'var(--component-text-muted)', fontWeight: 600, fontSize: '11px', textTransform: 'uppercase' }}>
+                  {t('josoor.planning.deliverables') || 'Deliverables'}
+                </th>
+                <th style={{ textAlign: 'center', padding: '8px 10px', color: 'var(--component-text-muted)', fontWeight: 600, fontSize: '11px', textTransform: 'uppercase' }}>
+                  {t('josoor.planning.tasks') || 'Tasks'}
+                </th>
+                <th style={{ textAlign: 'center', padding: '8px 10px', color: 'var(--component-text-muted)', fontWeight: 600, fontSize: '11px', textTransform: 'uppercase' }}>
+                  {t('josoor.planning.status') || 'Status'}
+                </th>
+                <th style={{ textAlign: 'center', padding: '8px 10px', color: 'var(--component-text-muted)', fontWeight: 600, fontSize: '11px', textTransform: 'uppercase' }}></th>
+              </tr>
+            </thead>
+            <tbody>
+              {plans.map((p) => (
+                <tr
+                  key={p.planId}
+                  style={{
+                    borderBottom: '1px solid rgba(255,255,255,0.05)',
+                    cursor: 'pointer',
+                  }}
+                  onClick={() => handleViewPlan(p)}
+                >
+                  <td style={{ padding: '10px' }}>
+                    <div style={{ color: 'var(--component-text-primary)', fontWeight: 600, fontSize: '13px' }}>{p.riskName || p.riskId}</div>
+                    <div style={{ color: 'var(--component-text-muted)', fontSize: '11px' }}>{p.riskId}</div>
+                  </td>
+                  <td style={{ padding: '10px', color: 'var(--component-text-secondary)' }}>
+                    {p.planName}
+                  </td>
+                  <td style={{ padding: '10px', textAlign: 'center', color: 'var(--component-text-secondary)' }}>
+                    {p.deliverableCount}
+                  </td>
+                  <td style={{ padding: '10px', textAlign: 'center', color: 'var(--component-text-secondary)' }}>
+                    {p.taskCount}
+                  </td>
+                  <td style={{ padding: '10px', textAlign: 'center' }}>
+                    <span style={{
+                      padding: '2px 8px',
+                      borderRadius: '4px',
+                      fontSize: '11px',
+                      fontWeight: 600,
+                      background: p.status === 'Active' ? 'rgba(16,185,129,0.15)' : 'rgba(255,255,255,0.08)',
+                      color: p.status === 'Active' ? 'var(--component-color-success)' : 'var(--component-text-muted)',
+                    }}>
+                      {p.status}
+                    </span>
+                  </td>
+                  <td style={{ padding: '10px', textAlign: 'center' }}>
+                    {loadingPlanId === p.riskId ? (
+                      <Loader2 style={{ width: 14, height: 14, animation: 'spin 1s linear infinite' }} />
+                    ) : (
+                      <span style={{ color: 'var(--component-text-accent)', fontSize: '12px' }}>
+                        {t('josoor.planning.view') || 'View'} →
+                      </span>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {!isLoading && plans.length > 0 && (
+        <p style={{ color: 'var(--component-text-muted)', fontSize: '11px', marginTop: '16px', textAlign: 'center' }}>
+          {t('josoor.planning.noRiskSelected')}
+        </p>
       )}
     </div>
   );

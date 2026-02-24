@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useLanguage } from '../../contexts/LanguageContext';
 import { useOutletContext, useNavigate } from 'react-router-dom';
 import SectorHeaderNav from './sector/SectorHeaderNav';
 import SectorMap from './sector/SectorMap';
@@ -62,10 +63,12 @@ interface SectorDeskProps {
     year?: string;
     quarter?: string;
     onNavigateToCapability?: (capId: string) => void;
+    onContinueInChat?: (conversationId: number) => void;
 }
 
-export const SectorDesk: React.FC<SectorDeskProps> = ({ year: propYear, quarter: propQuarter, onNavigateToCapability }) => {
+export const SectorDesk: React.FC<SectorDeskProps> = ({ year: propYear, quarter: propQuarter, onNavigateToCapability, onContinueInChat }) => {
     const { t } = useTranslation();
+    const { language } = useLanguage();
     const [selectedPillar, setSelectedPillar] = useState('economy');
     const [selectedSector, setSelectedSector] = useState('all');
 
@@ -94,7 +97,7 @@ export const SectorDesk: React.FC<SectorDeskProps> = ({ year: propYear, quarter:
     const [allConnections, setAllConnections] = useState<GraphConnection[]>([]); // Kept for map lines if any
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [selectedYear, setSelectedYear] = useState<string>(year || '2029'); // FIXED: Changed from 2030 to 2029 (data range: 2025-2029)
+    const [selectedYear, setSelectedYear] = useState<string>(year || '2026');
 
     // Sync selectedYear if prop/context year changes
     useEffect(() => {
@@ -716,23 +719,14 @@ export const SectorDesk: React.FC<SectorDeskProps> = ({ year: propYear, quarter:
                 `- ${a.name || a.id}: ${a.status || '?'} (${a.sector || '?'}${a.capacity_metric ? ', ' + a.capacity_metric : ''})`
             ).join('\n');
 
-            const query = `Strategic brief for ${sector} in ${regionId} region, year ${selectedYear}.
-
-Context from database:
-- Region: ${regionId}
-- Sector: ${sector}
-- Year: ${selectedYear}
-- Total assets: ${regionAssets.length} (${existing} existing, ${construction} under construction, ${planned} planned)
-
-Key assets:
-${topAssets || '(none loaded)'}
-
-Instructions:
-Assess the current state of plans for ${sector} in the ${regionId} region based on the data above. Advise whether the plans are on track for ${selectedYear}. Identify specific gaps or risks. Recommend realistic areas for improvement with justification. Use the database facts as the foundation, then add your strategic analysis.`;
+            const query = language === 'ar'
+                ? `أريد موجزاً استراتيجياً لقطاع ${sector} في منطقة ${regionId} لعام ${selectedYear}. المنطقة تضم ${regionAssets.length} أصلاً: ${existing} قائم، ${construction} تحت الإنشاء، ${planned} مخطط. أبرز الأصول:\n${topAssets || 'لا توجد'}\nقيّم جاهزية الخطط لهذا القطاع في هذه المنطقة، حدد الفجوات والمخاطر، وقدّم توصيات عملية مبنية على الواقع.`
+                : `I need a strategy brief for the ${sector} sector in the ${regionId} region for year ${selectedYear}. The region has ${regionAssets.length} assets: ${existing} existing, ${construction} under construction, ${planned} planned. Key assets:\n${topAssets || 'none'}\nAssess plan readiness for this sector in this region, identify gaps and risks, and provide practical evidence-based recommendations.`;
 
             const response = await chatService.sendMessage({
                 query,
-                prompt_key: 'strategy_brief'
+                prompt_key: 'strategy_brief',
+                language
             });
 
             if (response.llm_payload?.answer) {
@@ -960,10 +954,9 @@ Assess the current state of plans for ${sector} in the ${regionId} region based 
                 artifacts={strategyArtifacts}
                 onContinueInChat={() => {
                     setIsStrategyModalOpen(false);
-                    const chatPath = strategyConversationId
-                        ? `/josoor?conversation_id=${strategyConversationId}`
-                        : '/josoor';
-                    navigate(chatPath);
+                    if (strategyConversationId && onContinueInChat) {
+                        onContinueInChat(strategyConversationId);
+                    }
                 }}
             />
         </div>

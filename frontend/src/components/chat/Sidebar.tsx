@@ -54,9 +54,8 @@ const oversightItems = [
 ];
 
 const manageItems = [
-  { id: 'controls-desk', label: { en: 'Signals', ar: 'إشارات' }, icon: '/icons/new.png', path: '/josoor' },
   { id: 'reporting-desk', label: { en: 'Reporting', ar: 'تقارير' }, icon: '/icons/reports.png', path: '/josoor' },
-  { id: 'explorer', label: { en: 'Graph', ar: 'رسم بياني' }, icon: '/icons/dbgraph.png' },
+  { id: 'explorer', label: { en: 'Signals', ar: 'إشارات' }, icon: '/icons/dbgraph.png' },
 ];
 
 const referItems = [
@@ -226,6 +225,7 @@ export function Sidebar({
         {items.map((item) => {
         const overrideLabel = item.label?.[language] || item.label?.en || item.label;
         const isActive = activeView === item.id;
+        const isReportingItem = item.id === 'reporting-desk';
         return (
           <button
             key={item.id}
@@ -233,19 +233,25 @@ export function Sidebar({
               console.log('Sidebar QuickAction Clicked:', item.id);
               onQuickAction(item);
             }}
-            className={`quickaction-item clickable ${isActive ? 'active' : ''}`}
+            className={`quickaction-item clickable ${isActive ? 'active' : ''} ${isReportingItem ? 'sidebar-reporting-item' : ''}`}
             title={overrideLabel}
             style={{
               display: "flex",
               alignItems: "center",
               justifyContent: collapsed ? 'center' : 'flex-start',
-              backgroundColor: isActive ? 'var(--component-bg-disconnected)' : "rgba(0, 0, 0, 0)",
+              backgroundColor: isActive
+                ? 'var(--component-bg-disconnected)'
+                : isReportingItem
+                  ? 'var(--component-panel-bg)'
+                  : "rgba(0, 0, 0, 0)",
               color: 'var(--component-text-primary)',
               fontSize: "13px",
               fontWeight: "400",
               gap: collapsed ? '0' : '8px',
               padding: "6px 6px",
-              border: "0.8px solid rgba(0, 0, 0, 0)",
+              border: isReportingItem
+                ? '0.8px solid var(--component-panel-border)'
+                : "0.8px solid rgba(0, 0, 0, 0)",
               textAlign: "start",
               width: '100%',
               cursor: 'pointer'

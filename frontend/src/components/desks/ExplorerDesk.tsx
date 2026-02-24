@@ -80,18 +80,70 @@ interface ExplorerDeskProps {
  * We use node.elementId (unique Neo4j internal ID) as the graph key.
  * Link.id = "srcElementId-RELTYPE-tgtElementId" — parsed to resolve source/target.
  */
+const NODE_COLOR_MAP: Record<string, string> = {
+    'SectorObjective': '#F4BB30',
+    'SectorPolicyTool': '#D4A017',
+    'SectorAdminRecord': '#B8860B',
+    'SectorDataTransaction': '#DAA520',
+    'SectorCitizen': '#C49102',
+    'SectorBusiness': '#E6A817',
+    'SectorGovEntity': '#A67B00',
+    'SectorPerformance': '#CF9B1D',
+    'EntityCapability': '#F0C040',
+    'EntityRisk': '#D4920A',
+    'EntityProject': '#BFA14A',
+    'EntityChangeAdoption': '#9C7A1E',
+    'EntityITSystem': '#E8B828',
+    'EntityOrgUnit': '#C8A22C',
+    'EntityProcess': '#A08520',
+    'EntityVendor': '#D4AF37',
+    'EntityCultureHealth': '#B59410',
+};
+
+const getNodeColor = (labels: string[]): string => {
+    for (const label of labels) {
+        if (NODE_COLOR_MAP[label]) return NODE_COLOR_MAP[label];
+    }
+    // Hash first label to palette for unknown types
+    const label = labels[0] || '';
+    const FALLBACK = ['#F4BB30', '#D4A017', '#B8860B', '#DAA520', '#C49102', '#E6A817', '#A67B00', '#CF9B1D', '#8B6914', '#F0C040'];
+    let hash = 0;
+    for (let i = 0; i < label.length; i++) hash = ((hash << 5) - hash + label.charCodeAt(i)) | 0;
+    return FALLBACK[Math.abs(hash) % FALLBACK.length];
+};
+
+// Internal keys to exclude from the "properties" bag shown in tooltip
+const INTERNAL_KEYS = new Set(['id', 'elementId', 'color', 'val', 'value', 'group', 'label', 'x', 'y', 'z', 'vx', 'vy', 'vz', 'fx', 'fy', 'fz', 'index', '__indexColor']);
+
 const normalizeGraphData = (data: { nodes: any[], links: any[] }) => {
     const nodes = data.nodes.map((n: any) => {
         const eid = n.elementId || n.id;
-        const labels = n.labels || [];
-        const props = n.properties || {};
-        const displayId = props.id || n.id || props.kpi_id || props.code || null;
-        const displayName = props.name || displayId || eid;
+
+        // Backend returns props FLAT on the node (label, group, year, level, etc.)
+        // NOT nested in n.properties or n.labels
+        const nodeLabel = n.label || '';                       // e.g. "Enhance Regulatory Efficiency"
+        const nodeGroup = n.group || '';                       // e.g. "SectorObjective"
+        const labels = n.labels || (nodeGroup ? [nodeGroup] : []);
+
+        // Collect all flat fields (minus internal keys) as the properties bag
+        const props: Record<string, any> = n.properties || {};
+        // If props is empty, scrape flat fields from the node itself
+        if (Object.keys(props).length === 0) {
+            for (const [k, v] of Object.entries(n)) {
+                if (!INTERNAL_KEYS.has(k) && v !== undefined && v !== null) {
+                    props[k] = v;
+                }
+            }
+        }
+
+        const domainId = n.domain_id || props.domain_id || '';
 
         return {
-            id: eid, elementId: eid, labels, label: labels[0] || 'Unknown',
-            name: displayId ? `${displayId}: ${displayName}` : displayName,
-            properties: props, nProps: props, val: 1,
+            id: eid, elementId: eid, labels, label: labels[0] || nodeGroup || 'Unknown',
+            domain_id: domainId,
+            name: nodeLabel || props.name || props.title || eid,
+            color: n.color || getNodeColor(labels),
+            properties: props, nProps: props, val: n.val || 1,
         };
     });
 
@@ -157,6 +209,7 @@ export function ExplorerDesk({ year = '2025', quarter = 'All' }: ExplorerDeskPro
     const [vizMode, setVizMode] = useState<'3d' | 'sankey'>('3d');
 
     const [liveSummary, setLiveSummary] = useState<string | null>(null);
+    const [selectedNode, setSelectedNode] = useState<any>(null);
 
     const [activeFetchParams, setActiveFetchParams] = useState<{
         labels: string[];
@@ -204,12 +257,6 @@ export function ExplorerDesk({ year = '2025', quarter = 'All' }: ExplorerDeskPro
     const { data: schemaData } = useQuery({
         queryKey: ['neo4j-schema'],
         queryFn: () => graphService.getSchema(),
-        staleTime: Infinity
-    });
-
-    const { data: propertyData } = useQuery({
-        queryKey: ['neo4j-properties'],
-        queryFn: () => graphService.getProperties(),
         staleTime: Infinity
     });
 
@@ -375,13 +422,21 @@ export function ExplorerDesk({ year = '2025', quarter = 'All' }: ExplorerDeskPro
         return active;
     }, [selectedChain]);
 
-    // Node color function matching test page: diagnostic status > label color
+    // Node color function matching test page: diagnostic status > label color > palette hash
     const getNodeColor = useCallback((node: any) => {
         const label = node.labels?.[0] || node.label || '';
         const status = node.properties?.status || node.nProps?.status;
         if (status === 'critical') return '#ef4444';
         if (status === 'orphan' || status === 'bastard') return '#f59e0b';
-        return LABEL_COLORS[label] || '#D4AF37';
+        if (LABEL_COLORS[label]) return LABEL_COLORS[label];
+        // Hash unknown labels to a contrasting palette color instead of gold
+        const FALLBACK_PALETTE = [
+            '#F4BB30', '#D4A017', '#B8860B', '#DAA520', '#C49102',
+            '#E6A817', '#A67B00', '#CF9B1D', '#8B6914', '#F0C040',
+        ];
+        let hash = 0;
+        for (let i = 0; i < label.length; i++) hash = ((hash << 5) - hash + label.charCodeAt(i)) | 0;
+        return FALLBACK_PALETTE[Math.abs(hash) % FALLBACK_PALETTE.length];
     }, []);
 
     return (
@@ -401,6 +456,7 @@ export function ExplorerDesk({ year = '2025', quarter = 'All' }: ExplorerDeskPro
                 onVizModeChange={setVizMode}
                 onApply={handleApply}
                 isDark={isDark}
+                selectedNode={selectedNode}
             />
 
             <div ref={contentRef} className="explorer-content custom-scrollbar">
@@ -468,6 +524,7 @@ export function ExplorerDesk({ year = '2025', quarter = 'All' }: ExplorerDeskPro
                             quarter={quarter}
                             legendConfig={LEGEND_CONFIG}
                             nodeColor={getNodeColor}
+                            onNodeClick={setSelectedNode}
                         />
                     )}
 

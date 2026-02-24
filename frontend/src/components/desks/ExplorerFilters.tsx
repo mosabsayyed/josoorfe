@@ -8,7 +8,8 @@ import {
     FileText,
     Activity,
     Network,
-    Eye
+    Eye,
+    Info
 } from 'lucide-react';
 
 interface ExplorerFiltersProps {
@@ -28,6 +29,7 @@ interface ExplorerFiltersProps {
     availableLabels?: string[];
     availableRelationships?: string[];
     isDark?: boolean;
+    selectedNode?: any;
 }
 
 // Authoritative Ontology Labels (SST v1.1)
@@ -68,6 +70,16 @@ const BUSINESS_CHAINS = [
     { id: 'integrated_oversight', key: 'integrated_oversight' }
 ];
 
+// Keys to hide from the details panel — internal/rendering fields only
+const HIDDEN_PROPS = new Set([
+    'id', 'elementId', 'color', 'val', 'value', 'x', 'y', 'z',
+    'vx', 'vy', 'vz', 'fx', 'fy', 'fz', 'index', '__indexColor',
+    '_val', 'nProps', 'properties', 'name', 'labels'
+]);
+
+// Priority fields shown at the top in fixed order
+const PRIORITY_FIELDS = ['domain_id', 'label', 'group', 'level', 'year', 'status', 'sector', 'domain'];
+
 export function ExplorerFilters({
     selectedLabels,
     selectedRelationships,
@@ -82,13 +94,14 @@ export function ExplorerFilters({
     onChainChange,
     onVizModeChange,
     onApply,
-    // Ignore dynamic props, use SST authoritatively
     availableLabels = SST_LABELS,
     availableRelationships = SST_RELATIONSHIPS,
-    isDark = true
+    isDark = true,
+    selectedNode
 }: ExplorerFiltersProps) {
     const { t } = useTranslation();
     const [isExpanded, setIsExpanded] = useState(true);
+    const [detailsOpen, setDetailsOpen] = useState(true);
 
     const toggleLabel = (label: string) => {
         if (selectedLabels.includes(label)) {
@@ -128,6 +141,48 @@ export function ExplorerFilters({
         }
     };
 
+    // Build structured node details
+    const nodeInfo = React.useMemo(() => {
+        if (!selectedNode) return null;
+        const props = selectedNode.properties || selectedNode.nProps || {};
+
+        // Merge all sources into one flat map
+        const all: Record<string, any> = {};
+        for (const [k, v] of Object.entries(selectedNode)) {
+            if (v !== undefined && v !== null && typeof v !== 'object') all[k] = v;
+        }
+        for (const [k, v] of Object.entries(props)) {
+            const kl = k.toLowerCase();
+            if (kl.includes('embedding') || kl.includes('vector') || k === 'embedding_generated_at') continue;
+            if (Array.isArray(v) && v.length > 20) continue;
+            all[k] = v;
+        }
+
+        const domainId = all.domain_id || '';
+        const name = selectedNode.name || all.label || all.name || selectedNode.id || 'Node';
+        const type = (selectedNode.labels && selectedNode.labels.length > 0)
+            ? selectedNode.labels.filter((l: string) => l !== 'Unknown')[0] || ''
+            : (all.group || '');
+
+        // Priority rows (only if they exist)
+        const priority: { key: string; value: string }[] = [];
+        for (const f of PRIORITY_FIELDS) {
+            if (all[f] !== undefined && all[f] !== null && String(all[f]).trim()) {
+                priority.push({ key: f, value: String(all[f]) });
+            }
+        }
+
+        // Remaining rows (everything else, skip hidden + priority + embedding)
+        const prioritySet = new Set(PRIORITY_FIELDS);
+        const rest: { key: string; value: string }[] = [];
+        for (const [k, v] of Object.entries(all)) {
+            if (HIDDEN_PROPS.has(k) || prioritySet.has(k)) continue;
+            rest.push({ key: k, value: typeof v === 'object' ? JSON.stringify(v) : String(v) });
+        }
+
+        return { domainId, name, type, priority, rest };
+    }, [selectedNode]);
+
     return (
         <div className={`explorer-filters-overlay ${isExpanded ? 'expanded' : 'collapsed'}`}>
             <div className="filters-card">
@@ -136,10 +191,10 @@ export function ExplorerFilters({
                     onClick={() => setIsExpanded(!isExpanded)}
                 >
                     <div className="filters-header-title">
-                        <Filter className={`w-4 h-4 ${isDark ? 'text-gold' : 'text-primary'}`} />
-                        {isExpanded && <span className="text-sm font-semibold">{t('josoor.explorerFilters.graphControls')}</span>}
+                        <Filter style={{ width: 16, height: 16, color: 'var(--studio-accent)' }} />
+                        {isExpanded && <span style={{ fontSize: '0.875rem', fontWeight: 600 }}>{t('josoor.explorerFilters.graphControls')}</span>}
                     </div>
-                    {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                    {isExpanded ? <ChevronUp style={{ width: 16, height: 16 }} /> : <ChevronDown style={{ width: 16, height: 16 }} />}
                 </div>
 
                 {isExpanded && (
@@ -147,7 +202,7 @@ export function ExplorerFilters({
                         {/* Business Chains */}
                         <div className="filter-section">
                             <label className="filter-section-label">
-                                <Network className="w-3 h-3" /> {t('josoor.explorerFilters.businessChains')}
+                                <Network style={{ width: 12, height: 12 }} /> {t('josoor.explorerFilters.businessChains')}
                             </label>
                             <select
                                 className="native-select"
@@ -164,20 +219,20 @@ export function ExplorerFilters({
                         {/* Query Mode */}
                         <div className="filter-section">
                             <label className="filter-section-label">
-                                <Activity className="w-3 h-3" /> {t('josoor.explorerFilters.queryMode')}
+                                <Activity style={{ width: 12, height: 12 }} /> {t('josoor.explorerFilters.queryMode')}
                             </label>
                             <div className="mode-toggle-group">
                                 <button
                                     className={`btn-reset mode-toggle-btn ${queryType === 'narrative' ? 'active' : ''}`}
                                     onClick={() => onQueryTypeChange('narrative')}
                                 >
-                                    <FileText className="w-3 h-3 mr-1" /> {t('josoor.explorerFilters.narrative')}
+                                    <FileText style={{ width: 12, height: 12, marginRight: 4 }} /> {t('josoor.explorerFilters.narrative')}
                                 </button>
                                 <button
                                     className={`btn-reset mode-toggle-btn ${queryType === 'diagnostic' ? 'active' : ''}`}
                                     onClick={() => onQueryTypeChange('diagnostic')}
                                 >
-                                    <Activity className="w-3 h-3 mr-1" /> {t('josoor.explorerFilters.diagnostic')}
+                                    <Activity style={{ width: 12, height: 12, marginRight: 4 }} /> {t('josoor.explorerFilters.diagnostic')}
                                 </button>
                             </div>
                         </div>
@@ -185,7 +240,7 @@ export function ExplorerFilters({
                         {/* Visualization Mode */}
                         <div className="filter-section">
                             <label className="filter-section-label">
-                                <Eye className="w-3 h-3" /> {t('josoor.explorerFilters.visualization')}
+                                <Eye style={{ width: 12, height: 12 }} /> {t('josoor.explorerFilters.visualization')}
                             </label>
                             <div className="mode-toggle-group">
                                 <button
@@ -211,7 +266,7 @@ export function ExplorerFilters({
                                 {sectorLabels.length > 0 && (
                                     <div>
                                         <div className="ontology-subgroup-header">
-                                            <p className="ontology-subgroup-title">{t('josoor.explorerFilters.sectorLayer')}</p>
+                                            <span className="ontology-subgroup-title">{t('josoor.explorerFilters.sectorLayer')}</span>
                                             <button
                                                 className="btn-reset select-all-btn"
                                                 onClick={() => selectAllNodesInGroup(sectorLabels)}
@@ -239,7 +294,7 @@ export function ExplorerFilters({
                                 {entityLabels.length > 0 && (
                                     <div className="ontology-subgroup">
                                         <div className="ontology-subgroup-header">
-                                            <p className="ontology-subgroup-title">{t('josoor.explorerFilters.enterpriseLayer')}</p>
+                                            <span className="ontology-subgroup-title">{t('josoor.explorerFilters.enterpriseLayer')}</span>
                                             <button
                                                 className="btn-reset select-all-btn"
                                                 onClick={() => selectAllNodesInGroup(entityLabels)}
@@ -267,7 +322,7 @@ export function ExplorerFilters({
                                 {otherLabels.length > 0 && (
                                     <div className="ontology-subgroup">
                                         <div className="ontology-subgroup-header">
-                                            <p className="ontology-subgroup-title">{t('josoor.explorerFilters.otherNodes')}</p>
+                                            <span className="ontology-subgroup-title">{t('josoor.explorerFilters.otherNodes')}</span>
                                             <button
                                                 className="btn-reset select-all-btn"
                                                 onClick={() => selectAllNodesInGroup(otherLabels)}
@@ -296,8 +351,8 @@ export function ExplorerFilters({
 
                         {/* Relationships */}
                         <div className="filter-section">
-                            <div className="filter-section-header">
-                                <label className="filter-section-label">{t('josoor.explorerFilters.relationships')}</label>
+                            <div className="ontology-subgroup-header">
+                                <span className="filter-section-label">{t('josoor.explorerFilters.relationships')}</span>
                                 <button
                                     className="btn-reset select-all-btn"
                                     onClick={selectAllRels}
@@ -327,7 +382,7 @@ export function ExplorerFilters({
                             <input
                                 type="range"
                                 min="50"
-                                max="1000"
+                                max="20000"
                                 step="50"
                                 value={limit}
                                 onChange={(e) => onLimitChange(parseInt(e.target.value))}
@@ -347,6 +402,73 @@ export function ExplorerFilters({
                                 <Play className="w-4 h-4 mr-2" /> {t('josoor.explorerFilters.fetchLiveGraph')}
                             </button>
                         </div>
+                    </div>
+                )}
+
+                {/* Node Details Panel — persistent, below filters */}
+                {isExpanded && (
+                    <div className="node-details-panel">
+                        <div
+                            className="node-details-header"
+                            onClick={() => setDetailsOpen(!detailsOpen)}
+                        >
+                            <div className="node-details-header-title">
+                                <Info style={{ width: 16, height: 16, color: 'var(--studio-accent)' }} />
+                                <span style={{ fontSize: '0.875rem', fontWeight: 600 }}>{t('josoor.explorerFilters.nodeDetails', 'Node Details')}</span>
+                            </div>
+                            {detailsOpen ? <ChevronDown style={{ width: 16, height: 16 }} /> : <ChevronUp style={{ width: 16, height: 16 }} />}
+                        </div>
+                        {detailsOpen && (
+                            <div className="node-details-body custom-scrollbar">
+                                {!nodeInfo ? (
+                                    <div className="node-details-empty">
+                                        {t('josoor.explorerFilters.clickNodeToInspect', 'Click a node to inspect')}
+                                    </div>
+                                ) : (
+                                    <>
+                                        {/* Identity block — domain_id + name + type badge */}
+                                        <div className="node-details-identity">
+                                            <div className="node-details-name">
+                                                {nodeInfo.domainId && <span className="node-details-id">{nodeInfo.domainId}</span>}
+                                                {nodeInfo.name}
+                                            </div>
+                                            {nodeInfo.type && <div className="node-details-type">{nodeInfo.type}</div>}
+                                        </div>
+
+                                        {/* Core properties */}
+                                        {nodeInfo.priority.length > 0 && (
+                                            <table className="node-details-table">
+                                                <tbody>
+                                                    {nodeInfo.priority.map(({ key, value }) => (
+                                                        <tr key={key}>
+                                                            <td className="node-details-td-key">{key}</td>
+                                                            <td className="node-details-td-val">{value}</td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        )}
+
+                                        {/* Additional properties */}
+                                        {nodeInfo.rest.length > 0 && (
+                                            <div className="node-details-table-rest">
+                                                <div className="node-details-section-label">{t('josoor.explorerFilters.additionalProperties', 'Additional')}</div>
+                                                <table className="node-details-table">
+                                                    <tbody>
+                                                        {nodeInfo.rest.map(({ key, value }) => (
+                                                            <tr key={key}>
+                                                                <td className="node-details-td-key">{key}</td>
+                                                                <td className="node-details-td-val">{value}</td>
+                                                            </tr>
+                                                        ))}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        )}
+                                    </>
+                                )}
+                            </div>
+                        )}
                     </div>
                 )}
             </div>

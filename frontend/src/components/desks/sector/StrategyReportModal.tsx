@@ -18,6 +18,7 @@ interface StrategyReportModalProps {
     onContinueInChat: () => void;
     interventionOptions?: InterventionOption[] | null;
     onSelectOption?: (option: InterventionOption) => void;
+    title?: string;
 }
 
 // OptionCard extracted to avoid hook-in-callback issues with hover state
@@ -111,7 +112,8 @@ const StrategyReportModal: React.FC<StrategyReportModalProps> = ({
     artifacts = [],
     onContinueInChat,
     interventionOptions,
-    onSelectOption
+    onSelectOption,
+    title
 }) => {
     const { t } = useTranslation();
     // Create artifact lookup map by ID for inline rendering
@@ -161,7 +163,7 @@ const StrategyReportModal: React.FC<StrategyReportModalProps> = ({
                                     <span style={{ color: 'black', fontWeight: 800, fontSize: '14px' }}>{t('josoor.sector.report.aiBadge')}</span>
                                 </div>
                                 <h2 style={{ margin: 0, color: 'var(--component-text-primary)', fontSize: '1.25rem', fontWeight: 700, letterSpacing: '-0.02em' }}>
-                                    {t('josoor.sector.strategyReport')}
+                                    {title || t('josoor.sector.strategyReport')}
                                 </h2>
                             </div>
                             <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>

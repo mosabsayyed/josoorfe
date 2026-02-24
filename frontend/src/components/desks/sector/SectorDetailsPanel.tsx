@@ -49,132 +49,92 @@ interface SectorOutput {
     color: string;
 }
 
-// Helper to parse capacity metrics
+// Helper to parse capacity metrics from mixed text+number strings.
+// Data contains formats like: "2.9M m3/day", "600k m3/day", "4000+ MW", "3.6 GW",
+// "30k Homes", "155k Vehicles/yr", "400k bpd", "25M tonnes ore", "92760 seats", etc.
 function parseCapacityMetric(metric?: string): number {
     if (!metric) return 0;
 
-    // Clean up the metric string
-    const cleaned = metric.toLowerCase().trim().replace(/,/g, '').replace(/~/g, '').replace(/–/g, '-').replace(/\s+/g, ' ');
+    const cleaned = metric.toLowerCase().trim()
+        .replace(/,/g, '').replace(/~/g, '').replace(/–/g, '-')
+        .replace(/\+/g, '').replace(/>/g, '').replace(/</g, '')
+        .replace(/\s+/g, ' ');
 
-    console.log('[CAPACITY PARSE] Input:', metric, '→ Cleaned:', cleaned);
+    // No digits at all → purely descriptive text (e.g. "Copper Concentrate", "Gold Ore")
+    if (!/\d/.test(cleaned)) return 0;
 
-    // Skip descriptive text (not numeric capacity values) — 'combined' is NOT descriptive, it's valid data
-    const descriptivePatterns = [
-        'tax-free', 'aviation hub', 'modon', 'container support', 'warehousing',
-        'thermal', 'complex', 'integrated', 'port-centric', 'ev production',
-        'multiple high-investment', 'various', 'cluster', 'lines'
-    ];
-    
-    if (descriptivePatterns.some(pattern => cleaned.includes(pattern))) {
-        console.log('[CAPACITY PARSE] Skipped (descriptive):', metric);
-        return 0;
-    }
-
-    // Extract numeric value (handle ranges like "0.5-3M" by taking the higher value)
-    let match = cleaned.match(/(\d+\.?\d*)\s*-\s*(\d+\.?\d*)/);
+    // Step 1: Extract number + optional multiplier suffix (M/k/G/B)
+    // Try range first: "0.5-3M", "100-200k"
     let value = 0;
-    
-    if (match) {
-        // Range found, use the higher value
-        value = Math.max(parseFloat(match[1]), parseFloat(match[2]));
-        console.log('[CAPACITY PARSE] Range detected:', match[1], '-', match[2], '→ Using:', value);
-    } else {
-        // Single value
-        match = cleaned.match(/(\d+\.?\d*)/);
-        if (!match) {
-            console.log('[CAPACITY PARSE] No numeric value found');
-            return 0;
+    let multiplier = 1;
+
+    const rangeMatch = cleaned.match(/(\d+\.?\d*)\s*-\s*(\d+\.?\d*)\s*([mkgb])?/i);
+    const singleMatch = cleaned.match(/(\d+\.?\d*)\s*([mkgb])?\b/i);
+
+    if (rangeMatch && cleaned.includes('-') && rangeMatch[1] !== rangeMatch[2]) {
+        value = Math.max(parseFloat(rangeMatch[1]), parseFloat(rangeMatch[2]));
+        const suffix = (rangeMatch[3] || '').toLowerCase();
+        multiplier = suffix === 'm' ? 1000000 : suffix === 'k' ? 1000 : suffix === 'g' ? 1000000000 : suffix === 'b' ? 1000000000 : 1;
+    } else if (singleMatch) {
+        value = parseFloat(singleMatch[1]);
+        const suffix = (singleMatch[2] || '').toLowerCase();
+        multiplier = suffix === 'm' ? 1000000 : suffix === 'k' ? 1000 : suffix === 'g' ? 1000000000 : suffix === 'b' ? 1000000000 : 1;
+    }
+
+    if (value === 0 || isNaN(value)) return 0;
+
+    // Step 2: Unit-specific parsing (some units need special multiplier handling)
+
+    // Water: "2.9M m3/day", "600k m3/day", "2.5M m3 Storage", "5000 m3/day"
+    if (cleaned.includes('m3') || cleaned.includes('m³')) {
+        const waterMatch = cleaned.match(/(\d+\.?\d*)\s*([mk])?\s*m[3³]/i);
+        if (waterMatch) {
+            const num = parseFloat(waterMatch[1]);
+            const pfx = (waterMatch[2] || '').toLowerCase();
+            return pfx === 'm' ? num * 1000000 : pfx === 'k' ? num * 1000 : num;
         }
-        value = parseFloat(match[1]);
-        console.log('[CAPACITY PARSE] Single value:', value);
+        return value * multiplier;
     }
 
-    // Handle multipliers and units
-    let result = 0;
-
-    // Water capacity: m3/day or m³/day — handle M/k prefixes before unit
-    if (cleaned.includes('m3/day') || cleaned.includes('m³/day')) {
-        const prefixMatch = cleaned.match(/(\d+\.?\d*)([mk])\s*m[3³]\/day/i);
-        if (prefixMatch) {
-            const num = parseFloat(prefixMatch[1]);
-            const prefix = prefixMatch[2].toLowerCase();
-            result = prefix === 'm' ? num * 1000000 : prefix === 'k' ? num * 1000 : num;
-            console.log('[CAPACITY PARSE] Water with prefix:', prefixMatch[1], prefixMatch[2], '→', result);
-        } else if (cleaned.includes('m m3') || cleaned.match(/\d+\.?\d*m m/)) {
-            result = value * 1000000; // "2.9M m3/day"
-        } else if (cleaned.includes('k m3') || cleaned.match(/\d+\.?\d*k m/)) {
-            result = value * 1000; // "600k m3/day"
-        } else {
-            result = value; // Plain number
-        }
-        console.log('[CAPACITY PARSE] Water (m3/day):', value, '→', result);
-        return result;
+    // Power: "3927 MW", "3.6 GW", "4000 MW" — GW converted to MW
+    if (cleaned.includes('gw')) {
+        const gwMatch = cleaned.match(/(\d+\.?\d*)\s*gw/);
+        return gwMatch ? parseFloat(gwMatch[1]) * 1000 : value * 1000;
+    }
+    if (cleaned.includes('mw')) {
+        const mwMatch = cleaned.match(/(\d+\.?\d*)\s*mw/);
+        return mwMatch ? parseFloat(mwMatch[1]) : value;
     }
 
-    // Power: MW or GW
-    if (cleaned.includes('mw') || cleaned.includes('gw')) {
-        if (cleaned.includes('gw')) {
-            result = value * 1000; // Convert GW to MW
-        } else {
-            result = value;
-        }
-        console.log('[CAPACITY PARSE] Power:', value, '→', result);
-        return result;
-    }
+    // For all remaining unit types, the multiplier is already captured above
+    const result = value * multiplier;
 
-    // Vehicles
-    if (cleaned.includes('vehicle') || cleaned.includes('cars') || cleaned.match(/vehicles?\/yr/)) {
-        if (cleaned.includes('k')) {
-            result = value * 1000;
-        } else {
-            result = value;
-        }
-        console.log('[CAPACITY PARSE] Vehicles:', value, '→', result);
-        return result;
-    }
+    // Barrels per day: "400k bpd"
+    if (cleaned.includes('bpd') || cleaned.includes('barrels')) return result;
 
-    // Passengers
-    if (cleaned.includes('pax') || cleaned.includes('passenger')) {
-        if (cleaned.includes('m ') || cleaned.match(/\d+\.?\d*m\s/)) {
-            result = value * 1000000;
-        } else if (cleaned.includes('k')) {
-            result = value * 1000;
-        } else {
-            result = value;
-        }
-        console.log('[CAPACITY PARSE] Passengers:', value, '→', result);
-        return result;
-    }
+    // Vehicles: "155k Vehicles/yr"
+    if (cleaned.includes('vehicle') || cleaned.includes('cars')) return result;
 
-    // Housing/Hotels/Stadiums
-    if (cleaned.includes('units') || cleaned.includes('keys') || cleaned.includes('seats')) {
-        if (cleaned.includes('k-') || cleaned.includes('k ')) {
-            result = value * 1000;
-        } else if (cleaned.includes('m ') || cleaned.match(/\d+m\s/)) {
-            result = value * 1000000;
-        } else {
-            result = value;
-        }
-        console.log('[CAPACITY PARSE] Units/Keys/Seats:', value, '→', result);
-        return result;
-    }
+    // Passengers: "3m Pax"
+    if (cleaned.includes('pax') || cleaned.includes('passenger')) return result;
 
-    // Area
-    if (cleaned.includes('km²') || cleaned.includes('sq km') || cleaned.includes('m²')) {
-        result = value;
-        console.log('[CAPACITY PARSE] Area:', value, '→', result);
-        return result;
-    }
+    // Housing: "30k Homes", "units", "residential"
+    if (cleaned.includes('home') || cleaned.includes('units') || cleaned.includes('residential')) return result;
 
-    // Material throughput
-    if (cleaned.includes('mt') && cleaned.includes('daily')) {
-        result = value;
-        console.log('[CAPACITY PARSE] Material (MT):', value, '→', result);
-        return result;
-    }
+    // Hotels: "3000 Hotel Keys"
+    if (cleaned.includes('keys') || cleaned.includes('hotel')) return result;
 
-    console.log('[CAPACITY PARSE] Unrecognized format, returning 0');
-    return 0;
+    // Seats: "92760 seats"
+    if (cleaned.includes('seats')) return result;
+
+    // Area: "440 sq km", "40000 m2"
+    if (cleaned.includes('km') || cleaned.includes('sq') || cleaned.includes('m2') || cleaned.includes('m²') || cleaned.includes('sqm')) return result;
+
+    // Material: "10000 MT Daily", "25M tonnes ore"
+    if (cleaned.includes('mt') || cleaned.includes('tonne') || cleaned.includes('ton') || cleaned.includes('mtpa') || cleaned.includes('ore')) return result;
+
+    // Fallback: return extracted number (never silently drop valid numeric data)
+    return result;
 }
 
 // Format numbers with proper units

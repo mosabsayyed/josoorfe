@@ -62,6 +62,7 @@ export function GraphSankey({ data, isDark = true, chain, metadata, isDiagnostic
     const [tooltip, setTooltip] = useState<{ x: number; y: number; content: React.ReactNode } | null>(null);
     const containerRef = React.useRef<HTMLDivElement>(null);
     const tooltipTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+    const isRTL = document.documentElement.dir === 'rtl' || document.documentElement.lang === 'ar';
 
     const getColumnDisplayLabel = (labelRaw: any, level?: string) => {
         let labels: string[] = [];
@@ -138,12 +139,13 @@ export function GraphSankey({ data, isDark = true, chain, metadata, isDiagnostic
         const availableWidth = width - padding.left - padding.right;
         const UNIT_HEIGHT = 4; // height per connection thread — thin for 1, visibly thicker for many
         const NODE_GAP = 14; // vertical gap between nodes in a column
-        const MIN_NODE_HEIGHT = 28; // minimum node rect height (ensures text fits)
+        const MIN_NODE_HEIGHT = 40; // minimum node rect height (ensures text fits)
 
-        const colCount = Math.max(1, columns.length);
-        const cellWidth = availableWidth / colCount;
-        const colWidth = Math.max(90, Math.min(120, cellWidth * 0.6));
-        const colSpacing = colCount > 1 ? Math.max(18, (availableWidth - (colWidth * colCount)) / (colCount - 1)) : 0;
+        // Ping-pong: always 2 visual columns (LEFT / RIGHT), N rows
+        const colWidth = Math.max(140, Math.min(220, availableWidth * 0.3));
+        const colSpacing = availableWidth - 2 * colWidth; // gap between left and right columns
+        const LEFT_X = padding.left;
+        const RIGHT_X = padding.left + colWidth + colSpacing;
 
         const normalizeLabels = (labelRaw: any): string[] => {
             if (Array.isArray(labelRaw)) return labelRaw.map(String);
@@ -228,34 +230,8 @@ export function GraphSankey({ data, isDark = true, chain, metadata, isDiagnostic
             const isOrphanOrBastard = isDiagnostic && (props.status === 'orphan' || props.status === 'bastard');
             const isVirtual = props.virtual === true;
 
-            // Color by label type
-            const labelColorMap: Record<string, string> = {
-                SectorObjective: '#3b82f6',
-                SectorPolicyTool: '#8b5cf6',
-                SectorAdminRecord: '#06b6d4',
-                SectorBusiness: '#f59e0b',
-                SectorCitizen: '#10b981',
-                SectorGovEntity: '#ef4444',
-                SectorDataTransaction: '#ec4899',
-                SectorPerformance: '#f97316',
-                EntityCapability: '#6366f1',
-                EntityOrgUnit: '#14b8a6',
-                EntityProcess: '#a855f7',
-                EntityITSystem: '#0ea5e9',
-                EntityProject: '#84cc16',
-                EntityChangeAdoption: '#e879f9',
-                EntityRisk: '#f43f5e',
-                EntityCultureHealth: '#22d3ee',
-                EntityVendor: '#fb923c',
-            };
-            const primaryLabel = labels[0] || '';
-            const baseColor = labelColorMap[primaryLabel] || (isDark ? '#1a365d' : '#2563eb');
-
-            // Red = disconnected, Orange = dead-end/orphan, label color = normal
-            const nodeColor = isBroken ? '#ef4444'
-                : isOrphanOrBastard ? '#f59e0b'
-                    : isVirtual ? '#D4AF37'
-                        : baseColor;
+            // Simple: one color for normal, red for broken (diagnostic)
+            const nodeColor = isBroken ? '#ef4444' : (isDark ? '#1F2937' : '#FFFFFF');
 
             return {
                 id,
@@ -500,7 +476,7 @@ export function GraphSankey({ data, isDark = true, chain, metadata, isDiagnostic
                     tgtNode: rightNode,
                     isVirtual: !!l.rProps?.virtual,
                     type: linkType,
-                    color: l.rProps?.virtual ? '#D4AF37' : (isDark ? 'rgba(212,175,55,0.35)' : 'rgba(100,100,100,0.3)'),
+                    color: l.rProps?.virtual ? '#D4AF37' : (isDark ? 'rgba(212,175,55,0.35)' : 'rgba(184,134,11,0.4)'),
                     weight: w
                 });
             }
@@ -519,28 +495,31 @@ export function GraphSankey({ data, isDark = true, chain, metadata, isDiagnostic
             }
         });
 
-        // --- Assign X/Y positions ---
+        // --- Assign X/Y positions (Ping-Pong: 2 columns, N rows) ---
+        // Each stepIndex gets its own horizontal row-band, alternating LEFT/RIGHT
+        const ROW_GAP = 40; // vertical gap between step groups
+        let runningY = padding.top + 40; // start below header area
+
         nodesByCol.forEach((colNodes, colIndex) => {
-            const x = padding.left + colIndex * (colWidth + colSpacing);
-            let y = padding.top;
+            if (colNodes.length === 0) return;
+            const isLeft = colIndex % 2 === 0;
+            const x = isLeft ? LEFT_X : RIGHT_X;
+            let y = runningY;
             colNodes.forEach(node => {
                 node.x = x;
                 node.y = y;
                 node.width = colWidth;
                 y += node.height! + NODE_GAP;
             });
+            // Advance runningY past this group
+            runningY = y + ROW_GAP;
         });
 
         // Flatten nodes in render order
         nodes = nodesByCol.flat();
 
-        // Compute total height from tallest column
-        const maxColHeight = nodesByCol.reduce((max, col) => {
-            if (col.length === 0) return max;
-            const last = col[col.length - 1];
-            return Math.max(max, last.y! + last.height! + padding.bottom);
-        }, 680);
-        const height = Math.max(680, maxColHeight);
+        // Compute total height
+        const height = Math.max(900, runningY + padding.bottom);
 
         // --- Aggregate links into bands between (sourceNode, targetNode) pairs ---
         const bandKey = (src: Node, tgt: Node) => `${src.originalId}::${tgt.originalId}`;
@@ -597,19 +576,21 @@ export function GraphSankey({ data, isDark = true, chain, metadata, isDiagnostic
         return { nodes, links, width, height, colWidth };
     }, [data, columns, isDark, isDiagnostic, metadata?.canonicalPath]);
 
-    // Render a thick Sankey band as a filled <path> between two vertical ranges
+    // Render a thick Sankey band — handles both L→R and R→L (ping pong)
     const getBandPath = (link: any) => {
-        const sx = link.source.x! + link.source.width!; // right edge of source
-        const tx = link.target.x!;                        // left edge of target
-        const sy0 = link.srcY;                            // top of band at source
-        const sy1 = link.srcY + link.bandHeight;          // bottom of band at source
-        const ty0 = link.tgtY;                            // top of band at target
-        const ty1 = link.tgtY + link.bandHeight;          // bottom of band at target
+        const srcIsLeft = link.source.x! < link.target.x!;
+        // Source exit point: right edge if going right, left edge if going left
+        const sx = srcIsLeft ? link.source.x! + link.source.width! : link.source.x!;
+        // Target entry point: left edge if coming from left, right edge if coming from right
+        const tx = srcIsLeft ? link.target.x! : link.target.x! + link.target.width!;
 
-        const dx = (tx - sx) * 0.5;
+        const sy0 = link.srcY;
+        const sy1 = link.srcY + link.bandHeight;
+        const ty0 = link.tgtY;
+        const ty1 = link.tgtY + link.bandHeight;
 
-        // Top curve: source-top → target-top (cubic bezier)
-        // Bottom curve: target-bottom → source-bottom (cubic bezier, reversed)
+        const dx = (tx - sx) * 0.15;
+
         return `M ${sx} ${sy0}
                 C ${sx + dx} ${sy0}, ${tx - dx} ${ty0}, ${tx} ${ty0}
                 L ${tx} ${ty1}
@@ -627,96 +608,46 @@ export function GraphSankey({ data, isDark = true, chain, metadata, isDiagnostic
 
     return (
         <div ref={containerRef} className="graph-sankey">
-            {/* Header Info */}
-            <div style={{
-                padding: '0.5rem 0.5rem',
-                borderBottom: `1px solid ${isDark ? '#333' : '#e5e7eb'}`,
-                backgroundColor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)'
-            }}>
-                <div style={{ fontSize: '0.7rem', fontWeight: 700, color: isDark ? '#9ca3af' : '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.25rem' }}>
-                    {t('josoor.explorer.sankey.canonicalFlow')}
-                </div>
-                <div style={{ fontSize: '0.85rem', color: isDark ? '#d1d5db' : '#374151', lineHeight: 1.4, wordBreak: 'break-word' }}>
-                    {columns.map((c: any, i) => {
-                        const displayText = getColumnDisplayLabel(c.label, c.level);
-                        return (
-                            <span key={i}>
-                                {i > 0 && <span style={{ margin: '0 0.5rem', opacity: 0.5 }}>→</span>}
-                                <span style={{ whiteSpace: 'nowrap' }}>{displayText}</span>
-                            </span>
-                        );
-                    })}
-                </div>
-            </div>
 
             <div className="graph-sankey-scroll custom-scrollbar">
-                <svg width="100%" height={Math.max(600, layout.height)} viewBox={`0 0 ${layout.width || 1200} ${layout.height}`} style={{ minHeight: '600px' }}>
+                <svg width="100%" height={Math.max(900, layout.height)} viewBox={`0 0 ${layout.width || 1200} ${Math.max(900, layout.height)}`} style={{ minHeight: '100%' }}>
 
-                    {/* Headers (Inside SVG for Alignment) */}
+                    {/* Step Headers — inline with each step group (ping pong) */}
                     {columns.map((col: any, i) => {
-                        const nodeSample = layout.nodes.find(n => n.column === i);
-                        const x = nodeSample ? nodeSample.x! : (20 + i * 200); // Fallback
+                        const groupNodes = layout.nodes.filter(n => n.column === i);
+                        if (groupNodes.length === 0) return null;
+                        const firstNode = groupNodes[0];
+                        const x = firstNode.x!;
+                        const hasSubs = firstNode.entityTypeSubHeader;
+                        const groupTopY = firstNode.y! - (hasSubs ? 42 : 18);
 
-                        const displayText = getColumnDisplayLabel(col.label, col.level).toUpperCase();
+                        const displayText = `${i + 1}. ${getColumnDisplayLabel(col.label, col.level)}`.toUpperCase();
+                        const isLeft = i % 2 === 0;
 
-                        const charsPerLine = Math.max(8, Math.floor((layout.colWidth - 12) / 7));
-                        const lines: string[] = [];
-                        let remaining = displayText;
-                        while (remaining.length > 0) {
-                            if (remaining.length <= charsPerLine) {
-                                lines.push(remaining);
-                                remaining = '';
-                            } else {
-                                const chunk = remaining.substring(0, charsPerLine);
-                                const lastSpace = chunk.lastIndexOf(' ');
-                                if (lastSpace > 0) {
-                                    lines.push(remaining.substring(0, lastSpace));
-                                    remaining = remaining.substring(lastSpace + 1);
-                                } else {
-                                    lines.push(chunk);
-                                    remaining = remaining.substring(charsPerLine);
-                                }
-                            }
-                        }
-                        const lineHeight = 12;
-                        const headerPadY = 3;
-                        const headerWidth = layout.colWidth * 1.05;
-                        const headerX = x - (headerWidth - layout.colWidth) / 2;
-                        const headerHeight = headerPadY * 2 + lines.length * lineHeight;
+                        // In RTL, flip anchor: left columns anchor end (right-align), right columns anchor start (left-align)
+                        const anchor = isRTL
+                            ? (isLeft ? 'end' : 'start')
+                            : (isLeft ? 'start' : 'end');
+                        const headX = isRTL
+                            ? (isLeft ? x + layout.colWidth : x)
+                            : (isLeft ? x : x + layout.colWidth);
 
                         return (
-                            <g key={`head-${i}`}>
-                                <rect
-                                    x={headerX}
-                                    y={5}
-                                    width={headerWidth}
-                                    height={headerHeight}
-                                    rx={4}
-                                    fill={isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}
-                                    stroke={isDark ? '#444' : '#d1d5db'}
-                                    strokeWidth={1}
-                                />
-                                <text
-                                    x={x + layout.colWidth / 2}
-                                    y={5 + headerPadY}
-                                    textAnchor="middle"
-                                    fill={isDark ? '#d4af37' : '#92400e'}
-                                    fontSize="10"
-                                    fontWeight="bold"
-                                    letterSpacing="0.5px"
-                                    style={{ pointerEvents: 'none', dominantBaseline: 'hanging' }}
-                                >
-                                    {lines.map((line, lineIdx) => (
-                                        <tspan
-                                            key={`line-${lineIdx}`}
-                                            x={x + layout.colWidth / 2}
-                                            dy={lineIdx === 0 ? 0 : 12}
-                                        >
-                                            {line}
-                                        </tspan>
-                                    ))}
-                                </text>
-                            </g>
+                            <text
+                                key={`head-${i}`}
+                                x={headX}
+                                y={groupTopY}
+                                textAnchor={anchor}
+                                fill="#F4BB30"
+                                fontSize="16"
+                                fontWeight="700"
+                                fontFamily="Inter, sans-serif"
+                                letterSpacing="0.5px"
+                                direction={isRTL ? 'rtl' : 'ltr'}
+                                style={{ pointerEvents: 'none', dominantBaseline: 'auto' }}
+                            >
+                                {displayText}
+                            </text>
                         );
                     })}
 
@@ -725,7 +656,7 @@ export function GraphSankey({ data, isDark = true, chain, metadata, isDiagnostic
                         <motion.path
                             key={`link-${i}`}
                             d={getBandPath(link)}
-                            fill={link.color}
+                            fill={isDark ? '#D4AF37' : '#B8860B'}
                             stroke="none"
                             strokeDasharray={link.isVirtual ? "5,5" : "none"}
                             initial={{ opacity: 0 }}
@@ -744,19 +675,19 @@ export function GraphSankey({ data, isDark = true, chain, metadata, isDiagnostic
                                     x: e.clientX,
                                     y: e.clientY,
                                     content: (
-                                        <div style={{ fontSize: '12px' }}>
+                                        <div style={{ fontSize: '12px', fontFamily: 'Inter, sans-serif' }}>
                                             <div>
-                                                <span style={{ color: isDark ? '#888' : '#666' }}>{srcDisplay}</span>
+                                                <span style={{ color: isDark ? '#9CA3AF' : '#6B7280' }}>{srcDisplay}</span>
                                                 {' \u2192 '}
-                                                <span style={{ color: isDark ? '#fff' : '#000' }}>{tgtDisplay}</span>
+                                                <span style={{ color: isDark ? '#F9FAFB' : '#111827', fontWeight: 500 }}>{tgtDisplay}</span>
                                             </div>
-                                            <div style={{ marginTop: '4px', color: '#D4AF37', fontWeight: 600 }}>
+                                            <div style={{ marginTop: '4px', color: '#F4BB30', fontWeight: 600 }}>
                                                 {t('josoor.explorer.sankey.connections', { count: link.value })}
                                             </div>
-                                            <div style={{ marginTop: '2px', color: isDark ? '#888' : '#666', fontSize: '10px' }}>
+                                            <div style={{ marginTop: '2px', color: isDark ? '#9CA3AF' : '#6B7280', fontSize: '10px' }}>
                                                 {t('josoor.explorer.sankey.via', { types: link.types.join(', ') })}
                                             </div>
-                                            {link.isVirtual && <div style={{ color: '#D4AF37', fontStyle: 'italic', marginTop: '4px' }}>{t('josoor.explorer.sankey.aiRecommendation')}</div>}
+                                            {link.isVirtual && <div style={{ color: '#F4BB30', fontStyle: 'italic', marginTop: '4px' }}>{t('josoor.explorer.sankey.aiRecommendation')}</div>}
                                         </div>
                                     )
                                 });
@@ -779,14 +710,14 @@ export function GraphSankey({ data, isDark = true, chain, metadata, isDiagnostic
                                     x: e.clientX,
                                     y: e.clientY,
                                     content: node.isAggregate ? (
-                                        <div style={{ maxWidth: '320px', maxHeight: '400px', overflowY: 'auto' }}>
-                                            <div style={{ fontWeight: 'bold', fontSize: '14px', marginBottom: '4px' }}>
+                                        <div style={{ maxWidth: '320px', maxHeight: '400px', overflowY: 'auto', fontFamily: 'Inter, sans-serif' }}>
+                                            <div style={{ fontWeight: 600, fontSize: '14px', marginBottom: '4px', color: isDark ? '#F9FAFB' : '#111827' }}>
                                                 {node.nameDisplay}
                                             </div>
-                                            <div style={{ fontSize: '12px', color: '#D4AF37', fontWeight: 600, marginBottom: '8px' }}>
+                                            <div style={{ fontSize: '12px', color: '#F4BB30', fontWeight: 600, marginBottom: '8px' }}>
                                                 {t('josoor.explorer.sankey.nodeCount', { count: node.aggregateCount })}
                                             </div>
-                                            <div style={{ fontSize: '12px', opacity: 0.8, borderTop: `1px solid ${isDark ? '#555' : '#ddd'}`, paddingTop: '8px' }}>
+                                            <div style={{ fontSize: '12px', opacity: 0.8, borderTop: `1px solid ${isDark ? '#374151' : '#E5E7EB'}`, paddingTop: '8px' }}>
                                                 <div style={{ fontWeight: '600', marginBottom: '4px' }}>{t('josoor.explorer.sankey.labels')}</div>
                                                 <div style={{ marginLeft: '8px', marginBottom: '8px' }}>{node.labels.join(', ')}</div>
                                             </div>
@@ -804,15 +735,15 @@ export function GraphSankey({ data, isDark = true, chain, metadata, isDiagnostic
                                             )}
                                         </div>
                                     ) : (
-                                        <div style={{ maxWidth: '320px', maxHeight: '400px', overflowY: 'auto' }}>
-                                            <div style={{ fontWeight: 'bold', fontSize: '14px', marginBottom: '8px' }}>
+                                        <div style={{ maxWidth: '320px', maxHeight: '400px', overflowY: 'auto', fontFamily: 'Inter, sans-serif' }}>
+                                            <div style={{ fontWeight: 600, fontSize: '14px', marginBottom: '8px', color: isDark ? '#F9FAFB' : '#111827' }}>
                                                 {node.nameDisplay}
                                             </div>
-                                            <div style={{ fontSize: '12px', opacity: 0.8, marginBottom: '8px', borderTop: `1px solid ${isDark ? '#555' : '#ddd'}`, paddingTop: '8px' }}>
+                                            <div style={{ fontSize: '12px', opacity: 0.8, marginBottom: '8px', borderTop: `1px solid ${isDark ? '#374151' : '#E5E7EB'}`, paddingTop: '8px' }}>
                                                 <div style={{ fontWeight: '600', marginBottom: '4px' }}>{t('josoor.explorer.sankey.labels')}</div>
                                                 <div style={{ marginLeft: '8px', marginBottom: '12px' }}>{node.labels.join(', ')}</div>
                                             </div>
-                                            <div style={{ fontSize: '12px', borderTop: `1px solid ${isDark ? '#555' : '#ddd'}`, paddingTop: '8px' }}>
+                                            <div style={{ fontSize: '12px', borderTop: `1px solid ${isDark ? '#374151' : '#E5E7EB'}`, paddingTop: '8px' }}>
                                                 <div style={{ fontWeight: '600', marginBottom: '4px' }}>{t('josoor.explorer.sankey.properties')}</div>
                                                 {Object.entries(node.properties || {})
                                                     .filter(([key]) => !key.toLowerCase().includes('embedding'))
@@ -851,7 +782,7 @@ export function GraphSankey({ data, isDark = true, chain, metadata, isDiagnostic
                                     x2={node.x! + node.width!}
                                     y1={node.y! - 5}
                                     y2={node.y! - 5}
-                                    stroke={isDark ? '#555' : '#d1d5db'}
+                                    stroke={isDark ? '#374151' : '#E5E7EB'}
                                     strokeWidth="1"
                                     strokeDasharray="2,2"
                                     opacity="0.5"
@@ -859,11 +790,17 @@ export function GraphSankey({ data, isDark = true, chain, metadata, isDiagnostic
                             )}
                             {node.entityTypeSubHeader && (i === 0 || layout.nodes[i - 1]?.entityTypeSubHeader !== node.entityTypeSubHeader) && (
                                 <text
-                                    x={node.x! + 3}
-                                    y={node.y! - 8}
+                                    x={isRTL
+                                        ? (node.column! % 2 === 0 ? node.x! + node.width! - 3 : node.x! + 3)
+                                        : (node.column! % 2 === 0 ? node.x! + 3 : node.x! + node.width! - 3)}
+                                    y={node.y! - 24}
                                     fill={isDark ? '#9ca3af' : '#6b7280'}
-                                    fontSize="7"
+                                    fontSize="14"
                                     fontWeight="600"
+                                    textAnchor={isRTL
+                                        ? (node.column! % 2 === 0 ? 'end' : 'start')
+                                        : (node.column! % 2 === 0 ? 'start' : 'end')}
+                                    direction={isRTL ? 'rtl' : 'ltr'}
                                     style={{ pointerEvents: 'none', dominantBaseline: 'hanging' }}
                                 >
                                     {node.entityTypeSubHeader}
@@ -874,83 +811,61 @@ export function GraphSankey({ data, isDark = true, chain, metadata, isDiagnostic
                                 y={node.y}
                                 width={node.width}
                                 height={node.height}
-                                rx={4}
+                                rx={2}
                                 fill={node.color}
-                                stroke={isDark ? '#000' : '#fff'}
-                                strokeWidth={1}
-                                className="transition-colors hover:brightness-110"
+                                stroke={node.isBroken ? '#ef4444' : '#D4AF37'}
+                                strokeWidth={node.isBroken ? 1.5 : 0.5}
+                                className="transition-colors hover:brightness-125"
                             />
                             <text
-                                x={node.x! + 5}
-                                y={node.y! + 6}
-                                fill="#fff"
-                                fontSize="9"
+                                x={isRTL ? node.x! + node.width! - 8 : node.x! + 8}
+                                y={node.y! + 8}
+                                fill={isDark ? '#F9FAFB' : '#1F2937'}
+                                fontSize="12"
                                 fontWeight="500"
+                                fontFamily="Inter, sans-serif"
                                 style={{ pointerEvents: 'none' }}
-                                textAnchor="start"
+                                textAnchor={isRTL ? 'end' : 'start'}
                                 dominantBaseline="hanging"
+                                direction={isRTL ? 'rtl' : 'ltr'}
                             >
                                 {(() => {
-                                    const pad = 10;
-                                    const charWidth = 5.5;
+                                    const pad = 16;
+                                    const charWidth = isRTL ? 10 : 8;
+                                    const countSuffix = node.isAggregate && node.aggregateCount ? ` \u00D7${node.aggregateCount}` : '';
+                                    const reserveChars = countSuffix.length;
                                     const maxChars = Math.max(4, Math.floor(((node.width ?? 80) - pad) / charWidth));
 
-                                    // For aggregate nodes: show "Label (Level)" + count line
-                                    if (node.isAggregate && node.aggregateCount) {
-                                        const labelLine = node.nameDisplay;
-                                        const countLine = `\u00D7 ${node.aggregateCount}`;
-                                        const wrapText = (text: string, max: number): string[] => {
-                                            const words = text.split(' ');
-                                            const result: string[] = [];
-                                            let cur = '';
-                                            for (const w of words) {
-                                                if ((cur + ' ' + w).trim().length > max) {
-                                                    if (cur) result.push(cur.trim());
-                                                    cur = w;
-                                                } else { cur += ' ' + w; }
-                                            }
-                                            if (cur) result.push(cur.trim());
-                                            return result;
-                                        };
-                                        const nameLines = wrapText(labelLine, maxChars);
-                                        return [...nameLines, countLine].map((line, idx) => (
-                                            <tspan
-                                                key={idx}
-                                                x={node.x! + 5}
-                                                y={node.y! + 6 + idx * 12}
-                                                fontSize={idx < nameLines.length ? '9' : '8'}
-                                                fontWeight={idx < nameLines.length ? '500' : '700'}
-                                                fill={idx < nameLines.length ? '#fff' : '#D4AF37'}
-                                                dominantBaseline="hanging"
-                                            >
-                                                {line}
-                                            </tspan>
-                                        ));
-                                    }
-
-                                    // Non-aggregate: original word-wrap logic
-                                    const words = node.nameDisplay.split(' ');
-                                    const lines: string[] = [];
-                                    let current = '';
-                                    for (const word of words) {
-                                        if ((current + ' ' + word).trim().length > maxChars) {
-                                            if (current) lines.push(current.trim());
-                                            current = word;
-                                        } else {
-                                            current += ' ' + word;
+                                    const wrapText = (text: string, max: number): string[] => {
+                                        const words = text.split(' ');
+                                        const result: string[] = [];
+                                        let cur = '';
+                                        for (const w of words) {
+                                            if ((cur + ' ' + w).trim().length > max) {
+                                                if (cur) result.push(cur.trim());
+                                                cur = w;
+                                            } else { cur += ' ' + w; }
                                         }
-                                    }
-                                    if (current) lines.push(current.trim());
+                                        if (cur) result.push(cur.trim());
+                                        return result;
+                                    };
+
+                                    const lines = wrapText(node.nameDisplay, maxChars - (countSuffix ? reserveChars : 0));
+
                                     return lines.map((line, idx) => (
                                         <tspan
                                             key={idx}
-                                            x={node.x! + 5}
-                                            y={node.y! + 6 + idx * 12}
-                                            fontSize="9"
+                                            x={isRTL ? node.x! + node.width! - 8 : node.x! + 8}
+                                            y={node.y! + 8 + idx * 16}
+                                            fontSize="12"
                                             fontWeight="500"
                                             dominantBaseline="hanging"
                                         >
                                             {line}
+                                            {/* Count inline on the last line */}
+                                            {idx === lines.length - 1 && countSuffix && (
+                                                <tspan fill="#F4BB30" fontWeight="700" dx={isRTL ? '-6' : '6'}>{countSuffix.trim()}</tspan>
+                                            )}
                                         </tspan>
                                     ));
                                 })()}
@@ -991,14 +906,16 @@ export function GraphSankey({ data, isDark = true, chain, metadata, isDiagnostic
                                 position: 'fixed',
                                 left,
                                 top,
-                                backgroundColor: isDark ? 'rgba(0,0,0,0.95)' : 'rgba(255,255,255,0.95)',
-                                border: `1px solid ${isDark ? '#444' : '#ccc'}`,
-                                borderRadius: '6px',
-                                padding: '10px',
+                                backgroundColor: isDark ? '#1F2937' : '#FFFFFF',
+                                border: `1px solid ${isDark ? '#374151' : '#D1D5DB'}`,
+                                borderRadius: '8px',
+                                padding: '12px 14px',
                                 zIndex: 99999,
                                 pointerEvents: 'auto',
-                                color: isDark ? '#fff' : '#000',
-                                boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+                                color: isDark ? '#F9FAFB' : '#111827',
+                                fontFamily: 'Inter, sans-serif',
+                                fontSize: '12px',
+                                boxShadow: isDark ? '0 8px 24px rgba(0,0,0,0.5)' : '0 4px 16px rgba(0,0,0,0.12)',
                                 maxWidth: tw,
                                 maxHeight: th,
                                 overflowY: 'auto'

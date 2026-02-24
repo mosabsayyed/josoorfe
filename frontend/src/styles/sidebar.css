@@ -23,6 +23,21 @@
 .quickaction-title { font-size:14px; font-weight:600; color: var(--component-text-primary); }
 .quickaction-item { color: var(--component-text-primary); }
 .quickaction-item:hover { color: var(--component-text-accent); }
+
+.quickaction-item.sidebar-reporting-item {
+  border-color: var(--component-panel-border);
+  background: color-mix(in srgb, var(--component-text-accent) 8%, transparent);
+}
+
+.quickaction-item.sidebar-reporting-item:hover {
+  background: color-mix(in srgb, var(--component-text-accent) 14%, transparent);
+  color: var(--component-text-primary);
+}
+
+.quickaction-item.sidebar-reporting-item.active {
+  border-color: var(--component-text-accent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--component-text-accent) 28%, transparent) inset;
+}
 /* Ensure clickable quick actions get transform + shadow for pleasant micro-interactions */
 .sidebar .quickaction-item.clickable, .sidebar .sidebar-icon-button.clickable, .sidebar .collapsed-login-button.clickable, .sidebar .guest-button.clickable, .sidebar .lang-button.clickable {
   transition: transform 150ms var(--easing-smooth), box-shadow 150ms var(--easing-smooth);

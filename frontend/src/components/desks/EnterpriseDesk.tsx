@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
+import { useLanguage } from '../../contexts/LanguageContext';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import type { L1Capability, L2Capability, L3Capability } from '../../types/enterprise';
 import type { OverlayType } from '../../utils/enterpriseOverlayUtils';
@@ -30,10 +31,12 @@ interface EnterpriseDeskProps {
   quarter?: string;
   focusCapId?: string | null;
   onIntervene?: (ctx: any) => void;
+  onContinueInChat?: (conversationId: number) => void;
 }
 
-export function EnterpriseDesk({ year = '2025', quarter = 'Q1', focusCapId, onIntervene }: EnterpriseDeskProps) {
+export function EnterpriseDesk({ year = '2025', quarter = 'Q1', focusCapId, onIntervene, onContinueInChat }: EnterpriseDeskProps) {
   const { t } = useTranslation();
+  const { language } = useLanguage();
   const navigate = useNavigate();
 
   // AI Risk Analysis state
@@ -235,15 +238,32 @@ export function EnterpriseDesk({ year = '2025', quarter = 'Q1', focusCapId, onIn
     }
 
     const capId = cap.id;
+    const capName = cap.name || capId;
     const capYear = cap.year || selectedYear;
     const riskId = cap.rawRisk?.id || cap.rawCapability?.risk?.id || '';
-    const lang = document.documentElement.dir === 'rtl' ? 'Arabic' : 'English';
-    const prompt = `Please analyze capability ${capId} (year: ${capYear}).${riskId ? ` Risk ID: ${riskId}` : ''} Respond entirely in ${lang}.`;
+    const capMode = cap.mode || 'build';
+    // Determine risk band: Red / Amber / Green / Planned / Not-Due
+    const riskBand = capMode === 'execute'
+      ? (cap.execute_status === 'issues' ? 'Red' : cap.execute_status === 'at-risk' ? 'Amber' : 'Green')
+      : (cap.build_status === 'not-due' ? 'Not-Due'
+        : cap.build_status === 'planned' ? 'Planned'
+        : cap.build_status?.includes('issues') ? 'Red'
+        : cap.build_status?.includes('atrisk') ? 'Amber'
+        : cap.build_status === 'in-progress-ontrack' ? 'Green' : 'Unknown');
+    const exposure = cap.exposure_percent != null ? `${cap.exposure_percent}%` : 'N/A';
+
+    // IDs and references stay in English so the backend can look them up correctly
+    const refs = `Capability: "${capName}" (capability_id: ${capId}, year: ${capYear}, mode: ${capMode}${riskId ? `, risk_id: ${riskId}` : ''}). Risk band: ${riskBand}, exposure: ${exposure}.`;
+
+    const prompt = language === 'ar'
+      ? `${refs}\nأريد تحليل مخاطر لهذه القدرة. ابدأ ببطاقة القدرة وحالة المخاطر الحالية. إذا كانت الحالة مخطط أو لم يحن موعدها فلا حاجة لتحليل — اذكر ذلك فقط. إذا كانت خضراء فقدّم ملخصاً صحياً مختصراً. إذا كانت صفراء أو حمراء فقدّم تحليلاً كاملاً مع خيارات التدخل المتاحة.`
+      : `${refs}\nI need a risk analysis for this capability. Start with the capability card showing current risk status. If the status is Planned or Not-Due, there is nothing to analyze — just state that. If Green, provide a brief health summary and keep it short. If Amber or Red, provide full analysis with available intervention options.`;
 
     try {
       const response = await chatService.sendMessage({
         query: prompt,
-        prompt_key: 'risk_advisory'
+        prompt_key: 'risk_advisory',
+        language
       });
 
       if (response.llm_payload?.answer) {
@@ -410,11 +430,11 @@ export function EnterpriseDesk({ year = '2025', quarter = 'Q1', focusCapId, onIn
         onSelectOption={handleSelectOption}
         onContinueInChat={() => {
           setIsRiskModalOpen(false);
-          const chatPath = riskConversationId
-            ? `/josoor?conversation_id=${riskConversationId}`
-            : '/josoor';
-          navigate(chatPath);
+          if (riskConversationId && onContinueInChat) {
+            onContinueInChat(riskConversationId);
+          }
         }}
+        title={t('josoor.enterprise.riskAdvisory')}
       />
     </div>
   );

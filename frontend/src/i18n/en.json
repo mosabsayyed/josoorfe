@@ -669,6 +669,7 @@
       "loadingEnterprise": "Loading Enterprise Data...",
       "errorPrefix": "Error",
       "maturityLabel": "Maturity:",
+      "riskAdvisory": "Risk Advisory",
       "chooseIntervention": "Choose an Intervention Strategy",
       "impact": "Impact",
       "timeline": "Timeline",

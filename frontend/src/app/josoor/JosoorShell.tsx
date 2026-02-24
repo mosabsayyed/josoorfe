@@ -370,7 +370,7 @@ export default function JosoorShell() {
                     onToolsChange={setSelectedTools}
                 >
                     {activeView !== 'chat' && (
-                        <div style={{ flex: 1, height: '100%', overflow: ['settings', 'providers', 'ab-testing', 'monitoring', 'observability'].includes(activeView) ? 'auto' : 'hidden' }}>
+                        <div style={{ flex: 1, height: '100%', overflow: ['settings', 'providers', 'ab-testing', 'monitoring', 'observability', 'reporting-desk'].includes(activeView) ? 'auto' : 'hidden' }}>
                             <Suspense fallback={<div style={{ padding: '2rem', color: 'white' }}>{t('josoor.common.loadingView')}</div>}>
                                 {activeView === 'sector-desk' && (
                                     <SectorDesk
@@ -380,11 +380,15 @@ export default function JosoorShell() {
                                             setActiveView('enterprise-desk');
                                             navigate(`/josoor?cap=${encodeURIComponent(capId)}`);
                                         }}
+                                        onContinueInChat={(conversationId: number) => {
+                                            setActiveConversationId(conversationId);
+                                            setActiveView('chat');
+                                        }}
                                     />
                                 )}
                                 {activeView === 'controls-desk' && <ControlsDesk />}
                                 {activeView === 'planning-desk' && <PlanningDesk interventionContext={interventionContext} onClearContext={() => setInterventionContext(null)} />}
-                                {activeView === 'enterprise-desk' && <EnterpriseDesk year={year} quarter={quarter} onIntervene={handleIntervene} />}
+                                {activeView === 'enterprise-desk' && <EnterpriseDesk year={year} quarter={quarter} onIntervene={handleIntervene} onContinueInChat={(id: number) => { setActiveConversationId(id); setActiveView('chat'); }} />}
                                 {activeView === 'reporting-desk' && <ReportingDesk />}
                                 {activeView === 'knowledge' && <TutorialsDesk />}
                                 {activeView === 'roadmap' && <div className="p-10 text-xl" style={{ color: 'white' }}>{t('josoor.shell.roadmapComingSoon')}</div>}

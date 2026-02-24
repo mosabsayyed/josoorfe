@@ -43,6 +43,7 @@ export interface ChatRequest {
   history?: Array<{ role: string; content: string }>;
   file_ids?: string[];
   model_override?: string;
+  language?: 'en' | 'ar';
 }
 
 export interface ChatResponse {

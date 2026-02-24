@@ -25,6 +25,22 @@ interface NeoGraphProps {
   legendConfig?: any;
 }
 
+// 20 gold/amber tones — dark gold palette matching site accent
+const NODE_PALETTE = [
+  '#F4BB30', '#D4A017', '#B8860B', '#DAA520', '#C49102',
+  '#E6A817', '#A67B00', '#CF9B1D', '#8B6914', '#F0C040',
+  '#D4920A', '#BFA14A', '#9C7A1E', '#E8B828', '#C8A22C',
+  '#A08520', '#D4AF37', '#B59410', '#C9A82C', '#8C7317',
+] as const;
+
+function hashStringToIndex(str: string, mod: number): number {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = ((hash << 5) - hash + str.charCodeAt(i)) | 0;
+  }
+  return Math.abs(hash) % mod;
+}
+
 export function NeoGraph({
   data,
   highlightPath,
@@ -47,6 +63,7 @@ export function NeoGraph({
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const [hoverNode, setHoverNode] = useState<any>(null);
   const [is3D, setIs3D] = useState(true);
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 
   // Robust Resize handler using ResizeObserver
   useEffect(() => {
@@ -81,31 +98,55 @@ export function NeoGraph({
         return legendConfig.colors[type];
       }
     }
-    return node.color || (isDark ? '#D4AF37' : '#1a365d');
+    // Palette-based coloring by node type/label
+    const nodeType = node.labels?.[0] || node.type;
+    if (nodeType) {
+      return NODE_PALETTE[hashStringToIndex(nodeType, NODE_PALETTE.length)];
+    }
+    // Fallback: theme accent in dark, dark text in light
+    return node.color || (isDark ? '#F4BB30' : '#4B5563');
   };
 
   // 2. Link Visualization
+  // Mid-tone links: contrast against dark bg (#111827) AND bright nodes
   const resolveLinkColor = (link: any) => {
     if (link.properties?.status === 'critical' || link.properties?.virtual) return '#EF4444';
-    return 'rgba(255,255,255,0.1)';
+    return isDark ? '#FFFFFF' : '#4B5563';
   };
 
-  // 3. Deep Clone + Fibonacci sphere placement (fx/fy/fz)
+  const resolveLinkWidth = (link: any) => {
+    return (link.properties?.status === 'critical' || link.properties?.virtual) ? 1.5 : 0.5;
+  };
+
+  // 3. Deep Clone + Fibonacci sphere placement (fx/fy/fz) + relation-based sizing
   const graphData = React.useMemo(() => {
     if (!data || !data.nodes) return { nodes: [], links: [] };
 
+    // Count relations per node
+    const relCount: Record<string, number> = {};
+    if (data.links) {
+      for (const l of data.links) {
+        const src = typeof l.source === 'object' ? l.source.id : l.source;
+        const tgt = typeof l.target === 'object' ? l.target.id : l.target;
+        relCount[src] = (relCount[src] || 0) + 1;
+        relCount[tgt] = (relCount[tgt] || 0) + 1;
+      }
+    }
+
     const nodeCount = data.nodes.length;
-    const radius = Math.max(120, nodeCount * 2);
+    const radius = Math.max(200, nodeCount * 3);
     const goldenRatio = (1 + Math.sqrt(5)) / 2;
 
     const nodes = data.nodes.map((n, i) => {
       const theta = Math.acos(1 - 2 * (i + 0.5) / nodeCount);
       const phi = 2 * Math.PI * i / goldenRatio;
+      const count = relCount[n.id] || 1;
       return {
         ...n,
         fx: radius * Math.sin(theta) * Math.cos(phi),
         fy: radius * Math.sin(theta) * Math.sin(phi),
         fz: radius * Math.cos(theta),
+        _val: Math.max(2, Math.min(20, count * 2)),
       };
     });
 
@@ -122,12 +163,12 @@ export function NeoGraph({
     const fg = graphRef.current;
     if (!fg || !is3D) return;
 
-    const distance = 40;
+    const distance = 250;
     const distRatio = 1 + distance / Math.hypot(node.x, node.y, node.z);
     fg.cameraPosition(
       { x: node.x * distRatio, y: node.y * distRatio, z: node.z * distRatio },
       node,
-      3000
+      1500
     );
   };
 
@@ -138,14 +179,16 @@ export function NeoGraph({
     graphData: graphData,
     nodeLabel: null,
     nodeColor: resolveNodeColor,
-    nodeRelSize: 6,
+    nodeVal: (node: any) => node._val || 4,
+    nodeRelSize: 8,
+    nodeResolution: 16,
     linkColor: resolveLinkColor,
+    linkWidth: resolveLinkWidth,
     linkOpacity: 0.2,
-    linkWidth: 1,
     linkDirectionalArrowLength: 3,
     linkDirectionalArrowRelPos: 1,
     linkCurvature: 0.1,
-    backgroundColor: "rgba(0,0,0,0)",
+    backgroundColor: isDark ? "#111827" : "#F3F4F6",
     onNodeHover: setHoverNode,
     onNodeClick: handleNodeClick,
     cooldownTicks: 100,
@@ -153,7 +196,7 @@ export function NeoGraph({
   };
 
   return (
-    <div ref={containerRef} style={{ position: 'relative', width: '100%', height: '100%' }}>
+    <div ref={containerRef} style={{ position: 'relative', width: '100%', height: '100%' }} onMouseMove={(e) => setMousePos({ x: e.clientX, y: e.clientY })}>
       {/* View Toggle */}
       <div className="viz-controls-overlay">
         <button
@@ -173,64 +216,51 @@ export function NeoGraph({
         </div>
       )}
 
-      {/* Tooltip via portal - escapes CSS transforms */}
+      {/* Minimal hover tooltip — just Name · Type */}
       {hoverNode && createPortal(
-        <div style={{
-          position: 'fixed', top: '1.5rem', right: '1.5rem', padding: '1rem', width: '18rem',
-          background: 'rgba(10, 10, 10, 0.95)', backdropFilter: 'blur(16px)',
-          border: '1px solid rgba(212, 175, 55, 0.5)', borderLeft: '4px solid #D4AF37',
-          borderRadius: '0.5rem', boxShadow: '0 20px 40px rgba(0,0,0,0.8), 0 0 10px rgba(212,175,55,0.2)',
-          pointerEvents: 'none' as const, zIndex: 9999, color: '#fff'
-        }}>
-          <h3 style={{
-            margin: '0 0 0.75rem 0', fontSize: '1rem', fontWeight: 800, color: '#D4AF37',
-            borderBottom: '1px solid rgba(212,175,55,0.3)', paddingBottom: '0.5rem',
-            textTransform: 'uppercase' as const, letterSpacing: '0.05em'
-          }}>
-            {hoverNode.properties?.name || hoverNode.label || hoverNode.id || 'Unnamed Node'}
-          </h3>
-          <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '0.5rem' }}>
-            <div>
-              <p style={{ margin: 0, fontSize: '0.8rem', lineHeight: 1.5, color: '#fff' }}>
-                <strong style={{ color: '#D4AF37' }}>{t('josoor.dashboard.graph.labels')}</strong> {hoverNode.labels?.join(', ') || hoverNode.type || 'Unknown'}
-              </p>
-              <p style={{ margin: 0, fontSize: '0.8rem', lineHeight: 1.5, color: '#fff' }}>
-                <strong style={{ color: '#D4AF37' }}>{t('josoor.dashboard.graph.id')}</strong> <code>{hoverNode.properties?.id || hoverNode.id}</code>
-              </p>
+        (() => {
+          const nodeProps = hoverNode.properties || hoverNode.nProps || {};
+          const domainId = hoverNode.domain_id || nodeProps.domain_id || '';
+          const namePart = hoverNode.name || nodeProps.name || nodeProps.title || hoverNode.label || String(hoverNode.id || 'Node');
+          const nodeName = domainId ? `${domainId} ${namePart}` : namePart;
+          const nodeType = (hoverNode.labels && hoverNode.labels.length > 0)
+            ? hoverNode.labels.filter((l: string) => l !== 'Unknown')[0]
+            : (hoverNode.label && hoverNode.label !== 'Unknown' ? hoverNode.label : '');
+
+          return (
+            <div style={{
+              position: 'fixed',
+              left: mousePos.x + 14,
+              top: mousePos.y - 36,
+              backgroundColor: isDark ? 'rgba(17,24,39,0.92)' : 'rgba(255,255,255,0.95)',
+              border: `1px solid ${isDark ? '#374151' : '#D1D5DB'}`,
+              borderRadius: '6px',
+              padding: '6px 10px',
+              zIndex: 99999,
+              pointerEvents: 'none',
+              fontFamily: 'Inter, sans-serif',
+              fontSize: '12px',
+              whiteSpace: 'nowrap' as const,
+              boxShadow: isDark ? '0 4px 12px rgba(0,0,0,0.4)' : '0 2px 8px rgba(0,0,0,0.1)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              direction: 'ltr' as const,
+            }}>
+              <span style={{ fontWeight: 600, color: isDark ? '#F9FAFB' : '#111827' }}>{nodeName}</span>
+              {nodeType && (
+                <span style={{
+                  fontSize: '10px',
+                  fontWeight: 500,
+                  color: isDark ? '#9CA3AF' : '#6B7280',
+                  backgroundColor: isDark ? 'rgba(55,65,81,0.6)' : 'rgba(243,244,246,0.8)',
+                  padding: '1px 6px',
+                  borderRadius: '3px',
+                }}>{nodeType}</span>
+              )}
             </div>
-            {(hoverNode.orphan || hoverNode.bastard) && (
-              <div style={{
-                marginTop: '0.75rem',
-                padding: '0.5rem',
-                background: 'rgba(239, 68, 68, 0.1)',
-                border: '1px solid rgba(239, 68, 68, 0.3)',
-                borderRadius: '0.25rem'
-              }}>
-                {hoverNode.orphan && (
-                  <p style={{ margin: 0, fontSize: '0.75rem', color: '#EF4444' }}>
-                    {t('josoor.dashboard.graph.orphan')}
-                  </p>
-                )}
-                {hoverNode.bastard && (
-                  <p style={{ margin: hoverNode.orphan ? '4px 0 0 0' : 0, fontSize: '0.75rem', color: '#EF4444' }}>
-                    {t('josoor.dashboard.graph.bastard')}
-                  </p>
-                )}
-              </div>
-            )}
-            {hoverNode.properties && Object.keys(hoverNode.properties).length > 0 && (
-              <div>
-                <strong style={{ display: 'block', marginTop: '8px', marginBottom: '4px', color: '#D4AF37' }}>{t('josoor.dashboard.graph.properties')}</strong>
-                {Object.entries(hoverNode.properties).map(([key, value]: [string, any]) => (
-                  <div key={key} style={{ display: 'flex', gap: '4px', fontSize: '0.75rem', margin: '2px 0', color: '#fff' }}>
-                    <span style={{ color: '#9ca3af', minWidth: '60px' }}>{key}:</span>
-                    <span>{typeof value === 'object' ? JSON.stringify(value) : String(value)}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>,
+          );
+        })(),
         document.body
       )}
     </div>
