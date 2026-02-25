@@ -782,10 +782,12 @@ function L2DetailView({ l2, onClose, selectedYear, selectedQuarter, onAIAnalysis
       onClose={onClose}
       onAIAnalysis={onAIAnalysis}
     >
-      {/* 1. L3 Children (top-level drilldown) */}
-      <h3 style={sectionTitleStyle}>{t('josoor.enterprise.detailPanel.l3Capabilities')}</h3>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '1.5rem' }}>
-        {(l2.l3 || []).map(l3 => {
+      {/* 1. L3 Children — split into Operational vs Under Construction */}
+      {(() => {
+        const operationalL3s = (l2.l3 || []).filter(l3 => l3.mode === 'execute');
+        const buildingL3s = (l2.l3 || []).filter(l3 => l3.mode === 'build');
+
+        const renderL3Card = (l3: L3Capability) => {
           const rawStatus = String(l3.rawCapability?.status || '').toLowerCase();
           const isNotDue = l3.mode === 'build' && (
             l3.build_status === 'not-due' ||
@@ -793,7 +795,8 @@ function L2DetailView({ l2, onClose, selectedYear, selectedQuarter, onAIAnalysis
           );
           const l3StatusColor = l3.mode === 'execute'
             ? (l3.execute_status === 'issues' ? '#ef4444' : l3.execute_status === 'at-risk' ? '#f59e0b' : l3.execute_status === 'ontrack' ? '#10b981' : '#475569')
-            : (l3.build_status?.includes('issues') ? '#ef4444' : l3.build_status?.includes('atrisk') ? '#f59e0b' : l3.build_status === 'in-progress-ontrack' ? '#10b981' : l3.build_status === 'planned' ? '#10b981' : '#475569');
+            : (l3.build_status?.includes('issues') ? '#ef4444' : l3.build_status?.includes('atrisk') ? '#f59e0b' : l3.build_status === 'in-progress-ontrack' ? '#10b981' : '#475569');
+
           return (
             <div key={l3.id}
               onClick={() => onSelectL3 && onSelectL3(l3)}
@@ -811,18 +814,59 @@ function L2DetailView({ l2, onClose, selectedYear, selectedQuarter, onAIAnalysis
                 </span>
                 {isNotDue && (
                   <span style={{ marginLeft: '8px', fontSize: '11px', color: 'var(--component-text-muted)' }}>
-                    (Not due)
+                    ({t('josoor.enterprise.detailPanel.notDue')})
                   </span>
                 )}
               </div>
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                <span style={{ fontSize: '11px', color: 'var(--component-text-muted)' }}>{l3.maturity_level}/{l3.target_maturity_level}</span>
+                <span style={{ fontSize: '11px', color: 'var(--component-text-muted)' }}>
+                  {l3.mode === 'execute'
+                    ? (() => {
+                        const kpis: any[] = l3.rawCapability?.l2Kpis || [];
+                        const matched = kpis.find((e: any) => (e?.inputs || []).some((inp: any) => String(inp?.cap_id || '') === String(l3.id))) || kpis[0];
+                        const actual = matched?.kpi?.actual_value != null ? Number(matched.kpi.actual_value) : null;
+                        const target = matched?.kpi?.target != null ? Number(matched.kpi.target) : null;
+                        if (actual == null || target == null || target <= 0) return '—';
+                        return `${Math.round((actual / target) * 100)}%`;
+                      })()
+                    : `${l3.maturity_level}/${l3.target_maturity_level}`}
+                </span>
                 <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: isNotDue ? '#64748b' : l3StatusColor }} />
               </div>
             </div>
           );
-        })}
-      </div>
+        };
+
+        return (
+          <>
+            {/* Block 1: Operational Capabilities */}
+            {operationalL3s.length > 0 && (
+              <>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <h3 style={sectionTitleStyle}>{t('josoor.enterprise.detailPanel.operationalCapabilities')}</h3>
+                  <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--component-text-muted)', marginBottom: '1rem' }}>{operationalL3s.length}</span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '1.5rem' }}>
+                  {operationalL3s.map(renderL3Card)}
+                </div>
+              </>
+            )}
+
+            {/* Block 2: Under Construction */}
+            {buildingL3s.length > 0 && (
+              <>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <h3 style={sectionTitleStyle}>{t('josoor.enterprise.detailPanel.underConstruction')}</h3>
+                  <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--component-text-muted)', marginBottom: '1rem' }}>{buildingL3s.length}</span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '1.5rem' }}>
+                  {buildingL3s.map(renderL3Card)}
+                </div>
+              </>
+            )}
+          </>
+        );
+      })()}
 
       {/* 1. KPI Achievement Gauge — single L2 KPI */}
       {kpiPct != null && primaryKpi?.kpi ? (

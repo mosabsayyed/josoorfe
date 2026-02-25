@@ -791,7 +791,10 @@
         "generatingAnalysis": "Generating AI Analysis...",
         "analysisFailed": "Analysis failed. Please try again.",
         "processMetrics": "Process Metrics",
-        "target": "Target"
+        "target": "Target",
+        "operationalCapabilities": "Operational Capabilities",
+        "underConstruction": "Under Construction",
+        "notDue": "Not due"
       },
       "tooltip": {
         "mode": "Mode:",

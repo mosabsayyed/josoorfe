@@ -1106,6 +1106,12 @@ function buildL3(l3Node: NeoGraphNode): L3Capability {
   l3Cap.rawCapability.processMetrics = (l3Node as any).processMetrics || [];
   l3Cap.rawCapability.l2Kpis = (l3Node as any).l2Kpis || [];
 
+  // Dependency count for exposure gradient heatmap
+  const projCount = ((l3Node as any).linkedProjects || []).length;
+  const entityCount = ((l3Node as any).operatingEntities || []).length;
+  const processCount = ((l3Node as any).processMetrics || []).length;
+  l3Cap.dependency_count = projCount + entityCount + processCount;
+
   // R4: Late detection — compare latest project end_date vs PolicyTool end_date
   const policyTools = (l3Node as any).policyTools || [];
   const linkedProjects = (l3Node as any).linkedProjects || [];

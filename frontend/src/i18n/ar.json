@@ -788,7 +788,10 @@
         "generatingAnalysis": "جارٍ إنشاء التحليل بالذكاء الاصطناعي...",
         "analysisFailed": "فشل التحليل. يرجى المحاولة مرة أخرى.",
         "processMetrics": "مقاييس العمليات",
-        "target": "المستهدف"
+        "target": "المستهدف",
+        "operationalCapabilities": "القدرات التشغيلية",
+        "underConstruction": "قيد الإنشاء",
+        "notDue": "غير مستحقة"
       },
       "tooltip": {
         "mode": "الوضع:",

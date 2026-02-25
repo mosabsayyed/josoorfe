@@ -3,17 +3,33 @@ import type { L3Capability } from '../../../types/enterprise';
 export type OverlayType = 'none' | 'risk-exposure' | 'external-pressure' | 'footprint-stress' | 'change-saturation' | 'trend-warning';
 
 // Calculate heatmap color based on overlay type
-export function calculateHeatmapColor(l3: L3Capability, overlayType: OverlayType): string {
+export function calculateHeatmapColor(l3: L3Capability, overlayType: OverlayType, maxDependencyCount?: number): string {
     if (overlayType === 'none') return 'transparent';
+
+    if (overlayType === 'risk-exposure') {
+        // Continuous gradient based on dependency count
+        const count = l3.dependency_count || 1;
+        const max = Math.max(maxDependencyCount || 1, 1);
+        const ratio = Math.min((count - 1) / Math.max(max - 1, 1), 1);
+
+        let r: number, g: number, b: number;
+        if (ratio <= 0.5) {
+            const t = ratio * 2;
+            r = Math.round(16 + (245 - 16) * t);
+            g = Math.round(185 + (158 - 185) * t);
+            b = Math.round(129 + (11 - 129) * t);
+        } else {
+            const t = (ratio - 0.5) * 2;
+            r = Math.round(245 + (239 - 245) * t);
+            g = Math.round(158 + (68 - 158) * t);
+            b = Math.round(11 + (68 - 11) * t);
+        }
+        return `rgba(${r}, ${g}, ${b}, 0.6)`;
+    }
 
     let deltaPercent = 0;
 
     switch (overlayType) {
-        case 'risk-exposure':
-            // Use exposure_percent directly
-            deltaPercent = l3.exposure_percent || 0;
-            break;
-
         case 'external-pressure':
             // Green or Red based on urgency logic
             const policyCount = Math.max(1, l3.policy_tool_count || 1);
@@ -58,26 +74,7 @@ export function calculateHeatmapColor(l3: L3Capability, overlayType: OverlayType
             break;
     }
 
-    if (overlayType === 'risk-exposure') {
-        // Per Enterprise_Ontology_SST_v1.2.md Section 5.4:
-        // Bands: band_green_max_pct=35, band_amber_max_pct=65
-        // EntityRisk.threshold_green/amber/red may override if populated
-        const exposure = l3.exposure_percent ?? deltaPercent;
-        // TODO: Use per-entity thresholds once risk engine seeds correct band values
-        // Current DB values (85/70) are from old interpretation — ignore for now
-        const greenMax = 35;  // SST default: band_green_max_pct
-        const amberMax = 65;  // SST default: band_amber_max_pct
-        if (exposure < greenMax) {
-            return 'rgba(16, 185, 129, 0.6)';  // GREEN
-        } else if (exposure < amberMax) {
-            return 'rgba(245, 158, 11, 0.6)';  // AMBER
-        } else {
-            return 'rgba(239, 68, 68, 0.6)';   // RED
-        }
-    }
-
     // For other overlays: use deltaPercent with SST default bands
-    // band_green_max_pct: 35, band_amber_max_pct: 65
     if (deltaPercent < 35) {
         return 'rgba(16, 185, 129, 0.6)';  // GREEN
     } else if (deltaPercent < 65) {
@@ -92,13 +89,15 @@ export function getOverlayContent(l3: L3Capability, overlayType: OverlayType): s
     if (overlayType === 'none') return null;
 
     switch (overlayType) {
-        case 'risk-exposure':
+        case 'risk-exposure': {
+            const deps = l3.dependency_count || 0;
             if (l3.mode === 'build') {
-                return `+${l3.expected_delay_days || 0}d / ${l3.exposure_percent || 0}%`;
+                return `${deps} deps · +${l3.expected_delay_days || 0}d`;
             } else {
                 const trend = l3.exposure_trend === 'improving' ? '▲' : l3.exposure_trend === 'declining' ? '▼' : '■';
-                return `${l3.exposure_percent || 0}% ${trend}`;
+                return `${deps} deps · ${l3.exposure_percent || 0}% ${trend}`;
             }
+        }
 
         case 'external-pressure':
             return null;

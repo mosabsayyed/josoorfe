@@ -38,24 +38,20 @@ export function aggregateStatus(
     }
   });
 
-  // Determine mode: majority wins
-  const mode: 'build' | 'execute' = buildModeCount >= executeModeCount ? 'build' : 'execute';
+  // Determine mode: if ANY child is operational, parent is operational
+  const mode: 'build' | 'execute' = executeModeCount > 0 ? 'execute' : 'build';
 
-  // Determine status using weighted formula
-  const total = activeChildren.length;
-  
+  // Worst-case rollup: any single bad child escalates the parent
   if (issuesCount > 0) {
     return { mode, status: 'issues' };
-  } else if (atRiskCount / total > 0.3) {
+  } else if (atRiskCount > 0) {
     return { mode, status: 'at-risk' };
-  } else if (ontrackCount / total > 0.7) {
+  } else if (ontrackCount > 0) {
     return { mode, status: 'ontrack' };
   } else if (plannedCount > 0) {
     return { mode, status: 'planned' };
-  } else if (notDueCount === total) {
-    return { mode, status: 'not-due' };
   } else {
-    return { mode, status: 'at-risk' }; // Mixed state
+    return { mode, status: 'not-due' };
   }
 }
 
@@ -63,7 +59,7 @@ export function aggregateStatus(
 export function getL3StatusColor(l3: L3Capability): string {
   if (l3.mode === 'build') {
     if (l3.build_status === 'not-due') return '#475569';
-    else if (l3.build_status === 'planned') return '#10b981';
+    else if (l3.build_status === 'planned') return '#475569';
     else if (l3.build_status === 'in-progress-ontrack') return '#10b981';
     else if (l3.build_status === 'in-progress-atrisk') return '#f59e0b';
     else if (l3.build_status === 'in-progress-issues') return '#ef4444';
@@ -84,11 +80,11 @@ export function getL2StatusColor(
   const aggregated = aggregateStatus(l2.l3, isL3Dimmed);
   
   if (aggregated.status === 'not-due') return '#475569';
-  else if (aggregated.status === 'planned') return '#10b981';
+  else if (aggregated.status === 'planned') return '#475569';
   else if (aggregated.status === 'ontrack') return '#10b981';
   else if (aggregated.status === 'at-risk') return '#f59e0b';
   else if (aggregated.status === 'issues') return '#ef4444';
-  
+
   return '#475569';
 }
 
@@ -106,11 +102,11 @@ export function getL1StatusColor(
   const aggregated = aggregateStatus(allL3s, isL3Dimmed);
   
   if (aggregated.status === 'not-due') return '#475569';
-  else if (aggregated.status === 'planned') return '#10b981';
+  else if (aggregated.status === 'planned') return '#475569';
   else if (aggregated.status === 'ontrack') return '#10b981';
   else if (aggregated.status === 'at-risk') return '#f59e0b';
   else if (aggregated.status === 'issues') return '#ef4444';
-  
+
   return '#475569';
 }
 

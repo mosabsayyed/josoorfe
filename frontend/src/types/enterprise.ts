@@ -23,6 +23,7 @@ export interface L3Capability {
     expected_delay_days?: number;
     exposure_percent?: number;
     exposure_trend?: 'improving' | 'stable' | 'declining';
+    dependency_count?: number;
     
     // Overlay 1: Risk Exposure Fields
     operational_health_score?: number; // 0-100, EXECUTE mode only

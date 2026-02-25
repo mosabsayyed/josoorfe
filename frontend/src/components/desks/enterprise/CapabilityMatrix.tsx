@@ -69,6 +69,18 @@ export function CapabilityMatrix({
     return max;
   }, [capabilityMatrix]);
 
+  const maxDependencyCount = useMemo(() => {
+    let max = 1;
+    capabilityMatrix.forEach(l1 => {
+      l1.l2.forEach(l2 => {
+        l2.l3.forEach(l3 => {
+          if ((l3.dependency_count || 0) > max) max = l3.dependency_count!;
+        });
+      });
+    });
+    return max;
+  }, [capabilityMatrix]);
+
   // Fixed L3 cell width - all cells same width
   const l3CellWidth = `${100 / maxL3Count}%`;
 
@@ -200,7 +212,7 @@ export function CapabilityMatrix({
                                   <div
                                     className="heatmap-overlay"
                                     style={{
-                                      backgroundColor: calculateHeatmapColor(l3, selectedOverlay)
+                                      backgroundColor: calculateHeatmapColor(l3, selectedOverlay, maxDependencyCount)
                                     }}
                                   />
                                 )}
