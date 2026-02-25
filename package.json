@@ -1,16 +1,22 @@
 {
+  "name": "my-project",
   "private": true,
-  "workspaces": [
-    "frontend"
-  ],
+  "version": "0.1.0",
+  "type": "module",
   "scripts": {
-    "dev": "npm --prefix frontend run dev",
-    "build": "npm --prefix frontend run build",
-    "preview": "npm --prefix frontend run preview"
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
   },
   "dependencies": {
-    "@genkit-ai/google-genai": "^1.25.0",
-    "@openrouter/sdk": "^0.3.1",
-    "genkit": "^1.25.0"
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "@vitejs/plugin-react": "^4.2.0",
+    "typescript": "^5.3.0",
+    "vite": "^5.0.0"
   }
 }
