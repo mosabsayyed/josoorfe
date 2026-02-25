@@ -745,6 +745,8 @@
         "people": "People",
         "process": "Process",
         "tools": "Tools",
+        "regressionDimensions": "Regression Risk Dimensions",
+        "regressionDimensionsDesc": "Health of the 3 operational dimensions. Weakest dimension drives regression risk.",
         "buildBand": "Build Band",
         "operateBand": "Operate Band",
         "buildExposure": "Build Exposure",
@@ -792,9 +794,11 @@
         "analysisFailed": "Analysis failed. Please try again.",
         "processMetrics": "Process Metrics",
         "target": "Target",
-        "operationalCapabilities": "Operational Capabilities",
-        "underConstruction": "Under Construction",
-        "notDue": "Not due"
+        "operationalCapabilities": "Capabilities in Operation",
+        "underConstruction": "Capabilities Being Built",
+        "notDue": "Not due",
+        "stageGateProgress": "Stage Gate Progress",
+        "stageGateDesc": "All 3 dimensions must reach the target stage for activation."
       },
       "tooltip": {
         "mode": "Mode:",

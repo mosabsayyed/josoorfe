@@ -742,6 +742,8 @@
         "people": "الكوادر",
         "process": "العمليات",
         "tools": "الأدوات",
+        "regressionDimensions": "أبعاد مخاطر التراجع",
+        "regressionDimensionsDesc": "صحة الأبعاد التشغيلية الثلاثة. البُعد الأضعف يقود مخاطر التراجع.",
         "buildBand": "نطاق البناء",
         "operateBand": "نطاق التشغيل",
         "buildExposure": "تعرض البناء",
@@ -789,9 +791,11 @@
         "analysisFailed": "فشل التحليل. يرجى المحاولة مرة أخرى.",
         "processMetrics": "مقاييس العمليات",
         "target": "المستهدف",
-        "operationalCapabilities": "القدرات التشغيلية",
-        "underConstruction": "قيد الإنشاء",
-        "notDue": "غير مستحقة"
+        "operationalCapabilities": "القدرات في التشغيل",
+        "underConstruction": "القدرات قيد البناء",
+        "notDue": "غير مستحقة",
+        "stageGateProgress": "تقدم مراحل البوابات",
+        "stageGateDesc": "يجب أن تصل جميع الأبعاد الثلاثة إلى المرحلة المستهدفة للتفعيل."
       },
       "tooltip": {
         "mode": "الوضع:",
