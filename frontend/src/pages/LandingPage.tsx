@@ -1,69 +1,23 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLanguage } from '../contexts/LanguageContext';
-import { useAuth } from '../contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
 import Header from '../components/layout/Header';
-import { supabase } from '../lib/supabaseClient';
 
 // Landing page section components
 import Hero from '../components/landing/Hero';
 import AItoIA from '../components/landing/AItoIA';
-import Claims from '../components/landing/Claims';
 import Promise from '../components/landing/Promise';
 import Platform from '../components/landing/Platform';
-import Architecture from '../components/landing/Architecture';
+import StrategyHouse from '../components/landing/StrategyHouse';
 import BetaForm from '../components/landing/BetaForm';
 import useSnapScroll from '../hooks/useSnapScroll';
 
-const SNAP_SECTIONS = ['hero', 'aitoia', 'platform', 'claims', 'promise', 'arch'];
+const SNAP_SECTIONS = ['hero', 'aitoia', 'platform', 'strategy-house', 'promise'];
 
 export default function LandingPage() {
-  const navigate = useNavigate();
   const { language, isRTL } = useLanguage();
   const { t } = useTranslation();
   useSnapScroll({ sections: SNAP_SECTIONS });
-
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    organization: '',
-    role: ''
-  });
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    try {
-      const richFullName = `${formData.name} | Org: ${formData.organization} | Role: ${formData.role}`;
-
-      const { data, error} = await supabase
-        .from('users_pending')
-        .insert([
-          {
-            email: formData.email,
-            password: 'pending-approval-' + Date.now(),
-            full_name: richFullName,
-            role: 'user',
-            is_active: false
-          }
-        ]);
-
-      if (error) throw error;
-
-      alert(t('beta.alertSuccess'));
-      setFormData({ name: '', email: '', organization: '', role: '' });
-
-    } catch (err: any) {
-      console.error('Registration error:', err);
-      alert(t('beta.errorSubmit'));
-    }
-  };
 
   const content = {
     hero: {
@@ -72,16 +26,6 @@ export default function LandingPage() {
       subtitleEn: t('hero.subtitleEn'),
       sectors: t('hero.sectors'),
       badge: t('hero.badge'),
-    },
-    claims: {
-      tag: t('claims.tag'),
-      title: t('claims.title'),
-      subtitle: t('claims.subtitle'),
-      canvasLabel: t('claims.canvasLabel'),
-      canvasLabel2: t('claims.canvasLabel2'),
-      canvasDesc: t('claims.canvasDesc'),
-      imageLabels: (t('claims.imageLabels', { returnObjects: true }) as string[]),
-      items: (t('claims.items', { returnObjects: true }) as Array<{ punchline: string; desc: string }>),
     },
     promise: {
       tag: t('promise.tag'),
@@ -94,13 +38,15 @@ export default function LandingPage() {
       title: t('platform.title'),
       subtitle: t('platform.subtitle'),
       modes: (t('platform.modes', { returnObjects: true }) as Array<{ title: string; desc: string }>),
-    },
-    architecture: {
-      tag: t('architecture.tag'),
-      title: t('architecture.title'),
-      intro: t('architecture.intro'),
-      layers: [],
+      twinEnginesLabel: t('architecture.twinEngines'),
       engines: (t('architecture.engines', { returnObjects: true }) as Array<{ title: string; desc: string }>),
+    },
+    strategyHouse: {
+      tag: t('strategyHouse.tag'),
+      title: t('strategyHouse.title'),
+      subtitle: t('strategyHouse.subtitle'),
+      elements: (t('strategyHouse.elements', { returnObjects: true }) as string[]),
+      elementDescs: (t('strategyHouse.elementDescs', { returnObjects: true }) as string[]),
     },
     beta: {
       tag: t('beta.tag'),
@@ -327,8 +273,10 @@ export default function LandingPage() {
       .aitoia-glass {
         position: relative;
         z-index: 2;
-        width: 85vw;
+        width: min(85vw, 900px);
         max-width: 900px;
+        justify-self: center;
+        align-self: center;
         background: rgba(255, 255, 255, 0.1);
         backdrop-filter: blur(8px);
         -webkit-backdrop-filter: blur(8px);
@@ -433,6 +381,39 @@ export default function LandingPage() {
       }
       [dir="rtl"] .aitoia-glass .aitoia-ia li {
         border-right-color: var(--component-text-accent);
+      }
+
+      /* ── Challenge 3-column layout ── */
+      .challenge-columns {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 24px;
+        margin-top: 24px;
+      }
+      .challenge-col {
+        padding: 24px;
+        background: rgba(31, 41, 55, 0.4);
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+      }
+      .challenge-col h3 {
+        font-size: 22px;
+        font-weight: 700;
+        color: var(--component-text-accent);
+        margin-bottom: 10px;
+      }
+      .challenge-col p {
+        font-size: 18px;
+        line-height: 1.6;
+        color: var(--component-text-secondary);
+        margin: 0;
+      }
+
+      @media (max-width: 768px) {
+        .challenge-columns {
+          grid-template-columns: 1fr;
+          gap: 16px;
+        }
       }
 
       @media (max-width: 768px) {
@@ -851,7 +832,7 @@ export default function LandingPage() {
           overflow: visible;
         }
 
-        #arch {
+        #arch, #beta {
           min-height: auto;
           padding-top: 70px;
           overflow: visible;
@@ -962,9 +943,9 @@ export default function LandingPage() {
 
       <div id="main-content">
         <Platform content={content.platform} />
-        <Claims content={content.claims} />
+        <StrategyHouse content={content.strategyHouse} />
         <Promise content={content.promise} />
-        <Architecture content={content.architecture} language={language} />
+        {/* Architecture hidden — twin engines moved to Platform, badges to Strategy House */}
         <BetaForm content={content.beta} language={language} />
 
         {/* FOOTER */}

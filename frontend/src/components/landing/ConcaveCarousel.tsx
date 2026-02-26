@@ -24,9 +24,10 @@ export default function ConcaveCarousel({
   const total = children.length;
   const trackRef = useRef<HTMLDivElement>(null);
 
-  // Auto-rotation effect
+  // Auto-rotation effect (respects reduced-motion)
   useEffect(() => {
-    if (isPaused || !autoRotateInterval) return;
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (isPaused || !autoRotateInterval || prefersReducedMotion) return;
 
     const interval = setInterval(() => {
       setCurrent((prev) => (prev + 1) % total);
@@ -82,20 +83,23 @@ export default function ConcaveCarousel({
         })}
       </div>
 
-      <div className="cc-controls">
+      <div className="cc-controls" dir="ltr">
         <button
           className="cc-btn"
           onClick={() => rotate(-1)}
           aria-label="Previous"
         >
-          &#8592;
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ direction: 'ltr' }}><path d="M10 3L5 8L10 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
         </button>
-        <div className="cc-dots">
+        <div className="cc-dots" role="tablist" aria-label="Carousel slides">
           {Array.from({ length: total }).map((_, i) => (
-            <div
+            <button
               key={i}
               className={`cc-dot ${i === current ? 'active' : ''}`}
               onClick={() => goTo(i)}
+              role="tab"
+              aria-selected={i === current}
+              aria-label={`Slide ${i + 1} of ${total}`}
             />
           ))}
         </div>
@@ -104,7 +108,7 @@ export default function ConcaveCarousel({
           onClick={() => rotate(1)}
           aria-label="Next"
         >
-          &#8594;
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ direction: 'ltr' }}><path d="M6 3L11 8L6 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
         </button>
       </div>
     </div>

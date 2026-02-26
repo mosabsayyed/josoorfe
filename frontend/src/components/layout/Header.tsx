@@ -190,6 +190,27 @@ export default function Header() {
           >
             {t('header.contact')}
           </button>
+          <button
+            onClick={() => {
+              const el = document.getElementById('beta');
+              if (el) el.scrollIntoView({ behavior: 'smooth' });
+            }}
+            style={{
+              background: 'var(--component-text-accent, #F4BB30)',
+              border: 'none',
+              color: '#111827',
+              padding: '6px 18px',
+              borderRadius: '999px',
+              fontSize: '13px',
+              fontWeight: 700,
+              cursor: 'pointer',
+              transition: 'opacity 0.2s',
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.opacity = '0.85'}
+            onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
+          >
+            {t('header.requestDemo', 'Request Demo')}
+          </button>
         </nav>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>

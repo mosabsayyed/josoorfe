@@ -20,7 +20,7 @@ export function QuickChainsPanel({ defaultYear = 2025, onChainResult }: QuickCha
   const CHAINS = [
     { key: 'sector_value_chain', label: t('josoor.explorerFilters.chains.sector_value_chain') },
     { key: 'setting_strategic_initiatives', label: t('josoor.explorerFilters.chains.setting_strategic_initiatives') },
-    { key: 'operate_oversight', label: t('josoor.explorerFilters.chains.operate_oversight') },
+    { key: 'capability_to_performance', label: t('josoor.explorerFilters.chains.capability_to_performance') },
   ];
 
   const handleRun = async (chainKey: string) => {

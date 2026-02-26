@@ -57,7 +57,7 @@ function bandBg(band?: string): string {
 
 /** Achievement color by threshold */
 function achievementColor(pct: number): string {
-  return pct >= 70 ? '#10b981' : pct >= 40 ? '#f59e0b' : '#ef4444';
+  return pct >= 90 ? '#10b981' : pct >= 70 ? '#f59e0b' : '#ef4444';
 }
 
 function computeKpiPct(actualVal: any, targetVal: any): number | null {
@@ -67,15 +67,21 @@ function computeKpiPct(actualVal: any, targetVal: any): number | null {
   return Math.max(0, Math.min(100, Math.round((actual / target) * 100)));
 }
 
-/** Project helper: compute display values */
+/** Project display values — directly from status field, no computation */
 function projectDisplayValues(proj: any) {
-  const isPlanned = proj.status === 'planned' || proj.status === 'not_started' || proj.status === 'not-started';
+  const status = String(proj.status || '').toLowerCase();
   const rawPct = proj.progress_percentage;
   const pctRaw = rawPct != null ? (typeof rawPct === 'object' && 'low' in rawPct ? rawPct.low : Number(rawPct)) : null;
-  const pct = isPlanned ? 0 : (pctRaw != null ? (pctRaw <= 1 && pctRaw > 0 ? Math.round(pctRaw * 100) : Math.round(pctRaw)) : null);
-  const isOverdue = !isPlanned && proj.end_date && proj.status !== 'complete' && proj.status !== 'completed' && new Date(proj.end_date) < new Date();
-  const color = isPlanned ? '#475569' : isOverdue ? '#ef4444' : pct != null && pct >= 100 ? '#10b981' : '#3b82f6';
-  return { isPlanned, pct, isOverdue, color };
+  const pct = pctRaw != null ? (pctRaw <= 1 && pctRaw >= 0 ? Math.round(pctRaw * 100) : Math.round(pctRaw)) : null;
+  const isPlanned = status === 'planned' || status === 'not_started' || status === 'not-started';
+  const isOverdue = false;
+
+  const color = status === 'late' ? '#ef4444'
+    : status === 'complete' || status === 'completed' ? '#10b981'
+    : status === 'active' ? '#10b981'
+    : '#475569';
+
+  return { isPlanned, pct, isOverdue, color, statusLabel: capitalize(status) };
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -142,6 +148,29 @@ function SemiGauge({ value, band, subtitle, centerLabel }: { value: number; band
 }
 
 // ═══════════════════════════════════════════════════════════
+// COLLAPSIBLE SECTION — reusable collapse/expand wrapper
+// ═══════════════════════════════════════════════════════════
+
+function CollapsibleSection({ title, count, defaultOpen = false, children }: {
+  title: string; count?: number; defaultOpen?: boolean; children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div style={{ marginBottom: '1rem' }}>
+      <div onClick={() => setOpen(!open)} style={{
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        cursor: 'pointer', padding: '6px 0', userSelect: 'none'
+      }}>
+        <span style={{ fontSize: '12px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--component-text-muted)' }}>
+          {title} {count != null && <span style={{ color: 'var(--component-text-secondary)' }}>({count})</span>} {open ? '\u25BE' : '\u25B8'}
+        </span>
+      </div>
+      {open && children}
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════
 // MATURITY BLOCKS — visual 1-5 scale
 // ═══════════════════════════════════════════════════════════
 
@@ -169,6 +198,65 @@ function MaturityBlocks({ current, target }: { current: number; target: number }
           }} />
         ))}
       </div>
+    </div>
+  );
+}
+
+/** Stage Gate Progress — shows S1–S5 boxes per dimension */
+function StageGateProgress({ dimensions, target }: {
+  dimensions: Array<{ label: string; level: number; isWeakest: boolean }>;
+  target: number;
+}) {
+  const stageNames = ['S1', 'S2', 'S3', 'S4', 'S5'];
+
+  return (
+    <div style={{ marginBottom: '1.5rem' }}>
+      {dimensions.map(dim => (
+        <div key={dim.label} style={{ marginBottom: '12px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+            <span style={{
+              fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px',
+              color: dim.isWeakest ? '#f59e0b' : 'var(--component-text-muted)'
+            }}>
+              {dim.label} {dim.isWeakest && '\u26A0'}
+            </span>
+            <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--component-text-primary)' }}>
+              S{Math.round(dim.level)}
+            </span>
+          </div>
+          <div style={{ display: 'flex', gap: '3px' }}>
+            {stageNames.map((name, idx) => {
+              const stageNum = idx + 1;
+              const currentLevel = Math.round(dim.level);
+              const isAchieved = stageNum <= currentLevel;
+              const isTarget = stageNum === target;
+              const isWithinTarget = stageNum <= target && stageNum > currentLevel;
+
+              return (
+                <div key={name} style={{
+                  flex: 1, height: '24px', borderRadius: '3px',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: '10px', fontWeight: 600,
+                  background: isAchieved
+                    ? 'var(--component-text-accent)'
+                    : isWithinTarget
+                      ? 'rgba(244,187,48,0.15)'
+                      : 'rgba(255,255,255,0.04)',
+                  color: isAchieved
+                    ? 'var(--component-text-on-accent, #000)'
+                    : isWithinTarget
+                      ? 'var(--component-text-accent)'
+                      : 'rgba(255,255,255,0.2)',
+                  border: isTarget ? '2px solid var(--component-text-accent)' : '1px solid rgba(255,255,255,0.06)',
+                  transition: 'all 0.3s ease'
+                }}>
+                  {name}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
@@ -379,7 +467,7 @@ function ProjectCard({ proj }: { proj: any }) {
           {proj.name}
         </span>
         <span style={{ fontSize: '11px', fontWeight: 600, color: d.color }}>
-          {d.isOverdue ? t('josoor.enterprise.detailPanel.overdue') : capitalize(proj.status)}
+          {d.statusLabel}
         </span>
       </div>
       {d.pct != null && !d.isPlanned && (
@@ -423,15 +511,16 @@ function L3DetailView({ l3, onClose, onAIAnalysis }: { l3: L3Capability; onClose
   const projects: any[] = cap.linkedProjects || [];
   const entities: any[] = cap.operatingEntities || [];
   const isBuild = l3.mode === 'build';
-  const l3Kpis: any[] = cap.l2Kpis || [];
-  const primaryL3Kpi = l3Kpis.find((entry: any) => (entry?.inputs || []).some((inp: any) => String(inp?.cap_id || '') === String(l3.id))) || l3Kpis[0] || null;
-  const l3KpiPct = primaryL3Kpi ? computeKpiPct(primaryL3Kpi.kpi?.actual_value, primaryL3Kpi.kpi?.target) : null;
-  const l3KpiBand = l3KpiPct != null ? (l3KpiPct >= 70 ? 'green' : l3KpiPct >= 40 ? 'amber' : 'red') : undefined;
-  const l3KpiActual = primaryL3Kpi?.kpi?.actual_value != null ? Number(primaryL3Kpi.kpi.actual_value) : null;
-  const l3KpiTarget = primaryL3Kpi?.kpi?.target != null ? Number(primaryL3Kpi.kpi.target) : null;
-  const l3KpiUnit = primaryL3Kpi?.kpi?.unit || '';
-  const l3KpiCenterLabel = l3KpiActual != null ? `${l3KpiActual}${l3KpiUnit === '%' ? '%' : ''}` : undefined;
-  const l3Inputs = (primaryL3Kpi?.inputs || []).filter((inp: any) => String(inp?.cap_id || '') === String(l3.id));
+  // L3 KPI gauge: from execute_status (operate) or build_status (build) — same source as strip
+  const processMetrics: any[] = cap.processMetrics || [];
+  const primaryProcessMetric = processMetrics[0];
+  const l3StatusField = isBuild ? l3.build_status : l3.execute_status;
+  const l3KpiBand = l3StatusField === 'issues' || l3StatusField === 'in-progress-issues' ? 'red'
+    : l3StatusField === 'at-risk' || l3StatusField === 'in-progress-atrisk' ? 'amber'
+    : l3StatusField === 'ontrack' || l3StatusField === 'in-progress-ontrack' ? 'green'
+    : undefined;
+  const l3KpiPct = l3.kpi_achievement_pct != null ? Math.round(Number(l3.kpi_achievement_pct)) : null;
+  const l3KpiCenterLabel = l3KpiPct != null ? `${l3KpiPct}%` : (l3KpiBand ? capitalize(l3StatusField || '') : undefined);
 
   const headerTitle = (
     <>
@@ -445,13 +534,13 @@ function L3DetailView({ l3, onClose, onAIAnalysis }: { l3: L3Capability; onClose
 
   const L3KpiSection = (
     <>
-      {primaryL3Kpi && l3KpiPct != null ? (
+      {(l3KpiPct != null || l3KpiBand) ? (
         <>
           <SemiGauge
-            value={l3KpiPct}
+            value={l3KpiPct ?? (l3KpiBand === 'green' ? 90 : l3KpiBand === 'amber' ? 70 : 30)}
             band={l3KpiBand}
             centerLabel={l3KpiCenterLabel}
-            subtitle={`${primaryL3Kpi.kpi?.name || 'L2 KPI'} \u00B7 ${l3KpiPct}% achievement (${l3KpiActual ?? '\u2014'} / ${l3KpiTarget ?? '\u2014'} ${l3KpiUnit})`}
+            subtitle={`${primaryProcessMetric?.metric_name || l3StatusField || 'KPI'} \u00B7 ${l3KpiCenterLabel}`}
           />
 
           <div style={{
@@ -460,18 +549,18 @@ function L3DetailView({ l3, onClose, onAIAnalysis }: { l3: L3Capability; onClose
           }}>
             <div style={{ ...labelStyle, marginBottom: '6px' }}>KPI Connectivity</div>
             <div style={{ fontSize: '13px', color: 'var(--component-text-primary)', marginBottom: '8px', lineHeight: 1.5 }}>
-              {`L3 Process Metrics (${l3Inputs.length}) \u2192 L2 KPI (${primaryL3Kpi.kpi?.name || primaryL3Kpi.kpi?.id || '\u2014'}) \u2192 Sector Performance (${primaryL3Kpi.kpi?.id || primaryL3Kpi.kpi?.domain_id || '\u2014'})`}
+              {`L3 Process Metrics (${processMetrics.length}) \u2192 Capability ${cap.name || cap.id}`}
             </div>
-            {primaryL3Kpi.kpi?.formula_description && (
+            {primaryProcessMetric?.metric_type && (
               <div style={{ fontSize: '12px', color: 'var(--component-text-secondary)', fontStyle: 'italic', marginBottom: '8px' }}>
-                {primaryL3Kpi.kpi.formula_description}
+                {`Type: ${primaryProcessMetric.metric_type}`}
               </div>
             )}
-            {l3Inputs.length > 0 && (
+            {processMetrics.length > 0 && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                {l3Inputs.map((inp: any, idx: number) => (
-                  <div key={`${inp.id || idx}_${inp.cap_id || ''}`} style={{ fontSize: '12px', color: 'var(--component-text-secondary)' }}>
-                    {`${inp.cap_id || l3.id} \u00B7 ${inp.metric_name || inp.name || inp.id}: ${inp.actual ?? '\u2014'} / ${inp.target ?? '\u2014'} ${inp.unit || ''}`}
+                {processMetrics.map((pm: any, idx: number) => (
+                  <div key={`${pm.metric_name || idx}`} style={{ fontSize: '12px', color: 'var(--component-text-secondary)' }}>
+                    {`${pm.metric_name || 'metric'}: ${pm.actual ?? '\u2014'} / ${pm.target ?? '\u2014'} ${pm.unit || ''}`}
                   </div>
                 ))}
               </div>
@@ -548,9 +637,35 @@ function L3DetailView({ l3, onClose, onAIAnalysis }: { l3: L3Capability; onClose
           {/* 3. Maturity */}
           <MaturityBlocks current={l3.maturity_level} target={l3.target_maturity_level} />
 
-          {/* 4. Projects */}
-          <h3 style={sectionTitleStyle}>{t('josoor.enterprise.detailPanel.projectDeliverables')}</h3>
-          <ProjectsSection projects={projects} />
+          {/* 3b. Stage Gate Progress — 3 dimensions toward target */}
+          {(l3.people_score != null || l3.process_score != null || l3.tools_score != null) && (() => {
+            const dims = [
+              { label: t('josoor.enterprise.detailPanel.people', 'People'), level: l3.people_score || 1 },
+              { label: t('josoor.enterprise.detailPanel.process', 'Process'), level: l3.process_score || 1 },
+              { label: t('josoor.enterprise.detailPanel.tools', 'Tools'), level: l3.tools_score || 1 }
+            ].filter(d => d.level != null);
+            const minLevel = Math.min(...dims.map(d => d.level));
+            const allSame = dims.every(d => d.level === dims[0].level);
+            const dimensionsWithWeakest = dims.map(d => ({
+              ...d,
+              isWeakest: !allSame && d.level === minLevel
+            }));
+
+            return (
+              <>
+                <h3 style={sectionTitleStyle}>{t('josoor.enterprise.detailPanel.stageGateProgress', 'Stage Gate Progress')}</h3>
+                <div style={{ fontSize: '12px', color: 'var(--component-text-muted)', marginBottom: '12px' }}>
+                  {t('josoor.enterprise.detailPanel.stageGateDesc', 'All 3 dimensions must reach the target stage for activation.')}
+                </div>
+                <StageGateProgress dimensions={dimensionsWithWeakest} target={l3.target_maturity_level} />
+              </>
+            );
+          })()}
+
+          {/* 4. Projects (collapsible) */}
+          <CollapsibleSection title={t('josoor.enterprise.detailPanel.projectDeliverables')} count={projects.length} defaultOpen={false}>
+            <ProjectsSection projects={projects} />
+          </CollapsibleSection>
 
           {/* 5. Risk Details (collapsible) */}
           {risk && (
@@ -569,38 +684,30 @@ function L3DetailView({ l3, onClose, onAIAnalysis }: { l3: L3Capability; onClose
           {/* 1. KPI Achievement Gauge + explicit KPI connectivity */}
           {L3KpiSection}
 
-          {/* 2. Three Pillars */}
-          {risk && (risk.people_score != null || risk.process_score != null || risk.tools_score != null) && (
-            <div style={{ marginBottom: '1.5rem' }}>
-              <h3 style={sectionTitleStyle}>{t('josoor.enterprise.detailPanel.threePillars', 'Three Pillars')}</h3>
-              {[
-                { label: t('josoor.enterprise.detailPanel.people'), val: risk.people_score },
-                { label: t('josoor.enterprise.detailPanel.process'), val: risk.process_score },
-                { label: t('josoor.enterprise.detailPanel.tools'), val: risk.tools_score }
-              ].filter(s => s.val != null).map(s => {
-                const isWeakest = s.val === Math.min(
-                  ...[risk.people_score, risk.process_score, risk.tools_score].filter((v: any) => v != null)
-                ) && (risk.people_score !== risk.process_score || risk.process_score !== risk.tools_score);
-                return (
-                  <div key={s.label} style={{ marginBottom: '10px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                      <span style={{ ...labelStyle, marginBottom: 0, color: isWeakest ? '#f59e0b' : 'var(--component-text-muted)' }}>
-                        {s.label} {isWeakest && '\u26A0'}
-                      </span>
-                      <span style={valueStyle}>{s.val}/5</span>
-                    </div>
-                    <div style={{ height: '8px', background: 'rgba(255,255,255,0.06)', borderRadius: '4px', overflow: 'hidden' }}>
-                      <div style={{
-                        height: '100%', width: `${(s.val / 5) * 100}%`,
-                        background: isWeakest ? '#f59e0b' : 'var(--component-text-accent)',
-                        borderRadius: '4px', transition: 'width 0.4s ease'
-                      }} />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+          {/* 2. Regression Risk Dimensions */}
+          {(l3.people_score != null || l3.process_score != null || l3.tools_score != null) && (() => {
+            const dims = [
+              { label: t('josoor.enterprise.detailPanel.people', 'People'), level: l3.people_score || 1 },
+              { label: t('josoor.enterprise.detailPanel.process', 'Process'), level: l3.process_score || 1 },
+              { label: t('josoor.enterprise.detailPanel.tools', 'Tools'), level: l3.tools_score || 1 }
+            ].filter(d => d.level != null);
+            const minLevel = Math.min(...dims.map(d => d.level));
+            const allSame = dims.every(d => d.level === dims[0].level);
+            const dimensionsWithWeakest = dims.map(d => ({
+              ...d,
+              isWeakest: !allSame && d.level === minLevel
+            }));
+
+            return (
+              <>
+                <h3 style={sectionTitleStyle}>{t('josoor.enterprise.detailPanel.regressionDimensions', 'Regression Risk Dimensions')}</h3>
+                <div style={{ fontSize: '12px', color: 'var(--component-text-muted)', marginBottom: '12px' }}>
+                  {t('josoor.enterprise.detailPanel.regressionDimensionsDesc', 'Health of the 3 operational dimensions. Weakest dimension drives regression risk.')}
+                </div>
+                <StageGateProgress dimensions={dimensionsWithWeakest} target={l3.target_maturity_level} />
+              </>
+            );
+          })()}
 
           {/* 3. Process Metrics */}
           {(() => {
@@ -672,11 +779,10 @@ function L3DetailView({ l3, onClose, onAIAnalysis }: { l3: L3Capability; onClose
             );
           })()}
 
-          {/* 4. Operating Entities */}
+          {/* 4. Operating Entities (collapsible) */}
           {entities.length > 0 && (
-            <>
-              <h3 style={sectionTitleStyle}>{t('josoor.enterprise.detailPanel.operationalFootprint')}</h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '1.5rem' }}>
+            <CollapsibleSection title={t('josoor.enterprise.detailPanel.operationalFootprint')} count={entities.length} defaultOpen={false}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '0.5rem' }}>
                 {entities.map(ent => {
                   const typeKey = ent.type === 'OrgUnit' ? 'orgUnit' : ent.type === 'Process' ? 'processEntity' : 'itSystem';
                   return (
@@ -698,7 +804,7 @@ function L3DetailView({ l3, onClose, onAIAnalysis }: { l3: L3Capability; onClose
                   );
                 })}
               </div>
-            </>
+            </CollapsibleSection>
           )}
 
           {/* 5. Risk Details (collapsible) */}
@@ -736,30 +842,23 @@ function L2DetailView({ l2, onClose, selectedYear, selectedQuarter, onAIAnalysis
     });
   });
 
-  // Aggregate L2 KPIs from L3 children (deduped by kpi.id + year)
-  const allL2Kpis: any[] = [];
-  (l2.l3 || []).forEach(l3 => {
-    const kpis = l3.rawCapability?.l2Kpis || [];
-    kpis.forEach((k: any) => {
-      const kpiKey = `${k.kpi?.id}_${k.kpi?.year}`;
-      if (!allL2Kpis.find(existing => `${existing.kpi?.id}_${existing.kpi?.year}` === kpiKey)) {
-        allL2Kpis.push(k);
-      }
-    });
-  });
-
-  // MVP rule: L2 has exactly ONE KPI. Prefer KPI id that matches L2 id, fallback to first.
-  const primaryKpi = allL2Kpis.find((k: any) => String(k?.kpi?.id || '') === String(l2.id)) || allL2Kpis[0] || null;
-  const kpiActual = primaryKpi?.kpi?.actual_value != null ? Number(primaryKpi.kpi.actual_value) : null;
-  const kpiTarget = primaryKpi?.kpi?.target != null ? Number(primaryKpi.kpi.target) : null;
-  const kpiPct = kpiActual != null && kpiTarget && kpiTarget > 0
-    ? Math.min(Math.round((kpiActual / kpiTarget) * 100), 100)
-    : null;
-  const gaugeBand = kpiPct != null
-    ? (kpiPct >= 70 ? 'green' : kpiPct >= 40 ? 'amber' : 'red')
+  // L2 KPI gauge: from execute_status (operate) or build_status (build) — same source as strip
+  const primaryPerf = l2.upwardChain?.performanceTargets?.[0] || null;
+  const l2Mode = l2.l3.some((c: any) => c.mode === 'execute') ? 'execute' : 'build';
+  const l2StatusField = l2Mode === 'build' ? l2.build_status : l2.execute_status;
+  const gaugeBand = l2StatusField === 'issues' || l2StatusField === 'in-progress-issues' ? 'red'
+    : l2StatusField === 'at-risk' || l2StatusField === 'in-progress-atrisk' ? 'amber'
+    : l2StatusField === 'ontrack' || l2StatusField === 'in-progress-ontrack' ? 'green'
     : undefined;
-  const kpiCenterLabel = kpiActual != null ? `${kpiActual}${primaryKpi?.kpi?.unit === '%' ? '%' : ''}` : undefined;
-  const sectorPerfCount = Math.max(l2.upwardChain?.performanceTargets?.length || 0, primaryKpi ? 1 : 0);
+  const kpiPct = l2.kpi_achievement_pct != null ? Math.round(Number(l2.kpi_achievement_pct)) : null;
+  const kpiCenterLabel = kpiPct != null ? `${kpiPct}%` : (gaugeBand ? capitalize(l2StatusField || '') : undefined);
+  // Collect L3 process metric inputs (Process L3 → Cap L3 → this Cap L2)
+  const l2ProcessInputs: any[] = [];
+  (l2.l3 || []).forEach((l3: any) => {
+    const pm = l3.rawCapability?.processMetrics || [];
+    pm.forEach((m: any) => l2ProcessInputs.push({ ...m, cap_id: l3.id, cap_name: l3.name }));
+  });
+  const sectorPerfCount = l2.upwardChain?.performanceTargets?.length || 0;
   const objectiveCount = l2.upwardChain?.objectives?.length || 0;
 
   const openL3ById = (capId?: string) => {
@@ -839,71 +938,60 @@ function L2DetailView({ l2, onClose, selectedYear, selectedQuarter, onAIAnalysis
 
         return (
           <>
-            {/* Block 1: Operational Capabilities */}
+            {/* Block 1: Operational Capabilities (collapsible) */}
             {operationalL3s.length > 0 && (
-              <>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <h3 style={sectionTitleStyle}>{t('josoor.enterprise.detailPanel.operationalCapabilities')}</h3>
-                  <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--component-text-muted)', marginBottom: '1rem' }}>{operationalL3s.length}</span>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '1.5rem' }}>
+              <CollapsibleSection title={t('josoor.enterprise.detailPanel.operationalCapabilities')} count={operationalL3s.length} defaultOpen={true}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '0.5rem' }}>
                   {operationalL3s.map(renderL3Card)}
                 </div>
-              </>
+              </CollapsibleSection>
             )}
 
-            {/* Block 2: Under Construction */}
+            {/* Block 2: Under Construction (collapsible) */}
             {buildingL3s.length > 0 && (
-              <>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <h3 style={sectionTitleStyle}>{t('josoor.enterprise.detailPanel.underConstruction')}</h3>
-                  <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--component-text-muted)', marginBottom: '1rem' }}>{buildingL3s.length}</span>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '1.5rem' }}>
+              <CollapsibleSection title={t('josoor.enterprise.detailPanel.underConstruction')} count={buildingL3s.length} defaultOpen={true}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '0.5rem' }}>
                   {buildingL3s.map(renderL3Card)}
                 </div>
-              </>
+              </CollapsibleSection>
             )}
           </>
         );
       })()}
 
-      {/* 1. KPI Achievement Gauge — single L2 KPI */}
-      {kpiPct != null && primaryKpi?.kpi ? (
+      {/* 1. KPI Achievement Gauge — from execute_status/build_status (same as strip) */}
+      {(kpiPct != null || gaugeBand) ? (
         <SemiGauge
-          value={kpiPct}
+          value={kpiPct ?? (gaugeBand === 'green' ? 90 : gaugeBand === 'amber' ? 70 : 30)}
           band={gaugeBand}
           centerLabel={kpiCenterLabel}
-          subtitle={`${primaryKpi.kpi.name} \u00B7 ${kpiPct}% achievement (${kpiActual ?? '\u2014'} / ${kpiTarget ?? '\u2014'} ${primaryKpi.kpi.unit || ''})`}
+          subtitle={`${primaryPerf?.name || l2.name} \u00B7 ${kpiCenterLabel}`}
         />
       ) : null}
 
       {/* 2. Maturity */}
       <MaturityBlocks current={l2.maturity_level} target={l2.target_maturity_level} />
 
-      {/* 3. L2 KPI (single for MVP) */}
-      {primaryKpi?.kpi && (() => {
-        const kpi = primaryKpi.kpi;
-        const inputs = primaryKpi.inputs;
-        const inputList = Array.isArray(inputs) ? inputs : [];
-        const contributorCaps = Array.from(new Set(inputList.map((inp: any) => inp.cap_id).filter(Boolean)));
-        const lowerBetterCount = inputList.filter((inp: any) => inp.metric_type === 'cycle_time' || inp.metric_type === 'cost').length;
-        const businessLogicShort = inputList.length > 0
-          ? `${kpi.name} is driven by ${inputList.length} L3 process metric${inputList.length > 1 ? 's' : ''} from ${contributorCaps.length || 1} contributing capability${(contributorCaps.length || 1) > 1 ? 'ies' : 'y'}. ${lowerBetterCount > 0 ? `${lowerBetterCount} metric${lowerBetterCount > 1 ? 's use' : ' uses'} lower-is-better scoring.` : 'Higher achievement on these metrics improves the KPI.'}`
-          : `${kpi.name} is calculated from linked L3 process metrics.`;
+      {/* 3. L2 KPI Formula & Inputs — Path: Process L3 → Cap L3 → Cap L2 → Perf L2 */}
+      {primaryPerf && (() => {
+        const contributorCaps = Array.from(new Set(l2ProcessInputs.map((inp: any) => inp.cap_id).filter(Boolean)));
+        const lowerBetterCount = l2ProcessInputs.filter((inp: any) => inp.metric_type === 'cycle_time' || inp.metric_type === 'cost').length;
+        const businessLogicShort = l2ProcessInputs.length > 0
+          ? `${primaryPerf.name} is driven by ${l2ProcessInputs.length} L3 process metric${l2ProcessInputs.length > 1 ? 's' : ''} from ${contributorCaps.length || 1} contributing capability${(contributorCaps.length || 1) > 1 ? 'ies' : 'y'}. ${lowerBetterCount > 0 ? `${lowerBetterCount} metric${lowerBetterCount > 1 ? 's use' : ' uses'} lower-is-better scoring.` : 'Higher achievement on these metrics improves the KPI.'}`
+          : `${primaryPerf.name} is calculated from linked L3 process metrics.`;
 
         return (
-          <div key={`${kpi.id || kpi.domain_id}_${kpi.year || ''}`} style={{ marginBottom: '1.5rem' }}>
+          <div key={`${primaryPerf.id || (primaryPerf as any).domain_id}_${primaryPerf.target || ''}`} style={{ marginBottom: '1.5rem' }}>
             <h3 style={sectionTitleStyle}>L2 Formula & Inputs</h3>
 
             {/* L3 Input metrics */}
-            {inputs && inputs.length > 0 && (
+            {l2ProcessInputs.length > 0 && (
               <div style={{
                 display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '0.5rem',
                 background: 'rgba(255,255,255,0.02)', borderRadius: '6px', padding: '8px 10px'
               }}>
                 <div style={{ ...labelStyle, marginBottom: '4px' }}>L3 Inputs</div>
-                {inputs.map((inp: any, idx: number) => {
+                {l2ProcessInputs.map((inp: any, idx: number) => {
                   const inpActual = inp.actual != null ? Number(inp.actual) : null;
                   const inpTarget = inp.target != null ? Number(inp.target) : null;
                   const isLowerBetter = inp.metric_type === 'cycle_time' || inp.metric_type === 'cost';
@@ -941,17 +1029,17 @@ function L2DetailView({ l2, onClose, selectedYear, selectedQuarter, onAIAnalysis
               <div style={{ fontSize: '13px', color: 'var(--component-text-primary)', marginBottom: '6px', lineHeight: 1.5 }}>
                 {businessLogicShort}
               </div>
-              {kpi.formula_description && (
+              {(primaryPerf as any).formula_description && (
                 <div style={{ fontSize: '12px', color: 'var(--component-text-muted)', fontStyle: 'italic', marginBottom: '8px', lineHeight: 1.5 }}>
-                  {kpi.formula_description}
+                  {(primaryPerf as any).formula_description}
                 </div>
               )}
 
-              {inputList.length > 0 && (
+              {l2ProcessInputs.length > 0 && (
                 <div>
                   <div style={{ ...labelStyle, marginBottom: '6px' }}>L3 References</div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    {inputList.map((inp: any, idx: number) => (
+                    {l2ProcessInputs.map((inp: any, idx: number) => (
                       <button
                         key={`formula-ref-${idx}`}
                         type="button"
@@ -975,7 +1063,7 @@ function L2DetailView({ l2, onClose, selectedYear, selectedQuarter, onAIAnalysis
       })()}
 
       {/* 4. Upward chain links: L3 metrics -> L2 KPI -> Sector Performance -> Objective */}
-      {primaryKpi && (
+      {primaryPerf && (
         <div style={{ marginBottom: '1.5rem' }}>
           <h3 style={sectionTitleStyle}>Upward Links</h3>
           <div style={{
@@ -983,7 +1071,7 @@ function L2DetailView({ l2, onClose, selectedYear, selectedQuarter, onAIAnalysis
             borderRadius: '8px', padding: '12px', marginBottom: '10px'
           }}>
             <div style={{ fontSize: '13px', color: 'var(--component-text-primary)', lineHeight: 1.5 }}>
-              {`L3 Process Metrics (${primaryKpi.inputs?.length || 0}) \u2192 L2 KPI (${primaryKpi.kpi?.name || primaryKpi.kpi?.id || '\u2014'}) \u2192 Sector Performance (${l2.upwardChain?.performanceTargets?.length || 0}) \u2192 Sector Objectives (${l2.upwardChain?.objectives?.length || 0})`}
+              {`L3 Process Metrics (${l2ProcessInputs.length}) \u2192 L2 KPI (${primaryPerf.name || '\u2014'}) \u2192 Sector Performance (${sectorPerfCount}) \u2192 Sector Objectives (${objectiveCount})`}
             </div>
           </div>
 
@@ -1011,8 +1099,8 @@ function L2DetailView({ l2, onClose, selectedYear, selectedQuarter, onAIAnalysis
         </div>
       )}
 
-      {/* 6. Projects (aggregated from L3 children) */}
-      <h3 style={sectionTitleStyle}>{t('josoor.enterprise.detailPanel.projectsStatus')}</h3>
+      {/* 6. Projects (collapsible, aggregated from L3 children) */}
+      <CollapsibleSection title={t('josoor.enterprise.detailPanel.projectsStatus')} count={allProjects.length} defaultOpen={false}>
       {allProjects.length === 0 ? (
         <div style={{
           background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '6px',
@@ -1034,7 +1122,7 @@ function L2DetailView({ l2, onClose, selectedYear, selectedQuarter, onAIAnalysis
                     {proj.name}
                   </span>
                   <span style={{ fontSize: '11px', fontWeight: 600, color: d.color }}>
-                    {d.isOverdue ? t('josoor.enterprise.detailPanel.overdue') : capitalize(proj.status)}
+                    {d.statusLabel}
                   </span>
                 </div>
                 {d.pct != null && !d.isPlanned && (
@@ -1053,6 +1141,7 @@ function L2DetailView({ l2, onClose, selectedYear, selectedQuarter, onAIAnalysis
           })}
         </div>
       )}
+      </CollapsibleSection>
     </PanelShell>
   );
 }

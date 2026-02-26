@@ -64,10 +64,10 @@ const BUSINESS_CHAINS = [
     { id: 'sector_value_chain', key: 'sector_value_chain' },
     { id: 'setting_strategic_initiatives', key: 'setting_strategic_initiatives' },
     { id: 'setting_strategic_priorities', key: 'setting_strategic_priorities' },
-    { id: 'build_oversight', key: 'build_oversight' },
-    { id: 'operate_oversight', key: 'operate_oversight' },
-    { id: 'sustainable_operations', key: 'sustainable_operations' },
-    { id: 'integrated_oversight', key: 'integrated_oversight' }
+    { id: 'change_to_capability', key: 'change_to_capability' },
+    { id: 'capability_to_policy', key: 'capability_to_policy' },
+    { id: 'capability_to_performance', key: 'capability_to_performance' },
+    { id: 'sustainable_operations', key: 'sustainable_operations' }
 ];
 
 // Keys to hide from the details panel — internal/rendering fields only

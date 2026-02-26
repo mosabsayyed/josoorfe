@@ -54,15 +54,52 @@ export default defineConfig({
         changeOrigin: true,
         secure: true,
       },
+      '/1': {
+        target: 'https://betaBE.aitwintech.com',
+        changeOrigin: true,
+        secure: true,
+        selfHandleResponse: true,
+        configure: (proxy, _options) => {
+          proxy.on('proxyReq', (proxyReq) => {
+            proxyReq.setHeader('Origin', 'https://betaBE.aitwintech.com');
+            proxyReq.setHeader('Host', 'betaBE.aitwintech.com');
+          });
+          // Bypass Vite's response buffering for SSE responses from MCP router.
+          // Without selfHandleResponse, Vite buffers the entire response before
+          // sending to browser, causing response.text() to hang for ~50s on large payloads.
+          proxy.on('proxyRes', (proxyRes, _req, res) => {
+            const headers: Record<string, string | string[]> = {};
+            for (const [key, value] of Object.entries(proxyRes.headers)) {
+              if (value) headers[key] = value;
+            }
+            // Force content-type to text/plain so browser doesn't treat as SSE stream
+            headers['content-type'] = 'text/plain; charset=utf-8';
+            res.writeHead(proxyRes.statusCode || 200, headers);
+            proxyRes.pipe(res);
+          });
+        },
+      },
       '/2': {
         target: 'https://betaBE.aitwintech.com',
         changeOrigin: true,
         secure: true,
+        configure: (proxy, _options) => {
+          proxy.on('proxyReq', (proxyReq, _req, _res) => {
+            proxyReq.setHeader('Origin', 'https://betaBE.aitwintech.com');
+            proxyReq.setHeader('Host', 'betaBE.aitwintech.com');
+          });
+        },
       },
       '/3': {
         target: 'https://betaBE.aitwintech.com',
         changeOrigin: true,
         secure: true,
+        configure: (proxy, _options) => {
+          proxy.on('proxyReq', (proxyReq, _req, _res) => {
+            proxyReq.setHeader('Origin', 'https://betaBE.aitwintech.com');
+            proxyReq.setHeader('Host', 'betaBE.aitwintech.com');
+          });
+        },
       },
       '/4': {
         target: 'https://betaBE.aitwintech.com',

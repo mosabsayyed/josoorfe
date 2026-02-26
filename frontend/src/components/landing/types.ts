@@ -54,6 +54,8 @@ export interface PlatformContent {
   title: string;
   subtitle: string;
   modes: ModeContent[];
+  twinEnginesLabel: string;
+  engines: Array<{ title: string; desc: string }>;
 }
 
 export interface LayerContent {
@@ -72,6 +74,14 @@ export interface ArchitectureContent {
   intro: string;
   layers: LayerContent[];
   engines: EngineContent[];
+}
+
+export interface StrategyHouseContent {
+  tag: string;
+  title: string;
+  subtitle: string;
+  elements: string[];
+  elementDescs: string[];
 }
 
 export interface BetaFormContent {

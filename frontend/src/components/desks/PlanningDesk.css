@@ -40,7 +40,7 @@
 .mode-btn {
     flex: 1;
     padding: 0.75rem 1rem;
-    text-align: left;
+    text-align: start;
     border-radius: 0.5rem;
     transition: all 0.2s;
     border: 1px solid transparent;
@@ -73,7 +73,7 @@
 }
 
 .mode-btn-desc-active {
-    color: var(--component-text-secondary);
+    color: #000000;
 }
 
 .mode-btn-desc-inactive {

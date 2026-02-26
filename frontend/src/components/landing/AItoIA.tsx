@@ -100,9 +100,14 @@ export default function AItoIA() {
       scrollRef.current += (targetRef.current - scrollRef.current) * 0.1;
       const sp = scrollRef.current;
 
-      // Crossfade entire content blocks (header + bullets)
-      challengeEl.style.opacity = String(Math.max(1 - sp * 2.5, 0));
-      innovationEl.style.opacity = String(Math.max((sp - 0.6) * 2.5, 0));
+      // Crossfade entire content blocks — overlap so both are partially visible mid-scroll
+      // Challenge fades out from sp=0.3 to sp=0.6
+      // Innovation fades in from sp=0.3 to sp=0.6
+      // No dead zone — they cross at sp=0.45 (both at ~50% opacity)
+      const challengeOpacity = sp <= 0.3 ? 1 : sp >= 0.6 ? 0 : 1 - (sp - 0.3) / 0.3;
+      const innovationOpacity = sp <= 0.3 ? 0 : sp >= 0.6 ? 1 : (sp - 0.3) / 0.3;
+      challengeEl.style.opacity = String(challengeOpacity);
+      innovationEl.style.opacity = String(innovationOpacity);
 
       // Clear
       ctx.fillStyle = BG;
@@ -201,31 +206,27 @@ export default function AItoIA() {
 
         <div className="aitoia-glass">
           {/* Overlapping content blocks that crossfade */}
-          <div style={{ display: 'grid' }}>
+          <div style={{ display: 'grid', width: '100%', overflow: 'hidden' }}>
             {/* Challenge content — fades out as user scrolls */}
-            <div ref={challengeRef} style={{ gridArea: '1 / 1' }}>
+            <div ref={challengeRef} style={{ gridArea: '1 / 1', width: '100%' }}>
               <div className="aitoia-header">
                 <span className="aitoia-tag">{t('aitoia.tag')}</span>
                 <h2>{t('aitoia.title')}</h2>
                 <p className="subtitle" style={{ maxWidth: '90vw' }}>{t('aitoia.challengeSubtitle')}</p>
               </div>
-              <div className="aitoia-block aitoia-ai" style={{ opacity: 1, pointerEvents: 'auto' }}>
-                <ul>
-                  {aiItems.map((item, i) => (
-                    <li key={i} style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                      <img src={AI_ICONS[i]} alt="" width={96} height={96} style={{ flexShrink: 0 }} className="aitoia-bullet-icon" />
-                      <div style={{ wordWrap: 'break-word', overflowWrap: 'break-word', maxWidth: '100%' }}>
-                        <strong>{item.strong}</strong>
-                        {item.desc}
-                      </div>
-                    </li>
-                  ))}
-                </ul>
+              <div className="challenge-columns">
+                {aiItems.map((item, i) => (
+                  <div key={i} className="challenge-col">
+                    <img src={AI_ICONS[i]} alt={item.strong} width={64} height={64} style={{ marginBottom: '12px' }} />
+                    <h3>{item.strong}</h3>
+                    <p>{item.desc}</p>
+                  </div>
+                ))}
               </div>
             </div>
 
             {/* Innovation content — fades in as user scrolls */}
-            <div ref={innovationRef} style={{ gridArea: '1 / 1', opacity: 0 }}>
+            <div ref={innovationRef} style={{ gridArea: '1 / 1', opacity: 0, width: '100%' }}>
               <div className="aitoia-header">
                 <span className="aitoia-tag">{t('aitoia.innovationTag')}</span>
                 <h2>{t('aitoia.innovationTitle')}</h2>
@@ -235,7 +236,7 @@ export default function AItoIA() {
                 <ul>
                   {iaItems.map((item, i) => (
                     <li key={i} style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                      <img src={IA_ICONS[i]} alt="" width={96} height={96} style={{ flexShrink: 0 }} className="aitoia-bullet-icon" />
+                      <img src={IA_ICONS[i]} alt={item.strong} width={96} height={96} style={{ flexShrink: 0 }} className="aitoia-bullet-icon" />
                       <div style={{ wordWrap: 'break-word', overflowWrap: 'break-word', maxWidth: '100%' }}>
                         <strong>{item.strong}</strong>
                         <span dangerouslySetInnerHTML={{ __html: highlightWorkflow(item.desc) }} />

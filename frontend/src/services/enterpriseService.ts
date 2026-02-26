@@ -29,7 +29,8 @@
  */
 
 import type { L1Capability, L2Capability, L3Capability } from '../types/enterprise';
-import { graphService } from './graphService';
+// graphService import removed — Enterprise Desk now uses MCP router exclusively
+// (Architecture Rule: ARCHITECTURE_API_Usage_Rules)
 
 // Backend response format: nodes have properties directly on them
 // Numeric fields are Neo4j Integer objects: {low: number, high: number}
@@ -87,60 +88,143 @@ function getNeo4jInt(val: { low: number; high: number } | number | undefined): n
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// MCP CYPHER ENDPOINT
+// MCP ROUTER — SINGLE DATA SOURCE (Architecture Rule: ARCHITECTURE_API_Usage_Rules)
+// All chain queries, Cypher queries, and data fetching go through MCP router.
+// Graph Server (port 3001) is ONLY for 3D visualization rendering.
 // ═══════════════════════════════════════════════════════════════════════════
 
-const MCP_ENDPOINT = '/4/mcp/'; // Proxied to https://betaBE.aitwintech.com/4/mcp/
+const MCP_ENDPOINT = '/1/mcp/'; // Noor MCP router (port 8201) — chains + cypher
 
 /**
- * Execute a read-only Cypher query via MCP endpoint.
- * Returns parsed JSON array of rows.
+ * Call an MCP tool on /1/mcp/ (Noor) and return the parsed content.
  */
-async function runCypher(query: string): Promise<any[]> {
+async function callMcpTool(toolName: string, args: Record<string, any>): Promise<any> {
+  const endpoint = MCP_ENDPOINT;
   const body = {
     jsonrpc: '2.0',
     id: Date.now(),
     method: 'tools/call',
-    params: {
-      name: 'read_neo4j_cypher',
-      arguments: { query }
-    }
+    params: { name: toolName, arguments: args }
   };
 
-  const response = await fetch(MCP_ENDPOINT, {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 30000); // 30s timeout per call
+
+  const response = await fetch(endpoint, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'Accept': 'application/json, text/event-stream'
     },
-    body: JSON.stringify(body)
-  });
+    body: JSON.stringify(body),
+    signal: controller.signal,
+  }).finally(() => clearTimeout(timeout));
 
-  if (!response.ok) {
-    throw new Error(`MCP HTTP Error: ${response.status}`);
-  }
+  if (!response.ok) throw new Error(`MCP HTTP Error: ${response.status}`);
 
+  // Server sends connection: close — response.text() works.
+  // DO NOT use streaming reader (response.body.getReader()) — Vite proxy buffers SSE
+  // responses and the reader hangs indefinitely.
   const text = await response.text();
-
-  // Parse SSE or JSON response
   let result: any;
   try {
     result = JSON.parse(text);
   } catch {
+    // SSE format: "event: message\ndata: {JSON}\n\n"
     const dataLine = text.split('\n').find(l => l.startsWith('data: '));
-    if (!dataLine) throw new Error('Invalid MCP response format');
+    if (!dataLine) throw new Error(`Invalid MCP response: ${text.substring(0, 200)}`);
     result = JSON.parse(dataLine.substring(6));
   }
 
   if (result.error) throw new Error(`MCP Error: ${result.error.message}`);
   if (result.result?.isError) {
-    throw new Error(`Cypher Error: ${result.result.content.map((c: any) => c.text).join('\n')}`);
+    throw new Error(`MCP Tool Error: ${result.result.content.map((c: any) => c.text).join('\n')}`);
   }
 
   const contentText = result.result?.content?.[0]?.text;
-  if (!contentText) return [];
+  if (!contentText) {
+    console.warn(`[EnterpriseService] callMcpTool(${toolName}): no content text`);
+    return null;
+  }
 
   return JSON.parse(contentText);
+}
+
+
+/**
+ * Execute a read-only Cypher query via /1/mcp/ read_neo4j_cypher.
+ * Single call with LIMIT 5000 — no pagination needed.
+ */
+async function runCypher(query: string): Promise<any[]> {
+  const fullQuery = `${query}\nLIMIT 5000`;
+  const result = await callMcpTool('read_neo4j_cypher', { cypher_query: fullQuery });
+  const rows = Array.isArray(result) ? result : [];
+  console.log(`[EnterpriseService] runCypher: ${rows.length} rows`);
+  return rows;
+}
+
+/**
+ * Execute an MCP chain tool with pagination. Fetches ALL pages and merges
+ * nodes + relationships into a single {nodes, links} graph structure.
+ *
+ * Chain tools return: { results: [{nodes, relationships}], total_count, page, page_size, has_more }
+ * We convert to: { nodes: [...], links: [...] } for compatibility with parseChain().
+ */
+/**
+ * Chain response format (from ARCHITECTURE_MCP_Endpoints_Ground_Truth):
+ *   { results: [{nId, nLabels, nProps, rType, rProps, sourceId, targetId}, ...],
+ *     total_count, page, page_size, has_more }
+ *
+ * Each row is a traversal step: node (nId/nLabels/nProps) + relationship (rType/sourceId/targetId).
+ * We split rows into unique nodes and links.
+ */
+async function runChainOnce(chainName: string, args: Record<string, any> = {}): Promise<{ nodes: any[]; links: any[] }> {
+  const year = args.year ?? 0;
+  const url = `/api/v1/chains/${chainName}?year=${year}`;
+  console.log(`[EnterpriseService] chain GET ${url}`);
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 30000);
+
+  const response = await fetch(url, { signal: controller.signal }).finally(() => clearTimeout(timeout));
+  if (!response.ok) throw new Error(`Chain HTTP ${response.status}: ${chainName}`);
+
+  const data = await response.json();
+  // REST format: { results: [{ nodes: [{id, labels, properties}], relationships: [{type, start, end, properties}] }], count, ... }
+  const envelope = data.results?.[0] || {};
+  const rawNodes: any[] = envelope.nodes || [];
+  const rawLinks: any[] = envelope.relationships || [];
+
+  const nodes: any[] = [];
+  const links: any[] = [];
+  const seenNodeIds = new Set<string>();
+  const seenLinkKeys = new Set<string>();
+
+  for (const n of rawNodes) {
+    const props = n.properties || {};
+    const nId = n.id || props.id || props.domain_id || '';
+    const labels = n.labels || [];
+    if (nId && !seenNodeIds.has(nId)) {
+      seenNodeIds.add(nId);
+      nodes.push({ nId, nLabels: labels, nProps: props, id: nId, labels, properties: props });
+    }
+  }
+
+  for (const r of rawLinks) {
+    const rType = r.type || '';
+    const sourceId = String(r.start ?? '');
+    const targetId = String(r.end ?? '');
+    if (rType && sourceId && targetId) {
+      const linkKey = `${sourceId}_${rType}_${targetId}`;
+      if (!seenLinkKeys.has(linkKey)) {
+        seenLinkKeys.add(linkKey);
+        links.push({ source: sourceId, target: targetId, type: rType, rType, sourceId, targetId, rProps: r.properties || {}, value: 1 });
+      }
+    }
+  }
+
+  console.log(`[EnterpriseService] ${chainName}: ${nodes.length} nodes, ${links.length} links (count=${data.count || 0})`);
+  return { nodes, links };
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -188,82 +272,440 @@ function matchesCumulativeFilter(
 
 // Raw data cache — fetched ONCE, reused across year/quarter changes
 interface RawEnterpriseData {
-  caps: any[];           // ALL EntityCapability from MCP Cypher
-  risks: any[];          // ALL EntityRisk from MCP Cypher
-  chainIntegrated: any;  // integrated_oversight chain response {nodes, links}
-  chainBuild: any;       // build_oversight chain response {nodes, links}
-  chainOperate: any;     // operate_oversight chain response {nodes, links}
-  processMetrics: any[]; // EntityProcess metrics linked via KNOWLEDGE_GAPS
-  l2Kpis: any[];         // L2 KPIs from FEEDS_INTO path (EntityProcess→SectorPerformance)
+  caps: any[];           // ALL EntityCapability — extracted from chains
+  risks: any[];          // ALL EntityRisk — extracted from chains
+  chainChangeToCap: any;    // change_to_capability chain {nodes, links}
+  chainCapToPolicy: any;    // capability_to_policy chain {nodes, links}
+  chainCapToPerf: any;      // capability_to_performance chain {nodes, links}
+  processMetrics: any[]; // EntityProcess metrics — extracted from chains
+  l2Kpis: any[];         // L2 KPIs — extracted from chains
+}
+
+/**
+ * Extract EntityCapability, EntityRisk, EntityProcess, SectorPerformance
+ * from chain node data. Replaces 4 direct Cypher queries.
+ *
+ * Chain node format: { nId, nLabels: ["EntityCapability"], nProps: { domain_id, name, ... } }
+ * Chain link format: { sourceId, targetId, rType: "KNOWLEDGE_GAPS" }
+ *
+ * Output formats match what filterAndBuildGraph() expects:
+ *   caps: flat array with { id, name, level, year, quarter, ... }
+ *   risks: flat array with { id, name, year, quarter, build_band, ... }
+ *   processMetrics: array of { cap_id, cap_year, proc: { id, name, actual, target, ... } }
+ *   l2Kpis: array of { perf_id, perf_year, kpi: { ... }, inputs: [...] }
+ */
+function extractEntitiesFromChains(chains: Array<{ nodes: any[]; links: any[] }>): {
+  caps: any[];
+  risks: any[];
+  processMetrics: any[];
+  l2Kpis: any[];
+} {
+  // Deduplicate across chains by composite nId
+  const capMap = new Map<string, any>();
+  const riskMap = new Map<string, any>();
+  const processMap = new Map<string, any>();  // nId → props
+  const perfMap = new Map<string, any>();     // nId → props
+
+  // Build global link index for relationship traversal
+  const knowledgeGapsLinks: Array<{ source: string; target: string }> = [];
+  const feedsIntoLinks: Array<{ source: string; target: string }> = [];
+
+  for (const chain of chains) {
+    if (!chain?.nodes) continue;
+
+    // Extract nodes by label
+    for (const n of chain.nodes) {
+      const labels: string[] = n.nLabels || n.labels || [];
+      const props = n.nProps || n.properties || {};
+      const nId = String(n.nId ?? n.id ?? '');
+      const label = labels.find(l => l !== 'Resource') || labels[0] || '';
+
+      // Convert chain nProps (domain_id based) to the flat format filterAndBuildGraph expects
+      // Chain props have domain_id as business ID; Cypher rows had .id as business ID
+      const domainId = props.domain_id || nId.split(':')[1] || '';
+      const yearRaw = props.year;
+      const year = typeof yearRaw === 'object' && yearRaw?.low != null ? yearRaw.low : Number(yearRaw) || 0;
+      const quarterRaw = props.quarter;
+      const quarter = typeof quarterRaw === 'object' && quarterRaw?.low != null ? quarterRaw.low : Number(quarterRaw) || 0;
+
+      if (label === 'EntityCapability') {
+        const key = `${domainId}_${year}_${quarter}`;
+        if (!capMap.has(key)) {
+          capMap.set(key, {
+            id: domainId,
+            name: props.name || '',
+            level: props.level || '',
+            year,
+            quarter,
+            status: props.status || '',
+            description: props.description || '',
+            parent_id: props.parent_id || '',
+            parent_year: typeof props.parent_year === 'object' ? props.parent_year?.low : Number(props.parent_year) || 0,
+            maturity_level: typeof props.maturity_level === 'object' ? props.maturity_level?.low : Number(props.maturity_level) || 0,
+            target_maturity_level: props.target_maturity_level,
+            // ETL-computed fields
+            build_status: props.build_status,
+            execute_status: props.execute_status,
+            kpi_achievement_pct: props.kpi_achievement_pct,
+            build_exposure_pct: props.build_exposure_pct,
+            regression_risk_pct: props.regression_risk_pct,
+            people_score: props.people_score,
+            tools_score: props.tools_score,
+            process_score: props.process_score,
+            dependency_count: typeof props.dependency_count === 'object' ? props.dependency_count?.low : props.dependency_count,
+            exposure_normalized: props.exposure_normalized,
+            _compositeId: nId,
+          });
+        }
+      } else if (label === 'EntityRisk') {
+        const key = `${domainId}_${year}_${quarter}`;
+        if (!riskMap.has(key)) {
+          riskMap.set(key, {
+            id: domainId,
+            name: props.name || '',
+            year,
+            quarter,
+            level: props.level || '',
+            build_band: props.build_band,
+            operate_band: props.operate_band,
+            build_exposure_pct: props.build_exposure_pct,
+            operate_exposure_pct_effective: props.operate_exposure_pct_effective,
+            expected_delay_days: typeof props.expected_delay_days === 'object' ? props.expected_delay_days?.low : props.expected_delay_days,
+            delay_days: typeof props.delay_days === 'object' ? props.delay_days?.low : props.delay_days,
+            likelihood_of_delay: props.likelihood_of_delay,
+            operational_health_pct: props.operational_health_pct,
+            people_score: props.people_score,
+            process_score: props.process_score,
+            tools_score: props.tools_score,
+            threshold_green: props.threshold_green,
+            threshold_amber: props.threshold_amber,
+            risk_category: props.risk_category,
+            risk_status: props.risk_status,
+            prev_operational_health_pct: props.prev_operational_health_pct,
+            prev2_operational_health_pct: props.prev2_operational_health_pct,
+            operate_trend_flag: props.operate_trend_flag,
+          });
+        }
+      } else if (label === 'EntityProcess') {
+        if (!processMap.has(nId)) {
+          processMap.set(nId, {
+            _compositeId: nId,
+            id: domainId,
+            name: props.name || '',
+            year,
+            metric_name: props.metric_name,
+            actual: props.actual,
+            target: props.target,
+            baseline: props.baseline,
+            unit: props.unit,
+            metric_type: props.metric_type,
+            indicator_type: props.indicator_type,
+            trend: props.trend,
+            aggregation_method: props.aggregation_method,
+            level: props.level || '',
+          });
+        }
+      } else if (label === 'SectorPerformance') {
+        if (!perfMap.has(nId)) {
+          perfMap.set(nId, {
+            _compositeId: nId,
+            id: domainId,
+            domain_id: domainId,
+            name: props.name || '',
+            year,
+            actual_value: props.actual_value,
+            target: props.target,
+            unit: props.unit,
+            formula_description: props.formula_description,
+            level: props.level || '',
+          });
+        }
+      }
+    }
+
+    // Collect relationship links for traversal
+    for (const link of (chain.links || [])) {
+      const rType = link.rType || link.type || '';
+      const src = String(link.sourceId ?? link.source ?? '');
+      const tgt = String(link.targetId ?? link.target ?? '');
+      if (rType === 'KNOWLEDGE_GAPS') {
+        knowledgeGapsLinks.push({ source: src, target: tgt });
+      } else if (rType === 'FEEDS_INTO') {
+        feedsIntoLinks.push({ source: src, target: tgt });
+      }
+    }
+  }
+
+  const caps = Array.from(capMap.values());
+  const risks = Array.from(riskMap.values());
+
+  // Build processMetrics: follow KNOWLEDGE_GAPS links from EntityCapability → EntityProcess
+  // Format: { cap_id, cap_year, proc: { id, name, actual, target, ... } }
+  const processMetrics: any[] = [];
+  // Index caps by compositeId for fast lookup
+  const capByCompositeId = new Map<string, any>();
+  for (const c of caps) {
+    if (c._compositeId) capByCompositeId.set(c._compositeId, c);
+  }
+
+  for (const link of knowledgeGapsLinks) {
+    // Cap → Process (source=cap, target=process)
+    const capNode = capByCompositeId.get(link.source);
+    const procNode = processMap.get(link.target);
+    if (capNode && procNode && capNode.level === procNode.level && procNode.metric_name) {
+      processMetrics.push({
+        cap_id: capNode.id,
+        cap_year: capNode.year,
+        proc: {
+          id: procNode.id,
+          name: procNode.name,
+          year: procNode.year,
+          metric_name: procNode.metric_name,
+          actual: procNode.actual,
+          target: procNode.target,
+          baseline: procNode.baseline,
+          unit: procNode.unit,
+          metric_type: procNode.metric_type,
+          indicator_type: procNode.indicator_type,
+          trend: procNode.trend,
+          aggregation_method: procNode.aggregation_method,
+        },
+      });
+    }
+    // Also check reverse direction (target=cap, source=process)
+    const capNodeRev = capByCompositeId.get(link.target);
+    const procNodeRev = processMap.get(link.source);
+    if (capNodeRev && procNodeRev && capNodeRev.level === procNodeRev.level && procNodeRev.metric_name) {
+      processMetrics.push({
+        cap_id: capNodeRev.id,
+        cap_year: capNodeRev.year,
+        proc: {
+          id: procNodeRev.id,
+          name: procNodeRev.name,
+          year: procNodeRev.year,
+          metric_name: procNodeRev.metric_name,
+          actual: procNodeRev.actual,
+          target: procNodeRev.target,
+          baseline: procNodeRev.baseline,
+          unit: procNodeRev.unit,
+          metric_type: procNodeRev.metric_type,
+          indicator_type: procNodeRev.indicator_type,
+          trend: procNodeRev.trend,
+          aggregation_method: procNodeRev.aggregation_method,
+        },
+      });
+    }
+  }
+
+  // Build l2Kpis: follow KNOWLEDGE_GAPS → FEEDS_INTO to find Process → SectorPerformance
+  // Format: { perf_id, perf_year, kpi: { ... }, inputs: [...] }
+  // First, build Process → SectorPerformance map via FEEDS_INTO
+  const procToPerf = new Map<string, string[]>(); // processCompositeId → perfCompositeIds
+  for (const link of feedsIntoLinks) {
+    const procNode = processMap.get(link.source);
+    const perfNode = perfMap.get(link.target);
+    if (procNode && perfNode) {
+      if (!procToPerf.has(link.source)) procToPerf.set(link.source, []);
+      procToPerf.get(link.source)!.push(link.target);
+    }
+    // Reverse check
+    const procNodeRev = processMap.get(link.target);
+    const perfNodeRev = perfMap.get(link.source);
+    if (procNodeRev && perfNodeRev) {
+      if (!procToPerf.has(link.target)) procToPerf.set(link.target, []);
+      procToPerf.get(link.target)!.push(link.source);
+    }
+  }
+
+  // Group by SectorPerformance: for each perf node, collect all contributing processes + their cap
+  const l2KpiAgg = new Map<string, { kpi: any; inputs: any[] }>();
+  for (const pm of processMetrics) {
+    // Find the process composite ID
+    const procEntries = Array.from(processMap.entries());
+    const procEntry = procEntries.find(([, p]) => p.id === pm.proc.id && p.year === pm.proc.year);
+    if (!procEntry) continue;
+    const [procCompositeId] = procEntry;
+    const perfIds = procToPerf.get(procCompositeId) || [];
+    for (const perfCompositeId of perfIds) {
+      const perf = perfMap.get(perfCompositeId);
+      if (!perf || perf.level !== 'L2') continue;
+      // Year matching: process year must match perf year, and cap year must match process year
+      if (perf.year && pm.proc.year && perf.year !== pm.proc.year) continue;
+      if (pm.cap_year && pm.proc.year && pm.cap_year !== pm.proc.year) continue;
+
+      const key = `${perf.id}_${perf.year}`;
+      if (!l2KpiAgg.has(key)) {
+        l2KpiAgg.set(key, {
+          kpi: {
+            id: perf.id,
+            domain_id: perf.domain_id,
+            name: perf.name,
+            year: perf.year,
+            actual_value: perf.actual_value,
+            target: perf.target,
+            unit: perf.unit,
+            formula_description: perf.formula_description,
+          },
+          inputs: [],
+        });
+      }
+      const entry = l2KpiAgg.get(key)!;
+      if (!entry.inputs.find((i: any) => i.id === pm.proc.id && i.cap_id === pm.cap_id)) {
+        entry.inputs.push({
+          id: pm.proc.id,
+          year: pm.proc.year,
+          metric_name: pm.proc.metric_name,
+          actual: pm.proc.actual,
+          target: pm.proc.target,
+          unit: pm.proc.unit,
+          metric_type: pm.proc.metric_type,
+          cap_id: pm.cap_id,
+          cap_name: '', // Not critical — was available from Cypher but not used downstream
+        });
+      }
+    }
+  }
+
+  const l2Kpis = Array.from(l2KpiAgg.values()).map(entry => ({
+    perf_id: entry.kpi.id,
+    perf_year: entry.kpi.year,
+    kpi: entry.kpi,
+    inputs: entry.inputs,
+  }));
+
+  return { caps, risks, processMetrics, l2Kpis };
 }
 
 let _rawDataCache: RawEnterpriseData | null = null;
 let _rawDataPromise: Promise<RawEnterpriseData> | null = null;
 
 /**
- * Fetch ALL EntityCapability + EntityRisk from DB + chain data from graph server.
- * Called ONCE, cached in memory. Year/quarter changes don't trigger refetch.
+ * Parse Cypher rows into flat caps + risks arrays.
  */
+function parseCypherRows(capsRisksRows: any[]): { caps: any[]; risks: any[] } {
+  const caps: any[] = [];
+  const risks: any[] = [];
+  const seenCaps = new Set<string>();
+  const seenRisks = new Set<string>();
+
+  for (const row of capsRisksRows) {
+    const c = row.cap;
+    if (!c) continue;
+    const domainId = c.domain_id || c.id || '';
+    const year = typeof c.year === 'object' && c.year?.low != null ? c.year.low : Number(c.year) || 0;
+    const quarter = typeof c.quarter === 'object' && c.quarter?.low != null ? c.quarter.low : Number(c.quarter) || 0;
+    const capKey = `${domainId}_${year}_${quarter}`;
+
+    if (!seenCaps.has(capKey)) {
+      seenCaps.add(capKey);
+      caps.push({
+        id: domainId,
+        name: c.name || '',
+        level: c.level || '',
+        year,
+        quarter,
+        status: c.status || '',
+        description: c.description || '',
+        parent_id: c.parent_id || '',
+        parent_year: typeof c.parent_year === 'object' ? c.parent_year?.low : Number(c.parent_year) || 0,
+        maturity_level: typeof c.maturity_level === 'object' ? c.maturity_level?.low : Number(c.maturity_level) || 0,
+        target_maturity_level: c.target_maturity_level,
+        // ETL-written fields — pass through to buildL3()
+        build_status: c.build_status,
+        execute_status: c.execute_status,
+        kpi_achievement_pct: c.kpi_achievement_pct,
+        build_exposure_pct: c.build_exposure_pct,
+        regression_risk_pct: c.regression_risk_pct,
+        people_score: c.people_score,
+        tools_score: c.tools_score,
+        process_score: c.process_score,
+        dependency_count: c.dependency_count,
+      });
+    }
+
+    const r = row.risk;
+    if (!r) continue;
+    const rDomainId = r.domain_id || r.id || '';
+    const rYear = typeof r.year === 'object' && r.year?.low != null ? r.year.low : Number(r.year) || 0;
+    const rQuarter = typeof r.quarter === 'object' && r.quarter?.low != null ? r.quarter.low : Number(r.quarter) || 0;
+    const riskKey = `${rDomainId}_${rYear}_${rQuarter}`;
+
+    if (!seenRisks.has(riskKey)) {
+      seenRisks.add(riskKey);
+      risks.push({
+        id: rDomainId,
+        name: r.name || '',
+        year: rYear,
+        quarter: rQuarter,
+        level: r.level || '',
+        build_band: r.build_band,
+        operate_band: r.operate_band,
+        build_exposure_pct: r.build_exposure_pct,
+        operate_exposure_pct_effective: r.operate_exposure_pct_effective,
+        expected_delay_days: typeof r.expected_delay_days === 'object' ? r.expected_delay_days?.low : r.expected_delay_days,
+        delay_days: typeof r.delay_days === 'object' ? r.delay_days?.low : r.delay_days,
+        likelihood_of_delay: r.likelihood_of_delay,
+        operational_health_pct: r.operational_health_pct,
+        people_score: r.people_score,
+        process_score: r.process_score,
+        tools_score: r.tools_score,
+        threshold_green: r.threshold_green,
+        threshold_amber: r.threshold_amber,
+        risk_category: r.risk_category,
+        risk_status: r.risk_status,
+        prev_operational_health_pct: r.prev_operational_health_pct,
+        prev2_operational_health_pct: r.prev2_operational_health_pct,
+        operate_trend_flag: r.operate_trend_flag,
+      });
+    }
+  }
+
+  return { caps, risks };
+}
+
+/**
+ * Fetch ALL enterprise data from 3 chains — single shot, no Cypher queries.
+ *
+ * Chains:
+ *   1. change_to_capability — ChangeAdoption → Project → Gap → Capability
+ *   2. capability_to_policy — Capability → Risk → PolicyTool → Objective
+ *   3. capability_to_performance — Capability → Risk → Performance → Objective
+ *
+ * All node properties (ETL fields, scores, statuses) come from chain node properties.
+ */
+
 async function fetchAllEnterpriseData(): Promise<RawEnterpriseData> {
-  // Return cached data if available
   if (_rawDataCache) return _rawDataCache;
-  // Deduplicate concurrent calls
   if (_rawDataPromise) return _rawDataPromise;
 
   _rawDataPromise = (async () => {
-    console.log('[EnterpriseService] Fetching ALL data via MCP Cypher + chains (one-time)');
+    console.log('[EnterpriseService] ONE-SHOT: 3 chains...');
 
-    const [capRows, riskRows, chainIntegrated, chainBuild, chainOperate, processMetricRows, l2KpiRows] = await Promise.all([
-      runCypher(`
-        MATCH (c:EntityCapability)
-        RETURN c { .id, .name, .level, .year, .quarter, .status, .description,
-                   .parent_id, .parent_year, .maturity_level, .target_maturity_level } AS cap
-      `),
-      runCypher(`
-        MATCH (r:EntityRisk)
-        RETURN r { .id, .name, .year, .quarter, .level,
-                   .build_band, .operate_band, .build_exposure_pct,
-                   .operate_exposure_pct_effective, .expected_delay_days,
-                   .delay_days, .likelihood_of_delay, .operational_health_pct,
-                   .people_score, .process_score, .tools_score,
-                   .threshold_green, .threshold_amber, .risk_category, .risk_status,
-                   .prev_operational_health_pct, .prev2_operational_health_pct,
-                   .operate_trend_flag } AS risk
-      `),
-      graphService.getBusinessChain('integrated_oversight', { year: '0', excludeEmbeddings: 'true' }),
-      graphService.getBusinessChain('build_oversight', { year: '0', excludeEmbeddings: 'true' }),
-      graphService.getBusinessChain('operate_oversight', { year: '0', excludeEmbeddings: 'true' }),
-      runCypher(`
-        MATCH (c:EntityCapability {level: 'L3'})-[:KNOWLEDGE_GAPS]->(p:EntityProcess {level: 'L3'})
-        WHERE p.metric_name IS NOT NULL
-        RETURN c.id AS cap_id, c.year AS cap_year, p { .id, .name, .year, .metric_name, .actual, .target, .baseline, .unit, .metric_type, .indicator_type, .trend, .aggregation_method } AS proc
-      `),
-      runCypher(`
-        MATCH (cap:EntityCapability {level: 'L3'})-[:KNOWLEDGE_GAPS]->(proc:EntityProcess {level: 'L3'})-[:FEEDS_INTO]->(perf:SectorPerformance {level: 'L2'})
-        WHERE proc.metric_name IS NOT NULL AND proc.year = perf.year AND cap.year = proc.year
-        RETURN perf.id AS perf_id, perf.year AS perf_year,
-               perf { .id, .domain_id, .name, .year, .actual_value, .target, .unit, .formula_description } AS kpi,
-               collect({
-                 id: proc.id,
-                 year: proc.year,
-                 metric_name: proc.metric_name,
-                 actual: proc.actual,
-                 target: proc.target,
-                 unit: proc.unit,
-                 metric_type: proc.metric_type,
-                 cap_id: cap.id,
-                 cap_name: cap.name
-               }) AS inputs
-      `)
-    ]);
+    const safeChain = (name: string) =>
+      runChainOnce(name, { year: 0 }).catch(err => {
+        console.error(`[EnterpriseService] ${name} FAILED:`, err.message);
+        return { nodes: [], links: [] };
+      });
 
-    const caps = capRows.map((r: any) => r.cap);
-    const risks = riskRows.map((r: any) => r.risk);
-    const processMetrics = processMetricRows || [];
-    const l2Kpis = l2KpiRows || [];
-    console.log(`[EnterpriseService] Fetched: ${caps.length} caps, ${risks.length} risks, ${processMetrics.length} process metrics, ${l2Kpis.length} L2 KPIs, integrated: ${chainIntegrated?.nodes?.length || 0} nodes, build: ${chainBuild?.nodes?.length || 0} nodes, operate: ${chainOperate?.nodes?.length || 0} nodes`);
+    // Sequential to avoid connection pool issues
+    const chainChangeToCap = await safeChain('change_to_capability');
+    const chainCapToPolicy = await safeChain('capability_to_policy');
+    const chainCapToPerf = await safeChain('capability_to_performance');
 
-    _rawDataCache = { caps, risks, chainIntegrated, chainBuild, chainOperate, processMetrics, l2Kpis };
+    // Extract all entities from chains
+    const extracted = extractEntitiesFromChains([chainChangeToCap, chainCapToPolicy, chainCapToPerf]);
+
+    console.log(`[EnterpriseService] ALL DONE: changeToCap=${chainChangeToCap.nodes.length}, capToPolicy=${chainCapToPolicy.nodes.length}, capToPerf=${chainCapToPerf.nodes.length}`);
+    console.log(`[EnterpriseService] Extracted: ${extracted.caps.length} caps, ${extracted.risks.length} risks, ${extracted.processMetrics.length} metrics, ${extracted.l2Kpis.length} KPIs`);
+
+    _rawDataCache = {
+      caps: extracted.caps,
+      risks: extracted.risks,
+      chainChangeToCap, chainCapToPolicy, chainCapToPerf,
+      processMetrics: extracted.processMetrics,
+      l2Kpis: extracted.l2Kpis,
+    };
+
     _rawDataPromise = null;
     return _rawDataCache;
   })();
@@ -290,8 +732,9 @@ export function invalidateEnterpriseCache(): void {
  *   source: "EntityCapability:2.1.1:2025", target: "EntityRisk:2.1.1:2025", type: "MONITORED_BY"
  *
  * Topology is MULTI-HOP (not all entities link directly to caps):
- *   build_oversight: Cap→Risk→PolicyTool→Objective, Cap→ITSystem←Project
- *   integrated_oversight: Cap→Risk→Performance, Cap→Org/Process/IT, PolicyTool→Cap
+ *   change_to_capability: ChangeAdoption→Project→Gap→Capability
+ *   capability_to_policy: Capability→Risk→PolicyTool→Objective
+ *   capability_to_performance: Capability→Risk→Performance→Objective
  *
  * Strategy: build undirected adjacency graph, BFS from each cap to find all
  * reachable entities, then associate by domain_id match or graph proximity.
@@ -480,7 +923,7 @@ function extractChainOverlays(chainData: { nodes: any[]; links: any[] }): Map<st
 
     // ── 2-hop: Cap → Risk → INFORMS → Performance/PolicyTool ──
     // Also check Risk L2 parents: Cap → Risk(L3) ← PARENT_OF ← Risk(L2) → INFORMS
-    // (operate_oversight has INFORMS on L2 risk, not L3)
+    // (capability_to_performance/capability_to_policy have INFORMS on L2 risk, not L3)
     const allRiskIds = new Set(riskIds);
     for (const rid of riskIds) {
       const riskNode = chain.nodeById.get(rid);
@@ -648,6 +1091,17 @@ function filterAndBuildGraph(raw: RawEnterpriseData, year: number | 'all', quart
       target_maturity_level: c.target_maturity_level,
     };
 
+    // Pass through ETL-written fields
+    (node as any).build_status = c.build_status;
+    (node as any).execute_status = c.execute_status;
+    (node as any).kpi_achievement_pct = c.kpi_achievement_pct;
+    (node as any).build_exposure_pct = c.build_exposure_pct;
+    (node as any).regression_risk_pct = c.regression_risk_pct;
+    (node as any).people_score = c.people_score;
+    (node as any).tools_score = c.tools_score;
+    (node as any).process_score = c.process_score;
+    (node as any).dependency_count = c.dependency_count;
+
     const risk = riskByKey.get(`${c.id}_${c.year}_${c.quarter}`);
     if (risk) {
       (node as any).risk = risk;
@@ -662,7 +1116,7 @@ function filterAndBuildGraph(raw: RawEnterpriseData, year: number | 'all', quart
     nodeByBizId.set(node.id, node);
   }
 
-  const chainDatasets = [raw.chainIntegrated, raw.chainBuild, raw.chainOperate].filter(d => d?.nodes);
+  const chainDatasets = [raw.chainChangeToCap, raw.chainCapToPolicy, raw.chainCapToPerf].filter(d => d?.nodes);
   for (const chainData of chainDatasets) {
     const overlays = extractChainOverlays(chainData);
 
@@ -745,9 +1199,9 @@ function filterAndBuildGraph(raw: RawEnterpriseData, year: number | 'all', quart
     const node = nodeByBizId.get(capId);
     if (!node) continue;
     // Only attach if capability year matches the node's year
-    if (capYear && node.year && capYear !== node.year) continue;
+    if (capYear != null && node.year != null && capYear !== node.year) continue;
     // Only attach if process year matches the node's year
-    if (proc.year && node.year && proc.year !== node.year) continue;
+    if (proc.year != null && node.year != null && proc.year !== node.year) continue;
     if (!(node as any).processMetrics) (node as any).processMetrics = [];
     // Dedup: don't add same process ID twice
     if ((node as any).processMetrics.find((existing: any) => existing.id === proc.id)) continue;
@@ -781,7 +1235,7 @@ function filterAndBuildGraph(raw: RawEnterpriseData, year: number | 'all', quart
       for (const [key, data] of l2KpiMap) {
         const kpiYear = data.kpi?.year;
         // Only attach KPIs from the same year as the capability node
-        if (kpiYear && nodeYear && kpiYear !== nodeYear) continue;
+        if (kpiYear != null && nodeYear != null && kpiYear !== nodeYear) continue;
         if (data.inputs.find((inp: any) => inp.id === pm.id)) {
           if (!(node as any).l2Kpis) (node as any).l2Kpis = [];
           if (!(node as any).l2Kpis.find((k: any) => (k.kpi.id || k.kpi.domain_id) === (data.kpi.id || data.kpi.domain_id) && k.kpi.year === kpiYear)) {
@@ -1055,6 +1509,9 @@ function buildL2(l2Node: NeoGraphNode, l3Nodes: NeoGraphNode[]): L2Capability {
     description: l2Node.description || '',
     maturity_level: calculateL2Maturity(l3Children),
     target_maturity_level: calculateL2TargetMaturity(l3Children),
+    kpi_achievement_pct: (l2Node as any).kpi_achievement_pct != null ? Number((l2Node as any).kpi_achievement_pct) : undefined,
+    execute_status: (l2Node as any).execute_status,
+    build_status: (l2Node as any).build_status,
     l3: l3Caps,
     upwardChain: (policyTools.length > 0 || performanceTargets.length > 0 || uniqueObjectives.length > 0) ? {
       policyTools,
@@ -1072,6 +1529,14 @@ function buildL2(l2Node: NeoGraphNode, l3Nodes: NeoGraphNode[]): L2Capability {
 function buildL3(l3Node: NeoGraphNode): L3Capability {
   const l3BusinessId = (l3Node as any).businessId || l3Node.id;
 
+  // DIAGNOSTIC: Log first 3 L3 nodes to see raw data from Neo4j
+  if (!(buildL3 as any)._logCount) (buildL3 as any)._logCount = 0;
+  if ((buildL3 as any)._logCount < 3) {
+    (buildL3 as any)._logCount++;
+    const n = l3Node as any;
+    console.log(`[buildL3 RAW #${(buildL3 as any)._logCount}] id=${n.id} status=${n.status} build_status=${n.build_status} execute_status=${n.execute_status} kpi_achievement_pct=${n.kpi_achievement_pct} build_exposure_pct=${n.build_exposure_pct} people_score=${n.people_score} tools_score=${n.tools_score} process_score=${n.process_score} dependency_count=${n.dependency_count} maturity_level=${n.maturity_level} target_maturity_level=${n.target_maturity_level} risk=`, n.risk ? { build_band: n.risk.build_band, operate_band: n.risk.operate_band } : 'none');
+  }
+
   // Determine mode from status
   const mode = l3Node.status === 'active' ? 'execute' : 'build';
 
@@ -1084,12 +1549,14 @@ function buildL3(l3Node: NeoGraphNode): L3Capability {
     target_maturity_level: typeof l3Node.target_maturity_level === 'string'
       ? parseInt(l3Node.target_maturity_level)
       : getNeo4jInt(l3Node.target_maturity_level) || 5,
-    staff_gap: 0,
-    tools_gap: 0,
-    docs_complete: 75,
-    team_health: 75,
-    change_adoption: 75,
     mode,
+    build_status: (l3Node as any).build_status,
+    execute_status: (l3Node as any).execute_status,
+    kpi_achievement_pct: (l3Node as any).kpi_achievement_pct != null ? Number((l3Node as any).kpi_achievement_pct) : undefined,
+    build_exposure_pct: (l3Node as any).build_exposure_pct != null ? Number((l3Node as any).build_exposure_pct) : undefined,
+    people_score: (l3Node as any).people_score != null ? Number((l3Node as any).people_score) : undefined,
+    process_score: (l3Node as any).process_score != null ? Number((l3Node as any).process_score) : undefined,
+    tools_score: (l3Node as any).tools_score != null ? Number((l3Node as any).tools_score) : undefined,
     year: getNeo4jInt(l3Node.year),
     quarter: `Q${getNeo4jInt(l3Node.quarter)}` as 'Q1' | 'Q2' | 'Q3' | 'Q4'
   };
@@ -1106,11 +1573,16 @@ function buildL3(l3Node: NeoGraphNode): L3Capability {
   l3Cap.rawCapability.processMetrics = (l3Node as any).processMetrics || [];
   l3Cap.rawCapability.l2Kpis = (l3Node as any).l2Kpis || [];
 
-  // Dependency count for exposure gradient heatmap
-  const projCount = ((l3Node as any).linkedProjects || []).length;
-  const entityCount = ((l3Node as any).operatingEntities || []).length;
-  const processCount = ((l3Node as any).processMetrics || []).length;
-  l3Cap.dependency_count = projCount + entityCount + processCount;
+  // Dependency count from ETL — no fallback
+  const nodeDepCount = (l3Node as any).dependency_count;
+  l3Cap.dependency_count = nodeDepCount != null
+    ? (typeof nodeDepCount === 'object' && 'low' in nodeDepCount ? nodeDepCount.low : Number(nodeDepCount))
+    : 0;
+
+  // Exposure normalized (0-100) — importance for heatmaps
+  l3Cap.exposure_normalized = (l3Node as any).exposure_normalized != null
+    ? getNeo4jInt((l3Node as any).exposure_normalized)
+    : undefined;
 
   // R4: Late detection — compare latest project end_date vs PolicyTool end_date
   const policyTools = (l3Node as any).policyTools || [];
@@ -1148,50 +1620,40 @@ function buildL3(l3Node: NeoGraphNode): L3Capability {
     }
   }
 
-  // Enrich with risk data from nested object (if present)
+  // Store raw risk for detail panel's collapsible section
   if (l3Node.risk) {
-    enrichWithRiskData(l3Cap, l3Node.risk, mode);
-    calculateOverlayFields(l3Cap, mode);
-    // Store raw risk for detail panel display
     l3Cap.rawRisk = l3Node.risk;
   }
 
-  // Derive build/execute status from risk bands (SST v1.2 thresholds: Green≤35%, Amber≤65%, Red>65%)
-  const risk = l3Node.risk;
-  const rawStatus = String(l3Node.status || '').toLowerCase();
-  const isFutureBuild = mode === 'build' && ['planned', 'not_started', 'not-started', 'future', 'pipeline'].includes(rawStatus);
-  if (risk) {
-    if (mode === 'build') {
-      if (isFutureBuild) {
-        l3Cap.build_status = 'not-due';
-      } else {
-        const band = risk.build_band?.toLowerCase();
-        if (band === 'red') {
-          l3Cap.build_status = 'in-progress-issues';
-        } else if (band === 'amber') {
-          l3Cap.build_status = 'in-progress-atrisk';
-        } else {
-          l3Cap.build_status = 'in-progress-ontrack';
-        }
-      }
-    } else if (mode === 'execute') {
-      const band = risk.operate_band?.toLowerCase();
-      if (band === 'red') {
-        l3Cap.execute_status = 'issues';
-      } else if (band === 'amber') {
-        l3Cap.execute_status = 'at-risk';
-      } else {
-        l3Cap.execute_status = 'ontrack';
-      }
-    }
+  // KPI achievement (must be set before strip status computation)
+  l3Cap.kpi_achievement_pct = (l3Node as any).kpi_achievement_pct != null
+    ? getNeo4jInt((l3Node as any).kpi_achievement_pct)
+    : undefined;
+
+  // Design Doc 6.3: Strip Is a Stored Value. Read it. Period.
+  // ETL writes build_status / execute_status. If null → undefined (no strip shown).
+  if (mode === 'build') {
+    l3Cap.build_status = (l3Node as any).build_status || undefined;
   } else {
-    // No risk data — leave build_status/execute_status undefined
-    // The raw DB status (cap.status) will be shown instead
-    if (mode === 'build') {
-      l3Cap.build_status = 'not-due';
-    }
-    // Do NOT set execute_status — no risk data means we can't derive ontrack/at-risk/issues
+    l3Cap.execute_status = (l3Node as any).execute_status || undefined;
   }
+
+  // Dimension scores: capability node first, then risk node fallback
+  const risk = (l3Node as any).risk;
+  l3Cap.people_score = (l3Node as any).people_score != null
+    ? getNeo4jInt((l3Node as any).people_score)
+    : (risk?.people_score != null ? getNeo4jInt(risk.people_score) : undefined);
+  l3Cap.tools_score = (l3Node as any).tools_score != null
+    ? getNeo4jInt((l3Node as any).tools_score)
+    : (risk?.tools_score != null ? getNeo4jInt(risk.tools_score) : undefined);
+  l3Cap.process_score = (l3Node as any).process_score != null
+    ? getNeo4jInt((l3Node as any).process_score)
+    : (risk?.process_score != null ? getNeo4jInt(risk.process_score) : undefined);
+
+  // Exposure
+  l3Cap.exposure_percent = mode === 'build'
+    ? (getNeo4jInt((l3Node as any).build_exposure_pct) || getNeo4jInt(risk?.build_exposure_pct))
+    : (getNeo4jInt((l3Node as any).regression_risk_pct) || getNeo4jInt(risk?.operate_exposure_pct_effective));
 
   return l3Cap;
 }
@@ -1201,7 +1663,7 @@ function buildL3(l3Node: NeoGraphNode): L3Capability {
  */
 function deriveStatus(neoStatus: string): 'active' | 'pending' | 'at-risk' {
   if (neoStatus === 'active') return 'active';
-  if (neoStatus === 'in_progress' || neoStatus === 'in-progress') return 'active';
+  if (neoStatus === 'in_progress' || neoStatus === 'in-progress' || neoStatus === 'in progress') return 'active';
   if (neoStatus === 'at_risk' || neoStatus === 'at-risk') return 'at-risk';
   return 'pending';
 }
@@ -1215,102 +1677,6 @@ function deriveStatus(neoStatus: string): 'active' | 'pending' | 'at-risk' {
  *   BUILD mode: exposure_percent, expected_delay_days, likelihood_of_delay
  *   EXECUTE mode: operational health scores, exposure_trend (computed)
  */
-function enrichWithRiskData(
-  l3Cap: any,
-  risk: any,
-  mode: 'build' | 'execute' | null
-): void {
-  if (!risk) return;
-
-  // Helper to normalize Neo4j Integer objects
-  const normalizeInt = (val: any): number => {
-    if (val == null) return 0;
-    if (typeof val === 'number') return val;
-    if (typeof val === 'object' && 'low' in val) return val.low;
-    return parseInt(String(val)) || 0;
-  };
-
-  // Step 1: Always populate raw scores (used by multiple overlays)
-  l3Cap.people_score = risk.people_score;
-  l3Cap.process_score = risk.process_score;
-  l3Cap.tools_score = risk.tools_score;
-  l3Cap.likelihood_of_delay = risk.likelihood_of_delay;
-
-  // expected_delay_days = likelihood_of_delay × delay_days (SST v1.2 § 5.9)
-  l3Cap.expected_delay_days = Math.round(normalizeInt(risk.expected_delay_days) || 0);
-  l3Cap._raw_delay_days = normalizeInt(risk.delay_days);
-
-  // operational_health_pct from DB (already 0-100 scale per SST v1.2)
-  if (risk.operational_health_pct != null) {
-    l3Cap.operational_health_score = risk.operational_health_pct;
-  }
-
-  // Exposure percentages from risk engine output
-  if (mode === 'build') {
-    l3Cap.exposure_percent = risk.build_exposure_pct;
-  } else if (mode === 'execute') {
-    l3Cap.exposure_percent = risk.operate_exposure_pct_effective;
-  }
-
-  // Per-node thresholds from DB (Enterprise_Ontology_SST_v1.2 Section 5.4):
-  // Override default band_green_max_pct=35 / band_amber_max_pct=65 if populated
-  if (risk.threshold_green != null) {
-    l3Cap._threshold_green = risk.threshold_green;
-    l3Cap._threshold_amber = risk.threshold_amber;
-  }
-}
-
-/**
- * Calculate derived overlay fields from raw risk data
- * Applies formulas from RISK_LOGIC_SPEC.md and ENTERPRISE_DESK_OVERLAY_SPECIFICATION.md
- */
-function calculateOverlayFields(l3Cap: any, mode: 'build' | 'execute' | null): void {
-  // ── Overlay 1: Risk Exposure ──
-  // Spec: BUILD → build_exposure_pct = clamp01(risk_score / red_delay_days) × 100
-  //        EXECUTE → operate_exposure = 100 - operational_health_pct
-
-  const RED_DELAY_DAYS = 72; // from RISK_LOGIC_SPEC.md
-
-  if (mode === 'build') {
-    // risk_score = expected_delay_days = likelihood_of_delay × delay_days (already stored)
-    const expectedDelay = l3Cap.expected_delay_days || 0;
-    l3Cap.exposure_percent = Math.min(100, Math.max(0, (expectedDelay / RED_DELAY_DAYS) * 100));
-  } else if (mode === 'execute') {
-    // operational_health_score is already converted to 0-100 in enrichWithRiskData
-    const healthPct = l3Cap.operational_health_score;
-    if (healthPct != null) {
-      l3Cap.exposure_percent = Math.max(0, 100 - healthPct);
-    }
-  }
-
-  // ── Overlay 3: Footprint Stress (imbalance across People/Process/Tools) ──
-  // Spec: range / 4 × 100, where 4 is max possible range on 1-5 scale
-  const ps = l3Cap.people_score;
-  const prs = l3Cap.process_score;
-  const ts = l3Cap.tools_score;
-
-  if (ps != null && prs != null && ts != null) {
-    const maxScore = Math.max(ps, prs, ts);
-    const minScore = Math.min(ps, prs, ts);
-    const range = maxScore - minScore;
-    const stressPct = (range / 4) * 100; // 4 = max possible range (5-1)
-
-    const mean = (ps + prs + ts) / 3;
-    l3Cap.org_gap = stressPct; // Use stress_pct for color intensity
-    l3Cap.process_gap = stressPct;
-    l3Cap.it_gap = stressPct;
-
-    // Identify which dimension is the outlier (for display label)
-    const orgGap = Math.abs(ps - mean);
-    const processGap = Math.abs(prs - mean);
-    const itGap = Math.abs(ts - mean);
-
-    // Store individual gaps for tooltip display
-    l3Cap._stress_dominant = orgGap >= processGap && orgGap >= itGap ? 'O' :
-      processGap >= orgGap && processGap >= itGap ? 'P' : 'T';
-    l3Cap._stress_severity = Math.ceil(range);
-  }
-}
 
 /**
  * Calculate L1 maturity as average of all L3 descendants

@@ -415,7 +415,13 @@ export function GraphSankey({ data, isDark = true, chain, metadata, isDiagnostic
             return a.name.localeCompare(b.name);
         }));
 
+        // Assign column index before counting
+        nodesByCol.forEach((colNodes, colIndex) => {
+            colNodes.forEach(node => { node.column = colIndex; });
+        });
+
         // --- First pass: count connections per node to set height proportional to throughput ---
+        // nodeMap is built AFTER column assignment + aggregation so aggregated nodes have column set
         const rawLinks = data.links || [];
         const nodeMap = new Map<string, Node>();
         nodes.forEach(n => nodeMap.set(n.originalId, n));
@@ -429,11 +435,6 @@ export function GraphSankey({ data, isDark = true, chain, metadata, isDiagnostic
             if (aggId && nodeMap.has(aggId)) return nodeMap.get(aggId);
             return undefined;
         };
-
-        // Assign column index before counting
-        nodesByCol.forEach((colNodes, colIndex) => {
-            colNodes.forEach(node => { node.column = colIndex; });
-        });
 
         // Tally how many link threads touch each node (outgoing from right side, incoming from left side)
         const outCount = new Map<string, number>(); // nodeId → outgoing count

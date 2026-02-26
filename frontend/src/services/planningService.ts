@@ -1,6 +1,6 @@
 import { InterventionPlan } from '../utils/planParser';
 
-const MCP_ENDPOINT = '/4/mcp/';
+const MCP_ENDPOINT = '/1/mcp/'; // Noor MCP router (port 8201)
 
 export interface RiskPlanSummary {
   riskId: string;
@@ -19,7 +19,7 @@ export interface RiskPlanSummary {
  * POST /api/risk-plan
  */
 export async function createRiskPlan(riskId: string, plan: InterventionPlan): Promise<{ planId?: string }> {
-  const response = await fetch('/api/risk-plan', {
+  const response = await fetch('/api/neo4j/risk-plan', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ riskId, plan }),
@@ -39,7 +39,7 @@ export async function createRiskPlan(riskId: string, plan: InterventionPlan): Pr
  * GET /api/risk-plan/:riskId
  */
 export async function fetchRiskPlan(riskId: string): Promise<InterventionPlan | null> {
-  const response = await fetch(`/api/risk-plan/${encodeURIComponent(riskId)}`);
+  const response = await fetch(`/api/neo4j/risk-plan/${encodeURIComponent(riskId)}`);
 
   if (response.status === 404) return null;
 
@@ -56,83 +56,42 @@ export async function fetchRiskPlan(riskId: string): Promise<InterventionPlan | 
 }
 
 /**
- * Fetch all saved RiskPlans from Neo4j via MCP Cypher.
+ * Fetch all saved RiskPlans via REST API.
+ * GET /api/neo4j/risk-plans
  */
 export async function fetchAllRiskPlans(): Promise<RiskPlanSummary[]> {
-  const query = `
-    MATCH (r)-[:HAS_PLAN]->(p:RiskPlan:L1)
-    OPTIONAL MATCH (p)-[:HAS_DELIVERABLE]->(d:RiskPlan:L2)
-    OPTIONAL MATCH (d)-[:HAS_TASK]->(t:RiskPlan:L3)
-    RETURN r.id AS riskId, r.name AS riskName,
-           p.id AS planId, p.name AS planName, p.sponsor AS sponsor,
-           p.status AS status, toString(p.created_at) AS createdAt,
-           count(DISTINCT d) AS deliverableCount,
-           count(DISTINCT t) AS taskCount
-    ORDER BY p.created_at DESC
-  `;
-
-  const requestBody = {
-    jsonrpc: '2.0' as const,
-    id: Date.now(),
-    method: 'tools/call',
-    params: {
-      name: 'read_neo4j_cypher',
-      arguments: { query }
-    }
-  };
-
-  const response = await fetch(MCP_ENDPOINT, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json, text/event-stream'
-    },
-    body: JSON.stringify(requestBody)
-  });
+  const response = await fetch('/api/neo4j/risk-plans');
 
   if (!response.ok) {
-    console.error('[PlanningService] MCP error:', response.status);
+    console.error('[PlanningService] Failed to fetch risk plans:', response.status);
     return [];
   }
 
   const text = await response.text();
-
-  let result: any;
-  try {
-    result = JSON.parse(text);
-  } catch {
-    // SSE format fallback
-    const dataLine = text.split('\n').find(line => line.startsWith('data: '));
-    if (!dataLine) return [];
-    result = JSON.parse(dataLine.substring(6));
-  }
-
-  if (result.error || result.result?.isError) {
-    console.error('[PlanningService] Cypher error:', result.error || result.result?.content);
-    return [];
-  }
-
-  const contentText = result.result?.content?.[0]?.text;
-  if (!contentText) return [];
+  if (!text) return [];
 
   let rows: any[];
   try {
-    rows = JSON.parse(contentText);
-  } catch {
+    rows = JSON.parse(text);
+  } catch (e) {
+    console.error('[PlanningService] JSON parse error:', e);
     return [];
   }
 
-  if (!Array.isArray(rows)) return [];
+  if (!Array.isArray(rows)) {
+    // Handle { plans: [...] } or { data: [...] } wrapper
+    rows = (rows as any).plans || (rows as any).data || [];
+  }
 
-  return rows.map(row => ({
-    riskId: row.riskId || '',
-    riskName: row.riskName || '',
-    planId: row.planId || '',
-    planName: row.planName || '',
+  return rows.map((row: any) => ({
+    riskId: row.riskId || row.risk_id || '',
+    riskName: row.riskName || row.risk_name || '',
+    planId: row.planId || row.plan_id || row.id || '',
+    planName: row.planName || row.plan_name || row.name || '',
     sponsor: row.sponsor || '',
     status: row.status || 'Draft',
-    createdAt: row.createdAt || '',
-    deliverableCount: row.deliverableCount || 0,
-    taskCount: row.taskCount || 0,
+    createdAt: row.createdAt || row.created_at || '',
+    deliverableCount: row.deliverableCount || row.deliverable_count || 0,
+    taskCount: row.taskCount || row.task_count || 0,
   }));
 }

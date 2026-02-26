@@ -90,9 +90,9 @@ const CHAIN_KEY_MAP: Record<string, string> = {
   '2.0_18': 'sector_value_chain',
   '2.0_19': 'setting_strategic_initiatives',
   '2.0_20': 'setting_strategic_priorities',
-  '2.0_21': 'integrated_oversight',
-  '2.0_22': 'build_oversight',
-  '2.0_23': 'operate_oversight',
+  '2.0_21': 'capability_to_policy',
+  '2.0_22': 'change_to_capability',
+  '2.0_23': 'capability_to_performance',
   '2.0_24': 'sustainable_operations'
 };
 

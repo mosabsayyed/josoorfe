@@ -65,13 +65,14 @@ function easeInOutCubic(t: number): number {
     : 1 - Math.pow(-2 * t + 2, 3) / 2;
 }
 
-const SCROLL_DURATION_DESKTOP = 1200;
-const SCROLL_DURATION_MOBILE = 800; // Faster on mobile for better UX
+const SCROLL_DURATION_DESKTOP = 700;
+const SCROLL_DURATION_MOBILE = 500;
 
 export default function useSnapScroll({
   sections,
   enabled = true,
 }: UseSnapScrollOptions) {
+  const prefersReducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const isMobile = () => window.innerWidth <= 768;
   const scrollingRef = useRef(false);
   const animFrameRef = useRef(0);
@@ -177,7 +178,7 @@ export default function useSnapScroll({
   }, [recalc, snapTo, clearCooldown]);
 
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled || prefersReducedMotion()) return;
 
     const container = findScrollContainer();
     containerRef.current = container;
@@ -189,8 +190,8 @@ export default function useSnapScroll({
         e.preventDefault();
         return;
       }
-      // Only snap on meaningful scroll (ignore tiny trackpad noise)
-      if (Math.abs(e.deltaY) < 5) return;
+      // Only snap on meaningful scroll (ignore trackpad noise)
+      if (Math.abs(e.deltaY) < 30) return;
 
       const direction: 1 | -1 = e.deltaY > 0 ? 1 : -1;
 

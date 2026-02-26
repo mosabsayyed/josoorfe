@@ -13,26 +13,23 @@
   },
   "aitoia": {
     "tag": "The Challenge",
-    "title": "Why Most AI Transformations Fail",
+    "title": "90% of GenAI Pilots Fail",
     "subtitle": "Don't start your AI project before establishing the success factors",
-    "challengeSubtitle": "AI alone produces unreliable decision inputs",
+    "challengeSubtitle": "Join the 10% That Overcame These Barriers",
     "aiTitle": "Artificial Intelligence Solo ...",
     "aiSubtitle": "Unreliable Decision Inputs",
     "aiItems": [
       {
-        "icon": "\u26a0",
-        "strong": "Data Infrastructure Readiness",
-        "desc": "Legacy Data landscape includes a mix of structured and un-structured sources, most in Silos with diverse taxonomies. This guarantees AI will make mistakes on even the simplest requests. Solving this problem is expensive and requires an impractical timeline with risks of data governance violations"
+        "strong": "Why Now?",
+        "desc": "AI will define nations' sovereignty. Entities must move at the speed of KSA's ambition."
       },
       {
-        "icon": "\ud83c\udfb2",
-        "strong": "Probabilistic Models",
-        "desc": "Highly regulated sectors, including the public sector, require deterministic auditable outputs which cannot be left to generative AI with its probabilistic model."
+        "strong": "The Essence of AI",
+        "desc": "The world grows more complex daily. AI unlocks complexity, enabling the right decision-making."
       },
       {
-        "icon": "\ud83d\udca8",
-        "strong": "Reckless Velocity",
-        "desc": "AI's Raw Reasoning can Accelerate your Speed, but without the right architecture, you risk getting nowhere very fast."
+        "strong": "The Challenge",
+        "desc": "Old data silos coupled with probabilistic models lead to the wrong destinations, justifying hesitation of highly regulated sectors."
       }
     ],
     "innovationTag": "The Innovation",
@@ -63,41 +60,51 @@
     "tag": "What Makes JOSOOR Distinctive?",
     "title": "See the difference",
     "subtitle": "What makes JOSOOR fundamentally different",
-    "canvasLabel": "AI-Native, Human-Intuitive",
+    "canvasLabel": "AI-Core, Human-Interface",
     "canvasLabel2": "From Black Box to Glass Box",
     "canvasDesc": "Every structure is machine-native. Every interface is human-intuitive.",
     "imageLabels": [
-      "Vision Access",
-      "Agent Orchestration",
+      "Grounded in Vision",
+      "Enterprise Ontology",
+      "3-Stage Agent Loop",
       "Cognitive Reasoning",
-      "Knowledge Graph",
       "Sovereign Infrastructure"
     ],
-    "items": [
-      {
-        "punchline": "One Instance, Any Entity",
-        "desc": "One JOSOOR instance adapts to any government entity without rebuilding"
-      },
-      {
-        "punchline": "Vision 2030 KPIs Built In",
-        "desc": "National methodologies and sectorial programs are first-class objects"
-      },
-      {
-        "punchline": "Arabic-First, Context-Aware",
-        "desc": "Built for Arabic-first government context"
-      },
-      {
-        "punchline": "Single Source of Truth",
-        "desc": "One definition, one version. Everyone sees the same truth"
-      },
-      {
-        "punchline": "Living Graph, Not Tables",
-        "desc": "Relationships modelled as a living graph, not flat tables"
-      },
-      {
-        "punchline": "First KSA Ontology IP",
-        "desc": "A reusable knowledge framework that grows smarter via guided AI"
-      }
+    "imageDescs": [
+      "Agents draw from a curated Vision 2030 knowledge base spanning all sectors through a dedicated MCP Server. Every query combines national priorities with your entity's own data — decisions are never made in a vacuum. The result: recommendations that are aligned by design, not by afterthought.",
+      "The first real solution to Bridging Strategy to Execution. Sectors, capabilities, KPIs, risks, and projects — all connected in one living model. Risk governance is built into the structure, not bolted on. This is the IP that makes everything else work.",
+      "Three Master Agents in a continuous loop:|Observe: Are we on track? Strategic PMO.|Decide: Risks caught early, prioritized in one click. Risk Specialist.|Execute: Actionable plan before the meeting ends. Planning Specialist.",
+      "Human-First Architecture with AI-in-the-Loop for deterministic decision-making. Agents are powered by a 4-layer memory, a scalable Vision database, specialized MCP tools, and a source-of-truth World Model. Every output is traceable. Every recommendation is explainable.",
+      "Homegrown in KSA. Model-agnostic. No vendor lock-in. Full sovereignty from day one.|Your data never leaves your infrastructure. Your AI answers to your rules, not someone else's terms of service."
+    ],
+    "items": []
+  },
+  "strategyHouse": {
+    "tag": "The Operating System",
+    "title": "Trusted Frameworks on Intelligent Foundations",
+    "subtitle": "Transforming Complexity into your most valuable asset",
+    "pedimentSuffix": "Strategic Management",
+    "foundationLabel": "Foundation",
+    "pyramidLabels": ["Sector", "Enterprise", "Portfolios"],
+    "elements": [
+      "Grounded in Vision",
+      "Enterprise Ontology",
+      "3-Stage Agent Loop",
+      "Cognitive Reasoning",
+      "Sovereign Infrastructure",
+      "Sector Value Chains",
+      "Enterprise Operating Models",
+      "Portfolio ROIs"
+    ],
+    "elementDescs": [
+      "Agents draw from a curated Vision 2030 knowledge base spanning all sectors through a dedicated MCP Server. Every query combines national priorities with your entity's own data — decisions are never made in a vacuum. The result: recommendations that are aligned by design, not by afterthought.",
+      "The first real solution to Bridging Strategy to Execution. Sectors, capabilities, KPIs, risks, and projects — all connected in one living model. Risk governance is built into the structure, not bolted on. This is the IP that makes everything else work.",
+      "Three Master Agents in a continuous loop:|Observe: Are we on track? Strategic PMO.|Decide: Risks caught early, prioritized in one click. Risk Specialist.|Execute: Actionable plan before the meeting ends. Planning Specialist.",
+      "Human-First Architecture with AI-in-the-Loop for deterministic decision-making. Agents are powered by a 4-layer memory, a scalable Vision database, specialized MCP tools, and a source-of-truth World Model. Every output is traceable. Every recommendation is explainable.",
+      "Homegrown in KSA. Model-agnostic. No vendor lock-in. Full sovereignty from day one.|Your data never leaves your infrastructure. Your AI answers to your rules, not someone else's terms of service.",
+      "Transforming a sector means changing how it works — who invests, who operates, and what they focus on. Governments steer this through policy and regulation, incentives, and awareness. JOSOOR maps these tools to the players, investments, and activities they influence — so you see which levers are moving the sector toward national objectives and which ones are not.",
+      "You cannot transform a sector without transforming the entity that manages it. The capabilities needed to design policies, enforce regulations, and run incentive programs must be built in sync with the sector's evolution. JOSOOR tracks both in parallel — so your operating model is always ready for the mandate it serves.",
+      "Too many initiatives, limited resources, and high stakes. Portfolio management is how you maximize impact from every investment while containing risk. JOSOOR scores ROI across projects, assets, capabilities, and leadership time — so you know where to double down and where to stop spending."
     ]
   },
   "promise": {
@@ -137,15 +144,15 @@
     "modes": [
       {
         "title": "Watch",
-        "desc": "Not just what's red — catches what <em>looks green but is quietly declining</em>. Training drops, HR shrugs, JOSOOR traces the chain to the Minister's phone. You find out now, not in 3 months."
+        "desc": "Not just what's red — catches what looks green but is quietly declining. Training drops, HR shrugs, JOSOOR traces the chain to the Minister's phone. You find out now, not in 3 months."
       },
       {
         "title": "Decide",
-        "desc": "AI traces root cause and cascading impact across the map. The <em>full chain</em> from failing deliverable to national KPI, plus concrete options with outcomes. No guessing, all math."
+        "desc": "AI traces root cause and cascading impact across the map. The full chain from failing deliverable to national KPI, plus concrete options with outcomes. No guessing, all math."
       },
       {
         "title": "Deliver",
-        "desc": "Weekly priorities synced with Strategic Priorities. 4 out of 42 items matter this week — <em>focus</em>. True critical path drives system flags with high confidence"
+        "desc": "Weekly priorities synced with Strategic Priorities. 4 out of 42 items matter this week — focus. True critical path drives system flags with high confidence"
       }
     ]
   },
@@ -273,7 +280,8 @@
     "dashboard": "Dashboard",
     "settings": "Settings",
     "logout": "Sign Out",
-    "homeTitle": "Home"
+    "homeTitle": "Home",
+    "requestDemo": "Request Demo"
   },
   "footer": {
     "rights": "© 2026 AI Twin Tech"
@@ -656,10 +664,10 @@
         "sector_value_chain": "Sector Value Chain",
         "setting_strategic_initiatives": "Setting Strategic Initiatives",
         "setting_strategic_priorities": "Setting Strategic Priorities",
-        "build_oversight": "Build Oversight",
-        "operate_oversight": "Operate Oversight",
-        "sustainable_operations": "Sustainable Operations",
-        "integrated_oversight": "Integrated Oversight"
+        "change_to_capability": "Change to Capability",
+        "capability_to_policy": "Capability to Policy",
+        "capability_to_performance": "Capability to Performance",
+        "sustainable_operations": "Sustainable Operations"
       }
     },
     "enterprise": {

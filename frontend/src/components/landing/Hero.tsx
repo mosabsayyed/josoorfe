@@ -129,8 +129,7 @@ export default function Hero({ content, language }: HeroProps) {
               fontFamily: 'inherit',
               fontSize: 'clamp(14px, 2vw, 20px)',
               fontWeight: 800,
-              letterSpacing: '0.35em',
-              textTransform: 'uppercase',
+              letterSpacing: '0.02em',
               color: 'var(--gold-bright, #FFD04A)',
               whiteSpace: 'pre-line',
               textAlign: 'center'

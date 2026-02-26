@@ -27,6 +27,9 @@ export interface ChainResponse {
   mode?: 'narrative' | 'diagnostic' | string;
   description?: string;
   summary?: string;
+  has_more?: boolean;
+  page_size?: number;
+  skip?: number;
 }
 
 export interface ChainSampleResponse {

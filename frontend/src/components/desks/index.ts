@@ -9,4 +9,3 @@ export { ObservabilityDesk } from './ObservabilityDesk';
 export { ReportingDesk } from './ReportingDesk';
 export { SettingsDesk } from './SettingsDesk';
 export { TutorialsDesk } from './TutorialsDesk';
-export { ChainTestDesk } from './ChainTestDesk';

@@ -88,50 +88,58 @@ export default function BetaForm({ content, language }: BetaFormProps) {
               gap: '10px'
             }}
           >
-            <input
-              type="text"
-              name="name"
-              placeholder={content.form.name}
-              value={formData.name}
-              onChange={handleInputChange}
-              required
-              style={{
-                width: '100%',
-                padding: '11px 14px',
-                border: '1px solid rgba(255, 255, 255, 0.06)',
-                borderRadius: '8px',
-                background: 'var(--bg-primary, #111827)',
-                color: 'var(--text-primary, #f8f8f8)',
-                fontFamily: 'inherit',
-                fontSize: '14px',
-                outline: 'none',
-                transition: 'border-color 0.2s'
-              }}
-              onFocus={(e) => e.currentTarget.style.borderColor = 'var(--gold-muted, rgba(196, 149, 32, 1))'}
-              onBlur={(e) => e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.06)'}
-            />
-            <input
-              type="email"
-              name="email"
-              placeholder={content.form.email}
-              value={formData.email}
-              onChange={handleInputChange}
-              required
-              style={{
-                width: '100%',
-                padding: '11px 14px',
-                border: '1px solid rgba(255, 255, 255, 0.06)',
-                borderRadius: '8px',
-                background: 'var(--bg-primary, #111827)',
-                color: 'var(--text-primary, #f8f8f8)',
-                fontFamily: 'inherit',
-                fontSize: '14px',
-                outline: 'none',
-                transition: 'border-color 0.2s'
-              }}
-              onFocus={(e) => e.currentTarget.style.borderColor = 'var(--gold-muted, rgba(196, 149, 32, 1))'}
-              onBlur={(e) => e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.06)'}
-            />
+            <div>
+              <label htmlFor="bf-name" style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-muted, #808894)', marginBottom: '4px' }}>{content.form.name}</label>
+              <input
+                id="bf-name"
+                type="text"
+                name="name"
+                placeholder={content.form.name}
+                value={formData.name}
+                onChange={handleInputChange}
+                required
+                style={{
+                  width: '100%',
+                  padding: '11px 14px',
+                  border: '1px solid rgba(255, 255, 255, 0.06)',
+                  borderRadius: '8px',
+                  background: 'var(--bg-primary, #111827)',
+                  color: 'var(--text-primary, #f8f8f8)',
+                  fontFamily: 'inherit',
+                  fontSize: '14px',
+                  outline: 'none',
+                  transition: 'border-color 0.2s'
+                }}
+                onFocus={(e) => e.currentTarget.style.borderColor = 'var(--gold-muted, rgba(196, 149, 32, 1))'}
+                onBlur={(e) => e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.06)'}
+              />
+            </div>
+            <div>
+              <label htmlFor="bf-email" style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-muted, #808894)', marginBottom: '4px' }}>{content.form.email}</label>
+              <input
+                id="bf-email"
+                type="email"
+                name="email"
+                placeholder={content.form.email}
+                value={formData.email}
+                onChange={handleInputChange}
+                required
+                style={{
+                  width: '100%',
+                  padding: '11px 14px',
+                  border: '1px solid rgba(255, 255, 255, 0.06)',
+                  borderRadius: '8px',
+                  background: 'var(--bg-primary, #111827)',
+                  color: 'var(--text-primary, #f8f8f8)',
+                  fontFamily: 'inherit',
+                  fontSize: '14px',
+                  outline: 'none',
+                  transition: 'border-color 0.2s'
+                }}
+                onFocus={(e) => e.currentTarget.style.borderColor = 'var(--gold-muted, rgba(196, 149, 32, 1))'}
+                onBlur={(e) => e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.06)'}
+              />
+            </div>
           </div>
 
           {/* Row 2: Organization + Role */}
@@ -142,31 +150,38 @@ export default function BetaForm({ content, language }: BetaFormProps) {
               gap: '10px'
             }}
           >
-            <input
-              type="text"
-              name="organization"
-              placeholder={content.form.org}
-              value={formData.organization}
-              onChange={handleInputChange}
-              style={{
-                width: '100%',
-                padding: '11px 14px',
-                border: '1px solid rgba(255, 255, 255, 0.06)',
-                borderRadius: '8px',
-                background: 'var(--bg-primary, #111827)',
-                color: 'var(--text-primary, #f8f8f8)',
-                fontFamily: 'inherit',
-                fontSize: '14px',
-                outline: 'none',
-                transition: 'border-color 0.2s'
-              }}
-              onFocus={(e) => e.currentTarget.style.borderColor = 'var(--gold-muted, rgba(196, 149, 32, 1))'}
-              onBlur={(e) => e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.06)'}
-            />
-            <select
-              name="role"
-              value={formData.role}
-              onChange={handleInputChange}
+            <div>
+              <label htmlFor="bf-org" style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-muted, #808894)', marginBottom: '4px' }}>{content.form.org}</label>
+              <input
+                id="bf-org"
+                type="text"
+                name="organization"
+                placeholder={content.form.org}
+                value={formData.organization}
+                onChange={handleInputChange}
+                style={{
+                  width: '100%',
+                  padding: '11px 14px',
+                  border: '1px solid rgba(255, 255, 255, 0.06)',
+                  borderRadius: '8px',
+                  background: 'var(--bg-primary, #111827)',
+                  color: 'var(--text-primary, #f8f8f8)',
+                  fontFamily: 'inherit',
+                  fontSize: '14px',
+                  outline: 'none',
+                  transition: 'border-color 0.2s'
+                }}
+                onFocus={(e) => e.currentTarget.style.borderColor = 'var(--gold-muted, rgba(196, 149, 32, 1))'}
+                onBlur={(e) => e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.06)'}
+              />
+            </div>
+            <div>
+              <label htmlFor="bf-role" style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-muted, #808894)', marginBottom: '4px' }}>{content.form.role}</label>
+              <select
+                id="bf-role"
+                name="role"
+                value={formData.role}
+                onChange={handleInputChange}
               style={{
                 width: '100%',
                 padding: '11px 14px',
@@ -194,6 +209,7 @@ export default function BetaForm({ content, language }: BetaFormProps) {
                 </option>
               ))}
             </select>
+            </div>
           </div>
 
           {/* Submit Button - matching v10 exactly */}

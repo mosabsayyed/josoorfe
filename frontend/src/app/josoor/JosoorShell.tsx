@@ -69,8 +69,8 @@ export default function JosoorShell() {
     }, [activeView]);
 
     // Desks State
-    const [year, setYear] = useState('2029');
-    const [quarter, setQuarter] = useState('Q4');
+    const [year, setYear] = useState('2026');
+    const [quarter, setQuarter] = useState('Q1');
 
     // Fetch dynamic temporal data
     const { data: temporalData } = useQuery({

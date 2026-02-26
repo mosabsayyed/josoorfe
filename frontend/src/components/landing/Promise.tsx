@@ -157,9 +157,10 @@ export default function Promise({ content }: PromiseProps) {
     }
   };
 
-  // Auto-rotation
+  // Auto-rotation (respects reduced-motion preference)
   useEffect(() => {
-    if (!isPaused) {
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!isPaused && !prefersReducedMotion) {
       autoRotateRef.current = setInterval(() => {
         setCurrentIndex((prev) => (prev + 1) % totalCards);
       }, 4500);
@@ -317,6 +318,7 @@ export default function Promise({ content }: PromiseProps) {
 
           {/* Navigation Controls */}
           <div
+            dir="ltr"
             style={{
               display: 'flex',
               justifyContent: 'center',
@@ -327,6 +329,7 @@ export default function Promise({ content }: PromiseProps) {
           >
             <button
               onClick={goToPrev}
+              aria-label="Previous persona"
               style={{
                 width: '44px',
                 height: '44px',
@@ -350,15 +353,18 @@ export default function Promise({ content }: PromiseProps) {
                 e.currentTarget.style.color = 'var(--text-muted, rgba(255, 255, 255, 0.6))';
               }}
             >
-              ‹
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ direction: 'ltr' }}><path d="M10 3L5 8L10 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
             </button>
 
             {/* Dots */}
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
-              {content.personas.map((_, i) => (
+            <div style={{ display: 'flex', gap: '0.5rem' }} role="tablist" aria-label="Persona cards">
+              {content.personas.map((p, i) => (
                 <button
                   key={i}
                   onClick={() => setCurrentIndex(i)}
+                  role="tab"
+                  aria-selected={i === currentIndex}
+                  aria-label={`${p.role} — card ${i + 1} of ${content.personas.length}`}
                   style={{
                     width: i === currentIndex ? '24px' : '8px',
                     height: '8px',
@@ -374,6 +380,7 @@ export default function Promise({ content }: PromiseProps) {
 
             <button
               onClick={goToNext}
+              aria-label="Next persona"
               style={{
                 width: '44px',
                 height: '44px',
@@ -397,7 +404,7 @@ export default function Promise({ content }: PromiseProps) {
                 e.currentTarget.style.color = 'var(--text-muted, rgba(255, 255, 255, 0.6))';
               }}
             >
-              ›
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ direction: 'ltr' }}><path d="M6 3L11 8L6 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
             </button>
           </div>
         </div>

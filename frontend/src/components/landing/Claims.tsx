@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ClaimsContent } from './types';
 import '../../styles/landing.css';
 
@@ -9,14 +10,17 @@ interface ClaimsProps {
 // Images ordered 1→5 (top to bottom)
 const IMAGE_FILES = [
   '/att/icons/1_strategy_alignment.png',
+  '/att/icons/4_knowledge_graph.png',
   '/att/icons/2_agent_orchestration.png',
   '/att/icons/3_cognitive_reasoning.png',
-  '/att/icons/4_knowledge_graph.png',
   '/att/icons/5_sovereign_infra.png',
 ];
 
 export default function Claims({ content }: ClaimsProps) {
+  const { t } = useTranslation();
   const labels = content.imageLabels || [];
+  const descs = (t('claims.imageDescs', { returnObjects: true }) as string[]) || [];
+  const [activeIndex, setActiveIndex] = useState<number>(0);
 
   return (
     <section className="content-centered" id="claims">
@@ -27,31 +31,49 @@ export default function Claims({ content }: ClaimsProps) {
           <p className="subtitle" style={{ maxWidth: '560px', margin: '0 auto' }}>{content.subtitle}</p>
         </div>
 
-        {/* Two-box layout: images + empty mirror */}
+        {/* Two-box layout: images + hover detail */}
         <div className="claims-row">
           <div className="claims-stack">
             <div className="claims-stack-label">{content.canvasLabel2}</div>
             {IMAGE_FILES.map((src, i) => (
-              <div key={i} className="claims-bar">
+              <div
+                key={i}
+                className={`claims-bar ${activeIndex === i ? 'claims-bar-active' : ''}`}
+                onMouseEnter={() => setActiveIndex(i)}
+              >
                 <img src={src} alt={labels[i] || ''} className="claims-bar-img" />
-                <span className={`claims-bar-label${i === 3 ? ' claims-bar-label-dark' : ''}`}>{labels[i] || ''}</span>
+                <span className={`claims-bar-label${i === 1 ? ' claims-bar-label-dark' : ''}`}>{labels[i] || ''}</span>
               </div>
             ))}
             <div className="claims-stack-desc">{content.canvasDesc}</div>
           </div>
-          <div className="claims-stack claims-stack-empty">
+          <div className="claims-stack claims-stack-detail">
             <div className="claims-stack-label">{content.canvasLabel}</div>
-          </div>
-        </div>
-
-        {/* Text claims below */}
-        <div className="claims-items">
-          {content.items.map((item, i) => (
-            <div key={i} className="claims-item">
-              <strong>{item.punchline}</strong>
-              <p>{item.desc}</p>
+            <div className="claims-detail-content">
+              <div className="claims-layer-number">0{activeIndex + 1}</div>
+              <h3 className="claims-detail-title">{labels[activeIndex]}</h3>
+              <div className="claims-detail-desc">
+                {(descs[activeIndex] || '').split('|').map((part: string, pi: number) => {
+                  const colonIdx = part.indexOf(':');
+                  if (pi > 0 && colonIdx > 0 && colonIdx < 20) {
+                    const label = part.substring(0, colonIdx);
+                    const rest = part.substring(colonIdx + 1);
+                    return (
+                      <p key={pi} style={{ marginTop: pi === 1 ? '14px' : '10px' }}>
+                        <span className="claims-stage-label">{label}:</span>{rest}
+                      </p>
+                    );
+                  }
+                  return <p key={pi}>{part}</p>;
+                })}
+              </div>
+              <div className="claims-layer-dots">
+                {labels.map((_: string, i: number) => (
+                  <span key={i} className={`claims-layer-dot ${activeIndex === i ? 'active' : ''}`} />
+                ))}
+              </div>
             </div>
-          ))}
+          </div>
         </div>
       </div>
 
@@ -77,8 +99,106 @@ export default function Claims({ content }: ClaimsProps) {
           backdrop-filter: blur(10px);
         }
 
-        .claims-stack-empty {
-          padding: 1.75rem 1.4rem;
+        .claims-stack-detail {
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          min-height: 420px;
+        }
+
+        .claims-detail-content {
+          display: flex;
+          flex-direction: column;
+          justify-content: flex-start;
+          align-items: flex-start;
+          flex: 1;
+          padding: 2.5rem 3rem;
+          text-align: left;
+          transition: opacity 0.3s ease;
+          border-left: 3px solid rgba(244, 187, 48, 0.4);
+          margin: 1rem 0;
+        }
+
+        [dir="rtl"] .claims-detail-content {
+          text-align: right;
+          align-items: flex-start;
+          border-left: none;
+          border-right: 3px solid rgba(244, 187, 48, 0.4);
+        }
+
+        .claims-detail-title {
+          font-size: 28px;
+          font-weight: 800;
+          color: var(--component-text-accent);
+          margin-bottom: 20px;
+          letter-spacing: -0.3px;
+        }
+
+        .claims-detail-desc {
+          font-size: 19px;
+          line-height: 2;
+          color: var(--component-text-secondary);
+          max-width: 100%;
+          margin: 0;
+        }
+
+        [dir="rtl"] .claims-detail-desc {
+          font-size: 21px;
+          line-height: 2.2;
+        }
+
+        .claims-detail-desc p {
+          margin-bottom: 10px;
+        }
+
+        .claims-layer-number {
+          font-size: 64px;
+          font-weight: 900;
+          color: rgba(244, 187, 48, 0.12);
+          line-height: 1;
+          margin-bottom: -8px;
+          letter-spacing: -2px;
+        }
+
+        .claims-stage-label {
+          color: var(--component-text-accent);
+          font-weight: 700;
+        }
+
+        .claims-layer-dots {
+          display: flex;
+          gap: 8px;
+          margin-top: auto;
+          padding-top: 24px;
+        }
+
+        .claims-layer-dot {
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          background: rgba(244, 187, 48, 0.2);
+          transition: all 0.3s ease;
+        }
+
+        .claims-layer-dot.active {
+          background: rgba(244, 187, 48, 0.8);
+          width: 24px;
+          border-radius: 4px;
+        }
+
+        .claims-bar {
+          position: relative;
+          display: flex;
+          align-items: center;
+          cursor: pointer;
+          transition: transform 0.2s ease, box-shadow 0.2s ease;
+          border-radius: 8px;
+        }
+
+        .claims-bar:hover,
+        .claims-bar-active {
+          transform: scale(1.02);
+          box-shadow: 0 0 16px rgba(244, 187, 48, 0.25);
         }
 
         .claims-stack-label {
@@ -94,12 +214,6 @@ export default function Claims({ content }: ClaimsProps) {
           letter-spacing: 0.8px;
           white-space: nowrap;
           text-transform: uppercase;
-        }
-
-        .claims-bar {
-          position: relative;
-          display: flex;
-          align-items: center;
         }
 
         .claims-bar-img {
@@ -141,39 +255,9 @@ export default function Claims({ content }: ClaimsProps) {
           opacity: 0.85;
         }
 
-        .claims-items {
-          display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          gap: 16px;
-          max-width: 700px;
-          margin: 0 auto;
-        }
-
-        .claims-item {
-          padding: 14px 16px;
-          border: 1px solid rgba(244, 187, 48, 0.15);
-          border-radius: 10px;
-          background: rgba(31, 41, 55, 0.4);
-        }
-
-        .claims-item strong {
-          color: var(--component-text-accent);
-          font-size: 14px;
-          font-weight: 600;
-          display: block;
-          margin-bottom: 4px;
-        }
-
-        .claims-item p {
-          color: var(--component-text-secondary);
-          font-size: 13px;
-          margin: 0;
-          line-height: 1.5;
-        }
-
         @media (max-width: 768px) {
-          .claims-items {
-            grid-template-columns: 1fr;
+          .claims-row {
+            flex-direction: column;
           }
           .claims-bar-label {
             font-size: 12px;

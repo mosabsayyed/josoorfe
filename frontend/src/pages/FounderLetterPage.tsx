@@ -1,84 +1,76 @@
-import React from 'react';
-import { motion } from 'framer-motion';
-import { useTranslation } from 'react-i18next';
+import React, { useRef } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import Header from '../components/layout/Header';
-import { Quote } from 'lucide-react';
 
 export default function FounderLetterPage() {
-  const { language, isRTL } = useLanguage();
-  const { t } = useTranslation();
+  const { language } = useLanguage();
+  const iframeRef = useRef<HTMLIFrameElement | null>(null);
 
-  const title = t('founderLetter.title');
-  const paragraphs = t('founderLetter.paragraphs', { returnObjects: true }) as string[];
-  const signature = t('founderLetter.signature');
+  const src = language === 'ar'
+    ? '/att/cube/founder-ar.html'
+    : '/att/cube/founder.html';
+
+  const handleIframeLoad = () => {
+    const doc = iframeRef.current?.contentDocument;
+    if (!doc) return;
+
+    // Inject site color overrides — match JOSOOR landing page theme
+    const style = doc.createElement('style');
+    style.textContent = `
+      html, body { background: #111827 !important; }
+      .bg-tint { background: #111827 !important; transition: none !important; }
+      .bg-video { display: none !important; }
+      .phase-overlay .phase-text-block h2 { color: #F4BB30 !important; }
+      .phase-overlay .phase-text-block p { color: rgba(255, 255, 255, 0.88) !important; }
+      .finale-enter-btn {
+        background: linear-gradient(135deg, #F4BB30 0%, #D4AF37 100%) !important;
+        color: #111827 !important;
+        font-weight: 700 !important;
+        box-shadow: 0 4px 16px rgba(244, 187, 48, 0.3) !important;
+      }
+      .finale-enter-btn:hover {
+        background: linear-gradient(135deg, #D4AF37 0%, #F4BB30 100%) !important;
+        box-shadow: 0 6px 24px rgba(244, 187, 48, 0.4) !important;
+      }
+      #stage { filter: none; }
+      /* Hide cube's own header/footer — parent page provides the header */
+      header, footer { display: none !important; }
+      #rubiks-top-controls { display: none !important; }
+    `;
+    doc.head.appendChild(style);
+  };
 
   return (
     <div style={{
-      minHeight: '100vh',
-      background: '#111827',
-      color: '#F9FAFB',
-      paddingTop: '80px',
-      overflowY: 'auto',
-      height: '100vh'
+      height: '100vh',
+      width: '100vw',
+      margin: 0,
+      padding: 0,
+      position: 'relative',
+      backgroundColor: '#111827',
+      overflow: 'hidden'
     }}>
       <Header />
-
-      <main style={{ maxWidth: '900px', margin: '0 auto', padding: '40px 20px' }} dir={isRTL ? 'rtl' : 'ltr'}>
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-        >
-          <div style={{ textAlign: 'center', marginBottom: '40px' }}>
-            <div style={{
-              display: 'inline-flex',
-              padding: '16px',
-              background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)',
-              borderRadius: '16px',
-              marginBottom: '24px'
-            }}>
-              <Quote size={32} color="white" />
-            </div>
-            <h1 style={{ fontSize: '36px', fontWeight: 700, marginBottom: '16px', fontFamily: isRTL ? '"Tajawal", sans-serif' : 'inherit' }}>{title}</h1>
-          </div>
-
-          <div style={{
-            background: 'rgba(31, 41, 55, 0.6)',
-            backdropFilter: 'blur(20px)',
-            borderRadius: '24px',
-            padding: '40px',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
-            marginBottom: '40px'
-          }}>
-            {paragraphs.map((paragraph, index) => {
-              const isQuote = paragraph.startsWith('"');
-              return (
-                <p key={index} style={{
-                  fontSize: isQuote ? '20px' : '16px',
-                  lineHeight: '1.8',
-                  marginBottom: '24px',
-                  color: isQuote ? 'var(--component-text-accent)' : '#D1D5DB',
-                  fontStyle: isQuote ? 'normal' : 'normal',
-                  textAlign: isQuote ? 'center' : (isRTL ? 'right' : 'left'),
-                  fontWeight: isQuote ? 500 : 400
-                }}>
-                  {paragraph}
-                </p>
-              );
-            })}
-
-            <div style={{
-              marginTop: '48px',
-              paddingTop: '32px',
-              borderTop: '1px solid rgba(255, 255, 255, 0.1)',
-              textAlign: isRTL ? 'left' : 'right'
-            }}>
-              <p style={{ fontSize: '18px', fontWeight: 600, color: 'var(--component-text-accent)' }}>{signature}</p>
-            </div>
-          </div>
-        </motion.div>
-      </main>
+      <iframe
+        key={language}
+        ref={iframeRef}
+        onLoad={handleIframeLoad}
+        src={src}
+        title="Founder's Letter"
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          border: 'none',
+          display: 'block',
+          margin: 0,
+          padding: 0,
+          zIndex: 1,
+        }}
+        allowFullScreen
+      />
     </div>
   );
 }

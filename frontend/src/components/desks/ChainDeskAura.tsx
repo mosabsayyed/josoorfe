@@ -132,13 +132,13 @@ AND (
 )
 RETURN DISTINCT ${DRET}`
     },
-    build_oversight: {
-        name: 'Build Oversight',
-        labels: ['EntityChangeAdoption','EntityProject','EntityOrgUnit','EntityProcess','EntityITSystem','EntityCapability','EntityRisk','SectorPolicyTool','SectorObjective'],
-        rels: ['INCREASE_ADOPTION','CLOSE_GAPS','GAP_STATUS','MONITORED_BY','PARENT_OF','INFORMS','GOVERNED_BY'],
-        startLabels: ['EntityChangeAdoption'], endLabels: ['SectorObjective'],
+    change_to_capability: {
+        name: 'Change to Capability',
+        labels: ['EntityChangeAdoption','EntityProject','EntityOrgUnit','EntityProcess','EntityITSystem','EntityCapability'],
+        rels: ['INCREASE_ADOPTION','CLOSE_GAPS','GAP_STATUS'],
+        startLabels: ['EntityChangeAdoption'], endLabels: ['EntityCapability'],
         narrativeQuery: `MATCH (root:EntityChangeAdoption {level:'L3'}) WHERE ${YF}
-MATCH path = (root)-[:INCREASE_ADOPTION]->(proj:EntityProject {level:'L3'})-[:CLOSE_GAPS]->(gap:EntityOrgUnit|EntityProcess|EntityITSystem {level:'L3'})-[:GAP_STATUS]->(capL3:EntityCapability {level:'L3'})-[:MONITORED_BY]->(riskL3:EntityRisk {level:'L3'})<-[:PARENT_OF]-(riskL2:EntityRisk {level:'L2'})-[:INFORMS]->(polL2:SectorPolicyTool {level:'L2'})<-[:PARENT_OF*0..1]-(polL1:SectorPolicyTool {level:'L1'})-[:GOVERNED_BY]->(objL1:SectorObjective {level:'L1'})
+MATCH path = (root)-[:INCREASE_ADOPTION]->(proj:EntityProject {level:'L3'})-[:CLOSE_GAPS]->(gap:EntityOrgUnit|EntityProcess|EntityITSystem {level:'L3'})-[:GAP_STATUS]->(cap:EntityCapability {level:'L3'})
 UNWIND nodes(path) AS n UNWIND relationships(path) AS r WITH DISTINCT n, r RETURN DISTINCT ${RET}`,
         diagnosticQuery: `MATCH (n)
 WHERE (
@@ -147,29 +147,49 @@ WHERE (
     (n:EntityOrgUnit AND n.level = 'L3') OR
     (n:EntityProcess AND n.level = 'L3') OR
     (n:EntityITSystem AND n.level = 'L3') OR
-    (n:EntityCapability AND n.level = 'L3') OR
-    (n:EntityRisk AND n.level IN ['L2','L3']) OR
-    (n:SectorPolicyTool AND n.level IN ['L1','L2']) OR
-    (n:SectorObjective AND n.level = 'L1')
+    (n:EntityCapability AND n.level = 'L3')
 )
 AND ${YFN}
 OPTIONAL MATCH (n)-[r]->(m)
-WHERE type(r) IN ['INCREASE_ADOPTION','CLOSE_GAPS','GAP_STATUS','MONITORED_BY','PARENT_OF','INFORMS','GOVERNED_BY']
+WHERE type(r) IN ['INCREASE_ADOPTION','CLOSE_GAPS','GAP_STATUS']
 AND (
     (m:EntityChangeAdoption AND m.level = 'L3') OR
     (m:EntityProject AND m.level = 'L3') OR
     (m:EntityOrgUnit AND m.level = 'L3') OR
     (m:EntityProcess AND m.level = 'L3') OR
     (m:EntityITSystem AND m.level = 'L3') OR
-    (m:EntityCapability AND m.level = 'L3') OR
+    (m:EntityCapability AND m.level = 'L3')
+)
+RETURN DISTINCT ${DRET}`
+    },
+    capability_to_policy: {
+        name: 'Capability to Policy',
+        labels: ['EntityCapability','EntityRisk','SectorPolicyTool','SectorObjective'],
+        rels: ['MONITORED_BY','PARENT_OF','INFORMS','GOVERNED_BY'],
+        startLabels: ['EntityCapability'], endLabels: ['SectorObjective'],
+        narrativeQuery: `MATCH (root:EntityCapability {level:'L3'}) WHERE ${YF}
+MATCH path = (root)-[:MONITORED_BY]->(riskL3:EntityRisk {level:'L3'})<-[:PARENT_OF]-(riskL2:EntityRisk {level:'L2'})-[:INFORMS]->(polL2:SectorPolicyTool {level:'L2'})<-[:PARENT_OF*0..1]-(polL1:SectorPolicyTool {level:'L1'})-[:GOVERNED_BY]->(objL1:SectorObjective {level:'L1'})
+UNWIND nodes(path) AS n UNWIND relationships(path) AS r WITH DISTINCT n, r RETURN DISTINCT ${RET}`,
+        diagnosticQuery: `MATCH (n)
+WHERE (
+    (n:EntityCapability AND n.level IN ['L1','L2','L3']) OR
+    (n:EntityRisk AND n.level IN ['L2','L3']) OR
+    (n:SectorPolicyTool AND n.level IN ['L1','L2']) OR
+    (n:SectorObjective AND n.level = 'L1')
+)
+AND ${YFN}
+OPTIONAL MATCH (n)-[r]->(m)
+WHERE type(r) IN ['MONITORED_BY','PARENT_OF','INFORMS','GOVERNED_BY']
+AND (
+    (m:EntityCapability AND m.level IN ['L1','L2','L3']) OR
     (m:EntityRisk AND m.level IN ['L2','L3']) OR
     (m:SectorPolicyTool AND m.level IN ['L1','L2']) OR
     (m:SectorObjective AND m.level = 'L1')
 )
 RETURN DISTINCT ${DRET}`
     },
-    operate_oversight: {
-        name: 'Operate Oversight',
+    capability_to_performance: {
+        name: 'Capability to Performance',
         labels: ['EntityCapability','EntityRisk','SectorPerformance','SectorObjective'],
         rels: ['MONITORED_BY','PARENT_OF','INFORMS','AGGREGATES_TO'],
         startLabels: ['EntityCapability'], endLabels: ['SectorObjective'],
@@ -178,7 +198,7 @@ MATCH path = (root)-[:MONITORED_BY]->(riskL3:EntityRisk {level:'L3'})<-[:PARENT_
 UNWIND nodes(path) AS n UNWIND relationships(path) AS r WITH DISTINCT n, r RETURN DISTINCT ${RET}`,
         diagnosticQuery: `MATCH (n)
 WHERE (
-    (n:EntityCapability AND n.level = 'L3') OR
+    (n:EntityCapability AND n.level IN ['L1','L2','L3']) OR
     (n:EntityRisk AND n.level IN ['L2','L3']) OR
     (n:SectorPerformance AND n.level IN ['L1','L2']) OR
     (n:SectorObjective AND n.level = 'L1')
@@ -187,7 +207,7 @@ AND ${YFN}
 OPTIONAL MATCH (n)-[r]->(m)
 WHERE type(r) IN ['MONITORED_BY','PARENT_OF','INFORMS','AGGREGATES_TO']
 AND (
-    (m:EntityCapability AND m.level = 'L3') OR
+    (m:EntityCapability AND m.level IN ['L1','L2','L3']) OR
     (m:EntityRisk AND m.level IN ['L2','L3']) OR
     (m:SectorPerformance AND m.level IN ['L1','L2']) OR
     (m:SectorObjective AND m.level = 'L1')
@@ -222,44 +242,6 @@ AND (
     m:EntityVendor
 )
 AND m.level = 'L3'
-RETURN DISTINCT ${DRET}`
-    },
-    integrated_oversight: {
-        name: 'Integrated Oversight',
-        labels: ['SectorPolicyTool','EntityCapability','EntityOrgUnit','EntityProcess','EntityITSystem','EntityRisk','SectorPerformance'],
-        rels: ['SETS_PRIORITIES','PARENT_OF','ROLE_GAPS','KNOWLEDGE_GAPS','AUTOMATION_GAPS','MONITORED_BY','INFORMS'],
-        startLabels: ['SectorPolicyTool'], endLabels: ['SectorPerformance'],
-        narrativeQuery: `MATCH (root:SectorPolicyTool {level:'L2'}) WHERE ${YF}
-MATCH p1 = (root)-[:SETS_PRIORITIES]->(capL2:EntityCapability {level:'L2'})
-MATCH p2 = (capL2)-[:PARENT_OF*0..1]->(capL3:EntityCapability {level:'L3'})
-MATCH p3 = (capL3)-[:ROLE_GAPS|KNOWLEDGE_GAPS|AUTOMATION_GAPS]->(gap:EntityOrgUnit|EntityProcess|EntityITSystem {level:'L3'})
-MATCH p4 = (capL3)<-[:MONITORED_BY]-(riskL3:EntityRisk {level:'L3'})
-MATCH p5 = (riskL3)<-[:PARENT_OF*0..1]-(riskL2:EntityRisk {level:'L2'})
-MATCH p6 = (riskL2)-[:INFORMS]->(perfL2:SectorPerformance {level:'L2'})
-WITH [p1,p2,p3,p4,p5,p6] AS paths UNWIND paths AS path
-UNWIND nodes(path) AS n UNWIND relationships(path) AS r WITH DISTINCT n, r RETURN DISTINCT ${RET}`,
-        diagnosticQuery: `MATCH (n)
-WHERE (
-    (n:SectorPolicyTool AND n.level = 'L2') OR
-    (n:EntityCapability AND n.level IN ['L2','L3']) OR
-    (n:EntityOrgUnit AND n.level = 'L3') OR
-    (n:EntityProcess AND n.level = 'L3') OR
-    (n:EntityITSystem AND n.level = 'L3') OR
-    (n:EntityRisk AND n.level IN ['L2','L3']) OR
-    (n:SectorPerformance AND n.level = 'L2')
-)
-AND ${YFN}
-OPTIONAL MATCH (n)-[r]->(m)
-WHERE type(r) IN ['SETS_PRIORITIES','PARENT_OF','ROLE_GAPS','KNOWLEDGE_GAPS','AUTOMATION_GAPS','MONITORED_BY','INFORMS']
-AND (
-    (m:SectorPolicyTool AND m.level = 'L2') OR
-    (m:EntityCapability AND m.level IN ['L2','L3']) OR
-    (m:EntityOrgUnit AND m.level = 'L3') OR
-    (m:EntityProcess AND m.level = 'L3') OR
-    (m:EntityITSystem AND m.level = 'L3') OR
-    (m:EntityRisk AND m.level IN ['L2','L3']) OR
-    (m:SectorPerformance AND m.level = 'L2')
-)
 RETURN DISTINCT ${DRET}`
     }
 };
@@ -315,7 +297,7 @@ const transformToGraphData = (records: any[], isDiagnostic: boolean, chainKey: s
     return { nodes, links: safeLinks };
 };
 
-export function ChainTestDeskAura() {
+export function ChainDeskAura() {
     const [selectedChain, setSelectedChain] = useState<string>('sector_value_chain');
     const [selectedYear, setSelectedYear] = useState<string>('2025');
     const [queryType, setQueryType] = useState<'narrative' | 'diagnostic'>('diagnostic');
@@ -340,7 +322,7 @@ export function ChainTestDeskAura() {
     const chainConfig = CHAINS[selectedChain];
 
     const { data: graphData, isLoading, error } = useQuery({
-        queryKey: ['chain-test-aura', selectedChain, selectedYear, queryType],
+        queryKey: ['chain-aura', selectedChain, selectedYear, queryType],
         queryFn: async () => {
             const isDiag = queryType === 'diagnostic';
             const query = isDiag

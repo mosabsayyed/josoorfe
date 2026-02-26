@@ -3,7 +3,7 @@ import { enrichOntologyNode } from './ontologyValueOverlay';
 
 // Configuration
 // ALIGNMENT FIX: Restored trailing slash per User's working CURL command
-const MCP_ENDPOINT = '/4/mcp/'; // Proxied to https://betaBE.aitwintech.com/4/mcp/
+const MCP_ENDPOINT = '/1/mcp/'; // Noor MCP router (port 8201) — proxied to betaBE.aitwintech.com/1/mcp/
 
 interface JsonRpcRequest {
     jsonrpc: '2.0';
@@ -188,8 +188,8 @@ export const L1_CATEGORY_MAP: Record<string, PolicyCategory> = {
  *
  * Source 1: sector_value_chain → L1 SectorPolicyTool (governance)
  * Source 2: Direct Cypher via MCP → L2 physical assets (sector/region/coordinates)
- * Source 3: build_oversight → non-physical L1/L2 policy tools + capabilities + risks + projects
- * Source 4: operate_oversight → KPIs + capabilities + risks
+ * Source 3: capability_to_policy → capabilities + risks + policy tools + objectives
+ * Source 4: capability_to_performance → capabilities + risks + KPIs + objectives
  */
 interface SectorGraphResult {
   nodes: any[];
@@ -235,7 +235,7 @@ async function _fetchSectorGraphDataInternal(): Promise<SectorGraphResult> {
     try {
         // SOURCE 2: Direct Cypher → ALL SectorPolicyTool nodes (chains only return a fraction)
         const allPtQuery = `MATCH (n:SectorPolicyTool) RETURN n { .id, .name, .year, .level, .quarter, .status, .sector, .region, .description, .parent_id, .parent_year, .latitude, .longitude, .asset_type, .sub_category, .category, .priority, .rationale, .fiscal_action, .child_count, .tool_type, .impact_target, .delivery_channel, .cost_of_implementation, .capacity_metric, .completion_date, .investment, .domain_id, .mapped_program_id, .mapped_program_label, .mapped_family, .mapped_capability, .mapped_source, .legacy_name } as node`;
-        const directCypherPromise = callNeo4jTool('read_neo4j_cypher', { query: allPtQuery }).catch(err => {
+        const directCypherPromise = callNeo4jTool('read_neo4j_cypher', { cypher_query: allPtQuery }).catch(err => {
             console.error('[Neo4jMCP] Source 2 (Direct Cypher) failed:', err);
             return [];
         });
@@ -245,7 +245,7 @@ MATCH (p:SectorPolicyTool {level:'L2'})-[r:SETS_PRIORITIES|EXECUTES]-(c:EntityCa
 RETURN p { .id, .domain_id, .year, .parent_year } AS policy,
        c { .id, .domain_id, .name, .level, .parent_id } AS cap
 `;
-        const directPolicyCapPromise = callNeo4jTool('read_neo4j_cypher', { query: policyCapQuery }).catch(err => {
+        const directPolicyCapPromise = callNeo4jTool('read_neo4j_cypher', { cypher_query: policyCapQuery }).catch(err => {
             console.error('[Neo4jMCP] Direct policy-cap link query failed:', err);
             return [];
         });
@@ -253,21 +253,43 @@ RETURN p { .id, .domain_id, .year, .parent_year } AS policy,
         // SOURCE 1 + 3 + 4: Chain queries — ALL in parallel with Source 2
         const [svcResp, buildResp, operateResp, directCypherRaw, directPolicyCapRaw] = await Promise.all([
             fetch(`${baseUrl}/api/business-chain/sector_value_chain?year=0&excludeEmbeddings=true`),
-            fetch(`${baseUrl}/api/business-chain/build_oversight?year=0&excludeEmbeddings=true`),
-            fetch(`${baseUrl}/api/business-chain/operate_oversight?year=0&excludeEmbeddings=true`),
+            fetch(`${baseUrl}/api/v1/chains/capability_to_policy?year=0&row_limit=5000`),
+            fetch(`${baseUrl}/api/v1/chains/capability_to_performance?year=0&row_limit=5000`),
             directCypherPromise,
             directPolicyCapPromise
         ]);
 
         if (!svcResp.ok) throw new Error(`sector_value_chain HTTP ${svcResp.status}`);
-        if (!buildResp.ok) throw new Error(`build_oversight HTTP ${buildResp.status}`);
-        if (!operateResp.ok) throw new Error(`operate_oversight HTTP ${operateResp.status}`);
+        if (!buildResp.ok) throw new Error(`capability_to_policy HTTP ${buildResp.status}`);
+        if (!operateResp.ok) throw new Error(`capability_to_performance HTTP ${operateResp.status}`);
 
-        const [svcData, buildData, operateData] = await Promise.all([
+        const [svcData, buildRaw, operateRaw] = await Promise.all([
             svcResp.json(),
             buildResp.json(),
             operateResp.json()
         ]);
+
+        // Normalize v1 chain response {results[0].nodes, results[0].relationships}
+        // into {nodes: [{elementId, labels, properties}], links: [{id, type, source, target}]}
+        // so downstream extractPolicyRiskFromChain / extractOperateRiskForPolicyTools work unchanged.
+        const normalizeV1Response = (raw: any): { nodes: any[]; links: any[] } => {
+            const result = raw.results?.[0] || {};
+            const nodes = (result.nodes || []).map((n: any) => ({
+                elementId: n.id,
+                labels: n.labels || [],
+                properties: n.properties || {}
+            }));
+            const links = (result.relationships || []).map((r: any) => ({
+                id: `${r.start}-${r.type}-${r.end}`,
+                type: r.type,
+                source: r.start,
+                target: r.end
+            }));
+            return { nodes, links };
+        };
+
+        const buildData = normalizeV1Response(buildRaw);
+        const operateData = normalizeV1Response(operateRaw);
 
         const directCypherNodes = (directCypherRaw?.data || directCypherRaw || []).map((r: any) => r.node || r).filter(Boolean);
         const directPolicyCapRows = (directPolicyCapRaw?.data || directPolicyCapRaw || []).filter(Boolean);
@@ -290,9 +312,9 @@ RETURN p { .id, .domain_id, .year, .parent_year } AS policy,
         console.log(`[Neo4jMCP] Source 2 (Direct Cypher): ${directCypherNodes.length} SectorPolicyTool nodes`);
         console.log(`[Neo4jMCP] Direct policy-cap links: ${policyCapLinks.length}`);
 
-        // Extract nodes from chain responses
+        // Extract nodes from chain responses for dedup merge
         // Normalize id to domain_id (short format like "4.0") for frontend consistency
-        const getChainNodes = (data: any) => (data.nodes || []).map((n: any) => {
+        const getChainNodes = (data: { nodes: any[] }) => (data.nodes || []).map((n: any) => {
             const props = n.properties || {};
             const { embedding, Embedding, embedding_generated_at, ...clean } = props;
             if (clean.domain_id) clean.id = clean.domain_id;
@@ -304,8 +326,8 @@ RETURN p { .id, .domain_id, .year, .parent_year } AS policy,
         const operateNodes = getChainNodes(operateData);
 
         console.log(`[Neo4jMCP] Source 1 (sector_value_chain): ${svcNodes.length} nodes`);
-        console.log(`[Neo4jMCP] Source 3 (build_oversight): ${buildNodes.length} nodes`);
-        console.log(`[Neo4jMCP] Source 4 (operate_oversight): ${operateNodes.length} nodes`);
+        console.log(`[Neo4jMCP] Source 3 (capability_to_policy): ${buildNodes.length} nodes`);
+        console.log(`[Neo4jMCP] Source 4 (capability_to_performance): ${operateNodes.length} nodes`);
 
         // Merge & deduplicate by domain_id+year (domain_id is the original short id like "1.0")
         const uniqueMap = new Map<string, any>();
@@ -430,11 +452,11 @@ export function appendDirectPolicyCapRows(
 }
 
 /**
- * Extract policy tool risk data from the build_oversight chain response.
+ * Extract policy tool risk data from the capability_to_policy chain response.
  * Replaces direct MCP Cypher — uses chain data already fetched by fetchSectorGraphData.
  *
- * Chain path (build_oversight):
- * EntityCapability(L3) →MONITORED_BY→ EntityRisk(L3)
+ * Chain path (capability_to_policy):
+ * EntityCapability(L1/L2/L3) →MONITORED_BY→ EntityRisk(L3)
  * EntityRisk(L2) →PARENT_OF→ EntityRisk(L3)
  * coalesce(riskL2,riskL3) →INFORMS→ SectorPolicyTool(L2)
  * SectorPolicyTool(L1) →PARENT_OF→ SectorPolicyTool(L2)
@@ -622,9 +644,9 @@ export function extractPolicyRiskFromChain(chainData: { nodes: any[]; links: any
 }
 
 /**
- * Map operate_oversight risk to PolicyTools via sector_value_chain.
+ * Map capability_to_performance risk to PolicyTools via sector_value_chain.
  *
- * operate_oversight path: EntityRisk →INFORMS→ SectorPerformance(L2) →PARENT_OF→ SectorPerformance(L1) →AGGREGATES_TO→ SectorObjective
+ * capability_to_performance path: EntityRisk →INFORMS→ SectorPerformance(L2) →PARENT_OF→ SectorPerformance(L1) →AGGREGATES_TO→ SectorObjective
  * sector_value_chain path: SectorObjective →REALIZED_VIA→ SectorPolicyTool
  *
  * Cross-chain join on SectorObjective.domain_id (year-agnostic).

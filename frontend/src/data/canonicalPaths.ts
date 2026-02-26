@@ -47,12 +47,17 @@ export const CANONICAL_PATHS: Record<string, CanonicalPathDef> = {
             { sourceLabel: 'EntityCapability', sourceLevel: 'L3', relationship: 'ROLE_GAPS|KNOWLEDGE_GAPS|AUTOMATION_GAPS', targetLabel: ['EntityOrgUnit', 'EntityProcess', 'EntityITSystem'], targetLevel: 'L3' }
         ]
     },
-    'build_oversight': {
-        name: 'Build Oversight',
+    'change_to_capability': {
+        name: 'Change to Capability',
         steps: [
             { sourceLabel: 'EntityChangeAdoption', sourceLevel: 'L3', relationship: 'INCREASE_ADOPTION', targetLabel: 'EntityProject', targetLevel: 'L3' },
             { sourceLabel: 'EntityProject', sourceLevel: 'L3', relationship: 'CLOSE_GAPS', targetLabel: ['EntityOrgUnit', 'EntityProcess', 'EntityITSystem'], targetLevel: 'L3' },
-            { sourceLabel: ['EntityOrgUnit', 'EntityProcess', 'EntityITSystem'], sourceLevel: 'L3', relationship: 'GAP_STATUS', targetLabel: 'EntityCapability', targetLevel: 'L3' },
+            { sourceLabel: ['EntityOrgUnit', 'EntityProcess', 'EntityITSystem'], sourceLevel: 'L3', relationship: 'GAP_STATUS', targetLabel: 'EntityCapability', targetLevel: 'L3' }
+        ]
+    },
+    'capability_to_policy': {
+        name: 'Capability to Policy',
+        steps: [
             { sourceLabel: 'EntityCapability', sourceLevel: 'L3', relationship: 'MONITORED_BY', targetLabel: 'EntityRisk', targetLevel: 'L3' },
             { sourceLabel: 'EntityRisk', sourceLevel: 'L3', relationship: 'PARENT_OF', targetLabel: 'EntityRisk', targetLevel: 'L2' },
             { sourceLabel: 'EntityRisk', sourceLevel: 'L2', relationship: 'INFORMS', targetLabel: 'SectorPolicyTool', targetLevel: 'L2' },
@@ -60,8 +65,8 @@ export const CANONICAL_PATHS: Record<string, CanonicalPathDef> = {
             { sourceLabel: 'SectorPolicyTool', sourceLevel: 'L1', relationship: 'GOVERNED_BY', targetLabel: 'SectorObjective', targetLevel: 'L1' }
         ]
     },
-    'operate_oversight': {
-        name: 'Operate Oversight',
+    'capability_to_performance': {
+        name: 'Capability to Performance',
         steps: [
             { sourceLabel: 'EntityCapability', sourceLevel: 'L3', relationship: 'MONITORED_BY', targetLabel: 'EntityRisk', targetLevel: 'L3' },
             { sourceLabel: 'EntityRisk', sourceLevel: 'L3', relationship: 'PARENT_OF', targetLabel: 'EntityRisk', targetLevel: 'L2' },
@@ -79,8 +84,4 @@ export const CANONICAL_PATHS: Record<string, CanonicalPathDef> = {
             { sourceLabel: 'EntityITSystem', relationship: 'DEPENDS_ON', targetLabel: 'EntityVendor' }
         ]
     },
-    'integrated_oversight': {
-        name: 'Integrated Oversight',
-        steps: []
-    }
 };

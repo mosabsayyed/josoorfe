@@ -56,20 +56,24 @@ export function aggregateStatus(
 }
 
 // Get status color for L3
+// BUILD: color from build_status (ETL-written on capability node)
+// OPERATE: color from execute_status (ETL-written on capability node)
 export function getL3StatusColor(l3: L3Capability): string {
   if (l3.mode === 'build') {
-    if (l3.build_status === 'not-due') return '#475569';
-    else if (l3.build_status === 'planned') return '#475569';
-    else if (l3.build_status === 'in-progress-ontrack') return '#10b981';
-    else if (l3.build_status === 'in-progress-atrisk') return '#f59e0b';
-    else if (l3.build_status === 'in-progress-issues') return '#ef4444';
-  } else if (l3.mode === 'execute') {
-    if (l3.execute_status === 'ontrack') return '#10b981';
-    else if (l3.execute_status === 'at-risk') return '#f59e0b';
-    else if (l3.execute_status === 'issues') return '#ef4444';
-    else return '#475569'; // No risk data — neutral gray
+    switch (l3.build_status) {
+      case 'in-progress-issues': return '#ef4444';
+      case 'in-progress-atrisk': return '#f59e0b';
+      case 'in-progress-ontrack': return '#10b981';
+      default: return '#475569'; // not-due, planned
+    }
   }
-  return '#475569';
+  // OPERATE
+  switch (l3.execute_status) {
+    case 'issues': return '#ef4444';
+    case 'at-risk': return '#f59e0b';
+    case 'ontrack': return '#10b981';
+    default: return '#475569'; // not-due
+  }
 }
 
 // Get status color for L2 (aggregated from L3)

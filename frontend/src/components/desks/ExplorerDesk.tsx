@@ -43,14 +43,20 @@ const CHAIN_MAPPINGS: Record<string, { name: string, labels: string[], relations
         relationships: ['CASCADED_VIA', 'PARENT_OF', 'SETS_TARGETS', 'ROLE_GAPS', 'KNOWLEDGE_GAPS', 'AUTOMATION_GAPS'],
         startLabels: ['SectorObjective'], endLabels: ['EntityOrgUnit', 'EntityProcess', 'EntityITSystem']
     },
-    'build_oversight': {
-        name: 'Build Oversight',
-        labels: ['EntityChangeAdoption', 'EntityProject', 'EntityOrgUnit', 'EntityProcess', 'EntityITSystem', 'EntityCapability', 'EntityRisk', 'SectorPolicyTool', 'SectorObjective'],
-        relationships: ['INCREASE_ADOPTION', 'CLOSE_GAPS', 'GAP_STATUS', 'MONITORED_BY', 'PARENT_OF', 'INFORMS', 'GOVERNED_BY'],
-        startLabels: ['EntityChangeAdoption'], endLabels: ['SectorObjective']
+    'change_to_capability': {
+        name: 'Change to Capability',
+        labels: ['EntityChangeAdoption', 'EntityProject', 'EntityOrgUnit', 'EntityProcess', 'EntityITSystem', 'EntityCapability'],
+        relationships: ['INCREASE_ADOPTION', 'CLOSE_GAPS', 'GAP_STATUS'],
+        startLabels: ['EntityChangeAdoption'], endLabels: ['EntityCapability']
     },
-    'operate_oversight': {
-        name: 'Operate Oversight',
+    'capability_to_policy': {
+        name: 'Capability to Policy',
+        labels: ['EntityCapability', 'EntityRisk', 'SectorPolicyTool', 'SectorObjective'],
+        relationships: ['MONITORED_BY', 'PARENT_OF', 'INFORMS', 'GOVERNED_BY'],
+        startLabels: ['EntityCapability'], endLabels: ['SectorObjective']
+    },
+    'capability_to_performance': {
+        name: 'Capability to Performance',
         labels: ['EntityCapability', 'EntityRisk', 'SectorPerformance', 'SectorObjective'],
         relationships: ['MONITORED_BY', 'PARENT_OF', 'INFORMS', 'AGGREGATES_TO'],
         startLabels: ['EntityCapability'], endLabels: ['SectorObjective']
@@ -60,12 +66,6 @@ const CHAIN_MAPPINGS: Record<string, { name: string, labels: string[], relations
         labels: ['EntityCultureHealth', 'EntityOrgUnit', 'EntityProcess', 'EntityITSystem', 'EntityVendor'],
         relationships: ['MONITORS_FOR', 'APPLY', 'AUTOMATION', 'DEPENDS_ON'],
         startLabels: ['EntityCultureHealth'], endLabels: ['EntityVendor']
-    },
-    'integrated_oversight': {
-        name: 'Integrated Oversight',
-        labels: ['SectorPolicyTool', 'EntityCapability', 'EntityOrgUnit', 'EntityProcess', 'EntityITSystem', 'EntityRisk', 'SectorPerformance'],
-        relationships: ['SETS_PRIORITIES', 'PARENT_OF', 'ROLE_GAPS', 'KNOWLEDGE_GAPS', 'AUTOMATION_GAPS', 'MONITORED_BY', 'INFORMS'],
-        startLabels: ['SectorPolicyTool'], endLabels: ['SectorPerformance']
     }
 };
 
@@ -303,16 +303,15 @@ export function ExplorerDesk({ year = '2025', quarter = 'All' }: ExplorerDeskPro
 
         console.log(`[ExplorerDesk] Building URL: year=${pYear}, quarter=${pQuarter}, chain=${chain}, analyzeGaps=${analyzeGaps}`);
 
-        // If it's a chain call, use the specialized endpoint
+        // If it's a chain call, use the v1 chains endpoint
         if (chain) {
             const params = new URLSearchParams();
             const yearNum = Number.parseInt(String(pYear), 10);
             const yearParam = Number.isNaN(yearNum) ? '0' : String(yearNum);
             params.append('year', yearParam);
             params.append('analyzeGaps', analyzeGaps.toString());
-            params.append('limit', limit.toString());
-            params.append('excludeEmbeddings', 'true');
-            const url = `${baseUrl}/api/business-chain/${chain}?${params.toString()}`;
+            params.append('row_limit', limit.toString());
+            const url = `${baseUrl}/api/v1/chains/${chain}?${params.toString()}`;
             console.log(`[ExplorerDesk] Chain URL: ${url}`);
             return url;
         }
@@ -348,11 +347,37 @@ export function ExplorerDesk({ year = '2025', quarter = 'All' }: ExplorerDeskPro
                 console.error(`[ExplorerDesk] FETCH ERROR: ${response.status}`);
                 throw new Error(`Failed to fetch graph data: ${response.statusText}`);
             }
-            const data = await response.json();
-            if (!data.nodes || !data.links) {
-                console.warn(`[ExplorerDesk] Unexpected response shape`, Object.keys(data));
+            const raw = await response.json();
+
+            // Normalize v1 chain response: {results:[{nodes, relationships}]} → {nodes, links}
+            // Generic graph endpoint returns {nodes, links} directly — handle both.
+            let data: { nodes: any[]; links: any[] };
+            if (raw.results && Array.isArray(raw.results)) {
+                const r0 = raw.results[0] || {};
+                data = {
+                    nodes: (r0.nodes || []).map((n: any) => ({
+                        elementId: n.id,
+                        id: n.id,
+                        labels: n.labels || [],
+                        label: (n.labels || [])[0] || '',
+                        group: (n.labels || [])[0] || '',
+                        properties: n.properties || {},
+                        ...n.properties,
+                    })),
+                    links: (r0.relationships || []).map((r: any) => ({
+                        id: `${r.start}-${r.type}-${r.end}`,
+                        type: r.type,
+                        source: r.start,
+                        target: r.end,
+                    }))
+                };
+            } else if (raw.nodes) {
+                data = raw;
+            } else {
+                console.warn(`[ExplorerDesk] Unexpected response shape`, Object.keys(raw));
                 return { nodes: [], links: [] };
             }
+
             const result = normalizeGraphData(data);
             console.log(`[ExplorerDesk] ${result.nodes.length} nodes, ${result.links.length} links`);
             return result;
