@@ -52,6 +52,15 @@ interface SectorOutput {
 // Helper to parse capacity metrics from mixed text+number strings.
 // Data contains formats like: "2.9M m3/day", "600k m3/day", "4000+ MW", "3.6 GW",
 // "30k Homes", "155k Vehicles/yr", "400k bpd", "25M tonnes ore", "92760 seats", etc.
+function getCapacityValue(asset: any): number {
+    // Prefer structured capacity_value (written by ETL) over string parsing
+    if (asset.capacity_value != null && typeof asset.capacity_value === 'number' && asset.capacity_value > 0) {
+        return asset.capacity_value;
+    }
+    // Fallback: parse free-text string
+    return parseCapacityMetric(asset.capacity_metric || asset.capacity);
+}
+
 function parseCapacityMetric(metric?: string): number {
     if (!metric) return 0;
 
@@ -313,14 +322,9 @@ const SectorDetailsPanel: React.FC<SectorDetailsPanelProps> = ({
                     // Region filter (megaRegion)
                     if (!megaRegion.regions.includes(node.region)) return false;
 
-                    // Year filter (completion year)
-                    if (year) {
-                        const completionDate = node.completion_date;
-                        if (completionDate && typeof completionDate === 'string') {
-                            const finishYear = parseInt(completionDate.substring(0, 4));
-                            if (!isNaN(finishYear) && finishYear > year) return false;
-                        }
-                    }
+                    // Year filter: keep ALL assets (don't remove future ones)
+                    // Assets with completion beyond selected year are still shown —
+                    // their status reflects "Planned" via SectorDesk's year dedup logic
 
                     // Priority filter (if specified and not "All")
                     if (selectedPriority && selectedPriority !== 'All') {
@@ -350,27 +354,27 @@ const SectorDetailsPanel: React.FC<SectorDetailsPanelProps> = ({
         // Aggregate capacities by sector category
         const waterCapacity = assetsForOutput
             .filter(a => a.sector?.toLowerCase() === 'water')
-            .reduce((sum, a) => sum + parseCapacityMetric(a.capacity_metric), 0);
+            .reduce((sum, a) => sum + getCapacityValue(a), 0);
 
         const energyCapacity = assetsForOutput
             .filter(a => a.sector?.toLowerCase() === 'energy')
-            .reduce((sum, a) => sum + parseCapacityMetric(a.capacity_metric), 0);
+            .reduce((sum, a) => sum + getCapacityValue(a), 0);
 
         const housingUnits = assetsForOutput
             .filter(a => a.sector?.toLowerCase() === 'giga' && (a.asset_type?.toLowerCase().includes('housing') || a.asset_type?.toLowerCase().includes('residential')))
-            .reduce((sum, a) => sum + parseCapacityMetric(a.capacity_metric), 0);
+            .reduce((sum, a) => sum + getCapacityValue(a), 0);
 
         const hotelKeys = assetsForOutput
             .filter(a => a.sector?.toLowerCase() === 'giga' && a.asset_type?.toLowerCase().includes('hotel'))
-            .reduce((sum, a) => sum + parseCapacityMetric(a.capacity_metric), 0);
+            .reduce((sum, a) => sum + getCapacityValue(a), 0);
 
         const industrialSpace = assetsForOutput
             .filter(a => a.sector?.toLowerCase() === 'industry')
-            .reduce((sum, a) => sum + parseCapacityMetric(a.capacity_metric), 0);
+            .reduce((sum, a) => sum + getCapacityValue(a), 0);
 
         const automotiveProduction = assetsForOutput
             .filter(a => a.sector?.toLowerCase() === 'industry' && a.asset_type?.toLowerCase().includes('automotive'))
-            .reduce((sum, a) => sum + parseCapacityMetric(a.capacity_metric), 0);
+            .reduce((sum, a) => sum + getCapacityValue(a), 0);
 
         return [
             {

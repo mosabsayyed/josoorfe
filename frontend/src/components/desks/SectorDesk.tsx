@@ -196,27 +196,45 @@ export const SectorDesk: React.FC<SectorDeskProps> = ({ year: propYear, quarter:
     useEffect(() => {
         let result = [...allAssets];
 
-        // 1. Year Filter - Cumulative (selecting 2029 = show 2025 through 2029)
-        // Keep latest snapshot per asset (dedup by domain_id/id)
+        // 1. Year Filter - ALL assets always shown; dedup picks best snapshot for selected year
+        // Status changes by year: assets with year > selectedYear show as "Planned"
         if (selectedYear) {
             const beforeCount = result.length;
             const selectedYearNum = parseInt(selectedYear, 10);
-            result = result.filter(asset => {
-                const assetYear = parseInt(String(asset.year || asset.parent_year || '0'), 10);
-                return !isNaN(assetYear) && assetYear <= selectedYearNum;
-            });
-            // Deduplicate: keep latest year per asset
-            const latestById = new Map<string, any>();
+
+            // Deduplicate: group all snapshots by asset identity, pick best for selected year
+            const snapshotsById = new Map<string, any[]>();
             for (const a of result) {
                 const key = `${(a._labels || [])[0] || ''}:${a.domain_id || a.id}`;
-                const existing = latestById.get(key);
-                const aYear = parseInt(String(a.year || a.parent_year || '0'), 10);
-                if (!existing || aYear > parseInt(String(existing.year || existing.parent_year || '0'), 10)) {
-                    latestById.set(key, a);
-                }
+                if (!snapshotsById.has(key)) snapshotsById.set(key, []);
+                snapshotsById.get(key)!.push(a);
             }
-            result = Array.from(latestById.values());
-            console.log(`Year filter: ${beforeCount} → ${result.length} (year<=${selectedYear}, deduped)`);
+
+            result = [];
+            for (const [, snapshots] of snapshotsById) {
+                // Sort by year ascending
+                snapshots.sort((a, b) => {
+                    const ya = parseInt(String(a.year || a.parent_year || '0'), 10);
+                    const yb = parseInt(String(b.year || b.parent_year || '0'), 10);
+                    return ya - yb;
+                });
+
+                // Pick latest snapshot with year <= selectedYear, or earliest available if all are future
+                let best = snapshots[0]; // fallback: earliest snapshot
+                for (const s of snapshots) {
+                    const sy = parseInt(String(s.year || s.parent_year || '0'), 10);
+                    if (sy <= selectedYearNum) best = s;
+                }
+
+                // If the best snapshot's year is beyond the selected year, mark status as Planned
+                const bestYear = parseInt(String(best.year || best.parent_year || '0'), 10);
+                if (bestYear > selectedYearNum) {
+                    best = { ...best, status: 'Planned' };
+                }
+
+                result.push(best);
+            }
+            console.log(`Year filter: ${beforeCount} → ${result.length} (deduped, all assets kept, year=${selectedYear})`);
         }
 
         // 2. Level Filter: ONLY show L1 assets that have NO L2 children
@@ -550,10 +568,9 @@ export const SectorDesk: React.FC<SectorDeskProps> = ({ year: propYear, quarter:
             ? yearlyNodes
             : [];
 
-        // 3. Filter L1 SectorPolicyTool nodes
+        // 3. Filter L1 SectorPolicyTool nodes (delivery programs + physical assets)
         const isPolicyTool = (n: any) => (n._labels || []).includes('SectorPolicyTool');
-        const isNonPhysical = (n: any) => !n.sector || n.sector === '' || n.sector === 'null';
-        const l1PolicyTools = sectorFilteredNodes.filter((n: any) => n.level === 'L1' && isPolicyTool(n) && isNonPhysical(n));
+        const l1PolicyTools = sectorFilteredNodes.filter((n: any) => n.level === 'L1' && isPolicyTool(n));
 
         const counts: PolicyToolCounts = {
             enforce: 0, incentive: 0, license: 0, services: 0, regulate: 0, awareness: 0, total: 0

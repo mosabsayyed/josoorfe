@@ -234,7 +234,7 @@ async function _fetchSectorGraphDataInternal(): Promise<SectorGraphResult> {
 
     try {
         // SOURCE 2: Direct Cypher → ALL SectorPolicyTool nodes (chains only return a fraction)
-        const allPtQuery = `MATCH (n:SectorPolicyTool) RETURN n { .id, .name, .year, .level, .quarter, .status, .sector, .region, .description, .parent_id, .parent_year, .latitude, .longitude, .asset_type, .sub_category, .category, .priority, .rationale, .fiscal_action, .child_count, .tool_type, .impact_target, .delivery_channel, .cost_of_implementation, .capacity_metric, .completion_date, .investment, .domain_id, .mapped_program_id, .mapped_program_label, .mapped_family, .mapped_capability, .mapped_source, .legacy_name } as node`;
+        const allPtQuery = `MATCH (n:SectorPolicyTool) RETURN n { .id, .name, .year, .level, .quarter, .status, .sector, .region, .description, .parent_id, .parent_year, .latitude, .longitude, .asset_type, .sub_category, .category, .priority, .rationale, .fiscal_action, .child_count, .tool_type, .impact_target, .delivery_channel, .cost_of_implementation, .capacity_metric, .capacity, .capacity_value, .capacity_unit, .completion_date, .investment, .domain_id, .mapped_program_id, .mapped_program_label, .mapped_family, .mapped_capability, .mapped_source, .legacy_name } as node`;
         const directCypherPromise = callNeo4jTool('read_neo4j_cypher', { cypher_query: allPtQuery }).catch(err => {
             console.error('[Neo4jMCP] Source 2 (Direct Cypher) failed:', err);
             return [];

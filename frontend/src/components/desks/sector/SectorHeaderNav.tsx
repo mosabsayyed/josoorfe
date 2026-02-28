@@ -317,13 +317,13 @@ const SectorHeaderNav: React.FC<SectorHeaderNavProps> = ({
             : [];
 
         // 3. Filter L1 SectorPolicyTool nodes for this category (by domain_id)
+        // Includes both delivery programs AND physical assets (both are L1 SectorPolicyTool)
         const l1Nodes = sectorFilteredNodes.filter(n => {
             const isL1 = n.level === 'L1';
             const isPolicyTool = (n._labels || []).includes('SectorPolicyTool');
-            const isNonPhysical = !n.sector || n.sector === '' || n.sector === 'null';
             const did = String(n.domain_id || n.id || '');
             const nodeCategory = categoryById.get(did) || L1_CATEGORY_MAP[n.name] || 'Services';
-            return isL1 && isPolicyTool && isNonPhysical && nodeCategory === category;
+            return isL1 && isPolicyTool && nodeCategory === category;
         });
 
         // Build tool items with child counts
