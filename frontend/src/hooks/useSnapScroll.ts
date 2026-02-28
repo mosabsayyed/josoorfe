@@ -47,9 +47,11 @@ function calcSnapPoints(sections: string[], container: HTMLElement): SnapPoint[]
     if (id === 'hero') {
       points.push({ id, top: elTop });
     } else if (id === 'aitoia') {
-      // 300vh timeline section: two snap points for Challenge → Innovation morph
-      points.push({ id: 'aitoia', top: elTop });
-      points.push({ id: 'aitoia-end', top: elTop + el.offsetHeight - window.innerHeight });
+      // 450vh timeline section: three snap points for Challenge → Innovation → Form morph
+      const maxScroll = el.offsetHeight - window.innerHeight;
+      points.push({ id: 'aitoia-phase1', top: elTop });                  // sp = 0.0
+      points.push({ id: 'aitoia-phase2', top: elTop + maxScroll * 0.44 }); // sp = 0.44 (Innovation)
+      points.push({ id: 'aitoia-phase3', top: elTop + maxScroll });        // sp = 1.0 (Form)
     } else {
       // Regular sections: offset so content starts below the fixed nav
       points.push({ id, top: Math.max(0, elTop - navH) });
@@ -122,7 +124,7 @@ export default function useSnapScroll({
     if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
 
     scrollingRef.current = true;
-    currentRef.current = index;
+    currentRef.current = index; // authoritative — set before animation starts
 
     const startY = container.scrollTop;
     const targetY = points[index].top;
@@ -157,12 +159,25 @@ export default function useSnapScroll({
   }, []);
 
   // Navigate by direction: +1 (down) or -1 (up)
+  // Uses currentRef (last snapped index) as primary source of truth to avoid
+  // small-deltaY drift causing findNearest() to return the wrong section.
   const snap = useCallback((direction: 1 | -1) => {
     if (scrollingRef.current) return;
     recalc(); // Refresh positions before snapping
-    const nearest = findNearest();
-    const next = nearest + direction;
-    if (next < 0 || next >= pointsRef.current.length) return;
+
+    // Prefer the authoritative currentRef over the raw scroll position,
+    // but validate it: if the scroll has drifted far from currentRef's target,
+    // fall back to findNearest so we don't snap from a stale index.
+    const points = pointsRef.current;
+    const stored = currentRef.current;
+    const storedTop = points[stored]?.top ?? 0;
+    const container = containerRef.current;
+    const scrollY = container ? container.scrollTop : 0;
+    const useFindNearest = Math.abs(scrollY - storedTop) > window.innerHeight * 0.6;
+    const base = useFindNearest ? findNearest() : stored;
+
+    const next = base + direction;
+    if (next < 0 || next >= points.length) return;
     snapTo(next);
   }, [recalc, findNearest, snapTo]);
 
@@ -199,15 +214,21 @@ export default function useSnapScroll({
       const nearest = findNearest();
       const points = pointsRef.current;
 
+      // Use currentRef as authoritative index to avoid drift confusion
+      const stored = currentRef.current;
+      const storedTop = points[stored]?.top ?? 0;
+      const useFindNearest = Math.abs(container.scrollTop - storedTop) > window.innerHeight * 0.6;
+      const authoritative = useFindNearest ? nearest : stored;
+
       // At the last snap section scrolling down → let browser scroll naturally
-      if (direction === 1 && nearest >= points.length - 1) return;
+      if (direction === 1 && authoritative >= points.length - 1) return;
 
       // Scrolling up from BELOW the last snap point → snap TO it first, not past it
-      if (direction === -1 && nearest === points.length - 1) {
+      if (direction === -1 && authoritative === points.length - 1) {
         const scrollY = container.scrollTop;
-        if (scrollY > points[nearest].top + 50) {
+        if (scrollY > points[authoritative].top + 50) {
           e.preventDefault();
-          snapTo(nearest);
+          snapTo(authoritative);
           return;
         }
       }

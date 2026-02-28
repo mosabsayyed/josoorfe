@@ -53,7 +53,7 @@ export default function BetaForm({ content, language }: BetaFormProps) {
   };
 
   return (
-    <section className="content-centered" id="beta">
+    <div id="beta" style={{ width: "100%" }}>
       <div style={{ textAlign: 'center', maxWidth: '700px', margin: '0 auto' }}>
         {/* Tag */}
         <div className="section-tag" style={{ marginBottom: '6px' }}>
@@ -254,6 +254,6 @@ export default function BetaForm({ content, language }: BetaFormProps) {
           {content.note}
         </div>
       </div>
-    </section>
+    </div>
   );
 }

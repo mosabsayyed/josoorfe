@@ -123,13 +123,18 @@ export const StrategyReportChartRenderer: React.FC<StrategyReportChartRendererPr
       }
 
       // Build Highcharts config
+      const chartType = content.chart?.type || 'column';
+      const isRadar = chartType === 'radar' || chartType === 'spider';
+      const isScatter = chartType === 'scatter';
+
       const config: Highcharts.Options = {
         chart: {
-          type: content.chart?.type || 'column',
+          type: isRadar ? 'line' : chartType,
+          polar: isRadar ? true : undefined,
           backgroundColor: 'transparent',
           style: { fontFamily: 'inherit' },
           height: null,
-          margin: [40, 20, 80, 60]
+          margin: isRadar ? [40, 60, 60, 60] : [40, 20, 80, 60]
         },
         title: content.title ? {
           text: content.title.text,
@@ -146,7 +151,14 @@ export const StrategyReportChartRenderer: React.FC<StrategyReportChartRendererPr
             fontSize: '13px'
           }
         } : undefined,
-        xAxis: {
+        xAxis: isRadar ? {
+          categories: content.xAxis?.categories || (content.series?.[0]?.data?.map((d: any) => typeof d === 'object' ? d.name : String(d)) ?? []),
+          tickmarkPlacement: 'on',
+          lineWidth: 0,
+          labels: {
+            style: { color: 'var(--component-text-secondary)', fontSize: '12px' }
+          }
+        } as any : {
           categories: content.xAxis?.categories || [],
           title: content.xAxis?.title ? {
             text: content.xAxis.title.text,
@@ -166,7 +178,16 @@ export const StrategyReportChartRenderer: React.FC<StrategyReportChartRendererPr
           lineColor: 'var(--component-panel-border)',
           tickColor: 'var(--component-panel-border)'
         } as any,
-        yAxis: {
+        yAxis: isRadar ? {
+          gridLineInterpolation: 'polygon',
+          lineWidth: 0,
+          min: 0,
+          max: content.yAxis?.max,
+          labels: {
+            style: { color: 'var(--component-text-secondary)', fontSize: '11px' }
+          },
+          gridLineColor: 'rgba(107, 114, 128, 0.2)'
+        } as any : {
           title: content.yAxis?.title ? {
             text: content.yAxis.title.text,
             style: {
@@ -202,20 +223,24 @@ export const StrategyReportChartRenderer: React.FC<StrategyReportChartRendererPr
           pointFormat: '<span style="color: {point.color};">●</span> {series.name}: <strong>{point.y}</strong><br/>'
         },
         series: content.series?.map((s, index) => {
-          const chartType = content.chart?.type || 'column';
           const baseConfig = {
             name: s.name,
             data: s.data,
             color: s.color || getSeriesColor(index),
-            type: chartType
+            type: isRadar ? 'line' : chartType,
+            ...(isRadar ? {
+              pointPlacement: 'on',
+              lineWidth: 2,
+              fillOpacity: 0.2,
+            } : {})
           };
 
           // For scatter charts, add larger visible markers
-          if (chartType === 'scatter') {
+          if (isScatter) {
             return {
               ...baseConfig,
               marker: {
-                radius: 8, // Larger dots
+                radius: 8,
                 symbol: 'circle',
                 lineWidth: 2,
                 lineColor: '#ffffff'

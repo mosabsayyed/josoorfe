@@ -507,13 +507,18 @@ export function MessageBubble({
             if (!hasHtmlArtifact) {
               // Extract title from HTML content or use default
               let title = t('josoor.chat.message.htmlReport');
-              const titleMatch = htmlCandidate.match(/<title[^>]*>([^<]+)<\/title>/i);
+              const titleMatch = htmlCandidate.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
               if (titleMatch) {
-                title = titleMatch[1].trim();
+                title = titleMatch[1].replace(/<[^>]+>/g, '').trim();
               } else {
-                const h1Match = htmlCandidate.match(/<h1[^>]*>([^<]+)<\/h1>/i);
+                const h1Match = htmlCandidate.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i);
                 if (h1Match) {
-                  title = h1Match[1].trim();
+                  title = h1Match[1].replace(/<[^>]+>/g, '').trim();
+                } else {
+                  const h2Match = htmlCandidate.match(/<h2[^>]*>([\s\S]*?)<\/h2>/i);
+                  if (h2Match) {
+                    title = h2Match[1].replace(/<[^>]+>/g, '').trim();
+                  }
                 }
               }
               

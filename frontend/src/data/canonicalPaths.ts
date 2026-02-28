@@ -52,7 +52,7 @@ export const CANONICAL_PATHS: Record<string, CanonicalPathDef> = {
         steps: [
             { sourceLabel: 'EntityChangeAdoption', sourceLevel: 'L3', relationship: 'INCREASE_ADOPTION', targetLabel: 'EntityProject', targetLevel: 'L3' },
             { sourceLabel: 'EntityProject', sourceLevel: 'L3', relationship: 'CLOSE_GAPS', targetLabel: ['EntityOrgUnit', 'EntityProcess', 'EntityITSystem'], targetLevel: 'L3' },
-            { sourceLabel: ['EntityOrgUnit', 'EntityProcess', 'EntityITSystem'], sourceLevel: 'L3', relationship: 'GAP_STATUS', targetLabel: 'EntityCapability', targetLevel: 'L3' }
+            { sourceLabel: ['EntityOrgUnit', 'EntityProcess', 'EntityITSystem'], sourceLevel: 'L3', relationship: 'KNOWLEDGE_GAPS|ROLE_GAPS', targetLabel: 'EntityCapability', targetLevel: 'L3' }
         ]
     },
     'capability_to_policy': {

@@ -1,58 +1,96 @@
 {
   "hero": {
     "title": "JOSOOR",
-    "subtitle": "Decision Intelligence Operating System",
-    "subtitleEn": "Decision Intelligence Operating System",
-    "sectors": "In the Public Sector",
-    "badge": "Delivery at the Speed of Ambition\nVision 2030"
+    "subtitle": "Decision Intelligence",
+    "subtitleEn": "Decision Intelligence",
+    "sectors": "Operating System for the Public Sector",
+    "badge": "Delivery at the Speed of Ambition\nVision 2030",
+    "intelligence": [
+      {
+        "figure": "10×",
+        "label": "Complex Variables"
+      },
+      {
+        "figure": "8-Hops",
+        "label": "Depth of\nConnectivity"
+      },
+      {
+        "figure": "150",
+        "label": "Vision\nEntities"
+      }
+    ],
+    "intelligenceTitle": "Decision Bridge",
+    "intelligenceDesc": "Rapid analysis of complex relations, enriched with context",
+    "trust": [
+      {
+        "figure": "96%",
+        "label": "Output Consistency"
+      },
+      {
+        "figure": "~0%",
+        "label": "Drift\nInstances"
+      },
+      {
+        "figure": "100%",
+        "label": "Audit\nTrails"
+      }
+    ],
+    "trustTitle": "Trust Bridge",
+    "trustDesc": "Consistent outputs you can depend on and trace in full"
   },
   "nav": {
-    "links": ["Signal", "Platform", "Why Us", "Promise", "Architecture"],
+    "links": [
+      "Signal",
+      "Platform",
+      "Why Us",
+      "Promise",
+      "Architecture"
+    ],
     "cta": "Apply for Beta",
     "logo": "JOSOOR"
   },
   "aitoia": {
-    "tag": "The Challenge",
+    "tag": "The Reality Check",
     "title": "90% of GenAI Pilots Fail",
     "subtitle": "Don't start your AI project before establishing the success factors",
-    "challengeSubtitle": "Join the 10% That Overcame These Barriers",
+    "challengeSubtitle": "You've seen the destination. But how do you get there when the odds are not favorable?",
     "aiTitle": "Artificial Intelligence Solo ...",
     "aiSubtitle": "Unreliable Decision Inputs",
     "aiItems": [
       {
-        "strong": "Why Now?",
-        "desc": "AI will define nations' sovereignty. Entities must move at the speed of KSA's ambition."
+        "strong": "Why They Fail",
+        "desc": "Old data silos combined with probabilistic models lead to hallucinations and dead-ends."
       },
       {
-        "strong": "The Essence of AI",
-        "desc": "The world grows more complex daily. AI unlocks complexity, enabling the right decision-making."
+        "strong": "The Hesitation",
+        "desc": "Highly regulated sectors are right to be cautious. A wrong move at scale is costly."
       },
       {
-        "strong": "The Challenge",
-        "desc": "Old data silos coupled with probabilistic models lead to the wrong destinations, justifying hesitation of highly regulated sectors."
+        "strong": "The Need for Architecture",
+        "desc": "Without structural groundwork, AI is just a feature, not a foundation."
       }
     ],
-    "innovationTag": "The Innovation",
-    "innovationTitle": "Writing the Book on Public Sector Transformations",
-    "innovationSubtitle": "In the Era of AI: Phase (1) Intelligent Architectures Built to Win",
+    "innovationTag": "The Approach",
+    "innovationTitle": "Writing the Book on AI Transformations in the Saudi Public Sector",
+    "innovationSubtitle": "We architect solutions tailored to your reality. Your first step is to contact us below to define the most suited plan for your situation.",
     "phaseTag": "JOSOOR Phase 1",
     "iaTitle": "Intelligent Systems Architecture ...",
     "iaSubtitle": "Accelerated Predictable Outcomes",
     "iaItems": [
       {
-        "icon": "\u2705",
-        "strong": "Purpose-Built Architecture",
-        "desc": "Saudi Arabia's first unified Ontology for the public sector spawns a knowledge graph that unifies disparate sources. Tailored tools govern AI data access. 4-layer memory retains context."
+        "icon": "✅",
+        "strong": "Structural Readiness",
+        "desc": "Context is everything. Knowing your operating model reality from data, systems, to adoption paints a picture."
       },
       {
-        "icon": "\ud83d\udd17",
-        "strong": "Ecosystem Orchestrated Intelligence",
-        "desc": "Three specialist agents integrate to support your team: Reporting gathers data for you to Watch, Risk analyzes developments and suggests priorities to Decide, Planning converts them into tasks to Deliver"
+        "icon": "🔗",
+        "strong": "Business Priorities",
+        "desc": "Different entities are at different stages of their journeys. We align with these dynamic priorities."
       },
       {
-        "icon": "\ud83c\udfd7",
-        "strong": "Grounded in an Extended Reality",
-        "desc": "Establishes context with a World Model powered by Vision 2030 data (publicly available). AI navigates with a map that mirrors your reality."
+        "icon": "🏗",
+        "strong": "Use Case Candidates",
+        "desc": "Between what's possible and what's needed is a set of high-impact use cases."
       }
     ]
   },
@@ -85,7 +123,11 @@
     "subtitle": "Transforming Complexity into your most valuable asset",
     "pedimentSuffix": "Strategic Management",
     "foundationLabel": "Foundation",
-    "pyramidLabels": ["Sector", "Enterprise", "Portfolios"],
+    "pyramidLabels": [
+      "Sector",
+      "Enterprise",
+      "Portfolios"
+    ],
     "elements": [
       "Grounded in Vision",
       "Enterprise Ontology",
@@ -105,54 +147,56 @@
       "Transforming a sector means changing how it works — who invests, who operates, and what they focus on. Governments steer this through policy and regulation, incentives, and awareness. JOSOOR maps these tools to the players, investments, and activities they influence — so you see which levers are moving the sector toward national objectives and which ones are not.",
       "You cannot transform a sector without transforming the entity that manages it. The capabilities needed to design policies, enforce regulations, and run incentive programs must be built in sync with the sector's evolution. JOSOOR tracks both in parallel — so your operating model is always ready for the mandate it serves.",
       "Too many initiatives, limited resources, and high stakes. Portfolio management is how you maximize impact from every investment while containing risk. JOSOOR scores ROI across projects, assets, capabilities, and leadership time — so you know where to double down and where to stop spending."
-    ]
+    ],
+    "alignedNationalStandards": "Aligned with National Standards",
+    "vision2030Compatible": "Vision 2030 Compatible"
   },
   "promise": {
     "tag": "The Ambition",
-    "title": "Same people. Different reality",
+    "title": "Human-Centric change impacts real lives",
     "subtitle": "What changes for each person on your team",
     "before": "BEFORE",
     "withJosoor": "WITH JOSOOR",
     "personas": [
       {
         "role": "Vice Minister — Strategic Leadership",
-        "before": "Forced to micromanage. Problems escalate before they reach him. Surprises in the minister's office.",
-        "after": "Closing deals. Approving directions. Risks surface early with actions ready. The board deck builds itself."
+        "before": "Forced to micromanage. Dealing with surprise escalations. Firefighting large investors complaints.",
+        "after": "Signing new partnerships. Approving mitigation to risks. Board meetings are highly anticipated."
       },
       {
         "role": "Business Manager — Capability Owner",
-        "before": "Juggling strategy priorities vs operational realities. Less time with stakeholders due to weekly reports",
-        "after": "On-site with stakeholders. Status auto-populates. Confirms with one tap on WhatsApp. Done."
+        "before": "Juggling strategy priorities vs operational realities. Less time with stakeholders due to endless reports requests.",
+        "after": "On the frontlines creating impact with stakeholders. Exciting status updates via whatsapp."
       },
       {
         "role": "Strategy Manager — Planning & Performance",
-        "before": "Firefighting. Can't think about next year because this quarter's Adaa submission isn't done.",
-        "after": "Planning new sectors, partnerships, targets. The quarterly report drafts itself. Strategy, not admin."
+        "before": "Firefighting constant deviation of Execution from Strategy. No capacity for next year planning.",
+        "after": "Analyzing sector performance. Designing course corrections. Assessing latest trends and shifts."
       },
       {
         "role": "PMO Director — Governance & Delivery",
-        "before": "Reports nobody reads. Blamed for overruns he flagged 3 months ago. Team of 4 is now 3.",
-        "after": "Focused on future risks. AI handles chasing. His team stays because the job finally makes sense."
+        "before": "100 page reports mission. No time to review with owners pre Excom. Team of 4 is now 2.",
+        "after": "Focused on future risks. Trusted advisor to business owners. Department highly sought by job seekers."
       }
     ]
   },
   "platform": {
     "tag": "The Platform",
-    "title": "Three modes. Always running",
-    "subtitle": "From national KPIs to individual deliverables — tightly linked",
+    "title": "No Noise.. One Continuous Signal",
+    "subtitle": "One Reference Loop. The key to integrating enterprise governance with agent workflows",
     "dashboard": "Dashboard",
     "modes": [
       {
-        "title": "Watch",
-        "desc": "Not just what's red — catches what looks green but is quietly declining. Training drops, HR shrugs, JOSOOR traces the chain to the Minister's phone. You find out now, not in 3 months."
+        "title": "Observe — Are our priorities on track?",
+        "desc": ""
       },
       {
-        "title": "Decide",
-        "desc": "AI traces root cause and cascading impact across the map. The full chain from failing deliverable to national KPI, plus concrete options with outcomes. No guessing, all math."
+        "title": "Decide — Are we highly efficient in addressing foreseen obstacles?",
+        "desc": ""
       },
       {
-        "title": "Deliver",
-        "desc": "Weekly priorities synced with Strategic Priorities. 4 out of 42 items matter this week — focus. True critical path drives system flags with high confidence"
+        "title": "Deliver — Are decisions applied with discipline?",
+        "desc": ""
       }
     ]
   },
@@ -210,7 +254,14 @@
       "strategyDesc": "Objectives, KPIs",
       "sectorOps": "Sector Operations",
       "sectorOpsDesc": "Your value chain",
-      "sectorNodes": ["Policy Tools", "Performance", "Admin Records", "Data TXNs", "Businesses", "Citizens"],
+      "sectorNodes": [
+        "Policy Tools",
+        "Performance",
+        "Admin Records",
+        "Data TXNs",
+        "Businesses",
+        "Citizens"
+      ],
       "enterpriseOps": "Enterprise Operations",
       "enterpriseOpsDesc": "Org, Process, Systems, Vendors",
       "projects": "Projects Portfolio",
@@ -233,18 +284,44 @@
     "back": {
       "header": "JOSOOR's Enterprise Ontology — mapped to your layers",
       "strategyLayer": "Strategy Layer",
-      "strategyLeft": ["Objectives", "KPIs"],
-      "strategyRight": ["Adaa Targets", "V2030 Goals"],
+      "strategyLeft": [
+        "Objectives",
+        "KPIs"
+      ],
+      "strategyRight": [
+        "Adaa Targets",
+        "V2030 Goals"
+      ],
       "sectorLayer": "Sector Layer",
-      "sectorLeft": ["Policy Tools", "Performance", "Admin Records"],
-      "sectorRight": ["Data TXNs", "Businesses", "Citizens"],
+      "sectorLeft": [
+        "Policy Tools",
+        "Performance",
+        "Admin Records"
+      ],
+      "sectorRight": [
+        "Data TXNs",
+        "Businesses",
+        "Citizens"
+      ],
       "capabilitiesBridge": "↑ CAPABILITIES ↓ the bridge",
       "enterpriseLayer": "Enterprise Layer",
-      "enterpriseLeft": ["Org Units", "Processes"],
-      "enterpriseRight": ["IT Systems", "Vendors"],
+      "enterpriseLeft": [
+        "Org Units",
+        "Processes"
+      ],
+      "enterpriseRight": [
+        "IT Systems",
+        "Vendors"
+      ],
       "projectsLayer": "Projects Layer",
-      "projectsLeft": ["Projects", "Milestones"],
-      "projectsRight": ["Risks", "Dependencies"],
+      "projectsLeft": [
+        "Projects",
+        "Milestones"
+      ],
+      "projectsRight": [
+        "Risks",
+        "Dependencies"
+      ],
       "sigSpeed": "Speed",
       "sigSpeedDesc": "Delivery Velocity",
       "sigRisk": "Risk",
@@ -265,7 +342,14 @@
       "email": "Work email",
       "org": "Organization name",
       "role": "Your role",
-      "roleOptions": ["Vice Minister / Undersecretary", "Strategy & Planning Director", "PMO Director / Manager", "Business / Capability Owner", "IT / Digital Transformation", "Other"],
+      "roleOptions": [
+        "Vice Minister / Undersecretary",
+        "Strategy & Planning Director",
+        "PMO Director / Manager",
+        "Business / Capability Owner",
+        "IT / Digital Transformation",
+        "Other"
+      ],
       "submit": "Apply for Private Beta →"
     },
     "submitSuccess": "Application submitted",
@@ -414,7 +498,7 @@
       "selectedStrategy": "Selected Strategy",
       "generatingPlan": "Generating intervention plan...",
       "planNarrative": "Plan Summary",
-      "editGantt": "Timeline",
+      "editGantt": "Edit Timeline",
       "commitPlan": "Commit Plan",
       "cancelPlan": "Cancel",
       "planCommitted": "Plan committed successfully",
@@ -467,17 +551,8 @@
       "mostLikely": "Most Likely",
       "runSimulation": "Run Simulation",
       "reset": "Reset",
-      "generatingPlan": "Generating intervention plan...",
-      "commitPlan": "Commit Plan",
-      "cancelPlan": "Cancel",
       "sponsor": "Sponsor",
       "task": "Task",
-      "noRiskSelected": "Navigate to Decide → select a red risk → click Intervene",
-      "planNarrative": "Plan Summary",
-      "editGantt": "Edit Timeline",
-      "riskContext": "Risk Context",
-      "selectedStrategy": "Selected Strategy",
-      "planCommitted": "Plan committed successfully",
       "dependsOn": "Depends On",
       "addTask": "Add Task",
       "removeTask": "Remove Task",
@@ -569,9 +644,99 @@
     },
     "reporting": {
       "title": "Reporting Desk",
+      "subtitle": "Control outcome tracking & standard report generation",
       "controlOutcomes": "Control Outcomes",
       "standardReports": "Standard Reports",
+      "primaryProjectionReport": "Primary projection report",
+      "byproductPmoViews": "Byproduct PMO views",
+      "expandArchive": "Expand archive",
+      "collapseArchive": "Collapse archive",
+      "reportArchive": "Report Archive",
+      "decisionTimeline": "Decision Timeline",
+      "interventionDecision": "Intervention Decision",
+      "pauseProjectX": "Pause Project X — redistribute load",
+      "executionWindow": "Execution Window",
+      "measurementPoint": "Measurement Point",
+      "beforeAfterComparison": "Before / After Comparison",
+      "capabilityPlantOperations": "Capability: Plant Operations",
+      "before": "Before",
+      "after": "After",
+      "riskExposure": "Risk Exposure",
+      "red": "Red",
+      "amber": "Amber",
+      "leakage": "Leakage",
+      "broken": "Broken",
+      "load": "Load",
+      "mode": "Mode",
+      "build": "Build",
+      "operate": "Operate",
+      "healthy": "Healthy",
+      "interventionResult": "Intervention Successful — Risk Reduced from Red to Amber",
+      "residualsEscalations": "Residuals & Escalations",
+      "remainingRisks": "Remaining Risks",
+      "delayRiskAcceptable": "Schedule delay risk — acceptable within tolerance",
+      "processGapMonitoring": "Process gap under monitoring — next review Q2",
+      "structuralIssues": "Structural Issues",
+      "distributionOverloaded": "Distribution capability overloaded (5 dependencies)",
+      "pt03Underperforming": "PT-03 underperforming — needs tool re-evaluation",
+      "escalationRequired": "Escalation Required",
+      "yes": "Yes",
+      "distributionExecutiveReview": "Distribution capability requires executive review — persistent load imbalance",
+      "feedsToControlSignals": "Feeds to Control Tower signals",
+      "reportBuilder": "Report Builder",
+      "exportPdf": "Export PDF",
+      "generateReport": "Generate Report",
+      "reportType": "Report Type",
+      "performance": "Performance",
+      "riskAssessment": "Risk Assessment",
+      "portfolioStatus": "Portfolio Status",
+      "ministerialBrief": "Ministerial Brief",
+      "timeWindow": "Time Window",
+      "sector": "Sector",
+      "water": "Water",
+      "energy": "Energy",
+      "entity": "Entity",
+      "distribution": "Distribution",
+      "capability": "Capability",
+      "plantOps": "Plant Ops",
+      "draft": "Draft",
+      "performanceReport": "Performance Report",
+      "riskAssessmentReport": "Risk Assessment Report",
+      "portfolioStatusReport": "Portfolio Status Report",
+      "period": "Period",
+      "generated": "Generated",
       "executiveSummary": "Executive Summary",
+      "executiveSummaryText": "Water sector capabilities show improving trajectory with 3 of 5 critical capabilities stabilized in Q1. Plant operations intervention yielded measurable risk reduction. Distribution remains under structural stress requiring executive attention.",
+      "keyMetrics": "Key Metrics",
+      "metric": "Metric",
+      "current": "Current",
+      "target": "Target",
+      "status": "Status",
+      "avgRiskExposure": "Avg. Risk Exposure",
+      "capabilitiesStabilized": "Capabilities Stabilized",
+      "avgLeakage": "Avg. Leakage Rate",
+      "projectsOnTime": "Projects On-Time",
+      "policyToolEffectiveness": "Policy Tool Effectiveness",
+      "analysisNarrative": "Analysis Narrative",
+      "performanceTrend": "Performance Trend",
+      "performanceTrendText": "Steady improvement across operational capabilities since intervention. Risk exposure declining at 4% per quarter average.",
+      "areasOfConcern": "Areas of Concern",
+      "areasOfConcernText": "Distribution capability shows persistent load imbalance affecting downstream KPIs. 2 policy tools require re-evaluation.",
+      "recommendations": "Recommendations",
+      "recommendationsText": "Escalate distribution review to steering committee. Initiate policy tool refresh for PT-03 and PT-07. Continue monitoring plant ops stabilization.",
+      "evidenceAudit": "Evidence & Audit",
+      "dataSources": "Data Sources",
+      "lastUpdated": "Last Updated",
+      "capabilityData": "Capability data",
+      "riskAssessments": "Risk assessments",
+      "projectStatus": "Project status",
+      "performanceMetrics": "Performance metrics",
+      "confidenceLevel": "Confidence Level",
+      "overallConfidence": "Overall confidence",
+      "confidenceDescription": "Based on data freshness, completeness, and cross-source validation.",
+      "missingInputs": "Missing Inputs",
+      "missingMaturityScores": "3 capabilities missing maturity scores",
+      "missingAdoptionData": "Policy tool adoption data > 30 days old",
       "evidence": "Evidence",
       "report": "Report",
       "archive": "Archive",
@@ -581,15 +746,12 @@
       "share": "Share",
       "date": "Date",
       "type": "Type",
-      "period": "Period",
       "quarterly": "Quarterly",
       "monthly": "Monthly",
       "annual": "Annual",
       "weekly": "Weekly",
-      "performance": "Performance",
       "metrics": "Metrics",
       "compliance": "Compliance",
-      "riskAssessment": "Risk Assessment",
       "findings": "Findings",
       "actionItems": "Action Items",
       "dueDate": "Due Date",
@@ -630,7 +792,7 @@
         "nodeCount": "{{count}} nodes"
       },
       "table": {
-        "datasetAudit": "\ud83d\udcca Dataset Audit ({{nodes}} Nodes, {{links}} Links)",
+        "datasetAudit": "📊 Dataset Audit ({{nodes}} Nodes, {{links}} Links)",
         "id": "ID",
         "label": "Label",
         "nameTitle": "Name / Title",
@@ -699,14 +861,14 @@
         "trendEarlyWarning": "Trend Early Warning"
       },
       "insightPanel": {
-        "capabilityOverview": "\ud83d\udcca Capability Overview",
+        "capabilityOverview": "📊 Capability Overview",
         "baselineHealth": "Baseline health status across all tracked capabilities in the current portfolio view.",
         "capabilitiesTracked": "{{count}} capabilities tracked",
         "statusBreakdown": "{{ontrack}} ontrack | {{atRisk}} at risk | {{issues}} issues",
         "selectOverlay": "Select an overlay to analyze specific capability dimensions.",
         "riskExposureAnalysis": "Risk Exposure Analysis",
         "riskExposureDesc": "Identifies capabilities facing delivery delays or operational health degradation based on current risk indicators.",
-        "riskExposureExplanation": "RED = \u226515% exposure. AMBER = 5-15% exposure. GREEN = <5% exposure.",
+        "riskExposureExplanation": "RED = ≥15% exposure. AMBER = 5-15% exposure. GREEN = <5% exposure.",
         "externalPressureCheck": "External Pressure Check",
         "externalPressureDesc": "Highlights capabilities under heavy regulatory or performance mandate load from external stakeholders.",
         "externalPressureExplanation": "Capabilities under heavy policy/KPI constraints.",
@@ -820,9 +982,9 @@
         "days": "days",
         "exposure": "Exposure:",
         "trend": "Trend:",
-        "rising": "\u25b2 Rising",
-        "falling": "\u25bc Falling",
-        "stable": "\u25a0 Stable",
+        "rising": "▲ Rising",
+        "falling": "▼ Falling",
+        "stable": "■ Stable",
         "externalPressure": "External Pressure:",
         "policyTools": "Delivery Programs:",
         "performanceTargets": "Performance Targets:",
@@ -835,7 +997,7 @@
         "adoptionLoad": "Adoption Load:",
         "healthTrend": "Health Trend:",
         "last3Cycles": "Last 3 Cycles:",
-        "earlyWarning": "\u26a0\ufe0f Early warning: 2-cycle decline"
+        "earlyWarning": "⚠️ Early warning: 2-cycle decline"
       }
     },
     "sector": {
@@ -904,30 +1066,84 @@
             "l2": "Performance Target (Vision L3)"
           },
           "pillars": {
-            "vibrant": { "title": "Vibrant Community", "value": "Safe and reliable water for communities" },
-            "thriving": { "title": "Thriving Economy", "value": "Reliable supply for growth and industry" },
-            "ambitious": { "title": "Ambitious Nation", "value": "Smart and transparent water operations" }
+            "vibrant": {
+              "title": "Vibrant Community",
+              "value": "Safe and reliable water for communities"
+            },
+            "thriving": {
+              "title": "Thriving Economy",
+              "value": "Reliable supply for growth and industry"
+            },
+            "ambitious": {
+              "title": "Ambitious Nation",
+              "value": "Smart and transparent water operations"
+            }
           },
           "l1": {
-            "sustainableUse": { "title": "Ensure sustainable use of water resources", "value": "Sector share of national pillar target" },
-            "industrialReliability": { "title": "Enable sustainable supply for consumers and industry", "value": "Sector share of national pillar target" },
-            "digitalGovernance": { "title": "Strengthen water-sector governance and oversight", "value": "Sector share of national pillar target" }
+            "sustainableUse": {
+              "title": "Ensure sustainable use of water resources",
+              "value": "Sector share of national pillar target"
+            },
+            "industrialReliability": {
+              "title": "Enable sustainable supply for consumers and industry",
+              "value": "Sector share of national pillar target"
+            },
+            "digitalGovernance": {
+              "title": "Strengthen water-sector governance and oversight",
+              "value": "Sector share of national pillar target"
+            }
           },
           "l2": {
-            "reuse": { "title": "Maximize renewable water and treated wastewater reuse", "value": "70% by 2030" },
-            "desal": { "title": "Enhance desalinated water resources", "value": ">16.6M m³/day" },
-            "continuity": { "title": "Improve continuity, pressure, and strategic storage", "value": "Operational performance" },
-            "twinObservatory": { "title": "Scale water twin and observatory capabilities", "value": "AI-enabled real-time operations" }
+            "reuse": {
+              "title": "Maximize renewable water and treated wastewater reuse",
+              "value": "70% by 2030"
+            },
+            "desal": {
+              "title": "Enhance desalinated water resources",
+              "value": ">16.6M m³/day"
+            },
+            "continuity": {
+              "title": "Improve continuity, pressure, and strategic storage",
+              "value": "Operational performance"
+            },
+            "twinObservatory": {
+              "title": "Scale water twin and observatory capabilities",
+              "value": "AI-enabled real-time operations"
+            }
           },
           "l3": {
-            "processLeakage": { "title": "Process: Leakage reports", "value": "NWC field workflow" },
-            "assetPipelines": { "title": "Asset: Transmission network", "value": "+14,000 km pipelines" },
-            "assetRasAlKhair": { "title": "Asset: Ras Al Khair", "value": "2.9M m³/day" },
-            "assetTabukJazan": { "title": "Asset: Tabuk 1 / Jazan 1", "value": "IWP expansion" },
-            "processDelivery": { "title": "Process: Consumer delivery", "value": "Continuity & pressure" },
-            "assetStorage": { "title": "Asset: Strategic storage", "value": "Capacity increase" },
-            "assetTwin": { "title": "Asset: Saudi Water Twin", "value": "Virtual network model" },
-            "processAlerting": { "title": "Process: Risk alerting", "value": "SWA operational response" }
+            "processLeakage": {
+              "title": "Process: Leakage reports",
+              "value": "NWC field workflow"
+            },
+            "assetPipelines": {
+              "title": "Asset: Transmission network",
+              "value": "+14,000 km pipelines"
+            },
+            "assetRasAlKhair": {
+              "title": "Asset: Ras Al Khair",
+              "value": "2.9M m³/day"
+            },
+            "assetTabukJazan": {
+              "title": "Asset: Tabuk 1 / Jazan 1",
+              "value": "IWP expansion"
+            },
+            "processDelivery": {
+              "title": "Process: Consumer delivery",
+              "value": "Continuity & pressure"
+            },
+            "assetStorage": {
+              "title": "Asset: Strategic storage",
+              "value": "Capacity increase"
+            },
+            "assetTwin": {
+              "title": "Asset: Saudi Water Twin",
+              "value": "Virtual network model"
+            },
+            "processAlerting": {
+              "title": "Process: Risk alerting",
+              "value": "SWA operational response"
+            }
           }
         }
       },
@@ -1136,7 +1352,7 @@
         "capacity": "Capacity",
         "description": "Description",
         "coordinates": "Coordinates",
-        "openGoogleMaps": "Open in Google Maps \u2192",
+        "openGoogleMaps": "Open in Google Maps →",
         "assetStatus": "Asset Status",
         "assetCount": "Asset Count: {{count}}",
         "filter": "Filter ({{count}}/{{total}})"
@@ -1267,7 +1483,7 @@
         "modeLabel": "Mode:"
       },
       "input": {
-        "placeholder": "Message Noor \u2014 Press Enter to send",
+        "placeholder": "Message Noor — Press Enter to send",
         "attachFile": "Attach file",
         "send": "Send"
       },
@@ -1378,7 +1594,7 @@
       "filters": {
         "filters": "Filters",
         "graphFilters": "Graph Filters",
-        "pendingChanges": "\u26a0 Changes not applied yet. Click \"Apply Filters\" to apply.",
+        "pendingChanges": "⚠ Changes not applied yet. Click \"Apply Filters\" to apply.",
         "resultLimit": "Result Limit",
         "maxNodesPlaceholder": "Max nodes (e.g., 200)",
         "nodeLabels": "Node Labels ({{count}}/{{total}})",
@@ -1394,8 +1610,8 @@
         "disconnected": "Disconnected from Analysis Stream",
         "requestingAnalysis": "Requesting AI analysis...",
         "analyzing": "Analyzing...",
-        "analyze": "\u2728 Analyze",
-        "disconnectedBtn": "\u26a0 Disconnected",
+        "analyze": "✨ Analyze",
+        "disconnectedBtn": "⚠ Disconnected",
         "updating": "Updating...",
         "clickAnalyze": "Click \"Analyze\" to generate strategic insights."
       },
@@ -1409,8 +1625,8 @@
         "preparingCanvas": "Preparing Canvas...",
         "labels": "Labels:",
         "id": "ID:",
-        "orphan": "\ud83d\udd34 Orphan: No outgoing connections",
-        "bastard": "\ud83d\udd34 Bastard: No incoming connections",
+        "orphan": "🔴 Orphan: No outgoing connections",
+        "bastard": "🔴 Bastard: No incoming connections",
         "properties": "Properties:"
       }
     },

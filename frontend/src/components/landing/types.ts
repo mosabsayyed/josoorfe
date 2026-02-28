@@ -6,6 +6,13 @@ export interface HeroContent {
   subtitleEn: string;
   sectors: string;
   badge: string;
+  intelligence?: { figure: string; label: string }[];
+  intelligenceTitle?: string;
+  intelligenceDesc?: string;
+  trust?: { figure: string; label: string }[];
+  trustTitle?: string;
+  trustDesc?: string;
+  figures?: string[];
 }
 
 export interface NoNoiseContent {

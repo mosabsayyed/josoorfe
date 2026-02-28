@@ -1,5 +1,6 @@
 import React, { useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import BetaForm from './BetaForm';
 
 const AI_ICONS = [
   '/att/icons/icon-inputs-not-ready.png',
@@ -24,12 +25,13 @@ const NUM_NODES_DESKTOP = 140;
 const NUM_NODES_MOBILE = 60; // Reduced for mobile performance
 const BG = '#111827';
 
-export default function AItoIA() {
+export default function AItoIA({ betaContent, language, footerRights }: { betaContent: any; language: string; footerRights: string }) {
   const { t } = useTranslation();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const timelineRef = useRef<HTMLDivElement>(null);
   const viewerRef = useRef<HTMLDivElement>(null);
   const challengeRef = useRef<HTMLDivElement>(null);
+  const formRef = useRef<HTMLDivElement>(null);
   const innovationRef = useRef<HTMLDivElement>(null);
   const nodesRef = useRef<Node[]>([]);
   const scrollRef = useRef(0);
@@ -45,7 +47,8 @@ export default function AItoIA() {
     const viewer = viewerRef.current;
     const challengeEl = challengeRef.current;
     const innovationEl = innovationRef.current;
-    if (!canvas || !timeline || !viewer || !challengeEl || !innovationEl) return;
+    const formEl = formRef.current;
+    if (!canvas || !timeline || !viewer || !challengeEl || !innovationEl || !formEl) return;
 
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
@@ -101,13 +104,21 @@ export default function AItoIA() {
       const sp = scrollRef.current;
 
       // Crossfade entire content blocks — overlap so both are partially visible mid-scroll
-      // Challenge fades out from sp=0.3 to sp=0.6
-      // Innovation fades in from sp=0.3 to sp=0.6
-      // No dead zone — they cross at sp=0.45 (both at ~50% opacity)
-      const challengeOpacity = sp <= 0.3 ? 1 : sp >= 0.6 ? 0 : 1 - (sp - 0.3) / 0.3;
-      const innovationOpacity = sp <= 0.3 ? 0 : sp >= 0.6 ? 1 : (sp - 0.3) / 0.3;
+      // We have 3 phases now: 0-0.33 challenge, 0.33-0.66 innovation, 0.66-1.0 form
+      // Phase 1 (Challenge)
+      const challengeOpacity = sp <= 0.22 ? 1 : sp >= 0.32 ? 0 : 1 - (sp - 0.22) * 10;
+      // Phase 2 (Innovation)
+      const innovationOpacity = sp <= 0.22 ? 0 : sp >= 0.66 ? 0 : sp >= 0.32 && sp <= 0.56 ? 1 : sp < 0.32 ? (sp - 0.22) * 10 : 1 - (sp - 0.56) * 10;
+      // Phase 3 (Form + Footer)
+      const formOpacity = sp <= 0.56 ? 0 : sp >= 0.66 ? 1 : (sp - 0.56) * 10;
+
       challengeEl.style.opacity = String(challengeOpacity);
       innovationEl.style.opacity = String(innovationOpacity);
+      formEl.style.opacity = String(formOpacity);
+      
+      challengeEl.style.pointerEvents = challengeOpacity > 0.5 ? 'auto' : 'none';
+      innovationEl.style.pointerEvents = innovationOpacity > 0.5 ? 'auto' : 'none';
+      formEl.style.pointerEvents = formOpacity > 0.5 ? 'auto' : 'none';
 
       // Clear
       ctx.fillStyle = BG;
@@ -223,6 +234,16 @@ export default function AItoIA() {
                   </div>
                 ))}
               </div>
+            </div>
+
+            {/* Phase 3: Form + Footer */}
+            <div ref={formRef} style={{ gridArea: '1 / 1', opacity: 0, width: '100%', pointerEvents: 'none', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
+                <BetaForm content={betaContent} language={language} />
+              </div>
+              <footer style={{ padding: '24px 16px', textAlign: 'center', color: 'var(--component-text-muted)', fontSize: '14px', marginTop: 'auto' }}>
+                <p style={{ margin: 0 }}>{footerRights}</p>
+              </footer>
             </div>
 
             {/* Innovation content — fades in as user scrolls */}

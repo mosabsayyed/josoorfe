@@ -12,7 +12,7 @@ import StrategyHouse from '../components/landing/StrategyHouse';
 import BetaForm from '../components/landing/BetaForm';
 import useSnapScroll from '../hooks/useSnapScroll';
 
-const SNAP_SECTIONS = ['hero', 'aitoia', 'platform', 'strategy-house', 'promise'];
+const SNAP_SECTIONS = ['hero', 'platform', 'promise', 'strategy-house', 'aitoia'];
 
 export default function LandingPage() {
   const { language, isRTL } = useLanguage();
@@ -26,6 +26,13 @@ export default function LandingPage() {
       subtitleEn: t('hero.subtitleEn'),
       sectors: t('hero.sectors'),
       badge: t('hero.badge'),
+      intelligence: (t('hero.intelligence', { returnObjects: true }) as { figure: string; label: string }[]) || [],
+      intelligenceTitle: t('hero.intelligenceTitle'),
+      intelligenceDesc: t('hero.intelligenceDesc'),
+      trust: (t('hero.trust', { returnObjects: true }) as { figure: string; label: string }[]) || [],
+      trustTitle: t('hero.trustTitle'),
+      trustDesc: t('hero.trustDesc'),
+      figures: (t('hero.figures', { returnObjects: true }) as string[]) || [],
     },
     promise: {
       tag: t('promise.tag'),
@@ -139,6 +146,51 @@ export default function LandingPage() {
       }
 
       /* HERO SECTION */
+      .hero-box-figure {
+        font-family: 'Inter', sans-serif;
+        font-size: clamp(18px, 2.2vw, 28px);
+        font-weight: 800;
+        line-height: 1;
+        letter-spacing: -0.02em;
+        margin: 0;
+      }
+      .hero-box-label {
+        font-family: 'Inter', sans-serif;
+        font-size: clamp(13px, 1.1vw, 15px);
+        font-weight: 600;
+        text-align: center;
+        line-height: 1.3;
+        letter-spacing: 0.06em;
+        color: rgba(249, 250, 251, 0.55);
+        white-space: pre-line;
+      }
+      [dir="rtl"] .hero-box-figure {
+        font-size: clamp(21px, 2.6vw, 32px);
+      }
+      [dir="rtl"] .hero-box-label {
+        font-size: clamp(15px, 1.3vw, 17px);
+      }
+      .hero-box-title {
+        font-family: 'Inter', sans-serif;
+        font-size: clamp(15px, 1.4vw, 20px);
+        font-weight: 700;
+        line-height: 1.15;
+        text-align: center;
+        margin: 0;
+        letter-spacing: -0.01em;
+      }
+      [dir="rtl"] .hero-box-title {
+        font-size: clamp(17px, 1.6vw, 22px);
+      }
+      .hero-box-desc {
+        font-size: clamp(11px, 1vw, 13px);
+        font-weight: 500;
+        color: rgba(249, 250, 251, 0.85);
+        text-align: center;
+        line-height: 1.5;
+        margin: 0;
+        padding: 0 4px;
+      }
       .hero-section {
         position: relative;
         width: 100%;
@@ -248,7 +300,7 @@ export default function LandingPage() {
       /* ── AI → IA scroll animation section ── */
       .aitoia-timeline {
         position: relative;
-        height: 300vh;
+        height: 450vh; /* Extended for BetaForm phase */
       }
 
       .aitoia-viewer {
@@ -939,25 +991,17 @@ export default function LandingPage() {
 
       <img id="background-image" src="/att/landing-screenshots/Vector.svg" alt="" />
 
-      <AItoIA />
-
       <div id="main-content">
         <Platform content={content.platform} />
-        <StrategyHouse content={content.strategyHouse} />
         <Promise content={content.promise} />
-        {/* Architecture hidden — twin engines moved to Platform, badges to Strategy House */}
-        <BetaForm content={content.beta} language={language} />
+        <StrategyHouse content={content.strategyHouse} />
+        
+        {/* Integrating AItoIA as an entry ramp to BetaForm */}
+        <AItoIA betaContent={content.beta} language={language} footerRights={t('footer.rights')} />
 
-        {/* FOOTER */}
-        <footer style={{
-          padding: '24px 16px',
-          textAlign: 'center',
-          color: 'var(--component-text-muted)',
-          fontSize: '14px',
-          marginTop: '0'
-        }}>
-          <p style={{ margin: 0 }}>{t('footer.rights')}</p>
-        </footer>
+        {/* Architecture hidden — twin engines moved to Platform, badges to Strategy House */}
+
+
       </div>
     </div>
   );

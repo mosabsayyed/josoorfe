@@ -8,22 +8,39 @@ interface PlatformProps {
   content: PlatformContent;
 }
 
+function ModeTitle({ title }: { title: string }) {
+  const parts = title.split('—');
+  if (parts.length > 1) {
+    return (
+      <h3 style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', flexWrap: 'wrap', textAlign: 'center' }}>
+        <span style={{ color: '#F4BB30' }}>{parts[0].trim()}</span>
+        <span style={{ color: '#fff', fontWeight: '400', fontSize: '0.85em' }}>— {parts[1].trim()}</span>
+      </h3>
+    );
+  }
+  return <h3 style={{ textAlign: 'center' }}>{title}</h3>;
+}
+
 const MODE_SCREENSHOTS: string[][] = [
   ['/att/landing-screenshots/watch-1.png', '/att/landing-screenshots/watch-2.png', '/att/landing-screenshots/watch-3.png'],
   ['/att/landing-screenshots/decide-1.png', '/att/landing-screenshots/decide-2.png', '/att/landing-screenshots/decide-3.png'],
   ['/att/landing-screenshots/deliver-1.png', '/att/landing-screenshots/deliver-2.png', '/att/landing-screenshots/deliver-3.png'],
 ];
 
-function ScreenshotCarousel({ images }: { images: string[] }) {
+function ScreenshotCarousel({ images, activePos }: { images: string[], activePos?: number | string | undefined }) {
   const [current, setCurrent] = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval>>();
 
   useEffect(() => {
-    timerRef.current = setInterval(() => {
-      setCurrent(prev => (prev + 1) % images.length);
-    }, 3000);
+    // Only auto-rotate if this card is in the front (data-pos === 0)
+    // If activePos is not provided, fallback to true for backward compatibility
+    if (activePos === 0 || activePos === undefined || activePos === "0") {
+      timerRef.current = setInterval(() => {
+        setCurrent(prev => (prev + 1) % images.length);
+      }, 3000);
+    }
     return () => clearInterval(timerRef.current);
-  }, [images.length]);
+  }, [images.length, activePos]);
 
   return (
     <div className="sc-wrap">
@@ -48,38 +65,36 @@ function ScreenshotCarousel({ images }: { images: string[] }) {
   );
 }
 
+// Define a wrapper component so 'data-pos' gets correctly extracted and passed to ScreenshotCarousel
+function ModeCard({ mode, i, 'data-pos': dataPos, ...props }: any) {
+  return (
+    <div className="cc-card" style={{ maxWidth: '90vw' }} data-pos={dataPos} {...props}>
+      <div className="mc-inner">
+        <div className="mc-text">
+          <ModeTitle title={mode.title} />
+          {mode.desc && <p>{mode.desc}</p>}
+        </div>
+        <div className="mc-mock">
+          <ScreenshotCarousel images={MODE_SCREENSHOTS[i]} activePos={dataPos} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function Platform({ content }: PlatformProps) {
   return (
     <section className="content-centered" id="platform">
-      <div className="section-content-box">
-        <div style={{ textAlign: 'center', marginBottom: '12px' }}>
+      <div className="section-content-box" style={{ paddingBottom: 0 }}>
+        <div style={{ textAlign: 'center', marginBottom: '0px' }}>
           <div className="section-tag">{content.tag}</div>
           <h2>{content.title}</h2>
-          <p className="subtitle" style={{ maxWidth: '560px' }}>{content.subtitle}</p>
+          <p className="subtitle" style={{ maxWidth: '640px', marginBottom: '8px' }}>{content.subtitle}</p>
         </div>
-
-        {/* Twin Engines strip */}
-        {content.engines?.length > 0 && (
-          <div className="twin-engines-strip">
-            <span className="te-label te-build">{content.engines[0]?.title}</span>
-            <span className="te-center">{content.twinEnginesLabel}</span>
-            <span className="te-label te-operate">{content.engines[1]?.title}</span>
-          </div>
-        )}
 
         <ConcaveCarousel autoRotateInterval={6000} height="460px">
           {content.modes.map((mode, i) => (
-            <div key={i} className="cc-card" style={{ maxWidth: '90vw' }}>
-              <div className="mc-inner">
-                <div className="mc-text">
-                  <h3>{mode.title}</h3>
-                  <p>{mode.desc}</p>
-                </div>
-                <div className="mc-mock">
-                  <ScreenshotCarousel images={MODE_SCREENSHOTS[i]} />
-                </div>
-              </div>
-            </div>
+            <ModeCard key={i} mode={mode} i={i} />
           ))}
         </ConcaveCarousel>
       </div>

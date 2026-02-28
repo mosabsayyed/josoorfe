@@ -191,13 +191,14 @@ export function HtmlRenderer({ html, artifact, title, embeddedArtifacts: propArt
       // Regular HTML content — render via ReactMarkdown (handles both HTML and markdown)
       if (!part.trim()) return null;
       return (
-        <ReactMarkdown
-          key={`content-${index}`}
-          rehypePlugins={[rehypeRaw]}
-          remarkPlugins={[remarkGfm]}
-        >
-          {part}
-        </ReactMarkdown>
+        <div key={`content-${index}`} dir="auto">
+          <ReactMarkdown
+            rehypePlugins={[rehypeRaw]}
+            remarkPlugins={[remarkGfm]}
+          >
+            {part}
+          </ReactMarkdown>
+        </div>
       );
     });
   };

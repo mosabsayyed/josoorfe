@@ -121,7 +121,7 @@ export default function StrategyHouse({ content }: StrategyHouseProps) {
 
         {/* Compatibility strip */}
         <div className="sh-compat">
-          <span className="sh-compat-label">{t('architecture.alignedNationalStandards')}</span>
+          <span className="sh-compat-label">{t('strategyHouse.alignedNationalStandards')}</span>
           <div className="sh-compat-logos">
             <img src="/att/logos/adaa.png" alt="Adaa" />
             <img src="/att/logos/expro.svg" alt="EXPRO" />

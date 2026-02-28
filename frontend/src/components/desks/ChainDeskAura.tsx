@@ -135,10 +135,10 @@ RETURN DISTINCT ${DRET}`
     change_to_capability: {
         name: 'Change to Capability',
         labels: ['EntityChangeAdoption','EntityProject','EntityOrgUnit','EntityProcess','EntityITSystem','EntityCapability'],
-        rels: ['INCREASE_ADOPTION','CLOSE_GAPS','GAP_STATUS'],
+        rels: ['INCREASE_ADOPTION','CLOSE_GAPS','KNOWLEDGE_GAPS','ROLE_GAPS'],
         startLabels: ['EntityChangeAdoption'], endLabels: ['EntityCapability'],
         narrativeQuery: `MATCH (root:EntityChangeAdoption {level:'L3'}) WHERE ${YF}
-MATCH path = (root)-[:INCREASE_ADOPTION]->(proj:EntityProject {level:'L3'})-[:CLOSE_GAPS]->(gap:EntityOrgUnit|EntityProcess|EntityITSystem {level:'L3'})-[:GAP_STATUS]->(cap:EntityCapability {level:'L3'})
+MATCH path = (root)-[:INCREASE_ADOPTION]->(proj:EntityProject {level:'L3'})-[:CLOSE_GAPS]->(gap:EntityOrgUnit|EntityProcess|EntityITSystem {level:'L3'})<-[:KNOWLEDGE_GAPS|ROLE_GAPS]-(cap:EntityCapability {level:'L3'})
 UNWIND nodes(path) AS n UNWIND relationships(path) AS r WITH DISTINCT n, r RETURN DISTINCT ${RET}`,
         diagnosticQuery: `MATCH (n)
 WHERE (
@@ -151,7 +151,7 @@ WHERE (
 )
 AND ${YFN}
 OPTIONAL MATCH (n)-[r]->(m)
-WHERE type(r) IN ['INCREASE_ADOPTION','CLOSE_GAPS','GAP_STATUS']
+WHERE type(r) IN ['INCREASE_ADOPTION','CLOSE_GAPS','KNOWLEDGE_GAPS','ROLE_GAPS']
 AND (
     (m:EntityChangeAdoption AND m.level = 'L3') OR
     (m:EntityProject AND m.level = 'L3') OR

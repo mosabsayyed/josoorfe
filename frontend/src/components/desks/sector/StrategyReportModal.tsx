@@ -251,6 +251,7 @@ const StrategyReportModal: React.FC<StrategyReportModalProps> = ({
                                         return (
                                             <div
                                                 key={`html-${index}`}
+                                                dir="auto"
                                                 dangerouslySetInnerHTML={{ __html: part }}
                                             />
                                         );
@@ -258,13 +259,14 @@ const StrategyReportModal: React.FC<StrategyReportModalProps> = ({
 
                                     // Regular markdown content
                                     return (
-                                        <ReactMarkdown
-                                            key={`content-${index}`}
-                                            rehypePlugins={[rehypeRaw]}
-                                            remarkPlugins={[remarkGfm]}
-                                        >
-                                            {part}
-                                        </ReactMarkdown>
+                                        <div key={`content-${index}`} dir="auto">
+                                            <ReactMarkdown
+                                                rehypePlugins={[rehypeRaw]}
+                                                remarkPlugins={[remarkGfm]}
+                                            >
+                                                {part}
+                                            </ReactMarkdown>
+                                        </div>
                                     );
                                 })}
                             </div>
