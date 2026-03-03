@@ -120,12 +120,6 @@ export default function OntologyHome() {
     return priority[fromRag] >= priority[toRag] ? fromRag : toRag;
   };
 
-  const getLineWeight = (from: string, to: string): 'thin' | 'med' | 'thick' => {
-    if (!ragState) return 'med';
-    const key = `${from}->${to}`;
-    return ragState.lineWeight[key] || 'med';
-  };
-
   const getNodeRag = (nodeKey: string): RagStatus => {
     if (!ragState) return 'default';
     return ragState.nodeRag[nodeKey] || 'default';
@@ -147,14 +141,15 @@ export default function OntologyHome() {
   }
 
   // Image
-  function Img({ x, y, w, h, src, alt = '', nodeKey, clickable = false }: {
+  function Img({ x, y, w, h, src, alt = '', nodeKey, clickable = false, focal = false }: {
     x: number; y: number; w: number; h: number; src: string; alt?: string;
-    nodeKey?: string; clickable?: boolean;
+    nodeKey?: string; clickable?: boolean; focal?: boolean;
   }) {
     const ragClass = nodeKey ? `ont-node--${getNodeRag(nodeKey)}` : '';
     const clickClass = clickable ? 'ont-img--clickable' : '';
+    const focalClass = focal ? 'ont-img--focal' : '';
     return (
-      <Box x={x} y={y} w={w} h={h} className={`ont-img ${ragClass} ${clickClass}`}>
+      <Box x={x} y={y} w={w} h={h} className={`ont-img ${ragClass} ${clickClass} ${focalClass}`}>
         <img
           src={src} alt={alt}
           style={rtl ? { transform: 'scaleX(-1)' } : undefined}
@@ -248,96 +243,65 @@ export default function OntologyHome() {
     cultureHealth: { x: 3585, y: 1373, w: 202, h: 171 },
   };
 
-  const anchorPoint = (
+  // Edge-based anchor: exit/enter from a specific face of a node
+  type Edge = 'left' | 'right' | 'top' | 'bottom';
+
+  const getEdgeAnchor = (
     node: { x: number; y: number; w: number; h: number },
-    tx: number,
-    ty: number,
-  ) => {
-    const centerX = cx(node.x, node.w);
-    const centerY = cy(node.y, node.h);
-    const halfW = (node.w / W) * 50;
-    const halfH = (node.h / H) * 50;
-    const dx = tx - centerX;
-    const dy = ty - centerY;
-    const safeDx = Math.abs(dx) < 0.0001 ? 0.0001 : dx;
-    const safeDy = Math.abs(dy) < 0.0001 ? 0.0001 : dy;
-    const scale = 1 / Math.max(Math.abs(safeDx) / halfW, Math.abs(safeDy) / halfH);
-    return {
-      x: centerX + dx * scale,
-      y: centerY + dy * scale,
-    };
+    edge: Edge,
+  ): { x: number; y: number } => {
+    // RTL: mirror x positions
+    const nx = rtl ? ((W - node.x - node.w) / W) * 100 : (node.x / W) * 100;
+    const ny = ((node.y - TOP) / H) * 100;
+    const nw = (node.w / W) * 100;
+    const nh = (node.h / H) * 100;
+    // RTL: flip left/right
+    const eff: Edge = rtl ? (edge === 'left' ? 'right' : edge === 'right' ? 'left' : edge) : edge;
+    switch (eff) {
+      case 'left':   return { x: nx,          y: ny + nh / 2 };
+      case 'right':  return { x: nx + nw,     y: ny + nh / 2 };
+      case 'top':    return { x: nx + nw / 2, y: ny };
+      case 'bottom': return { x: nx + nw / 2, y: ny + nh };
+    }
   };
 
-  const relationLines = [
-    { from: 'sectorObjectives', to: 'policyTools', label: 'REALIZED_VIA', laneX: -4 },
-    { from: 'policyTools', to: 'sectorObjectives', label: 'GOVERNED_BY', laneX: -2.8 },
-    { from: 'sectorObjectives', to: 'performance', label: 'CASCADED_VIA', laneX: -1.2 },
-    { from: 'performance', to: 'sectorObjectives', label: 'AGGREGATES_TO', laneX: 1.0 },
-    { from: 'policyTools', to: 'adminRecords', label: 'REFERS_TO', laneX: -0.8 },
-    { from: 'adminRecords', to: 'govEntity', label: 'APPLIED_ON', laneX: -4.8 },
-    { from: 'adminRecords', to: 'business', label: 'APPLIED_ON', laneX: -0.8 },
-    { from: 'adminRecords', to: 'citizen', label: 'APPLIED_ON', laneX: 4.8 },
-    { from: 'regulatory', to: 'dataTransactions', label: 'TRIGGERS_EVENT', laneX: -3.8 },
-    { from: 'businessDown', to: 'dataTransactions', label: 'TRIGGERS_EVENT', laneX: 0.6 },
-    { from: 'urban', to: 'dataTransactions', label: 'TRIGGERS_EVENT', laneX: 3.8 },
-    { from: 'dataTransactions', to: 'performance', label: 'MEASURED_BY', laneX: 0.6 },
+  // Clean connections matching Figma design — simple L-path routing
+  const cleanLines: Array<{
+    from: string; to: string;
+    fEdge: Edge; tEdge: Edge;
+    offset?: number; // small shift for the vertical segment (% units) to avoid overlaps
+  }> = [
+    // Goals ↔ Sector Outputs
+    { from: 'sectorObjectives', to: 'policyTools',      fEdge: 'right',  tEdge: 'left'   },
+    { from: 'performance',      to: 'sectorObjectives', fEdge: 'left',   tEdge: 'right'  },
 
-    { from: 'policyTools', to: 'capabilities', label: 'SETS_PRIORITIES', laneX: 0.8 },
-    { from: 'performance', to: 'capabilities', label: 'SETS_TARGETS', laneX: 2.0 },
-    { from: 'capabilities', to: 'policyTools', label: 'EXECUTES', laneX: -1.2 },
-    { from: 'capabilities', to: 'performance', label: 'REPORTS', laneX: -2.4 },
-    { from: 'capabilities', to: 'risks', label: 'MONITORED_BY', laneX: -1.4 },
-    { from: 'risks', to: 'riskPlans', label: 'HAS_PLAN*', laneX: 0.5 },
-    { from: 'risks', to: 'policyTools', label: 'INFORMS', laneX: 0.2 },
-    { from: 'risks', to: 'performance', label: 'INFORMS', laneX: -0.6 },
+    // Within Sector Outputs col (vertical flow)
+    { from: 'policyTools',      to: 'adminRecords',     fEdge: 'bottom', tEdge: 'top'    },
+    { from: 'dataTransactions', to: 'performance',      fEdge: 'bottom', tEdge: 'top'    },
 
-    { from: 'capabilities', to: 'orgUnits', label: 'ROLE_GAPS', laneX: 2.2 },
-    { from: 'capabilities', to: 'processes', label: 'KNOWLEDGE_GAPS', laneX: -1.4 },
-    { from: 'capabilities', to: 'itSystems', label: 'AUTOMATION_GAPS', laneX: -2.6 },
-    { from: 'cultureHealth', to: 'orgUnits', label: 'MONITORS_FOR', laneX: -1.8 },
-    { from: 'orgUnits', to: 'processes', label: 'APPLY', laneX: 1.5 },
-    { from: 'processes', to: 'itSystems', label: 'AUTOMATION', laneX: 2.0 },
-    { from: 'processes', to: 'performance', label: 'FEEDS_INTO', laneX: -3.5 },
-    { from: 'itSystems', to: 'vendors', label: 'DEPENDS_ON', laneX: -1.6 },
+    // Sector Outputs → Capacity (long horizontal, spans Health col)
+    { from: 'policyTools',      to: 'capabilities',     fEdge: 'right',  tEdge: 'left',  offset: -1.5 },
+    { from: 'performance',      to: 'capabilities',     fEdge: 'right',  tEdge: 'left',  offset:  1.5 },
 
-    { from: 'orgUnits', to: 'projects', label: 'GAPS_SCOPE', laneX: 2.2 },
-    { from: 'processes', to: 'projects', label: 'GAPS_SCOPE', laneX: 0.4 },
-    { from: 'itSystems', to: 'projects', label: 'GAPS_SCOPE', laneX: -1.8 },
-    { from: 'projects', to: 'orgUnits', label: 'CLOSE_GAPS', laneX: 3.4 },
-    { from: 'projects', to: 'processes', label: 'CLOSE_GAPS', laneX: -0.8 },
-    { from: 'projects', to: 'itSystems', label: 'CLOSE_GAPS', laneX: -3.2 },
-    { from: 'projects', to: 'changeAdoption', label: 'ADOPTION_RISKS', laneX: 2.2 },
-    { from: 'changeAdoption', to: 'projects', label: 'INCREASE_ADOPTION', laneX: -2.2 },
-  ] as const;
+    // Capabilities → Health (Risks) — goes LEFT
+    { from: 'capabilities',     to: 'risks',            fEdge: 'left',   tEdge: 'right'  },
+    { from: 'risks',            to: 'riskPlans',        fEdge: 'bottom', tEdge: 'top'    },
 
-  const renderedLines = (() => {
-    type NodeKey = keyof typeof relationNodes;
-    type RenderLine = { from: NodeKey; to: NodeKey; laneX: number; bidirectional: boolean };
-    const map = new Map<string, RenderLine>();
+    // Capabilities → Processes (horizontal across Capacity col)
+    { from: 'capabilities',     to: 'processes',        fEdge: 'right',  tEdge: 'left'   },
 
-    relationLines.forEach((rel) => {
-      const from = rel.from as NodeKey;
-      const to = rel.to as NodeKey;
-      const forwardKey = `${String(from)}->${String(to)}`;
-      const reverseKey = `${String(to)}->${String(from)}`;
+    // Within Capacity col
+    { from: 'cultureHealth',    to: 'orgUnits',         fEdge: 'right',  tEdge: 'left'   },
+    { from: 'orgUnits',         to: 'processes',        fEdge: 'bottom', tEdge: 'top'    },
+    { from: 'processes',        to: 'itSystems',        fEdge: 'bottom', tEdge: 'top'    },
+    { from: 'itSystems',        to: 'vendors',          fEdge: 'left',   tEdge: 'right'  },
 
-      if (map.has(reverseKey)) {
-        const reverse = map.get(reverseKey)!;
-        reverse.bidirectional = true;
-        reverse.laneX = (reverse.laneX + (rel.laneX ?? 0)) / 2;
-        return;
-      }
-
-      map.set(forwardKey, {
-        from,
-        to,
-        laneX: rel.laneX ?? 0,
-        bidirectional: false,
-      });
-    });
-
-    return Array.from(map.values());
-  })();
+    // Capacity → Velocity
+    { from: 'orgUnits',         to: 'projects',         fEdge: 'right',  tEdge: 'top',    offset: -1 },
+    { from: 'processes',        to: 'projects',         fEdge: 'right',  tEdge: 'left'   },
+    { from: 'itSystems',        to: 'projects',         fEdge: 'right',  tEdge: 'bottom', offset:  1 },
+    { from: 'projects',         to: 'changeAdoption',   fEdge: 'bottom', tEdge: 'top'    },
+  ];
 
   return (
     <div className="ontology-home" dir={rtl ? 'rtl' : 'ltr'} lang={lang}>
@@ -387,7 +351,7 @@ export default function OntologyHome() {
         <Box x={3165} y={814} w={1705} h={2581} className="ont-col ont-col--dark" />
         <Box x={4870} y={814} w={963} h={2581} className="ont-col ont-col--light" />
 
-        {/* ═══ RELATIONS (from Noor memory chains + ontology vocabulary) ═══ */}
+        {/* ═══ RELATIONS ═══ */}
         <svg className="ont-relations" viewBox="0 0 100 100" preserveAspectRatio="none" aria-label="Ontology relations">
           <defs>
             {(['green', 'amber', 'red', 'default'] as const).map(rag => (
@@ -397,35 +361,39 @@ export default function OntologyHome() {
               </marker>
             ))}
           </defs>
-          {renderedLines.map((relation) => {
-            const fromNode = relationNodes[relation.from];
-            const toNode = relationNodes[relation.to];
-            const c1x = cx(fromNode.x, fromNode.w);
-            const c1y = cy(fromNode.y, fromNode.h);
-            const c2x = cx(toNode.x, toNode.w);
-            const c2y = cy(toNode.y, toNode.h);
-            const s = anchorPoint(fromNode, c2x, c2y);
-            const e = anchorPoint(toNode, c1x, c1y);
-            const mx = ((s.x + e.x) / 2) + (relation.laneX ?? 0);
-            const path = `M ${s.x} ${s.y} L ${mx} ${s.y} L ${mx} ${e.y} L ${e.x} ${e.y}`;
-            const rag = getLineRag(relation.from, relation.to);
-            const weight = getLineWeight(relation.from, relation.to);
+          {cleanLines.map((line) => {
+            const fromNode = relationNodes[line.from as keyof typeof relationNodes];
+            const toNode = relationNodes[line.to as keyof typeof relationNodes];
+            if (!fromNode || !toNode) return null;
+            const s = getEdgeAnchor(fromNode, line.fEdge);
+            const e = getEdgeAnchor(toNode, line.tEdge);
+            const offset = line.offset ?? 0;
+            const dx = Math.abs(s.x - e.x);
+            const dy = Math.abs(s.y - e.y);
+            let d: string;
+            if (dx < 0.3) {
+              d = `M ${s.x} ${s.y} V ${e.y}`;
+            } else if (dy < 0.3) {
+              d = `M ${s.x} ${s.y} H ${e.x}`;
+            } else {
+              const midX = (s.x + e.x) / 2 + offset;
+              d = `M ${s.x} ${s.y} H ${midX} V ${e.y} H ${e.x}`;
+            }
+            const rag = getLineRag(line.from, line.to);
             return (
-              <g key={`${relation.from}-${relation.to}`}>
-                <path
-                  d={path}
-                  className={`ont-rel-line ont-rel-line--${rag} ont-rel-line--${weight}`}
-                  markerStart={relation.bidirectional ? `url(#ont-arrow-${rag})` : undefined}
-                  markerEnd={`url(#ont-arrow-${rag})`}
-                />
-              </g>
+              <path
+                key={`${line.from}-${line.to}`}
+                d={d}
+                className={`ont-rel-line ont-rel-line--${rag} ont-rel-line--med`}
+                markerEnd={`url(#ont-arrow-${rag})`}
+              />
             );
           })}
         </svg>
 
         {/* ═══ COL 1: GOALS ═══ */}
         <Txt x={85} y={967} w={673} h={116} size={48} color="dark">{t(L.vision2030)}</Txt>
-        <Img x={183} y={1944} w={477} h={441} src={A.sectorObj} alt="Sector Objectives" nodeKey="sectorObjectives" clickable />
+        <Img x={183} y={1944} w={477} h={441} src={A.sectorObj} alt="Sector Objectives" nodeKey="sectorObjectives" clickable focal />
         <NodeTxt x={279} y={2501} w={284} h={116} size={24} color="dark">{t(L.sectorObj)}</NodeTxt>
 
         {/* ═══ COL 2: SECTOR VALUE CHAINS ═══ */}
