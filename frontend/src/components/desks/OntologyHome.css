@@ -1,0 +1,294 @@
+/* ── OntologyHome: SST Ontology Architecture Diagram ── */
+.ontology-home {
+  width: 100%;
+  min-height: 100%;
+  background: var(--component-bg-primary);
+  padding: 12px;
+  box-sizing: border-box;
+  overflow-x: auto;
+}
+
+/* Main frame */
+.ont-frame {
+  position: relative;
+  width: 100%;
+  min-width: 700px;
+}
+
+/* ── Category header bars ── */
+.ont-header {
+  position: absolute;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: var(--component-panel-bg);
+  font-weight: 700;
+  font-family: var(--component-font-family);
+  color: var(--component-text-accent);
+  font-size: clamp(10px, 1.6vw, 24px);
+  text-align: center;
+}
+
+.ont-header__icon {
+  width: clamp(20px, 2.2vw, 32px);
+  height: clamp(20px, 2.2vw, 32px);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--component-text-accent);
+  flex: 0 0 auto;
+}
+
+.ont-header__icon svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  filter: saturate(1.12);
+}
+
+[lang="ar"] .ont-header,
+[dir="rtl"] .ont-header {
+  font-family: var(--component-font-heading-ar);
+}
+
+/* ── Column backgrounds ── */
+.ont-col {
+  position: absolute;
+  border: 2px solid var(--component-panel-border);
+}
+
+.ont-col--light {
+  background: #dbdbdb;
+}
+
+:root[data-theme="light"] .ont-col--light {
+  background: var(--component-bg-secondary);
+}
+
+.ont-col--dark {
+  background: color-mix(in srgb, var(--component-bg-secondary) 79%, transparent);
+}
+
+/* ── Ontology relation lines ── */
+.ont-relations {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+/* ── Ontology relation lines — RAG states ── */
+.ont-rel-line {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 0.18;
+}
+
+/* GREEN: dotted + fast marching animation = healthy flow */
+.ont-rel-line--green {
+  stroke: var(--component-color-success);
+  stroke-dasharray: 0.6 0.3;
+  animation: ont-line-march 1s linear infinite;
+  opacity: 0.85;
+}
+
+/* AMBER: dotted + slow animation = degrading */
+.ont-rel-line--amber {
+  stroke: var(--component-color-warning);
+  stroke-dasharray: 0.6 0.3;
+  animation: ont-line-march 3s linear infinite;
+  opacity: 0.9;
+}
+
+/* RED: solid + no animation = broken / dead */
+.ont-rel-line--red {
+  stroke: var(--component-color-danger);
+  stroke-dasharray: none;
+  animation: none;
+  opacity: 0.95;
+}
+
+/* Default (no data yet) — muted static */
+.ont-rel-line--default {
+  stroke: var(--component-panel-border);
+  stroke-dasharray: 0.4 0.3;
+  animation: none;
+  opacity: 0.5;
+}
+
+@keyframes ont-line-march {
+  to { stroke-dashoffset: -0.9; }
+}
+
+/* Line thickness modifier classes */
+.ont-rel-line--thin  { stroke-width: 0.14; }
+.ont-rel-line--med   { stroke-width: 0.22; }
+.ont-rel-line--thick { stroke-width: 0.32; }
+
+/* Arrow markers per RAG */
+.ont-rel-arrow--green  { fill: var(--component-color-success); }
+.ont-rel-arrow--amber  { fill: var(--component-color-warning); }
+.ont-rel-arrow--red    { fill: var(--component-color-danger); }
+.ont-rel-arrow--default { fill: var(--component-panel-border); }
+
+/* ── Positioned elements ── */
+.ont-box {
+  position: absolute;
+}
+
+/* ── Text labels ── */
+.ont-txt {
+  position: absolute;
+  font-family: var(--component-font-family);
+  text-align: center;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  line-height: 1.2;
+}
+
+[lang="ar"] .ont-txt,
+[dir="rtl"] .ont-txt {
+  font-family: var(--component-font-family-ar);
+}
+
+.ont-txt--dark { color: var(--component-text-on-accent); }
+.ont-txt--light { color: var(--component-text-primary); }
+
+/* ── Icon images ── */
+.ont-img img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* ── Node RAG tinting via CSS filter ── */
+.ont-node--green img {
+  filter: hue-rotate(65deg) saturate(1.4) brightness(1.05);
+}
+
+.ont-node--amber img {
+  filter: hue-rotate(-15deg) saturate(1.6) brightness(1.0);
+}
+
+.ont-node--red img {
+  filter: hue-rotate(-40deg) saturate(2.0) brightness(0.9);
+}
+
+.ont-node--default img {
+  filter: none;
+}
+
+/* ── KPI Signal Strip ── */
+.ont-strip {
+  position: absolute;
+  display: flex;
+  gap: 2px;
+}
+
+.ont-strip__cell {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 6px 4px;
+  background: color-mix(in srgb, var(--component-panel-bg) 85%, transparent);
+  border: 1px solid var(--component-panel-border);
+  border-radius: 4px;
+}
+
+.ont-strip__bar {
+  width: 80%;
+  height: 6px;
+  border-radius: 3px;
+  display: flex;
+  overflow: hidden;
+  background: var(--component-bg-secondary);
+}
+
+.ont-strip__bar-seg {
+  height: 100%;
+  transition: width 0.6s ease;
+}
+
+.ont-strip__bar-seg--green  { background: var(--component-color-success); }
+.ont-strip__bar-seg--amber  { background: var(--component-color-warning); }
+.ont-strip__bar-seg--red    { background: var(--component-color-danger); }
+
+.ont-strip__count {
+  font-family: var(--component-font-family);
+  font-size: clamp(8px, 1vw, 13px);
+  font-weight: 600;
+  color: var(--component-text-primary);
+}
+
+.ont-strip__count--clear {
+  color: var(--component-color-success);
+}
+
+.ont-strip__count--alert {
+  color: var(--component-color-danger);
+}
+
+[lang="ar"] .ont-strip__count {
+  font-family: var(--component-font-family-ar);
+}
+
+/* ── Clickable nodes ── */
+.ont-img--clickable {
+  cursor: pointer;
+  transition: filter 0.2s ease;
+}
+
+.ont-img--clickable:hover {
+  filter: brightness(1.15);
+}
+
+/* ── Side panel overlay ── */
+.ont-panel-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.ont-panel-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.ont-panel {
+  position: relative;
+  width: min(480px, 90vw);
+  height: 100%;
+  background: var(--component-panel-bg);
+  border-left: 1px solid var(--component-panel-border);
+  overflow-y: auto;
+  padding: 16px;
+  z-index: 1;
+}
+
+[dir="rtl"] .ont-panel-overlay {
+  justify-content: flex-start;
+}
+
+[dir="rtl"] .ont-panel {
+  border-left: none;
+  border-right: 1px solid var(--component-panel-border);
+}
+
+/* ── Responsive ── */
+@media (max-width: 900px) {
+  .ont-frame {
+    min-width: 600px;
+  }
+}

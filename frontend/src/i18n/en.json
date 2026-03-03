@@ -5,18 +5,23 @@
     "subtitleEn": "Decision Intelligence",
     "sectors": "Operating System for the Public Sector",
     "badge": "Delivery at the Speed of Ambition\nVision 2030",
+    "pitchLabel": "The Challenge:",
+    "pitch": "Two contradictions that public sector entities cannot ignore while adhering to regulatory requirements of accountability and oversight:",
+    "pitchPoints": ["Delaying scaled adoption of AI within national directives", "Risks of using AI based on probabilistic models"],
+    "bestPracticesLabel": "Best Practices:",
+    "bestPracticesPoints": ["Provide an enterprise architecture of deterministic software that governs AI tasks", "Assign it specific tasks (e.g. complex data processing) with the tools needed to achieve them"],
     "intelligence": [
       {
         "figure": "10×",
-        "label": "Complex Variables"
+        "label": "Variables for\nComplex Analysis"
       },
       {
         "figure": "8-Hops",
-        "label": "Depth of\nConnectivity"
+        "label": "Indirect\nRelationships"
       },
       {
         "figure": "150",
-        "label": "Vision\nEntities"
+        "label": "Entities for\nDependencies"
       }
     ],
     "intelligenceTitle": "Decision Bridge",
@@ -24,15 +29,15 @@
     "trust": [
       {
         "figure": "96%",
-        "label": "Output Consistency"
+        "label": "Step\nConsistency"
       },
       {
         "figure": "~0%",
-        "label": "Drift\nInstances"
+        "label": "Instruction\nDrift"
       },
       {
         "figure": "100%",
-        "label": "Audit\nTrails"
+        "label": "Auditability &\nExplainability"
       }
     ],
     "trustTitle": "Trust Bridge",
@@ -129,24 +134,24 @@
       "Portfolios"
     ],
     "elements": [
+      "Sector Value Chains",
+      "Enterprise Operating Models",
+      "Portfolio ROIs",
       "Grounded in Vision",
       "Enterprise Ontology",
       "3-Stage Agent Loop",
       "Cognitive Reasoning",
-      "Sovereign Infrastructure",
-      "Sector Value Chains",
-      "Enterprise Operating Models",
-      "Portfolio ROIs"
+      "Sovereign Infrastructure"
     ],
     "elementDescs": [
+      "Transforming a sector means changing how it works — who invests, who operates, and what they focus on. Governments steer this through policy and regulation, incentives, and awareness. JOSOOR maps these tools to the players, investments, and activities they influence — so you see which levers are moving the sector toward national objectives and which ones are not.",
+      "You cannot transform a sector without transforming the entity that manages it. The capabilities needed to design policies, enforce regulations, and run incentive programs must be built in sync with the sector's evolution. JOSOOR tracks both in parallel — so your operating model is always ready for the mandate it serves.",
+      "Too many initiatives, limited resources, and high stakes. Portfolio management is how you maximize impact from every investment while containing risk. JOSOOR scores ROI across projects, assets, capabilities, and leadership time — so you know where to double down and where to stop spending.",
       "Agents draw from a curated Vision 2030 knowledge base spanning all sectors through a dedicated MCP Server. Every query combines national priorities with your entity's own data — decisions are never made in a vacuum. The result: recommendations that are aligned by design, not by afterthought.",
       "The first real solution to Bridging Strategy to Execution. Sectors, capabilities, KPIs, risks, and projects — all connected in one living model. Risk governance is built into the structure, not bolted on. This is the IP that makes everything else work.",
       "Three Master Agents in a continuous loop:|Observe: Are we on track? Strategic PMO.|Decide: Risks caught early, prioritized in one click. Risk Specialist.|Execute: Actionable plan before the meeting ends. Planning Specialist.",
       "Human-First Architecture with AI-in-the-Loop for deterministic decision-making. Agents are powered by a 4-layer memory, a scalable Vision database, specialized MCP tools, and a source-of-truth World Model. Every output is traceable. Every recommendation is explainable.",
-      "Homegrown in KSA. Model-agnostic. No vendor lock-in. Full sovereignty from day one.|Your data never leaves your infrastructure. Your AI answers to your rules, not someone else's terms of service.",
-      "Transforming a sector means changing how it works — who invests, who operates, and what they focus on. Governments steer this through policy and regulation, incentives, and awareness. JOSOOR maps these tools to the players, investments, and activities they influence — so you see which levers are moving the sector toward national objectives and which ones are not.",
-      "You cannot transform a sector without transforming the entity that manages it. The capabilities needed to design policies, enforce regulations, and run incentive programs must be built in sync with the sector's evolution. JOSOOR tracks both in parallel — so your operating model is always ready for the mandate it serves.",
-      "Too many initiatives, limited resources, and high stakes. Portfolio management is how you maximize impact from every investment while containing risk. JOSOOR scores ROI across projects, assets, capabilities, and leadership time — so you know where to double down and where to stop spending."
+      "Homegrown in KSA. Model-agnostic. No vendor lock-in. Full sovereignty from day one.|Your data never leaves your infrastructure. Your AI answers to your rules, not someone else's terms of service."
     ],
     "alignedNationalStandards": "Aligned with National Standards",
     "vision2030Compatible": "Vision 2030 Compatible"
@@ -414,9 +419,12 @@
       "links": "links",
       "edges": "edges",
       "view": "View",
-      "details": "Details"
+      "details": "Details",
+      "capacity": "Capacity"
     },
     "shell": {
+      "home": "Architecture",
+      "homeSub": "SST Ontology",
       "sectorDesk": "Observation Desk",
       "sectorDeskSub": "Strategic Impact",
       "controlsDesk": "Control Signals",
@@ -792,7 +800,7 @@
         "nodeCount": "{{count}} nodes"
       },
       "table": {
-        "datasetAudit": "📊 Dataset Audit ({{nodes}} Nodes, {{links}} Links)",
+        "datasetAudit": "Dataset Audit ({{nodes}} Nodes, {{links}} Links)",
         "id": "ID",
         "label": "Label",
         "nameTitle": "Name / Title",
@@ -800,7 +808,15 @@
         "source": "Source",
         "type": "Type",
         "target": "Target",
-        "value": "Value"
+        "value": "Value",
+        "nodeList": "Node List",
+        "adjacencyMatrix": "Adjacency Matrix",
+        "searchPlaceholder": "Search nodes...",
+        "name": "Name",
+        "level": "Level",
+        "year": "Year",
+        "status": "Status",
+        "matrixTruncated": "Showing first 50 of {{total}} nodes"
       }
     },
     "explorerFilters": {
@@ -822,6 +838,16 @@
       "relationships": "Relationships",
       "nodeLimit": "Node Limit",
       "fetchLiveGraph": "Fetch Live Graph",
+      "sphere": "Sphere",
+      "force": "Force",
+      "hierarchy": "Hierarchy",
+      "circular": "Circular",
+      "table": "Table",
+      "dimension": "Dimension",
+      "hierarchySource": "Hierarchy By",
+      "parentOf": "Level Tree",
+      "chainOrder": "Chain Order",
+      "requiresChain": "Select a Business Chain first",
       "chains": {
         "sector_value_chain": "Sector Value Chain",
         "setting_strategic_initiatives": "Setting Strategic Initiatives",
@@ -1495,7 +1521,7 @@
         "planningExpert": "Planning Expert",
         "stakeCommExpert": "StakeComm Expert",
         "recallMemory": "Recall Memory",
-        "searchVisionDb": "Vision Data",
+        "recallVisionMemory": "Recall Vision Memory",
         "personaLocked": "Expert locked for this conversation",
         "tools": "Tools"
       },
