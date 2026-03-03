@@ -41,11 +41,10 @@
   flex: 0 0 auto;
 }
 
-.ont-header__icon svg {
+.ont-header__icon img {
   width: 100%;
   height: 100%;
   display: block;
-  filter: saturate(1.12);
 }
 
 [lang="ar"] .ont-header,
@@ -114,10 +113,10 @@
 
 /* Default (no data yet) — muted static */
 .ont-rel-line--default {
-  stroke: var(--component-panel-border);
+  stroke: #c8973e;
   stroke-dasharray: 0.4 0.3;
   animation: none;
-  opacity: 0.5;
+  opacity: 0.7;
 }
 
 @keyframes ont-line-march {
@@ -133,7 +132,7 @@
 .ont-rel-arrow--green  { fill: var(--component-color-success); }
 .ont-rel-arrow--amber  { fill: var(--component-color-warning); }
 .ont-rel-arrow--red    { fill: var(--component-color-danger); }
-.ont-rel-arrow--default { fill: var(--component-panel-border); }
+.ont-rel-arrow--default { fill: #c8973e; }
 
 /* ── Positioned elements ── */
 .ont-box {

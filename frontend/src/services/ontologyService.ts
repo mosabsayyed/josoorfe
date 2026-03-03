@@ -62,8 +62,11 @@ const LABEL_TO_NODE_KEY: Record<string, string> = {
 const NODE_TO_COLUMN: Record<string, string> = {
   sectorObjectives: 'goals',
   policyTools: 'sector', adminRecords: 'sector', citizen: 'sector',
-  govEntity: 'sector', businessUp: 'sector', businessMid: 'sector',
-  businessDown: 'sector', dataTransactions: 'sector', performance: 'sector',
+  govEntity: 'sector', business: 'sector',
+  resources: 'sector', infrastructure: 'sector', regulatory: 'sector',
+  businessUp: 'sector', businessMid: 'sector', businessDown: 'sector',
+  remote: 'sector', agricultural: 'sector', urban: 'sector',
+  dataTransactions: 'sector', performance: 'sector',
   risks: 'health', riskPlans: 'health',
   capabilities: 'capacity', orgUnits: 'capacity', processes: 'capacity',
   itSystems: 'capacity', vendors: 'capacity', cultureHealth: 'capacity',
