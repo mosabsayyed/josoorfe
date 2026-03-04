@@ -27,12 +27,14 @@ const ObservabilityDesk = React.lazy(() => import('./views/admin/Observability')
 const ProviderManagement = React.lazy(() => import('../../pages/admin/ProviderManagement').then(m => ({ default: m.ProviderManagement })));
 const ABTesting = React.lazy(() => import('../../pages/admin/ABTesting').then(m => ({ default: m.ABTesting })));
 const MonitoringDashboard = React.lazy(() => import('../../pages/admin/MonitoringDashboard').then(m => ({ default: m.MonitoringDashboard })));
+const OntologyHome = React.lazy(() => import('../../components/desks/OntologyHome'));
 
 const MemoizedSidebar = memo(Sidebar);
 const MemoizedCanvasManager = memo(CanvasManager);
 
 export type JosoorView =
     | 'chat'
+    | 'home'
     | 'sector-desk'
     | 'controls-desk'
     | 'planning-desk'
@@ -57,11 +59,11 @@ export default function JosoorShell() {
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
     const [streamingMessage, setStreamingMessage] = useState<APIMessage | null>(null);
     const [selectedPersona, setSelectedPersona] = useState<string | null>('general_analysis');
-    const [selectedTools, setSelectedTools] = useState<string[]>(['recall_memory', 'search_ksa_facts']);
+    const [selectedTools, setSelectedTools] = useState<string[]>(['recall_memory', 'recall_vision_memory']);
     const [isPersonaLocked, setIsPersonaLocked] = useState(false);
 
     // Active View State
-    const [activeView, setActiveView] = useState<JosoorView>('sector-desk');
+    const [activeView, setActiveView] = useState<JosoorView>('home');
     const [interventionContext, setInterventionContext] = useState<InterventionContext | null>(null);
 
     useEffect(() => {
@@ -192,7 +194,7 @@ export default function JosoorShell() {
     }, [activeConversationId]);
 
     // Handle Send Message (Copied from ChatAppPage)
-    const handleSendMessage = useCallback(async (messageText: string, options?: { push_to_graph_server?: boolean; suppress_canvas_auto_open?: boolean }) => {
+    const handleSendMessage = useCallback(async (messageText: string, options?: { suppress_canvas_auto_open?: boolean }) => {
         const tempId = `temp-${Date.now()}`;
         const tempMsg: APIMessage = {
             id: parseInt(tempId) || Date.now(),
@@ -206,14 +208,13 @@ export default function JosoorShell() {
         setIsLoading(true);
 
         try {
-            // Prefix query with tool instructions if tools are selected
-            const toolPrefix = selectedTools.length > 0
-                ? selectedTools.map(t => `prioritize using ${t}`).join(', ') + '. '
+            // Append tool instructions at the end of the query if tools are selected
+            const toolSuffix = selectedTools.length > 0
+                ? `\n\nTools: ${selectedTools.join(', ')}. Use them if relevant.`
                 : '';
             const basics: any = {
-                query: toolPrefix + messageText,
+                query: messageText + toolSuffix,
                 conversation_id: activeConversationId && activeConversationId > 0 ? activeConversationId : undefined,
-                push_to_graph_server: options?.push_to_graph_server,
                 ...(selectedPersona && { prompt_key: selectedPersona }),
                 language,
             };
@@ -284,12 +285,13 @@ export default function JosoorShell() {
     useEffect(() => {
         setSelectedPersona(null);
         setIsPersonaLocked(false);
-        setSelectedTools(['recall_memory', 'search_ksa_facts']);
+        setSelectedTools(['recall_memory', 'recall_vision_memory']);
     }, [activeConversationId]);
 
     // Sync title/subtitle based on activeView
     const getHeaderMeta = () => {
         switch (activeView) {
+            case 'home': return { title: t('josoor.shell.home'), subtitle: t('josoor.shell.homeSub') };
             case 'sector-desk': return { title: t('josoor.shell.sectorDesk'), subtitle: t('josoor.shell.sectorDeskSub') };
             case 'controls-desk': return { title: t('josoor.shell.controlsDesk'), subtitle: t('josoor.shell.controlsDeskSub') };
             case 'planning-desk': return { title: t('josoor.shell.planningDesk'), subtitle: t('josoor.shell.planningDeskSub') };
@@ -370,8 +372,9 @@ export default function JosoorShell() {
                     onToolsChange={setSelectedTools}
                 >
                     {activeView !== 'chat' && (
-                        <div style={{ flex: 1, height: '100%', overflow: ['settings', 'providers', 'ab-testing', 'monitoring', 'observability', 'reporting-desk'].includes(activeView) ? 'auto' : 'hidden' }}>
+                        <div style={{ flex: 1, height: '100%', overflow: ['home', 'settings', 'providers', 'ab-testing', 'monitoring', 'observability', 'reporting-desk'].includes(activeView) ? 'auto' : 'hidden' }}>
                             <Suspense fallback={<div style={{ padding: '2rem', color: 'white' }}>{t('josoor.common.loadingView')}</div>}>
+                                {activeView === 'home' && <OntologyHome />}
                                 {activeView === 'sector-desk' && (
                                     <SectorDesk
                                         year={year}

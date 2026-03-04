@@ -26,6 +26,11 @@ export default function LandingPage() {
       subtitleEn: t('hero.subtitleEn'),
       sectors: t('hero.sectors'),
       badge: t('hero.badge'),
+      pitchLabel: t('hero.pitchLabel'),
+      pitch: t('hero.pitch'),
+      pitchPoints: (t('hero.pitchPoints', { returnObjects: true }) as string[]) || [],
+      bestPracticesLabel: t('hero.bestPracticesLabel'),
+      bestPracticesPoints: (t('hero.bestPracticesPoints', { returnObjects: true }) as string[]) || [],
       intelligence: (t('hero.intelligence', { returnObjects: true }) as { figure: string; label: string }[]) || [],
       intelligenceTitle: t('hero.intelligenceTitle'),
       intelligenceDesc: t('hero.intelligenceDesc'),
@@ -170,6 +175,23 @@ export default function LandingPage() {
       [dir="rtl"] .hero-box-label {
         font-size: clamp(15px, 1.3vw, 17px);
       }
+      @keyframes bridgePulse {
+        0%, 100% { opacity: 0.7; }
+        50% { opacity: 1; }
+      }
+      .hero-bridge-glow {
+        animation: bridgePulse 3s ease-in-out infinite;
+      }
+      @keyframes chaoticDrift {
+        0%, 100% { transform: translate(0, 0); }
+        25% { transform: translate(4px, -6px); }
+        50% { transform: translate(-5px, 3px); }
+        75% { transform: translate(6px, 5px); }
+      }
+      .chaotic-node {
+        animation: chaoticDrift 4s ease-in-out infinite;
+      }
+
       .hero-box-title {
         font-family: 'Inter', sans-serif;
         font-size: clamp(15px, 1.4vw, 20px);
@@ -283,7 +305,7 @@ export default function LandingPage() {
         position: absolute;
         top: 85vh; /* Push vector down below hero */
         left: 50%;
-        transform: translateX(-50%);
+        transform: translateX(-50%) scaleY(0.5); /* Keep full width, reduce height by 50% */
         width: 1278px;
         pointer-events: none;
         z-index: 0;
@@ -300,7 +322,7 @@ export default function LandingPage() {
       /* ── AI → IA scroll animation section ── */
       .aitoia-timeline {
         position: relative;
-        height: 450vh; /* Extended for BetaForm phase */
+        height: 250vh; /* Extended for BetaForm phase */
       }
 
       .aitoia-viewer {

@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import ForceGraph3D from "react-force-graph-3d";
 import ForceGraph2D from "react-force-graph-2d";
 import { GraphData } from "../../types/dashboard";
-import { Maximize2, Minimize2 } from "lucide-react";
+import { LayoutMode, HierarchySource, computeLayout } from './graphLayouts';
 
 interface NeoGraphProps {
   // OLD Interface (backward compatible)
@@ -23,23 +23,22 @@ interface NeoGraphProps {
   chainKey?: string;
   analyzeGaps?: boolean;
   legendConfig?: any;
+
+  // Layout engine props
+  layoutMode?: LayoutMode;
+  hierarchySource?: HierarchySource;
+  is3D?: boolean;
 }
 
-// 20 gold/amber tones — dark gold palette matching site accent
-const NODE_PALETTE = [
-  '#F4BB30', '#D4A017', '#B8860B', '#DAA520', '#C49102',
-  '#E6A817', '#A67B00', '#CF9B1D', '#8B6914', '#F0C040',
-  '#D4920A', '#BFA14A', '#9C7A1E', '#E8B828', '#C8A22C',
-  '#A08520', '#D4AF37', '#B59410', '#C9A82C', '#8C7317',
-] as const;
-
-function hashStringToIndex(str: string, mod: number): number {
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    hash = ((hash << 5) - hash + str.charCodeAt(i)) | 0;
-  }
-  return Math.abs(hash) % mod;
-}
+// Distinct colors per ontology node type — matches GraphDataTable LABEL_COLORS
+const LABEL_COLORS: Record<string, string> = {
+  SectorObjective: '#3b82f6', SectorPolicyTool: '#8b5cf6', SectorAdminRecord: '#06b6d4',
+  SectorBusiness: '#f59e0b', SectorCitizen: '#10b981', SectorGovEntity: '#ef4444',
+  SectorDataTransaction: '#ec4899', SectorPerformance: '#f97316',
+  EntityCapability: '#6366f1', EntityOrgUnit: '#14b8a6', EntityProcess: '#a855f7',
+  EntityITSystem: '#0ea5e9', EntityProject: '#84cc16', EntityChangeAdoption: '#e879f9',
+  EntityRisk: '#f43f5e', EntityCultureHealth: '#22d3ee', EntityVendor: '#fb923c',
+};
 
 export function NeoGraph({
   data,
@@ -54,7 +53,10 @@ export function NeoGraph({
   nodeColor,
   chainKey,
   analyzeGaps = false,
-  legendConfig
+  legendConfig,
+  layoutMode = 'sphere',
+  hierarchySource = 'parent_of',
+  is3D: is3DProp = true,
 }: NeoGraphProps) {
 
   const { t } = useTranslation();
@@ -62,7 +64,6 @@ export function NeoGraph({
   const containerRef = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const [hoverNode, setHoverNode] = useState<any>(null);
-  const [is3D, setIs3D] = useState(true);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 
   // Robust Resize handler using ResizeObserver
@@ -98,12 +99,12 @@ export function NeoGraph({
         return legendConfig.colors[type];
       }
     }
-    // Palette-based coloring by node type/label
+    // Distinct color per node type
     const nodeType = node.labels?.[0] || node.type;
-    if (nodeType) {
-      return NODE_PALETTE[hashStringToIndex(nodeType, NODE_PALETTE.length)];
+    if (nodeType && LABEL_COLORS[nodeType]) {
+      return LABEL_COLORS[nodeType];
     }
-    // Fallback: theme accent in dark, dark text in light
+    // Fallback: theme accent
     return node.color || (isDark ? '#F4BB30' : '#4B5563');
   };
 
@@ -118,50 +119,27 @@ export function NeoGraph({
     return (link.properties?.status === 'critical' || link.properties?.virtual) ? 1.5 : 0.5;
   };
 
-  // 3. Deep Clone + Fibonacci sphere placement (fx/fy/fz) + relation-based sizing
+  // 3. Layout computation via layout engine
   const graphData = React.useMemo(() => {
     if (!data || !data.nodes) return { nodes: [], links: [] };
 
-    // Count relations per node
-    const relCount: Record<string, number> = {};
-    if (data.links) {
-      for (const l of data.links) {
-        const src = typeof l.source === 'object' ? l.source.id : l.source;
-        const tgt = typeof l.target === 'object' ? l.target.id : l.target;
-        relCount[src] = (relCount[src] || 0) + 1;
-        relCount[tgt] = (relCount[tgt] || 0) + 1;
-      }
-    }
+    const links = data.links ? data.links.map(l => ({ ...l })) : [];
+    const nodes = computeLayout(
+      data.nodes.map(n => ({ ...n })),
+      links,
+      layoutMode,
+      hierarchySource
+    );
 
-    const nodeCount = data.nodes.length;
-    const radius = Math.max(200, nodeCount * 3);
-    const goldenRatio = (1 + Math.sqrt(5)) / 2;
-
-    const nodes = data.nodes.map((n, i) => {
-      const theta = Math.acos(1 - 2 * (i + 0.5) / nodeCount);
-      const phi = 2 * Math.PI * i / goldenRatio;
-      const count = relCount[n.id] || 1;
-      return {
-        ...n,
-        fx: radius * Math.sin(theta) * Math.cos(phi),
-        fy: radius * Math.sin(theta) * Math.sin(phi),
-        fz: radius * Math.cos(theta),
-        _val: Math.max(2, Math.min(20, count * 2)),
-      };
-    });
-
-    return {
-      nodes,
-      links: data.links ? data.links.map(l => ({ ...l })) : []
-    };
-  }, [data]);
+    return { nodes, links };
+  }, [data, layoutMode, hierarchySource]);
 
   // Click zoom handler
   const handleNodeClick = (node: any) => {
     if (onNodeClick) onNodeClick(node);
 
     const fg = graphRef.current;
-    if (!fg || !is3D) return;
+    if (!fg || !is3DProp) return;
 
     const distance = 250;
     const distRatio = 1 + distance / Math.hypot(node.x, node.y, node.z);
@@ -195,21 +173,19 @@ export function NeoGraph({
     linkLineDash: (link: any) => (link.properties?.status === 'critical' || link.properties?.virtual) ? [5, 5] : null,
   };
 
+  // Force-directed needs longer simulation
+  const forceProps = layoutMode === 'force' ? {
+    cooldownTicks: 200,
+    d3AlphaDecay: 0.02,
+    d3VelocityDecay: 0.3,
+  } : {
+    cooldownTicks: 100,
+  };
+
   return (
     <div ref={containerRef} style={{ position: 'relative', width: '100%', height: '100%' }} onMouseMove={(e) => setMousePos({ x: e.clientX, y: e.clientY })}>
-      {/* View Toggle */}
-      <div className="viz-controls-overlay">
-        <button
-          onClick={() => setIs3D(!is3D)}
-          className="viz-mode-btn"
-        >
-          {is3D ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
-          {is3D ? t('josoor.dashboard.graph.switchTo2D') : t('josoor.dashboard.graph.switchTo3D')}
-        </button>
-      </div>
-
       {(dimensions.width > 0 && dimensions.height > 0) ? (
-        is3D ? <ForceGraph3D {...commonProps} /> : <ForceGraph2D {...commonProps} />
+        is3DProp ? <ForceGraph3D {...commonProps} {...forceProps} /> : <ForceGraph2D {...commonProps} {...forceProps} />
       ) : (
         <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           {t('josoor.dashboard.graph.preparingCanvas')}
@@ -220,12 +196,18 @@ export function NeoGraph({
       {hoverNode && createPortal(
         (() => {
           const nodeProps = hoverNode.properties || hoverNode.nProps || {};
-          const domainId = hoverNode.domain_id || nodeProps.domain_id || '';
+          // domain_id comes from chains; for custom queries fall back to the node id
+          const rawDomainId = hoverNode.domain_id || nodeProps.domain_id || '';
+          // If no domain_id, show the node's id (truncate long element IDs)
+          const rawId = String(hoverNode.id || '');
+          const shortId = rawId.length > 12 ? rawId.slice(-8) : rawId;
+          const domainId = rawDomainId || shortId;
           const namePart = hoverNode.name || nodeProps.name || nodeProps.title || hoverNode.label || String(hoverNode.id || 'Node');
           const nodeName = domainId ? `${domainId} ${namePart}` : namePart;
           const nodeType = (hoverNode.labels && hoverNode.labels.length > 0)
             ? hoverNode.labels.filter((l: string) => l !== 'Unknown')[0]
             : (hoverNode.label && hoverNode.label !== 'Unknown' ? hoverNode.label : '');
+          const level = nodeProps.level || '';
 
           return (
             <div style={{
@@ -247,7 +229,10 @@ export function NeoGraph({
               gap: '6px',
               direction: 'ltr' as const,
             }}>
-              <span style={{ fontWeight: 600, color: isDark ? '#F9FAFB' : '#111827' }}>{nodeName}</span>
+              {domainId && (
+                <span style={{ fontSize: '10px', fontWeight: 700, color: isDark ? '#F4BB30' : '#B8860B' }}>{domainId}</span>
+              )}
+              <span style={{ fontWeight: 600, color: isDark ? '#F9FAFB' : '#111827' }}>{namePart}</span>
               {nodeType && (
                 <span style={{
                   fontSize: '10px',
@@ -257,6 +242,13 @@ export function NeoGraph({
                   padding: '1px 6px',
                   borderRadius: '3px',
                 }}>{nodeType}</span>
+              )}
+              {level && (
+                <span style={{
+                  fontSize: '9px',
+                  fontWeight: 600,
+                  color: isDark ? '#6EE7B7' : '#059669',
+                }}>{level}</span>
               )}
             </div>
           );

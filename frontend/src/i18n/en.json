@@ -561,10 +561,17 @@
       "reset": "Reset",
       "sponsor": "Sponsor",
       "task": "Task",
+      "tasks": "Tasks",
       "dependsOn": "Depends On",
       "addTask": "Add Task",
       "removeTask": "Remove Task",
       "addDeliverable": "Add Deliverable",
+      "deliverables": "Deliverables",
+      "savedPlans": "Saved Plans",
+      "loadingPlans": "Loading plans...",
+      "planName": "Plan",
+      "view": "View",
+      "noPlansYet": "No saved plans yet.",
       "yearEndRealitySnapshot": "Year-End Reality Snapshot",
       "capabilitiesStabilized": "Capabilities Stabilized",
       "stabilityRate49": "Stability rate: 49%",
@@ -794,6 +801,7 @@
         "gapDetected": "GAP DETECTED",
         "virtual": "VIRTUAL",
         "aiRecommendation": "AI Recommendation",
+        "connections": "{{count}} connections",
         "connections_one": "{{count}} connection",
         "connections_other": "{{count}} connections",
         "via": "via {{types}}",
@@ -847,6 +855,9 @@
       "hierarchySource": "Hierarchy By",
       "parentOf": "Level Tree",
       "chainOrder": "Chain Order",
+      "additionalProperties": "Additional Properties",
+      "nodeDetails": "Node Details",
+      "clickNodeToInspect": "Click a node to inspect details",
       "requiresChain": "Select a Business Chain first",
       "chains": {
         "sector_value_chain": "Sector Value Chain",
@@ -1000,6 +1011,7 @@
         "mode": "Mode:",
         "maturity": "Maturity:",
         "gap": "Gap:",
+        "levels": "{{count}} levels",
         "levels_one": "{{count}} level",
         "levels_other": "{{count}} levels",
         "timeline": "Timeline:",
@@ -1031,9 +1043,11 @@
       "error": "Error loading sector data",
       "strategyReport": "Strategy Report",
       "ksaVision": "KSA VISION",
+      "sector": "Sector",
       "sectors": "Sectors",
       "status": "Status",
       "priority": "Priority",
+      "strategic": "Strategic",
       "aiStrategyBrief": "AI Strategy Brief",
       "policyTools": "Delivery Programs",
       "objectivesLabel": "Top Objectives",
@@ -1117,6 +1131,18 @@
             "digitalGovernance": {
               "title": "Strengthen water-sector governance and oversight",
               "value": "Sector share of national pillar target"
+            },
+            "integratedManagement": {
+              "title": "Integrated water management for beneficiaries",
+              "value": "Reliable and equitable supply for all consumers"
+            },
+            "economicContribution": {
+              "title": "Enable economic contribution of the water sector",
+              "value": "Impact on GDP, local content, and private-sector participation"
+            },
+            "innovationDigitization": {
+              "title": "Strengthen innovation and digital transformation capabilities",
+              "value": "Technology-enabled operations and ecosystem capabilities"
             }
           },
           "l2": {
@@ -1135,6 +1161,22 @@
             "twinObservatory": {
               "title": "Scale water twin and observatory capabilities",
               "value": "AI-enabled real-time operations"
+            },
+            "continuityStorage": {
+              "title": "Improve continuity, pressure, and strategic storage",
+              "value": "Operational reliability and service quality"
+            },
+            "beneficiaryProtection": {
+              "title": "Protect beneficiaries and increase service trust",
+              "value": "Accelerate complaints handling and response quality"
+            },
+            "gdpLocalContent": {
+              "title": "Increase GDP contribution and local content",
+              "value": "Generate economic value from water services"
+            },
+            "industrialReliability": {
+              "title": "Support industrial supply reliability and continuity",
+              "value": "Reliable water for growth sectors"
             }
           },
           "l3": {
@@ -1169,6 +1211,30 @@
             "processAlerting": {
               "title": "Process: Risk alerting",
               "value": "SWA operational response"
+            },
+            "beneficiaryComplaints": {
+              "title": "Process: Beneficiary complaints monitoring",
+              "value": "Track public feedback and beneficiary protection"
+            },
+            "beneficiaryCompliance": {
+              "title": "Process: Compliance follow-up",
+              "value": "Adherence to service and quality levels"
+            },
+            "gdpMetric": {
+              "title": "KPI: GDP contribution rate",
+              "value": "Economic impact indicator"
+            },
+            "investmentMetric": {
+              "title": "KPI: Investment agreements value",
+              "value": "Attract private and strategic investment"
+            },
+            "continuityKpi": {
+              "title": "KPI: Supply continuity",
+              "value": "Daily continuity hours and pressure stability"
+            },
+            "lossKpi": {
+              "title": "KPI: Water loss reduction",
+              "value": "Reduce non-revenue water and leakages"
             }
           }
         }
@@ -1412,7 +1478,10 @@
         "subTools_zero": "No sub-tools",
         "subTools_one": "{{count}} sub-tool",
         "subTools_other": "{{count}} sub-tools",
+        "subTools": "{{count}} sub-tools",
         "linkedCapability": "Linked Capability",
+        "linkedCapabilities": "Linked Capabilities",
+        "drilldownHint": "Open to drill down",
         "l2Children": "L2 Policy Tools",
         "riskBand": "Risk Band",
         "riskAssessment": "Risk Assessment",

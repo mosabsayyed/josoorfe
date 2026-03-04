@@ -169,7 +169,7 @@ export default function ChatAppPage() {
 
 
   // SEND MESSAGE
-  const handleSendMessage = useCallback(async (messageText: string, options?: { push_to_graph_server?: boolean; suppress_canvas_auto_open?: boolean }) => {
+  const handleSendMessage = useCallback(async (messageText: string, options?: { suppress_canvas_auto_open?: boolean }) => {
     const tempId = `temp-${Date.now()}`;
     const tempMsg: APIMessage = {
       id: parseInt(tempId) || Date.now(),
@@ -186,7 +186,6 @@ export default function ChatAppPage() {
       const basics: any = {
         query: messageText,
         conversation_id: activeConversationId && activeConversationId > 0 ? activeConversationId : undefined,
-        push_to_graph_server: options?.push_to_graph_server
       };
 
       if (authService.isGuestMode()) {

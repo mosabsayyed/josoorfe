@@ -13,6 +13,7 @@ import BuilderPage from './pages/BuilderPage';
 import FounderLetterPage from './pages/FounderLetterPage';
 import ContactUsPage from './pages/ContactUsPage';
 import JosoorShell from './app/josoor/JosoorShell';
+const JosoorDesktopPage = React.lazy(() => import('./pages/JosoorDesktopPage'));
 import './index.css';
 
 // Legacy desk imports (for backwards compatibility with /desk routes)
@@ -60,6 +61,15 @@ function AppContent() {
       <Route path="/founder-letter" element={<FounderLetterPage />} />
       <Route path="/contact-us" element={<ContactUsPage />} />
       <Route path="/login" element={<LoginPage />} />
+
+      {/* DESKTOP TEST — macOS shell experiment */}
+      <Route path="/josoor-desktop" element={
+        <ProtectedRoute>
+          <Suspense fallback={<div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}>Loading...</div>}>
+            <JosoorDesktopPage />
+          </Suspense>
+        </ProtectedRoute>
+      } />
 
       {/* NEW JOSOOR ROUTE - The unified shell */}
       <Route path="/josoor" element={

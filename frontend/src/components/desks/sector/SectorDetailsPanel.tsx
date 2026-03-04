@@ -193,6 +193,27 @@ const SectorDetailsPanel: React.FC<SectorDetailsPanelProps> = ({
         return localized === key ? value : localized;
     };
 
+    const getLocalizedRegionName = (region?: string | null): string => {
+        const value = String(region || '').trim();
+        if (!value) return '';
+
+        const regionKeyMap: Record<string, string> = {
+            northern: 'josoor.sector.region_northern',
+            western: 'josoor.sector.region_western',
+            eastern: 'josoor.sector.region_eastern',
+            central: 'josoor.sector.region_central'
+        };
+
+        const key = regionKeyMap[value.toLowerCase()];
+        return key ? t(key, value) : value;
+    };
+
+    const getLocalizedSectorCategory = (category?: string | null): string => {
+        const value = String(category || '').trim();
+        if (!value) return t('josoor.sector.unknown');
+        return t(`josoor.sector.${value.toLowerCase()}`, value);
+    };
+
     const localizeCapabilityName = (name?: string): string => {
         const value = String(name || '').trim();
         const map: Record<string, string> = {
@@ -686,7 +707,7 @@ const SectorDetailsPanel: React.FC<SectorDetailsPanelProps> = ({
                         <div className="header-text">
                             <h2 className="details-title">{selectedPolicyTool.domain_id || selectedPolicyTool.id} • {selectedPolicyTool.name}</h2>
                             <div className="details-subtitle" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                                <span>{t('josoor.sector.' + (selectedPolicyTool.category || '').toLowerCase(), selectedPolicyTool.category)}</span>
+                                <span>{getLocalizedSectorCategory(selectedPolicyTool.category)}</span>
                                 <span style={{ fontSize: '11px', padding: '1px 8px', borderRadius: '3px', background: 'rgba(255,255,255,0.08)', color: 'var(--component-text-secondary)', fontWeight: 600 }}>{selectedPolicyTool.status || '—'}</span>
                             </div>
                         </div>
@@ -980,7 +1001,7 @@ const SectorDetailsPanel: React.FC<SectorDetailsPanelProps> = ({
                                     {t('josoor.sector.region')}
                                 </div>
                                 <div style={{ fontSize: '16px', fontWeight: 600, color: 'var(--component-text-primary)' }}>
-                                    {t('josoor.sector.region_' + (selectedAsset.region || '').toLowerCase(), selectedAsset.region)}
+                                    {getLocalizedRegionName(selectedAsset.region)}
                                 </div>
                             </div>
                         )}
@@ -1346,7 +1367,7 @@ const SectorDetailsPanel: React.FC<SectorDetailsPanelProps> = ({
                         <h2 className="details-title">
                             {selectedSector === 'all' || selectedSector === 'All Factors' ? t('josoor.sector.allSectors') : t('josoor.sector.sectorSuffix', { sector: getLocalizedSectorName(selectedSector) })}
                         </h2>
-                        <p className="details-subtitle">{t('josoor.sector.regionLabel', { region: t('josoor.sector.region_' + (selectedRegion || '').toLowerCase(), selectedRegion || '') })}</p>
+                        <p className="details-subtitle">{t('josoor.sector.regionLabel', { region: getLocalizedRegionName(selectedRegion) })}</p>
                         {onStrategyClick && (
                             <button
                                 onClick={onStrategyClick}

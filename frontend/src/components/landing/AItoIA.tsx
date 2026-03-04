@@ -106,11 +106,11 @@ export default function AItoIA({ betaContent, language, footerRights }: { betaCo
       // Crossfade entire content blocks — overlap so both are partially visible mid-scroll
       // We have 3 phases now: 0-0.33 challenge, 0.33-0.66 innovation, 0.66-1.0 form
       // Phase 1 (Challenge)
-      const challengeOpacity = sp <= 0.22 ? 1 : sp >= 0.32 ? 0 : 1 - (sp - 0.22) * 10;
+      const challengeOpacity = sp <= 0.25 ? 1 : sp >= 0.38 ? 0 : 1 - ((sp - 0.25) / 0.13);
       // Phase 2 (Innovation)
-      const innovationOpacity = sp <= 0.22 ? 0 : sp >= 0.66 ? 0 : sp >= 0.32 && sp <= 0.56 ? 1 : sp < 0.32 ? (sp - 0.22) * 10 : 1 - (sp - 0.56) * 10;
+      const innovationOpacity = sp <= 0.25 ? 0 : sp >= 0.85 ? 0 : sp >= 0.38 && sp <= 0.65 ? 1 : sp < 0.38 ? ((sp - 0.25) / 0.13) : 1 - ((sp - 0.65) / 0.20);
       // Phase 3 (Form + Footer)
-      const formOpacity = sp <= 0.56 ? 0 : sp >= 0.66 ? 1 : (sp - 0.56) * 10;
+      const formOpacity = sp <= 0.65 ? 0 : sp >= 0.85 ? 1 : ((sp - 0.65) / 0.20);
 
       challengeEl.style.opacity = String(challengeOpacity);
       innovationEl.style.opacity = String(innovationOpacity);

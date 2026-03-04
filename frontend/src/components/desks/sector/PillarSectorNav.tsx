@@ -142,7 +142,10 @@ const PillarSectorNav: React.FC<PillarSectorNavProps> = ({
                         'finance': 'sectorFinance', 'giga': 'sectorGigaProjects', 'gov': 'sectorGovEffective',
                         'nonprofit': 'sectorNonProfit'
                     };
-                    const sectorLabel = t('josoor.sector.' + (SECTOR_T_KEYS[sectorId] || sectorId));
+                    const sectorKey = SECTOR_T_KEYS[sectorId] || sectorId;
+                    const sectorLabel = sectorKey
+                        ? t(`josoor.sector.${sectorKey}`, sector.label)
+                        : sector.label;
 
                     return (
                         <motion.button

@@ -575,7 +575,7 @@ export function CanvasManager({ isOpen = false, conversationId = null, artifacts
                 >
                   <span>{iconMap[artifact.artifact_type] || '📄'}</span>
                   <div style={{ flex: 1, overflow: 'hidden' }}>
-                    <div style={{ whiteSpace: 'nowrap', overflow: 'ellipsis', overflow: 'hidden' }}>
+                    <div style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                       {artifact.title || `${artifact.artifact_type} #${index + 1}`}
                     </div>
                     <div style={{ fontSize: '11px', color: 'var(--component-text-secondary)' }}>

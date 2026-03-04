@@ -6,10 +6,10 @@ interface StrategyHouseProps {
   content: StrategyHouseContent;
 }
 
-// Element indices: 0=Vision, 1=Ontology, 2=Agent Loop, 3=Cognitive Reasoning, 4=Sovereign Infra, 5=Sector Strategy, 6=Enterprise Strategy, 7=Strategic Portfolio Mgmt
-const PILLAR_INDICES = [0, 1, 2, 3];
-const FOUNDATION_INDEX = 4;
-const PEDIMENT_INDICES = [5, 6, 7]; // top to bottom slices of the triangle
+// Element indices updated to match onscreen reading order (01 to 08)
+const PEDIMENT_INDICES = [0, 1, 2]; // top to bottom slices of the triangle
+const PILLAR_INDICES = [3, 4, 5, 6];
+const FOUNDATION_INDEX = 7;
 
 export default function StrategyHouse({ content }: StrategyHouseProps) {
   const { t } = useTranslation();
@@ -89,7 +89,7 @@ export default function StrategyHouse({ content }: StrategyHouseProps) {
           {/* RIGHT: Description panel */}
           <div className="sh-detail">
             <div className="sh-detail-content">
-              <div className="sh-layer-number">0{PEDIMENT_INDICES.includes(activeIndex) ? activeIndex - 4 : activeIndex === FOUNDATION_INDEX ? 8 : activeIndex + 4}</div>
+              <div className="sh-layer-number">0{activeIndex + 1}</div>
               <h3 className="sh-detail-title">{elements[activeIndex]}</h3>
               <div className="sh-detail-desc">
                 {(descs[activeIndex] || '').split('|').map((part: string, pi: number) => {

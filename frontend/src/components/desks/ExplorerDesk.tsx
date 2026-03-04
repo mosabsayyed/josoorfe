@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { NeoGraph } from '../dashboards/NeoGraph';
+import { LayoutMode, HierarchySource } from '../dashboards/graphLayouts';
 import { ExplorerFilters } from './ExplorerFilters';
 import { GraphSankey } from './GraphSankey';
 import { GraphDataTable } from './GraphDataTable';
@@ -206,7 +207,10 @@ export function ExplorerDesk({ year = '2025', quarter = 'All' }: ExplorerDeskPro
     const [limit, setLimit] = useState<number>(200);
     const [queryType, setQueryType] = useState<'narrative' | 'diagnostic'>('narrative');
     const [selectedChain, setSelectedChain] = useState<string | null>(null);
-    const [vizMode, setVizMode] = useState<'3d' | 'sankey'>('3d');
+    type VizMode = LayoutMode | 'sankey' | 'table';
+    const [vizMode, setVizMode] = useState<VizMode>('sphere');
+    const [is3D, setIs3D] = useState(true);
+    const [hierarchySource, setHierarchySource] = useState<HierarchySource>('parent_of');
 
     const [liveSummary, setLiveSummary] = useState<string | null>(null);
     const [selectedNode, setSelectedNode] = useState<any>(null);
@@ -245,6 +249,13 @@ export function ExplorerDesk({ year = '2025', quarter = 'All' }: ExplorerDeskPro
         if (chain && CHAIN_MAPPINGS[chain]) {
             setSelectedLabels(CHAIN_MAPPINGS[chain].labels);
             setSelectedRelationships(CHAIN_MAPPINGS[chain].relationships);
+            // Default to sankey when chain has canonical path
+            if (CANONICAL_PATHS[chain]?.steps?.length > 0) {
+                setVizMode('sankey');
+            }
+        } else {
+            // Custom selection defaults to sphere if currently on sankey
+            if (vizMode === 'sankey') setVizMode('sphere');
         }
     };
 
@@ -473,12 +484,16 @@ export function ExplorerDesk({ year = '2025', quarter = 'All' }: ExplorerDeskPro
                 queryType={queryType}
                 selectedChain={selectedChain}
                 vizMode={vizMode}
+                is3D={is3D}
+                hierarchySource={hierarchySource}
                 onLabelsChange={setSelectedLabels}
                 onRelationshipsChange={setSelectedRelationships}
                 onLimitChange={setLimit}
                 onQueryTypeChange={handleQueryTypeChange}
                 onChainChange={handleChainChange}
                 onVizModeChange={setVizMode}
+                onIs3DChange={setIs3D}
+                onHierarchySourceChange={setHierarchySource}
                 onApply={handleApply}
                 isDark={isDark}
                 selectedNode={selectedNode}
@@ -521,7 +536,24 @@ export function ExplorerDesk({ year = '2025', quarter = 'All' }: ExplorerDeskPro
                         </div>
                     )}
 
-                    {/* Visualization Switch */}
+                    {/* Graph Layouts (sphere, force, hierarchical, circular) */}
+                    {displayData && ['sphere', 'force', 'hierarchical', 'circular'].includes(vizMode) && (
+                        <NeoGraph
+                            data={displayData}
+                            isDark={isDark}
+                            language="en"
+                            year={year}
+                            quarter={quarter}
+                            legendConfig={LEGEND_CONFIG}
+                            nodeColor={getNodeColor}
+                            onNodeClick={setSelectedNode}
+                            layoutMode={vizMode as LayoutMode}
+                            hierarchySource={hierarchySource}
+                            is3D={is3D}
+                        />
+                    )}
+
+                    {/* Sankey */}
                     {displayData && vizMode === 'sankey' && hasCanonicalPath && (
                         <GraphSankey
                             data={displayData}
@@ -536,19 +568,15 @@ export function ExplorerDesk({ year = '2025', quarter = 'All' }: ExplorerDeskPro
                             <div className="empty-state-container">
                                 <p className="text-2xl font-light">{t('josoor.explorer.sankeyNotAvailable')}</p>
                                 <p className="text-sm">{t('josoor.explorer.branchingStructure')}</p>
-                                <p className="text-xs opacity-50 mt-2">{t('josoor.explorer.switchTo3d')}</p>
                             </div>
                         </div>
                     )}
-                    {displayData && vizMode === '3d' && (
-                        <NeoGraph
+
+                    {/* Table View */}
+                    {displayData && vizMode === 'table' && (
+                        <GraphDataTable
                             data={displayData}
                             isDark={isDark}
-                            language="en"
-                            year={year}
-                            quarter={quarter}
-                            legendConfig={LEGEND_CONFIG}
-                            nodeColor={getNodeColor}
                             onNodeClick={setSelectedNode}
                         />
                     )}

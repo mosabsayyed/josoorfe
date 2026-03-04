@@ -18,13 +18,17 @@ interface ExplorerFiltersProps {
     limit: number;
     queryType: 'narrative' | 'diagnostic';
     selectedChain: string | null;
-    vizMode: '3d' | 'sankey';
+    vizMode: string;
+    is3D: boolean;
+    hierarchySource: 'parent_of' | 'chain';
     onLabelsChange: (labels: string[]) => void;
     onRelationshipsChange: (rels: string[]) => void;
     onLimitChange: (limit: number) => void;
     onQueryTypeChange: (type: 'narrative' | 'diagnostic') => void;
     onChainChange: (chain: string | null) => void;
-    onVizModeChange: (mode: '3d' | 'sankey') => void;
+    onVizModeChange: (mode: string) => void;
+    onIs3DChange: (v: boolean) => void;
+    onHierarchySourceChange: (v: 'parent_of' | 'chain') => void;
     onApply: () => void;
     availableLabels?: string[];
     availableRelationships?: string[];
@@ -87,12 +91,16 @@ export function ExplorerFilters({
     queryType,
     selectedChain,
     vizMode,
+    is3D,
+    hierarchySource,
     onLabelsChange,
     onRelationshipsChange,
     onLimitChange,
     onQueryTypeChange,
     onChainChange,
     onVizModeChange,
+    onIs3DChange,
+    onHierarchySourceChange,
     onApply,
     availableLabels = SST_LABELS,
     availableRelationships = SST_RELATIONSHIPS,
@@ -243,19 +251,57 @@ export function ExplorerFilters({
                                 <Eye style={{ width: 12, height: 12 }} /> {t('josoor.explorerFilters.visualization')}
                             </label>
                             <div className="mode-toggle-group">
-                                <button
-                                    className={`btn-reset mode-toggle-btn ${vizMode === '3d' ? 'active' : ''}`}
-                                    onClick={() => onVizModeChange('3d')}
-                                >
-                                    {t('josoor.explorerFilters.forceGraph3d')}
-                                </button>
-                                <button
-                                    className={`btn-reset mode-toggle-btn ${vizMode === 'sankey' ? 'active' : ''}`}
-                                    onClick={() => onVizModeChange('sankey')}
-                                >
-                                    {t('josoor.explorerFilters.sankeyFlow')}
-                                </button>
+                                {(['sphere', 'force', 'hierarchical', 'circular', 'sankey', 'table'] as const).map(mode => {
+                                    const disabled = mode === 'sankey' && !selectedChain;
+                                    const labels: Record<string, string> = {
+                                        sphere: t('josoor.explorerFilters.sphere', 'Sphere'),
+                                        force: t('josoor.explorerFilters.force', 'Force'),
+                                        hierarchical: t('josoor.explorerFilters.hierarchy', 'Hierarchy'),
+                                        circular: t('josoor.explorerFilters.circular', 'Circular'),
+                                        sankey: t('josoor.explorerFilters.sankeyFlow'),
+                                        table: t('josoor.explorerFilters.table', 'Table'),
+                                    };
+                                    return (
+                                        <button
+                                            key={mode}
+                                            className={`btn-reset mode-toggle-btn ${vizMode === mode ? 'active' : ''} ${disabled ? 'disabled' : ''}`}
+                                            onClick={() => !disabled && onVizModeChange(mode)}
+                                            disabled={disabled}
+                                            title={disabled ? t('josoor.explorerFilters.requiresChain', 'Select a Business Chain first') : ''}
+                                        >
+                                            {labels[mode] || mode}
+                                        </button>
+                                    );
+                                })}
                             </div>
+
+                            {/* 3D/2D toggle — visible for graph modes */}
+                            {!['sankey', 'table'].includes(vizMode) && (
+                                <div className="mode-sub-controls">
+                                    <label className="mode-toggle-label">{t('josoor.explorerFilters.dimension', 'Dimension')}</label>
+                                    <div className="mode-toggle-group">
+                                        <button className={`btn-reset mode-toggle-btn ${is3D ? 'active' : ''}`} onClick={() => onIs3DChange(true)}>3D</button>
+                                        <button className={`btn-reset mode-toggle-btn ${!is3D ? 'active' : ''}`} onClick={() => onIs3DChange(false)}>2D</button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Hierarchy source — only for hierarchical mode */}
+                            {vizMode === 'hierarchical' && (
+                                <div className="mode-sub-controls">
+                                    <label className="mode-toggle-label">{t('josoor.explorerFilters.hierarchySource', 'Hierarchy By')}</label>
+                                    <div className="mode-toggle-group">
+                                        <button className={`btn-reset mode-toggle-btn ${hierarchySource === 'parent_of' ? 'active' : ''}`}
+                                            onClick={() => onHierarchySourceChange('parent_of')}>
+                                            {t('josoor.explorerFilters.parentOf', 'Level Tree')}
+                                        </button>
+                                        <button className={`btn-reset mode-toggle-btn ${hierarchySource === 'chain' ? 'active' : ''}`}
+                                            onClick={() => onHierarchySourceChange('chain')}>
+                                            {t('josoor.explorerFilters.chainOrder', 'Chain Order')}
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
                         {/* Nodes */}

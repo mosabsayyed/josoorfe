@@ -41,6 +41,60 @@ export interface ChainSampleResponse {
   summary?: string;
 }
 
+// ── Raw chain data cache (shared across all consumers) ──
+const _chainCache = new Map<string, { nodes: any[]; relationships: any[] }>();
+const _chainPromises = new Map<string, Promise<{ nodes: any[]; relationships: any[] }>>();
+
+/**
+ * Fetch a chain with caching. First caller fetches, subsequent callers get cached data.
+ * Both enterpriseService and ontologyService should use this instead of direct fetch.
+ */
+export async function fetchChainCached(chainName: string, year: number = 0): Promise<{ nodes: any[]; relationships: any[] }> {
+  const key = `${chainName}:${year}`;
+
+  // Return cached data if available
+  if (_chainCache.has(key)) {
+    console.log(`[ChainCache] HIT: ${chainName} (${_chainCache.get(key)!.nodes.length} nodes)`);
+    return _chainCache.get(key)!;
+  }
+
+  // Deduplicate in-flight requests
+  if (_chainPromises.has(key)) {
+    console.log(`[ChainCache] DEDUP: ${chainName} (already in flight)`);
+    return _chainPromises.get(key)!;
+  }
+
+  const promise = (async () => {
+    const url = `/api/v1/chains/${chainName}?year=${year}`;
+    console.log(`[ChainCache] FETCH: ${url}`);
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30000);
+    const res = await fetch(url, { signal: controller.signal }).finally(() => clearTimeout(timeout));
+    if (!res.ok) throw new Error(`Chain ${chainName}: HTTP ${res.status}`);
+
+    const data = await res.json();
+    const envelope = data.results?.[0] || {};
+    const result = {
+      nodes: envelope.nodes || [],
+      relationships: envelope.relationships || envelope.links || [],
+    };
+
+    _chainCache.set(key, result);
+    _chainPromises.delete(key);
+    console.log(`[ChainCache] STORED: ${chainName} (${result.nodes.length} nodes, ${result.relationships.length} rels)`);
+    return result;
+  })();
+
+  _chainPromises.set(key, promise);
+  return promise;
+}
+
+export function invalidateChainCache(): void {
+  _chainCache.clear();
+  _chainPromises.clear();
+}
+
 class ChainsService {
   private async fetchWithErrorHandling(url: string, options: RequestInit = {}): Promise<Response> {
     let response: Response;

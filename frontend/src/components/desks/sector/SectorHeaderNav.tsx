@@ -387,7 +387,7 @@ const SectorHeaderNav: React.FC<SectorHeaderNavProps> = ({
                 />
                 <div className="policy-tool-content">
                     <span className="output-label" style={{ fontSize: '14px', fontWeight: 600 }}>
-                        {t('josoor.sector.' + id.toLowerCase())} ({val})
+                        {id ? t(`josoor.sector.${id.toLowerCase()}`, id) : t('josoor.sector.unknown')} ({val})
                     </span>
                 </div>
             </div>

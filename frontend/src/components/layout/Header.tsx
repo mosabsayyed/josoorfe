@@ -61,9 +61,9 @@ export default function Header() {
           title={t('header.homeTitle')}
         >
           <img
-            src="/att/cube/logo-aitwintech.svg"
-            alt="AI Twin Tech"
-            style={{ height: '32px', width: 'auto' }}
+            src="/icons/josoor.png"
+            alt="Josoor"
+            style={{ height: '32px', width: 'auto', filter: 'brightness(1.1)' }}
           />
         </button>
         {!isMobile && (
