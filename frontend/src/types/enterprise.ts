@@ -24,8 +24,37 @@ export interface L3Capability {
     process_score?: number; // 0-100, process maturity (OPERATE)
     tools_score?: number; // 0-100, IT systems health (OPERATE)
 
+    // Capability health metrics
+    staff_gap?: number;
+    tools_gap?: number;
+    docs_complete?: number; // 0-100
+    team_health?: number; // 0-100
+    change_adoption?: number; // 0-100
+
+    // Risk Exposure (mode-aware)
+    expected_delay_days?: number;
+    exposure_trend?: 'improving' | 'stable' | 'declining' | 'up' | 'down';
+
+    // External Pressure
+    policy_tool_count?: number;
+    performance_target_count?: number;
+
+    // Footprint Stress (Org/Process/IT imbalance)
+    org_gap?: number;
+    process_gap?: number;
+    it_gap?: number;
+
+    // Change Saturation
+    active_projects_count?: number;
+    adoption_load?: 'low' | 'medium' | 'high';
+    adoption_load_percent?: number;
+
+    // Trend Early Warning
+    health_history?: number[];
+
     rawRisk?: Record<string, any>;
     rawCapability?: Record<string, any>;
+    [key: string]: any; // Allow additional ETL fields
 }
 
 export interface L2Capability {
@@ -44,7 +73,10 @@ export interface L2Capability {
         performanceTargets: Array<{ id: string; name: string; level?: string; target?: number; actual_value?: number; unit?: string; status?: string; baseline?: number }>;
         objectives: Array<{ id: string; name: string; level?: string; status?: string }>;
     };
+    rawRisk?: Record<string, any>;
+    rawCapability?: Record<string, any>;
     rawL2Node?: Record<string, any>;
+    [key: string]: any;
 }
 
 export interface L1Capability {

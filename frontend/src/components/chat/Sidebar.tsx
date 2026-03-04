@@ -389,7 +389,7 @@ export function Sidebar({
         )}
 
         {referItems.map((item) => {
-          const overrideLabel = item.label?.[language] || item.label?.en || item.label;
+          const overrideLabel = String(item.label?.[language] || item.label?.en || item.label || '');
           const isActive = activeView === item.id;
           return (
             <button

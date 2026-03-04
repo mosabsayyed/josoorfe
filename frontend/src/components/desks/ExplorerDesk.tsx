@@ -491,7 +491,7 @@ export function ExplorerDesk({ year = '2025', quarter = 'All' }: ExplorerDeskPro
                 onLimitChange={setLimit}
                 onQueryTypeChange={handleQueryTypeChange}
                 onChainChange={handleChainChange}
-                onVizModeChange={setVizMode}
+                onVizModeChange={(mode: string) => setVizMode(mode as any)}
                 onIs3DChange={setIs3D}
                 onHierarchySourceChange={setHierarchySource}
                 onApply={handleApply}

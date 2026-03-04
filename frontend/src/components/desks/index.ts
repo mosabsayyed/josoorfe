@@ -5,7 +5,7 @@ export { SectorDesk } from './SectorDesk';
 export { EnterpriseDesk } from './EnterpriseDesk';
 export { ControlsDesk } from './ControlsDesk';
 export { ExplorerDesk } from './ExplorerDesk';
-export { ObservabilityDesk } from './ObservabilityDesk';
+export { default as ObservabilityDesk } from './ObservabilityDesk';
 export { ReportingDesk } from './ReportingDesk';
 export { SettingsDesk } from './SettingsDesk';
 export { TutorialsDesk } from './TutorialsDesk';

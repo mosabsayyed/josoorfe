@@ -1,4 +1,4 @@
-import type { L1Capability, L2Capability, L3Capability } from '../data/capabilityData';
+import type { L1Capability, L2Capability, L3Capability } from '../types/enterprise';
 
 // Status aggregation: Calculate parent status from children
 // Priority: issues > at-risk > ontrack > planned > not-due
