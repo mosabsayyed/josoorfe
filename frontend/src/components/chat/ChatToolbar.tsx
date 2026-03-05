@@ -21,7 +21,7 @@ const PERSONAS = [
 
 const TOOLS = [
   { key: 'recall_memory', labelKey: 'josoor.chat.toolbar.recallMemory' },
-  { key: 'search_ksa_facts', labelKey: 'josoor.chat.toolbar.searchVisionDb' },
+  { key: 'recall_vision_memory', labelKey: 'josoor.chat.toolbar.recallVisionMemory' },
 ];
 
 export function ChatToolbar({

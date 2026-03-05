@@ -6,6 +6,11 @@ export interface HeroContent {
   subtitleEn: string;
   sectors: string;
   badge: string;
+  pitchLabel?: string;
+  pitch?: string;
+  pitchPoints?: string[];
+  bestPracticesLabel?: string;
+  bestPracticesPoints?: string[];
   intelligence?: { figure: string; label: string }[];
   intelligenceTitle?: string;
   intelligenceDesc?: string;

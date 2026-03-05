@@ -114,7 +114,7 @@ export function MarkdownRenderer({ content, variant = 'bubble', title, artifact,
         <ReactMarkdown
           remarkPlugins={[remarkGfm]}
           rehypePlugins={[rehypeRaw]}
-          components={components}
+          components={components as any}
         >
           {processedContent}
         </ReactMarkdown>

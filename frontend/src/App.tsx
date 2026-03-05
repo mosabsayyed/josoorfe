@@ -13,8 +13,6 @@ import BuilderPage from './pages/BuilderPage';
 import FounderLetterPage from './pages/FounderLetterPage';
 import ContactUsPage from './pages/ContactUsPage';
 import JosoorShell from './app/josoor/JosoorShell';
-import './index.css';
-
 // Legacy desk imports (for backwards compatibility with /desk routes)
 import { SectorDesk } from './components/desks/SectorDesk';
 import { ControlsDesk } from './components/desks/ControlsDesk';
@@ -23,6 +21,9 @@ import { EnterpriseDesk } from './components/desks/EnterpriseDesk';
 import { ReportingDesk } from './components/desks/ReportingDesk';
 import { ExplorerDesk } from './components/desks/ExplorerDesk';
 import { ChainDeskAura } from './components/desks/ChainDeskAura';
+import './index.css';
+
+const JosoorDesktopPage = React.lazy(() => import('./pages/JosoorDesktopPage'));
 
 const KnowledgeSeries = () => <div className="p-10 text-xl">Knowledge Series (Coming Soon)</div>;
 const Roadmap = () => <div className="p-10 text-xl">Roadmap (Coming Soon)</div>;
@@ -60,6 +61,13 @@ function AppContent() {
       <Route path="/founder-letter" element={<FounderLetterPage />} />
       <Route path="/contact-us" element={<ContactUsPage />} />
       <Route path="/login" element={<LoginPage />} />
+
+      {/* DESKTOP TEST — macOS shell experiment */}
+      <Route path="/josoor-desktop" element={
+          <Suspense fallback={<div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}>Loading...</div>}>
+            <JosoorDesktopPage />
+          </Suspense>
+      } />
 
       {/* NEW JOSOOR ROUTE - The unified shell */}
       <Route path="/josoor" element={

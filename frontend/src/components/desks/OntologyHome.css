@@ -1,0 +1,340 @@
+/* ── OntologyHome: SVG Overlay Architecture ── */
+.ontology-home {
+  width: 100%;
+  min-height: 100%;
+  background: var(--component-bg-primary);
+  box-sizing: border-box;
+  overflow-x: auto;
+}
+
+/* Stage: header + landscape. Landscape aspect-ratio drives layout. */
+.ont-svg-stage {
+  position: relative;
+  width: 100%;
+  min-width: 700px;
+}
+
+/* ── Column Header Strip (Layer 0) ── */
+.ont-header-strip {
+  display: flex;
+  width: 100%;
+  background: var(--component-bg-primary);
+  border-bottom: 2px solid var(--component-panel-border);
+}
+
+.ont-header-col {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 4px;
+  text-align: center;
+}
+
+.ont-header-label {
+  font-family: var(--component-font-family);
+  font-size: clamp(10px, 1.1vw, 16px);
+  font-weight: 700;
+  color: var(--component-text-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+[lang="ar"] .ont-header-label {
+  font-family: var(--component-font-family-ar);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.ont-header-arrow {
+  font-size: clamp(12px, 1.2vw, 18px);
+  color: var(--component-text-secondary);
+  opacity: 0.6;
+}
+
+/* ── Landscape container: maintains aspect ratio ── */
+.ont-landscape-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 5838 / 2581;
+}
+
+/* Layer 1: Background shapes (Figma export) */
+.ont-layer-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: fill;
+  user-select: none;
+}
+
+/* Layer 2: Connection lines SVG */
+.ont-layer-lines {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none; /* click events handled per element */
+  overflow: visible;
+}
+
+/* RTL: mirror the connection lines overlay to match the flipped Arabic landscape */
+[dir="rtl"] .ont-layer-lines {
+  transform: scaleX(-1);
+}
+
+/* ── Connection line groups ── */
+.ont-conn {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  cursor: pointer;
+  transition: filter 0.15s;
+}
+
+.ont-conn:hover path {
+  stroke-width: 12;
+}
+
+.ont-conn:hover path.ont-conn-arrow {
+  stroke-width: 0 !important;
+}
+
+/* All stroked paths inside connection groups */
+.ont-conn path {
+  fill: none;
+  stroke-width: 8;
+}
+
+/* Arrow-head fills inherit the group's color */
+.ont-conn-arrow {
+  fill: currentColor !important;
+  stroke: none !important;
+  stroke-width: 0 !important;
+}
+
+/* GREEN: dashed + fast march animation = healthy flow */
+.ont-rel-line--green { color: #22c55e; filter: drop-shadow(0 0 4px rgba(34, 197, 94, 0.6)); }
+.ont-rel-line--green path {
+  stroke: #22c55e;
+  stroke-dasharray: 30 15;
+  animation: ont-line-march 1.2s linear infinite;
+}
+
+/* AMBER: dashed + slow animation = degrading */
+.ont-rel-line--amber { color: #f59e0b; filter: drop-shadow(0 0 4px rgba(245, 158, 11, 0.6)); }
+.ont-rel-line--amber path {
+  stroke: #f59e0b;
+  stroke-dasharray: 30 15;
+  animation: ont-line-march 3s linear infinite;
+}
+
+/* RED: solid + no animation = broken/dead */
+.ont-rel-line--red { color: #ef4444; filter: drop-shadow(0 0 5px rgba(239, 68, 68, 0.7)); }
+.ont-rel-line--red path {
+  stroke: #ef4444;
+  stroke-dasharray: none;
+  animation: none;
+}
+
+/* Default: gold (original ALLCONN color), slightly dimmed */
+.ont-rel-line--default { color: #c8973e; opacity: 0.7; }
+.ont-rel-line--default path {
+  stroke: #c8973e;
+  stroke-dasharray: none;
+  animation: none;
+}
+
+/* Arrow paths should NOT get dashed/animated */
+.ont-rel-line--green .ont-conn-arrow,
+.ont-rel-line--amber .ont-conn-arrow,
+.ont-rel-line--red .ont-conn-arrow,
+.ont-rel-line--default .ont-conn-arrow {
+  stroke-dasharray: none !important;
+  animation: none !important;
+}
+
+@keyframes ont-line-march {
+  to { stroke-dashoffset: -45; }
+}
+
+/* ── Node RAG roof overlays ── */
+/* These are SVG <image> elements placed on the building top face */
+.ont-node-diamond {
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+/* GREEN roof */
+.ont-node-diamond--green {
+  opacity: 1;
+  filter: drop-shadow(0 0 10px rgba(34, 197, 94, 0.5));
+}
+
+/* AMBER roof */
+.ont-node-diamond--amber {
+  opacity: 1;
+  filter: drop-shadow(0 0 10px rgba(245, 158, 11, 0.5));
+}
+
+/* RED roof + pulse */
+.ont-node-diamond--red {
+  opacity: 1;
+  filter: drop-shadow(0 0 14px rgba(239, 68, 68, 0.6));
+  animation: ont-diamond-pulse 2s ease-in-out infinite;
+}
+
+@keyframes ont-diamond-pulse {
+  0%, 100% { opacity: 1; filter: drop-shadow(0 0 14px rgba(239, 68, 68, 0.6)); }
+  50%       { opacity: 0.85; filter: drop-shadow(0 0 22px rgba(239, 68, 68, 0.8)); }
+}
+
+/* ── KPI Signal Strip ── */
+.ont-layer-strip {
+  display: flex;
+  gap: 2px;
+  padding: 6px 0.5%;
+  pointer-events: none;
+}
+
+.ont-strip__cell {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 4px 2px;
+  background: color-mix(in srgb, var(--component-panel-bg) 85%, transparent);
+  border: 1px solid var(--component-panel-border);
+  border-radius: 3px;
+}
+
+.ont-strip__bar {
+  width: 85%;
+  height: 5px;
+  border-radius: 3px;
+  display: flex;
+  overflow: hidden;
+  background: var(--component-bg-secondary);
+}
+
+.ont-strip__bar-seg {
+  height: 100%;
+  transition: width 0.6s ease;
+}
+
+.ont-strip__bar-seg--green  { background: var(--component-color-success); }
+.ont-strip__bar-seg--amber  { background: var(--component-color-warning); }
+.ont-strip__bar-seg--red    { background: var(--component-color-danger); }
+
+.ont-strip__count {
+  font-family: var(--component-font-family);
+  font-size: clamp(6px, 0.8vw, 11px);
+  font-weight: 600;
+  color: var(--component-text-primary);
+}
+
+.ont-strip__count--clear  { color: var(--component-color-success); }
+.ont-strip__count--alert  { color: var(--component-color-danger); }
+
+[lang="ar"] .ont-strip__count {
+  font-family: var(--component-font-family-ar);
+}
+
+/* ── Side Panel ── */
+.ont-panel-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.ont-panel-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.ont-panel {
+  position: relative;
+  width: min(480px, 90vw);
+  height: 100%;
+  background: var(--component-panel-bg);
+  border-left: 1px solid var(--component-panel-border);
+  overflow-y: auto;
+  padding: 16px;
+  z-index: 1;
+  font-family: var(--component-font-family);
+  color: var(--component-text-primary);
+}
+
+[dir="rtl"] .ont-panel-overlay { justify-content: flex-start; }
+[dir="rtl"] .ont-panel { border-left: none; border-right: 1px solid var(--component-panel-border); }
+
+/* ── Loading Tracker ── */
+.ont-loading-tracker {
+  padding: 16px 20px;
+  background: var(--component-panel-bg);
+  border-bottom: 1px solid var(--component-panel-border);
+  font-family: var(--component-font-family);
+}
+
+.ont-loading-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--component-text-primary);
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+[lang="ar"] .ont-loading-title {
+  font-family: var(--component-font-family-ar);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.ont-loading-step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+  font-size: 12px;
+  color: var(--component-text-secondary);
+  transition: color 0.3s ease;
+}
+
+.ont-loading-step--done { color: var(--component-color-success); }
+.ont-loading-step--error { color: var(--component-color-danger); }
+
+.ont-loading-icon {
+  width: 16px;
+  text-align: center;
+  font-size: 13px;
+}
+
+.ont-loading-step--loading .ont-loading-icon {
+  animation: ont-spin 1s linear infinite;
+}
+
+@keyframes ont-spin {
+  to { transform: rotate(360deg); }
+}
+
+.ont-loading-label {
+  flex: 1;
+}
+
+.ont-loading-count {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Responsive ── */
+@media (max-width: 900px) {
+  .ont-svg-stage { min-width: 600px; }
+}

@@ -18,6 +18,7 @@ import {
   Layers,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import type { AdminSettings, MCPEntry } from '../../services/adminSettingsService';
 import './ObservabilityDesk.css';
 import { useCallback } from 'react';
 

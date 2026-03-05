@@ -1,0 +1,305 @@
+/* ============================================================
+   JosoorDesktopPage — macOS Desktop Shell
+   All classes prefixed jdp- (Josoor Desktop Page)
+   ============================================================ */
+
+/* Viewport — dark background behind the "window" */
+.jdp-viewport {
+  width: 100vw;
+  height: 100vh;
+  background: #0a0a0a;
+  padding: 8px;
+  box-sizing: border-box;
+  display: flex;
+  overflow: hidden;
+}
+
+/* Window chrome */
+.jdp-window {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--bg-primary, #1a1a2e);
+  border: 1px solid var(--border-color, #333);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+/* ---- Title Bar ---- */
+.jdp-titlebar {
+  height: 38px;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  background: var(--bg-secondary, #16162a);
+  border-bottom: 1px solid var(--border-color, #333);
+  flex-shrink: 0;
+  user-select: none;
+}
+
+.jdp-traffic-lights {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-inline-end: 12px;
+}
+
+.jdp-traffic-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  cursor: default;
+}
+
+.jdp-dot-close { background: #FF5F57; }
+.jdp-dot-minimize { background: #FEBC2E; }
+.jdp-dot-maximize { background: #28C840; }
+
+.jdp-titlebar-center {
+  flex: 1;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary, #fff);
+  letter-spacing: 0.3px;
+}
+
+.jdp-titlebar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ---- Menu Bar ---- */
+.jdp-menubar {
+  height: 28px;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  background: var(--bg-secondary, #16162a);
+  border-bottom: 1px solid var(--border-color, #333);
+  flex-shrink: 0;
+  gap: 2px;
+  font-size: 13px;
+  position: relative;
+  z-index: 100;
+}
+
+.jdp-menu-trigger {
+  position: relative;
+  padding: 2px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  color: var(--text-primary, #fff);
+  background: transparent;
+  border: none;
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  transition: background 0.1s;
+  font-family: inherit;
+}
+
+.jdp-menu-trigger:hover,
+.jdp-menu-trigger.jdp-menu-active {
+  background: var(--component-bg-hover, rgba(255, 255, 255, 0.1));
+}
+
+.jdp-menu-trigger.jdp-menu-bold {
+  font-weight: 700;
+}
+
+/* Dropdown */
+.jdp-dropdown {
+  position: absolute;
+  top: 100%;
+  inset-inline-start: 0;
+  min-width: 180px;
+  background: var(--bg-secondary, #1e1e3a);
+  border: 1px solid var(--border-color, #444);
+  border-radius: 6px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+  padding: 4px 0;
+  z-index: 200;
+  animation: jdp-dropdown-in 120ms ease-out;
+}
+
+@keyframes jdp-dropdown-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.jdp-dropdown-item {
+  display: block;
+  width: 100%;
+  padding: 6px 16px;
+  background: transparent;
+  border: none;
+  color: var(--text-primary, #fff);
+  font-size: 13px;
+  text-align: start;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.1s;
+  font-family: inherit;
+}
+
+.jdp-dropdown-item:hover {
+  background: var(--component-bg-hover, rgba(255, 255, 255, 0.08));
+}
+
+.jdp-dropdown-item.jdp-item-active {
+  color: var(--accent-color, #60a5fa);
+  font-weight: 600;
+}
+
+.jdp-dropdown-sep {
+  height: 1px;
+  background: var(--border-color, #333);
+  margin: 4px 8px;
+}
+
+/* Overlay to close menus */
+.jdp-menu-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 99;
+}
+
+/* ---- Toolbar ---- */
+.jdp-toolbar {
+  height: 40px;
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  gap: 12px;
+  background: var(--bg-primary, #1a1a2e);
+  border-bottom: 1px solid var(--border-color, #333);
+  flex-shrink: 0;
+  font-size: 13px;
+  color: var(--text-secondary, #aaa);
+}
+
+.jdp-toolbar label {
+  font-weight: 500;
+  color: var(--text-secondary, #aaa);
+}
+
+.jdp-toolbar select {
+  background: var(--component-bg, #2a2a4a);
+  color: var(--text-primary, #fff);
+  border: 1px solid var(--border-color, #444);
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-size: 13px;
+  cursor: pointer;
+  outline: none;
+}
+
+.jdp-toolbar select:focus {
+  border-color: var(--accent-color, #60a5fa);
+}
+
+/* ---- Content Area ---- */
+.jdp-content {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.jdp-content-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* Chat conversation sidebar */
+.jdp-chat-sidebar {
+  width: 220px;
+  flex-shrink: 0;
+  border-inline-end: 1px solid var(--border-color, #333);
+  background: var(--bg-secondary, #16162a);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.jdp-chat-sidebar-header {
+  padding: 10px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary, #aaa);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid var(--border-color, #333);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.jdp-new-chat-btn {
+  background: var(--accent-color, #60a5fa);
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-size: 11px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.jdp-new-chat-btn:hover {
+  opacity: 0.85;
+}
+
+.jdp-chat-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px 0;
+}
+
+.jdp-chat-item {
+  display: block;
+  width: 100%;
+  padding: 8px 12px;
+  background: transparent;
+  border: none;
+  color: var(--text-primary, #fff);
+  font-size: 12px;
+  text-align: start;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: background 0.1s;
+  font-family: inherit;
+}
+
+.jdp-chat-item:hover {
+  background: var(--component-bg-hover, rgba(255, 255, 255, 0.05));
+}
+
+.jdp-chat-item.jdp-chat-active {
+  background: var(--component-bg-hover, rgba(255, 255, 255, 0.1));
+  color: var(--accent-color, #60a5fa);
+}
+
+/* ---- Loading fallback ---- */
+.jdp-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--text-secondary, #aaa);
+  font-size: 14px;
+}

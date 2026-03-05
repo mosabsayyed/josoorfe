@@ -29,6 +29,7 @@
  */
 
 import type { L1Capability, L2Capability, L3Capability } from '../types/enterprise';
+import { fetchChainCached } from './chainsService';
 // graphService import removed — Enterprise Desk now uses MCP router exclusively
 // (Architecture Rule: ARCHITECTURE_API_Usage_Rules)
 
@@ -180,20 +181,11 @@ async function runCypher(query: string): Promise<any[]> {
  */
 async function runChainOnce(chainName: string, args: Record<string, any> = {}): Promise<{ nodes: any[]; links: any[] }> {
   const year = args.year ?? 0;
-  const url = `/api/v1/chains/${chainName}?year=${year}`;
-  console.log(`[EnterpriseService] chain GET ${url}`);
 
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 30000);
-
-  const response = await fetch(url, { signal: controller.signal }).finally(() => clearTimeout(timeout));
-  if (!response.ok) throw new Error(`Chain HTTP ${response.status}: ${chainName}`);
-
-  const data = await response.json();
-  // REST format: { results: [{ nodes: [{id, labels, properties}], relationships: [{type, start, end, properties}] }], count, ... }
-  const envelope = data.results?.[0] || {};
-  const rawNodes: any[] = envelope.nodes || [];
-  const rawLinks: any[] = envelope.relationships || [];
+  // Use shared chain cache — avoids duplicate fetches if ontologyService already loaded this chain
+  const raw = await fetchChainCached(chainName, year);
+  const rawNodes: any[] = raw.nodes || [];
+  const rawLinks: any[] = raw.relationships || [];
 
   const nodes: any[] = [];
   const links: any[] = [];
@@ -223,7 +215,7 @@ async function runChainOnce(chainName: string, args: Record<string, any> = {}): 
     }
   }
 
-  console.log(`[EnterpriseService] ${chainName}: ${nodes.length} nodes, ${links.length} links (count=${data.count || 0})`);
+  console.log(`[EnterpriseService] ${chainName}: ${nodes.length} nodes, ${links.length} links`);
   return { nodes, links };
 }
 

@@ -47,6 +47,8 @@ interface QuickAction {
  */
 const quickActions: QuickAction[] = [];
 
+const homeItem = { id: 'home', label: { en: 'Home', ar: 'الرئيسية' }, icon: '/icons/josoor.png' };
+
 const oversightItems = [
   { id: 'sector-desk', label: { en: 'Observe', ar: 'رصد' }, icon: '/icons/demo.png', path: '/josoor' },
   { id: 'enterprise-desk', label: { en: 'Decide', ar: 'قرار' }, icon: '/icons/twin.png', path: '/josoor' },
@@ -324,6 +326,33 @@ export function Sidebar({
           )}
         </div>
 
+        {/* Home button */}
+        <button
+          onClick={() => onQuickAction(homeItem)}
+          className={`quickaction-item clickable ${activeView === 'home' ? 'active' : ''}`}
+          title={homeItem.label[language] || homeItem.label.en}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: collapsed ? 'center' : 'flex-start',
+            backgroundColor: activeView === 'home' ? 'var(--component-bg-disconnected)' : 'rgba(0,0,0,0)',
+            color: 'var(--component-text-primary)',
+            fontSize: '14px',
+            fontWeight: '500',
+            gap: collapsed ? '0' : '8px',
+            padding: '8px 6px',
+            border: '0.8px solid rgba(0,0,0,0)',
+            textAlign: 'start',
+            width: '100%',
+            cursor: 'pointer',
+            marginInlineEnd: collapsed ? '0' : '29px',
+            marginTop: '4px'
+          }}
+        >
+          <img src={homeItem.icon} alt="Home" style={{ height: '24px', width: '24px', objectFit: 'cover' }} />
+          {!collapsed && <span>{homeItem.label[language] || homeItem.label.en}</span>}
+        </button>
+
         {/* Sections */}
         {renderSection(t('josoor.sidebar.oversight'), oversightItems, { isFirst: true })}
         {renderSection(t('josoor.sidebar.manage'), manageItems)}
@@ -360,7 +389,7 @@ export function Sidebar({
         )}
 
         {referItems.map((item) => {
-          const overrideLabel = item.label?.[language] || item.label?.en || item.label;
+          const overrideLabel = String(item.label?.[language] || item.label?.en || item.label || '');
           const isActive = activeView === item.id;
           return (
             <button
