@@ -52,7 +52,7 @@ export async function register(email: string, password: string, full_name?: stri
 }
 
 export async function signInWithProvider(provider: 'google' | 'apple') {
-  const { error } = await supabase.auth.signInWithOAuth({ provider, options: { redirectTo: window.location.origin + '/josoor' } });
+  const { error } = await supabase.auth.signInWithOAuth({ provider, options: { redirectTo: window.location.origin + '/josoor-desktop' } });
   if (error) throw error;
   return true;
 }

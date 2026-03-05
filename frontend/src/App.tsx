@@ -31,10 +31,6 @@ const Roadmap = () => <div className="p-10 text-xl">Roadmap (Coming Soon)</div>;
 function ProtectedRoute({ children, allowGuest = false }: { children: React.ReactElement; allowGuest?: boolean }) {
   const { user, loading } = useAuth();
 
-  // TEMP: Auth disabled for development
-  const AUTH_DISABLED = true;
-  if (AUTH_DISABLED) return children;
-
   if (loading) {
     return <div className="flex items-center justify-center h-screen">Loading...</div>;
   }
@@ -49,7 +45,7 @@ function ProtectedRoute({ children, allowGuest = false }: { children: React.Reac
 function RootRedirect() {
   const { user, loading } = useAuth();
   if (loading) return <div>Loading...</div>;
-  if (user) return <Navigate to="/josoor" replace />;
+  if (user) return <Navigate to="/josoor-desktop" replace />;
   return <LandingPage />;
 }
 
@@ -62,11 +58,13 @@ function AppContent() {
       <Route path="/contact-us" element={<ContactUsPage />} />
       <Route path="/login" element={<LoginPage />} />
 
-      {/* DESKTOP TEST — macOS shell experiment */}
+      {/* DESKTOP — JosoorOS */}
       <Route path="/josoor-desktop" element={
+        <ProtectedRoute>
           <Suspense fallback={<div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}>Loading...</div>}>
             <JosoorDesktopPage />
           </Suspense>
+        </ProtectedRoute>
       } />
 
       {/* NEW JOSOOR ROUTE - The unified shell */}
