@@ -24,17 +24,12 @@ import { ChainDeskAura } from './components/desks/ChainDeskAura';
 import './index.css';
 
 const JosoorDesktopPage = React.lazy(() => import('./pages/JosoorDesktopPage'));
-const JosoorOSPage = React.lazy(() => import('./pages/JosoorOSPage'));
 
 const KnowledgeSeries = () => <div className="p-10 text-xl">Knowledge Series (Coming Soon)</div>;
 const Roadmap = () => <div className="p-10 text-xl">Roadmap (Coming Soon)</div>;
 
 function ProtectedRoute({ children, allowGuest = false }: { children: React.ReactElement; allowGuest?: boolean }) {
   const { user, loading } = useAuth();
-
-  // TEMP: Auth disabled for development
-  const AUTH_DISABLED = true;
-  if (AUTH_DISABLED) return children;
 
   if (loading) {
     return <div className="flex items-center justify-center h-screen">Loading...</div>;
@@ -50,7 +45,7 @@ function ProtectedRoute({ children, allowGuest = false }: { children: React.Reac
 function RootRedirect() {
   const { user, loading } = useAuth();
   if (loading) return <div>Loading...</div>;
-  if (user) return <Navigate to="/josoor" replace />;
+  if (user) return <Navigate to="/josoor-desktop" replace />;
   return <LandingPage />;
 }
 
@@ -63,24 +58,19 @@ function AppContent() {
       <Route path="/contact-us" element={<ContactUsPage />} />
       <Route path="/login" element={<LoginPage />} />
 
-      {/* DESKTOP TEST — macOS shell experiment */}
+      {/* DESKTOP — JosoorOS */}
       <Route path="/josoor-desktop" element={
-          <Suspense fallback={<div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', backgroundColor: 'var(--component-bg-primary)', color: 'var(--component-text-primary)' }}>Loading...</div>}>
+        <ProtectedRoute>
+          <Suspense fallback={<div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}>Loading...</div>}>
             <JosoorDesktopPage />
           </Suspense>
-      } />
-
-      {/* OS DESKTOP TEST — full windowed OS experiment */}
-      <Route path="/josoor-os" element={
-          <Suspense fallback={<div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', backgroundColor: 'var(--component-bg-primary)', color: 'var(--component-text-primary)' }}>Loading...</div>}>
-            <JosoorOSPage />
-          </Suspense>
+        </ProtectedRoute>
       } />
 
       {/* NEW JOSOOR ROUTE - The unified shell */}
       <Route path="/josoor" element={
         <ProtectedRoute>
-          <Suspense fallback={<div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', backgroundColor: 'var(--component-bg-primary)', color: 'var(--component-text-primary)' }}>Loading...</div>}>
+          <Suspense fallback={<div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}>Loading...</div>}>
             <JosoorShell />
           </Suspense>
         </ProtectedRoute>
