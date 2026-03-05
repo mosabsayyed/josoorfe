@@ -25,8 +25,8 @@ const ReportingDesk = React.lazy(() => import('../components/desks/ReportingDesk
 const TutorialsDesk = React.lazy(() => import('../components/desks/TutorialsDesk').then(m => ({ default: m.TutorialsDesk })));
 const ExplorerDesk = React.lazy(() => import('../components/desks/ExplorerDesk').then(m => ({ default: m.ExplorerDesk })));
 const OntologyHome = React.lazy(() => import('../components/desks/OntologyHome'));
-const SettingsDesk = React.lazy(() => import('../components/desks/SettingsDesk').then(m => ({ default: m.SettingsDesk })));
-const ObservabilityDesk = React.lazy(() => import('../components/desks/ObservabilityDesk').then(m => ({ default: m.ObservabilityDashboard })));
+const SettingsDesk = React.lazy(() => import('../app/josoor/views/admin/Settings'));
+const ObservabilityDesk = React.lazy(() => import('../app/josoor/views/admin/ObservabilityDashboard'));
 const CalendarDesk = React.lazy(() => import('../components/desks/CalendarDesk').then(m => ({ default: m.CalendarDesk })));
 
 // ── Boot sequence chains to preload ──
@@ -466,9 +466,9 @@ export default function JosoorDesktopPage() {
           </div>
         );
       case 'settings':
-        return <SettingsDesk year={year} quarter={quarter} />;
+        return <SettingsDesk />;
       case 'observability':
-        return <ObservabilityDesk showHeader={false} />;
+        return <ObservabilityDesk />;
       case 'calendar':
         return (
           <CalendarDesk
