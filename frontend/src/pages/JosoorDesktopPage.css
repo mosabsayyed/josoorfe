@@ -58,7 +58,12 @@
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  cursor: default;
+  cursor: pointer;
+  transition: filter 0.15s;
+}
+
+.jdp-traffic-dot:hover {
+  filter: brightness(0.85);
 }
 
 .jdp-dot-close { background: #FF5F57; }

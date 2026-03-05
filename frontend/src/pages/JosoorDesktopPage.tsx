@@ -12,9 +12,8 @@ import { CanvasManager } from '../components/chat/CanvasManager';
 import { chatService } from '../services/chatService';
 import * as authService from '../services/authService';
 import { useLanguage } from '../contexts/LanguageContext';
-import ThemeToggle from '../components/ThemeToggle';
-import LanguageToggle from '../components/LanguageToggle';
 import type { ConversationSummary, Message as APIMessage } from '../types/api';
+// ThemeToggle & LanguageToggle removed — logic inlined into menu items
 import type { InterventionContext } from '../components/desks/PlanningDesk';
 import './JosoorDesktopPage.css';
 
@@ -37,40 +36,12 @@ type DesktopView =
   | 'reporting-desk' | 'explorer'
   | 'knowledge' | 'settings' | 'observability';
 
-interface MenuItem { labelEn: string; labelAr: string; view: DesktopView }
-interface MenuGroup { labelEn: string; labelAr: string; items: MenuItem[] }
+type MenuItemDef =
+  | { type: 'nav'; labelEn: string; labelAr: string; view: DesktopView }
+  | { type: 'action'; labelEn: string; labelAr: string; action: string }
+  | { type: 'separator' };
 
-const MENUS: MenuGroup[] = [
-  {
-    labelEn: 'Oversight', labelAr: 'الإشراف',
-    items: [
-      { labelEn: 'Observe', labelAr: 'المراقبة', view: 'sector-desk' },
-      { labelEn: 'Decide', labelAr: 'القرارات', view: 'enterprise-desk' },
-      { labelEn: 'Deliver', labelAr: 'التنفيذ', view: 'planning-desk' },
-    ],
-  },
-  {
-    labelEn: 'Manage', labelAr: 'الإدارة',
-    items: [
-      { labelEn: 'Reporting', labelAr: 'التقارير', view: 'reporting-desk' },
-      { labelEn: 'Signals', labelAr: 'الإشارات', view: 'explorer' },
-    ],
-  },
-  {
-    labelEn: 'Refer', labelAr: 'المرجع',
-    items: [
-      { labelEn: 'Tutorials', labelAr: 'الدروس', view: 'knowledge' },
-      { labelEn: 'Expert Chat', labelAr: 'محادثة الخبير', view: 'chat' },
-    ],
-  },
-  {
-    labelEn: 'Admin', labelAr: 'الإدارة',
-    items: [
-      { labelEn: 'Settings', labelAr: 'الإعدادات', view: 'settings' },
-      { labelEn: 'Observability', labelAr: 'المراقبة', view: 'observability' },
-    ],
-  },
-];
+interface MenuGroupDef { labelEn: string; labelAr: string; items: MenuItemDef[] }
 
 const TOOLBAR_VIEWS = new Set<DesktopView>([
   'sector-desk', 'enterprise-desk', 'planning-desk', 'explorer', 'reporting-desk', 'chat',
@@ -78,14 +49,23 @@ const TOOLBAR_VIEWS = new Set<DesktopView>([
 
 // ── Component ──
 export default function JosoorDesktopPage() {
-  const { language } = useLanguage();
+  const { language, setLanguage } = useLanguage();
   const isAr = language === 'ar';
   const navigate = useNavigate();
+
+  // Theme state (mirrors ThemeToggle logic)
+  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
+    try { const s = localStorage.getItem('josoor_theme'); if (s === 'light') return 'light'; } catch {}
+    return 'dark';
+  });
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    try { localStorage.setItem('josoor_theme', theme); } catch {}
+  }, [theme]);
 
   // View state
   const [activeView, setActiveView] = useState<DesktopView>('home');
   const [openMenu, setOpenMenu] = useState<number | null>(null);
-  const [profileOpen, setProfileOpen] = useState(false);
 
   // User profile
   const [currentUser, setCurrentUser] = useState<any>(() => authService.getUser());
@@ -131,7 +111,7 @@ export default function JosoorDesktopPage() {
         const guestConvos = authService.getGuestConversations();
         const adapted = (guestConvos || []).map((c: any) => ({
           id: c.id,
-          title: c.title || (isAr ? 'محادثة جديدة' : 'New Chat'),
+          title: c.title || (isAr ? '\u0645\u062D\u0627\u062F\u062B\u0629 \u062C\u062F\u064A\u062F\u0629' : 'New Chat'),
           message_count: (c.messages || []).length,
           created_at: c.created_at || new Date().toISOString(),
           updated_at: c.updated_at || new Date().toISOString(),
@@ -143,7 +123,7 @@ export default function JosoorDesktopPage() {
       const data = await chatService.getConversations();
       const adapted = (data.conversations || []).map((c: any) => ({
         ...c,
-        title: c.title || (isAr ? 'محادثة جديدة' : 'New Chat'),
+        title: c.title || (isAr ? '\u0645\u062D\u0627\u062F\u062B\u0629 \u062C\u062F\u064A\u062F\u0629' : 'New Chat'),
         message_count: Array.isArray(c.messages) ? c.messages.length : (c.message_count || 0),
         created_at: c.created_at || new Date().toISOString(),
         updated_at: c.updated_at || new Date().toISOString(),
@@ -211,7 +191,7 @@ export default function JosoorDesktopPage() {
       loadConversations();
     } catch (err) {
       console.error(err);
-      setMessages(prev => [...prev, { id: Date.now(), role: 'assistant', content: isAr ? 'خطأ في الحصول على الرد' : 'Error getting response', created_at: new Date().toISOString() }]);
+      setMessages(prev => [...prev, { id: Date.now(), role: 'assistant', content: isAr ? '\u062E\u0637\u0623 \u0641\u064A \u0627\u0644\u062D\u0635\u0648\u0644 \u0639\u0644\u0649 \u0627\u0644\u0631\u062F' : 'Error getting response', created_at: new Date().toISOString() }]);
     } finally { setIsLoading(false); }
   }, [activeConversationId, selectedTools, selectedPersona, isPersonaLocked, loadConversations, language, isAr]);
 
@@ -251,11 +231,84 @@ export default function JosoorDesktopPage() {
   // Close menu on outside click
   const closeMenu = useCallback(() => setOpenMenu(null), []);
 
-  // ── Menu item click ──
-  const handleMenuItemClick = useCallback((view: DesktopView) => {
-    setActiveView(view);
+  // ── Action handler for menu items ──
+  const handleMenuAction = useCallback((action: string) => {
     setOpenMenu(null);
-  }, []);
+    switch (action) {
+      case 'print': window.print(); break;
+      case 'save': /* TODO */ break;
+      case 'export': /* TODO */ break;
+      case 'toggle-theme': setTheme(t => t === 'dark' ? 'light' : 'dark'); break;
+      case 'toggle-language': setLanguage(language === 'en' ? 'ar' : 'en'); break;
+      case 'profile': break;
+      case 'logout':
+        (async () => { try { await authService.logout(); } catch {} setCurrentUser(null); navigate('/landing'); })();
+        break;
+    }
+  }, [language, setLanguage, navigate]);
+
+  // ── Menu item click (nav or action) ──
+  const handleItemClick = useCallback((item: MenuItemDef) => {
+    if (item.type === 'nav') {
+      setActiveView(item.view);
+      setOpenMenu(null);
+    } else if (item.type === 'action') {
+      handleMenuAction(item.action);
+    }
+  }, [handleMenuAction]);
+
+  // ── Dynamic menu definitions (need runtime state for toggle labels) ──
+  const MENUS: MenuGroupDef[] = [
+    {
+      labelEn: 'Josoor', labelAr: '\u062C\u0633\u0648\u0631',
+      items: [
+        { type: 'nav', labelEn: 'Home', labelAr: '\u0627\u0644\u0631\u0626\u064A\u0633\u064A\u0629', view: 'home' },
+        { type: 'separator' },
+        { type: 'action', labelEn: `${theme === 'dark' ? '\u2600\uFE0F Light Mode' : '\uD83C\uDF19 Dark Mode'}`, labelAr: `${theme === 'dark' ? '\u2600\uFE0F \u0627\u0644\u0648\u0636\u0639 \u0627\u0644\u0641\u0627\u062A\u062D' : '\uD83C\uDF19 \u0627\u0644\u0648\u0636\u0639 \u0627\u0644\u062F\u0627\u0643\u0646'}`, action: 'toggle-theme' },
+        { type: 'action', labelEn: language === 'en' ? '\uD83C\uDDF8\uD83C\uDDE6 Arabic' : '\uD83C\uDDEC\uD83C\uDDE7 English', labelAr: language === 'en' ? '\uD83C\uDDF8\uD83C\uDDE6 \u0627\u0644\u0639\u0631\u0628\u064A\u0629' : '\uD83C\uDDEC\uD83C\uDDE7 \u0627\u0644\u0625\u0646\u062C\u0644\u064A\u0632\u064A\u0629', action: 'toggle-language' },
+        { type: 'separator' },
+        { type: 'action', labelEn: '\uD83D\uDC64 Profile', labelAr: '\uD83D\uDC64 \u0627\u0644\u0645\u0644\u0641 \u0627\u0644\u0634\u062E\u0635\u064A', action: 'profile' },
+        { type: 'action', labelEn: '\uD83D\uDEAA Logout', labelAr: '\uD83D\uDEAA \u062A\u0633\u062C\u064A\u0644 \u0627\u0644\u062E\u0631\u0648\u062C', action: 'logout' },
+      ],
+    },
+    {
+      labelEn: 'File', labelAr: '\u0645\u0644\u0641',
+      items: [
+        { type: 'action', labelEn: '\uD83D\uDDA8\uFE0F Print', labelAr: '\uD83D\uDDA8\uFE0F \u0637\u0628\u0627\u0639\u0629', action: 'print' },
+        { type: 'action', labelEn: '\uD83D\uDCBE Save', labelAr: '\uD83D\uDCBE \u062D\u0641\u0638', action: 'save' },
+        { type: 'action', labelEn: '\uD83D\uDCE5 Export', labelAr: '\uD83D\uDCE5 \u062A\u0635\u062F\u064A\u0631', action: 'export' },
+      ],
+    },
+    {
+      labelEn: 'Oversight', labelAr: '\u0627\u0644\u0625\u0634\u0631\u0627\u0641',
+      items: [
+        { type: 'nav', labelEn: 'Observe', labelAr: '\u0627\u0644\u0645\u0631\u0627\u0642\u0628\u0629', view: 'sector-desk' },
+        { type: 'nav', labelEn: 'Decide', labelAr: '\u0627\u0644\u0642\u0631\u0627\u0631\u0627\u062A', view: 'enterprise-desk' },
+        { type: 'nav', labelEn: 'Deliver', labelAr: '\u0627\u0644\u062A\u0646\u0641\u064A\u0630', view: 'planning-desk' },
+      ],
+    },
+    {
+      labelEn: 'Manage', labelAr: '\u0627\u0644\u0625\u062F\u0627\u0631\u0629',
+      items: [
+        { type: 'nav', labelEn: 'Reporting', labelAr: '\u0627\u0644\u062A\u0642\u0627\u0631\u064A\u0631', view: 'reporting-desk' },
+        { type: 'nav', labelEn: 'Signals', labelAr: '\u0627\u0644\u0625\u0634\u0627\u0631\u0627\u062A', view: 'explorer' },
+      ],
+    },
+    {
+      labelEn: 'Refer', labelAr: '\u0627\u0644\u0645\u0631\u062C\u0639',
+      items: [
+        { type: 'nav', labelEn: 'Tutorials', labelAr: '\u0627\u0644\u062F\u0631\u0648\u0633', view: 'knowledge' },
+        { type: 'nav', labelEn: 'Expert Chat', labelAr: '\u0645\u062D\u0627\u062F\u062B\u0629 \u0627\u0644\u062E\u0628\u064A\u0631', view: 'chat' },
+      ],
+    },
+    {
+      labelEn: 'Admin', labelAr: '\u0627\u0644\u0625\u062F\u0627\u0631\u0629',
+      items: [
+        { type: 'nav', labelEn: 'Settings', labelAr: '\u0627\u0644\u0625\u0639\u062F\u0627\u062F\u0627\u062A', view: 'settings' },
+        { type: 'nav', labelEn: 'Observability', labelAr: '\u0627\u0644\u0645\u0631\u0627\u0642\u0628\u0629', view: 'observability' },
+      ],
+    },
+  ];
 
   const showToolbar = TOOLBAR_VIEWS.has(activeView);
   const isChatView = activeView === 'chat';
@@ -263,101 +316,54 @@ export default function JosoorDesktopPage() {
   return (
     <div className="jdp-viewport" dir={isAr ? 'rtl' : 'ltr'}>
       <div className="jdp-window">
-        {/* ── Title Bar ── */}
+        {/* ── Title Bar — clean: traffic lights + title + profile avatar ── */}
         <div className="jdp-titlebar">
           <div className="jdp-traffic-lights">
-            <span className="jdp-traffic-dot jdp-dot-close" />
-            <span className="jdp-traffic-dot jdp-dot-minimize" />
-            <span className="jdp-traffic-dot jdp-dot-maximize" />
+            <span className="jdp-traffic-dot jdp-dot-close" title={isAr ? 'إغلاق' : 'Close'} onClick={() => navigate('/josoor')} />
+            <span className="jdp-traffic-dot jdp-dot-minimize" title={isAr ? 'تصغير' : 'Minimize'} onClick={() => { /* web: no-op */ }} />
+            <span className="jdp-traffic-dot jdp-dot-maximize" title={isAr ? 'تكبير' : 'Maximize'} onClick={() => {
+              if (document.fullscreenElement) document.exitFullscreen();
+              else document.documentElement.requestFullscreen().catch(() => {});
+            }} />
           </div>
-          <div className="jdp-titlebar-center">Josoor</div>
+          <div className="jdp-titlebar-center">{isAr ? '\u062C\u0633\u0648\u0631' : 'Josoor'}</div>
           <div className="jdp-titlebar-actions">
-            {/* Print / Save / Export */}
-            <button className="jdp-action-btn" title={isAr ? 'طباعة' : 'Print'} onClick={() => window.print()}>
-              🖨️
-            </button>
-            <button className="jdp-action-btn" title={isAr ? 'حفظ' : 'Save'}>
-              💾
-            </button>
-            <button className="jdp-action-btn" title={isAr ? 'تصدير' : 'Export'}>
-              📥
-            </button>
-            <div className="jdp-titlebar-divider" />
-            <ThemeToggle />
-            <LanguageToggle />
-            <div className="jdp-titlebar-divider" />
-            {/* Profile */}
-            <div style={{ position: 'relative' }}>
-              <button className="jdp-profile-trigger" onClick={() => setProfileOpen(!profileOpen)}>
-                <span className="jdp-profile-avatar">
-                  {currentUser?.user_metadata?.full_name?.[0]?.toUpperCase() || currentUser?.email?.[0]?.toUpperCase() || '?'}
-                </span>
-                <span style={{ maxWidth: 80, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {currentUser?.user_metadata?.full_name || currentUser?.email || (isAr ? 'ضيف' : 'Guest')}
-                </span>
-              </button>
-              {profileOpen && (
-                <>
-                  <div className="jdp-menu-overlay" onClick={() => setProfileOpen(false)} />
-                  <div className="jdp-profile-dropdown">
-                    {currentUser && (
-                      <div className="jdp-profile-info">
-                        <p className="jdp-profile-info-name">{currentUser?.user_metadata?.full_name || (isAr ? 'الحساب' : 'Account')}</p>
-                        <p className="jdp-profile-info-email">{currentUser?.email}</p>
-                      </div>
-                    )}
-                    <button className="jdp-dropdown-item" onClick={() => { setProfileOpen(false); }}>
-                      👤 {isAr ? 'الملف الشخصي' : 'Profile'}
-                    </button>
-                    <button className="jdp-dropdown-item" onClick={() => { setProfileOpen(false); setActiveView('settings' as DesktopView); }}>
-                      ⚙️ {isAr ? 'الإعدادات' : 'Settings'}
-                    </button>
-                    <div className="jdp-dropdown-sep" />
-                    <button className="jdp-dropdown-item" style={{ color: '#ef4444' }} onClick={async () => {
-                      try { await authService.logout(); } catch {}
-                      setCurrentUser(null);
-                      setProfileOpen(false);
-                      navigate('/landing');
-                    }}>
-                      🚪 {isAr ? 'تسجيل الخروج' : 'Logout'}
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
+            <span className="jdp-profile-avatar" title={currentUser?.user_metadata?.full_name || currentUser?.email || ''}>
+              {currentUser?.user_metadata?.full_name?.[0]?.toUpperCase() || currentUser?.email?.[0]?.toUpperCase() || '?'}
+            </span>
           </div>
         </div>
 
         {/* ── Menu Bar ── */}
         <div className="jdp-menubar">
-          {/* App name (bold) — goes to Home */}
-          <button
-            className={`jdp-menu-trigger jdp-menu-bold ${activeView === 'home' ? 'jdp-menu-active' : ''}`}
-            onClick={() => { setActiveView('home'); setOpenMenu(null); }}
-          >
-            Josoor
-          </button>
-
           {MENUS.map((menu, idx) => (
             <div key={idx} style={{ position: 'relative' }}>
               <button
-                className={`jdp-menu-trigger ${openMenu === idx ? 'jdp-menu-active' : ''}`}
+                className={`jdp-menu-trigger ${idx === 0 ? 'jdp-menu-bold' : ''} ${openMenu === idx ? 'jdp-menu-active' : ''}`}
                 onClick={() => setOpenMenu(openMenu === idx ? null : idx)}
                 onMouseEnter={() => { if (openMenu !== null) setOpenMenu(idx); }}
               >
-                {isAr ? menu.labelAr : menu.labelEn} ▾
+                {isAr ? menu.labelAr : menu.labelEn} {idx > 0 ? '\u25BE' : ''}
               </button>
               {openMenu === idx && (
                 <div className="jdp-dropdown">
-                  {menu.items.map((item) => (
-                    <button
-                      key={item.view}
-                      className={`jdp-dropdown-item ${activeView === item.view ? 'jdp-item-active' : ''}`}
-                      onClick={() => handleMenuItemClick(item.view)}
-                    >
-                      {isAr ? item.labelAr : item.labelEn}
-                    </button>
-                  ))}
+                  {menu.items.map((item, itemIdx) => {
+                    if (item.type === 'separator') {
+                      return <div key={itemIdx} className="jdp-dropdown-sep" />;
+                    }
+                    const isActive = item.type === 'nav' && activeView === item.view;
+                    const isLogout = item.type === 'action' && item.action === 'logout';
+                    return (
+                      <button
+                        key={itemIdx}
+                        className={`jdp-dropdown-item ${isActive ? 'jdp-item-active' : ''}`}
+                        style={isLogout ? { color: '#ef4444' } : undefined}
+                        onClick={() => handleItemClick(item)}
+                      >
+                        {isAr ? item.labelAr : item.labelEn}
+                      </button>
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -369,7 +375,7 @@ export default function JosoorDesktopPage() {
             className={`jdp-menu-trigger ${activeView === 'home' ? 'jdp-menu-active' : ''}`}
             onClick={() => { setActiveView('home'); setOpenMenu(null); }}
           >
-            {isAr ? 'الرئيسية' : 'Home'}
+            {isAr ? '\u0627\u0644\u0631\u0626\u064A\u0633\u064A\u0629' : 'Home'}
           </button>
         </div>
 
@@ -379,11 +385,11 @@ export default function JosoorDesktopPage() {
         {/* ── Toolbar (conditional) ── */}
         {showToolbar && (
           <div className="jdp-toolbar">
-            <label>{isAr ? 'السنة' : 'Year'}</label>
+            <label>{isAr ? '\u0627\u0644\u0633\u0646\u0629' : 'Year'}</label>
             <select value={year} onChange={e => setYear(e.target.value)}>
               {availableYears.map(y => <option key={y} value={y}>{y}</option>)}
             </select>
-            <label>{isAr ? 'الربع' : 'Quarter'}</label>
+            <label>{isAr ? '\u0627\u0644\u0631\u0628\u0639' : 'Quarter'}</label>
             <select value={quarter} onChange={e => setQuarter(e.target.value)}>
               {['Q1', 'Q2', 'Q3', 'Q4'].map(q => <option key={q} value={q}>{q}</option>)}
             </select>
@@ -396,9 +402,9 @@ export default function JosoorDesktopPage() {
           {isChatView && (
             <div className="jdp-chat-sidebar">
               <div className="jdp-chat-sidebar-header">
-                <span>{isAr ? 'المحادثات' : 'Chats'}</span>
+                <span>{isAr ? '\u0627\u0644\u0645\u062D\u0627\u062F\u062B\u0627\u062A' : 'Chats'}</span>
                 <button className="jdp-new-chat-btn" onClick={handleNewChat}>
-                  {isAr ? '+ جديد' : '+ New'}
+                  {isAr ? '+ \u062C\u062F\u064A\u062F' : '+ New'}
                 </button>
               </div>
               <div className="jdp-chat-list">
@@ -418,7 +424,6 @@ export default function JosoorDesktopPage() {
           {/* Main content */}
           <div className="jdp-content-main">
             {isChatView ? (
-              /* Chat mode — render ChatContainer directly */
               <ChatContainer
                 conversationId={activeConversationId}
                 messages={messages}
@@ -434,7 +439,7 @@ export default function JosoorDesktopPage() {
                 availableYears={availableYears}
                 onYearChange={setYear}
                 onQuarterChange={setQuarter}
-                title={isAr ? 'محادثة الخبير' : 'Expert Chat'}
+                title={isAr ? '\u0645\u062D\u0627\u062F\u062B\u0629 \u0627\u0644\u062E\u0628\u064A\u0631' : 'Expert Chat'}
                 subtitle=""
                 selectedPersona={selectedPersona}
                 onPersonaChange={setSelectedPersona}
@@ -443,8 +448,7 @@ export default function JosoorDesktopPage() {
                 onToolsChange={setSelectedTools}
               />
             ) : (
-              /* Desk mode — render the active view */
-              <Suspense fallback={<div className="jdp-loading">{isAr ? 'جاري التحميل...' : 'Loading...'}</div>}>
+              <Suspense fallback={<div className="jdp-loading">{isAr ? '\u062C\u0627\u0631\u064A \u0627\u0644\u062A\u062D\u0645\u064A\u0644...' : 'Loading...'}</div>}>
                 <div style={{ flex: 1, overflow: activeView === 'home' || activeView === 'reporting-desk' ? 'auto' : 'hidden', height: '100%' }}>
                   {activeView === 'home' && <OntologyHome />}
                   {activeView === 'sector-desk' && (
@@ -476,10 +480,10 @@ export default function JosoorDesktopPage() {
                   {activeView === 'explorer' && <ExplorerDesk year={year} quarter={quarter} />}
                   {activeView === 'knowledge' && <TutorialsDesk />}
                   {activeView === 'settings' && (
-                    <div className="jdp-loading">{isAr ? 'الإعدادات (قريباً)' : 'Settings (Coming Soon)'}</div>
+                    <div className="jdp-loading">{isAr ? '\u0627\u0644\u0625\u0639\u062F\u0627\u062F\u0627\u062A (\u0642\u0631\u064A\u0628\u0627\u064B)' : 'Settings (Coming Soon)'}</div>
                   )}
                   {activeView === 'observability' && (
-                    <div className="jdp-loading">{isAr ? 'المراقبة (قريباً)' : 'Observability (Coming Soon)'}</div>
+                    <div className="jdp-loading">{isAr ? '\u0627\u0644\u0645\u0631\u0627\u0642\u0628\u0629 (\u0642\u0631\u064A\u0628\u0627\u064B)' : 'Observability (Coming Soon)'}</div>
                   )}
                 </div>
               </Suspense>
