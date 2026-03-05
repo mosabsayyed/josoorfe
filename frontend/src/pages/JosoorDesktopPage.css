@@ -1,18 +1,23 @@
 /* ============================================================
    JosoorDesktopPage — macOS Desktop Shell
    All classes prefixed jdp- (Josoor Desktop Page)
+   Uses --component-* tokens from theme.css for dark/light support
    ============================================================ */
 
-/* Viewport — dark background behind the "window" */
+/* Viewport — background behind the "window" */
 .jdp-viewport {
   width: 100vw;
   height: 100vh;
-  background: #0a0a0a;
+  background: var(--component-bg-primary);
   padding: 8px;
   box-sizing: border-box;
   display: flex;
   overflow: hidden;
 }
+
+/* Darken viewport slightly behind the window for contrast */
+:root[data-theme="dark"] .jdp-viewport { background: #0a0a0a; }
+:root[data-theme="light"] .jdp-viewport { background: #d1d5db; }
 
 /* Window chrome */
 .jdp-window {
@@ -21,10 +26,12 @@
   flex-direction: column;
   border-radius: 12px;
   overflow: hidden;
-  background: var(--bg-primary, #1a1a2e);
-  border: 1px solid var(--border-color, #333);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  background: var(--component-bg-primary);
+  border: 1px solid var(--component-panel-border);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 }
+
+:root[data-theme="dark"] .jdp-window { box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5); }
 
 /* ---- Title Bar ---- */
 .jdp-titlebar {
@@ -32,8 +39,8 @@
   display: flex;
   align-items: center;
   padding: 0 12px;
-  background: var(--bg-secondary, #16162a);
-  border-bottom: 1px solid var(--border-color, #333);
+  background: var(--component-panel-bg);
+  border-bottom: 1px solid var(--component-panel-border);
   flex-shrink: 0;
   user-select: none;
 }
@@ -61,7 +68,7 @@
   text-align: center;
   font-size: 13px;
   font-weight: 600;
-  color: var(--text-primary, #fff);
+  color: var(--component-text-primary);
   letter-spacing: 0.3px;
 }
 
@@ -77,8 +84,8 @@
   display: flex;
   align-items: center;
   padding: 0 12px;
-  background: var(--bg-secondary, #16162a);
-  border-bottom: 1px solid var(--border-color, #333);
+  background: var(--component-panel-bg);
+  border-bottom: 1px solid var(--component-panel-border);
   flex-shrink: 0;
   gap: 2px;
   font-size: 13px;
@@ -91,7 +98,7 @@
   padding: 2px 10px;
   border-radius: 4px;
   cursor: pointer;
-  color: var(--text-primary, #fff);
+  color: var(--component-text-primary);
   background: transparent;
   border: none;
   font-size: 13px;
@@ -103,7 +110,7 @@
 
 .jdp-menu-trigger:hover,
 .jdp-menu-trigger.jdp-menu-active {
-  background: var(--component-bg-hover, rgba(255, 255, 255, 0.1));
+  background: var(--component-bg-secondary);
 }
 
 .jdp-menu-trigger.jdp-menu-bold {
@@ -116,14 +123,16 @@
   top: 100%;
   inset-inline-start: 0;
   min-width: 180px;
-  background: var(--bg-secondary, #1e1e3a);
-  border: 1px solid var(--border-color, #444);
+  background: var(--component-panel-bg);
+  border: 1px solid var(--component-panel-border);
   border-radius: 6px;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
   padding: 4px 0;
   z-index: 1100;
   animation: jdp-dropdown-in 120ms ease-out;
 }
+
+:root[data-theme="dark"] .jdp-dropdown { box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5); }
 
 @keyframes jdp-dropdown-in {
   from {
@@ -142,7 +151,7 @@
   padding: 6px 16px;
   background: transparent;
   border: none;
-  color: var(--text-primary, #fff);
+  color: var(--component-text-primary);
   font-size: 13px;
   text-align: start;
   cursor: pointer;
@@ -152,17 +161,17 @@
 }
 
 .jdp-dropdown-item:hover {
-  background: var(--component-bg-hover, rgba(255, 255, 255, 0.08));
+  background: var(--component-bg-secondary);
 }
 
 .jdp-dropdown-item.jdp-item-active {
-  color: var(--accent-color, #60a5fa);
+  color: var(--component-text-accent);
   font-weight: 600;
 }
 
 .jdp-dropdown-sep {
   height: 1px;
-  background: var(--border-color, #333);
+  background: var(--component-panel-border);
   margin: 4px 8px;
 }
 
@@ -180,10 +189,10 @@
   gap: 6px;
   padding: 3px 8px;
   border-radius: 20px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--component-bg-secondary);
+  border: 1px solid var(--component-panel-border);
   cursor: pointer;
-  color: var(--text-primary, #fff);
+  color: var(--component-text-primary);
   font-size: 12px;
   font-weight: 600;
   font-family: inherit;
@@ -191,6 +200,10 @@
 }
 
 .jdp-profile-trigger:hover {
+  background: var(--component-panel-bg);
+}
+
+:root[data-theme="dark"] .jdp-profile-trigger:hover {
   background: rgba(255, 255, 255, 0.1);
 }
 
@@ -198,13 +211,13 @@
   width: 22px;
   height: 22px;
   border-radius: 50%;
-  background: var(--accent-color, #60a5fa);
+  background: var(--component-text-accent);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 11px;
   font-weight: 700;
-  color: #fff;
+  color: var(--component-text-on-accent);
   overflow: hidden;
 }
 
@@ -214,31 +227,33 @@
   inset-inline-end: 0;
   margin-top: 4px;
   min-width: 200px;
-  background: var(--bg-secondary, #1e1e3a);
-  border: 1px solid var(--border-color, #444);
+  background: var(--component-panel-bg);
+  border: 1px solid var(--component-panel-border);
   border-radius: 8px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
   padding: 4px 0;
   z-index: 1100;
   animation: jdp-dropdown-in 120ms ease-out;
 }
 
+:root[data-theme="dark"] .jdp-profile-dropdown { box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5); }
+
 .jdp-profile-info {
   padding: 10px 14px;
-  border-bottom: 1px solid var(--border-color, #333);
+  border-bottom: 1px solid var(--component-panel-border);
   margin-bottom: 4px;
 }
 
 .jdp-profile-info-name {
   font-size: 13px;
   font-weight: 600;
-  color: var(--text-primary, #fff);
+  color: var(--component-text-primary);
   margin: 0;
 }
 
 .jdp-profile-info-email {
   font-size: 11px;
-  color: var(--text-secondary, #aaa);
+  color: var(--component-text-muted);
   margin: 2px 0 0;
 }
 
@@ -249,7 +264,7 @@
   cursor: pointer;
   padding: 4px 6px;
   border-radius: 4px;
-  color: var(--text-secondary, rgba(255, 255, 255, 0.6));
+  color: var(--component-text-muted);
   font-size: 15px;
   display: flex;
   align-items: center;
@@ -258,14 +273,14 @@
 }
 
 .jdp-action-btn:hover {
-  color: var(--text-primary, #fff);
-  background: rgba(255, 255, 255, 0.08);
+  color: var(--component-text-primary);
+  background: var(--component-bg-secondary);
 }
 
 .jdp-titlebar-divider {
   width: 1px;
   height: 18px;
-  background: rgba(255, 255, 255, 0.12);
+  background: var(--component-panel-border);
   margin: 0 4px;
 }
 
@@ -276,22 +291,22 @@
   align-items: center;
   padding: 0 16px;
   gap: 12px;
-  background: var(--bg-primary, #1a1a2e);
-  border-bottom: 1px solid var(--border-color, #333);
+  background: var(--component-bg-primary);
+  border-bottom: 1px solid var(--component-panel-border);
   flex-shrink: 0;
   font-size: 13px;
-  color: var(--text-secondary, #aaa);
+  color: var(--component-text-secondary);
 }
 
 .jdp-toolbar label {
   font-weight: 500;
-  color: var(--text-secondary, #aaa);
+  color: var(--component-text-secondary);
 }
 
 .jdp-toolbar select {
-  background: var(--component-bg, #2a2a4a);
-  color: var(--text-primary, #fff);
-  border: 1px solid var(--border-color, #444);
+  background: var(--component-panel-bg);
+  color: var(--component-text-primary);
+  border: 1px solid var(--component-panel-border);
   border-radius: 4px;
   padding: 2px 8px;
   font-size: 13px;
@@ -300,7 +315,7 @@
 }
 
 .jdp-toolbar select:focus {
-  border-color: var(--accent-color, #60a5fa);
+  border-color: var(--component-text-accent);
 }
 
 /* ---- Content Area ---- */
@@ -323,8 +338,8 @@
 .jdp-chat-sidebar {
   width: 220px;
   flex-shrink: 0;
-  border-inline-end: 1px solid var(--border-color, #333);
-  background: var(--bg-secondary, #16162a);
+  border-inline-end: 1px solid var(--component-panel-border);
+  background: var(--component-panel-bg);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -334,18 +349,18 @@
   padding: 10px 12px;
   font-size: 12px;
   font-weight: 600;
-  color: var(--text-secondary, #aaa);
+  color: var(--component-text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  border-bottom: 1px solid var(--border-color, #333);
+  border-bottom: 1px solid var(--component-panel-border);
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
 
 .jdp-new-chat-btn {
-  background: var(--accent-color, #60a5fa);
-  color: #fff;
+  background: var(--component-text-accent);
+  color: var(--component-text-on-accent);
   border: none;
   border-radius: 4px;
   padding: 2px 8px;
@@ -370,7 +385,7 @@
   padding: 8px 12px;
   background: transparent;
   border: none;
-  color: var(--text-primary, #fff);
+  color: var(--component-text-primary);
   font-size: 12px;
   text-align: start;
   cursor: pointer;
@@ -382,12 +397,12 @@
 }
 
 .jdp-chat-item:hover {
-  background: var(--component-bg-hover, rgba(255, 255, 255, 0.05));
+  background: var(--component-bg-secondary);
 }
 
 .jdp-chat-item.jdp-chat-active {
-  background: var(--component-bg-hover, rgba(255, 255, 255, 0.1));
-  color: var(--accent-color, #60a5fa);
+  background: var(--component-bg-secondary);
+  color: var(--component-text-accent);
 }
 
 /* ---- Loading fallback ---- */
@@ -396,6 +411,6 @@
   align-items: center;
   justify-content: center;
   height: 100%;
-  color: var(--text-secondary, #aaa);
+  color: var(--component-text-muted);
   font-size: 14px;
 }
