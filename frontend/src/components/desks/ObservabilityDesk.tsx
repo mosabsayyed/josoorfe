@@ -18,7 +18,9 @@ import {
   Layers,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import { fetchSettings, saveSettings } from '../../services/adminSettingsService';
 import type { AdminSettings, MCPEntry } from '../../services/adminSettingsService';
+import { Settings as SettingsIcon, Save, Plus } from 'lucide-react';
 import './ObservabilityDesk.css';
 import { useCallback } from 'react';
 

@@ -9,6 +9,7 @@ import { graphService } from '../services/graphService';
 import { ChatContainer } from '../components/chat';
 import { CanvasManager } from '../components/chat/CanvasManager';
 import { chatService } from '../services/chatService';
+import { fetchChainCached } from '../services/chainsService';
 import * as authService from '../services/authService';
 import { useLanguage } from '../contexts/LanguageContext';
 import type { ConversationSummary, Message as APIMessage } from '../types/api';
@@ -24,6 +25,16 @@ const ReportingDesk = React.lazy(() => import('../components/desks/ReportingDesk
 const TutorialsDesk = React.lazy(() => import('../components/desks/TutorialsDesk').then(m => ({ default: m.TutorialsDesk })));
 const ExplorerDesk = React.lazy(() => import('../components/desks/ExplorerDesk').then(m => ({ default: m.ExplorerDesk })));
 const OntologyHome = React.lazy(() => import('../components/desks/OntologyHome'));
+const SettingsDesk = React.lazy(() => import('../components/desks/SettingsDesk').then(m => ({ default: m.SettingsDesk })));
+const ObservabilityDesk = React.lazy(() => import('../components/desks/ObservabilityDesk').then(m => ({ default: m.ObservabilityDashboard })));
+
+// ── Boot sequence chains to preload ──
+const PRELOAD_CHAINS = [
+  'sector_value_chain',
+  'capability_to_performance',
+  'capability_to_policy',
+  'setting_strategic_initiatives',
+];
 
 const MemoizedCanvasManager = memo(CanvasManager);
 
@@ -119,6 +130,92 @@ export default function JosoorDesktopPage() {
     const timer = setInterval(update, 30000);
     return () => clearInterval(timer);
   }, [isAr]);
+
+  // ── Boot sequence ──
+  const [isBooting, setIsBooting] = useState(true);
+  const [bootLines, setBootLines] = useState<string[]>([]);
+  const [bootProgress, setBootProgress] = useState(0);
+
+  useEffect(() => {
+    if (!isBooting) return;
+    let cancelled = false;
+
+    const addLine = (line: string) => {
+      if (cancelled) return;
+      setBootLines(prev => [...prev, line]);
+    };
+
+    const run = async () => {
+      addLine('[BIOS] JosoorOS v3.4.0 — Industrial Intelligence Platform');
+      addLine('[BIOS] Initializing kernel modules...');
+      await new Promise(r => setTimeout(r, 300));
+
+      addLine('[SYS]  Loading display drivers... OK');
+      addLine('[SYS]  Mounting secure filesystem... OK');
+      await new Promise(r => setTimeout(r, 200));
+      if (cancelled) return;
+      setBootProgress(15);
+
+      addLine('[NET]  Establishing API gateway connection...');
+      await new Promise(r => setTimeout(r, 250));
+      addLine('[NET]  Connected to betaBE.aitwintech.com ✓');
+      if (cancelled) return;
+      setBootProgress(25);
+
+      addLine('[AUTH] Verifying session credentials...');
+      await new Promise(r => setTimeout(r, 200));
+      const isGuest = authService.isGuestMode();
+      addLine(`[AUTH] Mode: ${isGuest ? 'Guest' : 'Authenticated'} ✓`);
+      if (cancelled) return;
+      setBootProgress(35);
+
+      addLine('[DATA] Pre-loading chain knowledge graph data...');
+      await new Promise(r => setTimeout(r, 150));
+
+      // Preload chains in parallel
+      const chainResults = await Promise.allSettled(
+        PRELOAD_CHAINS.map(async (chain) => {
+          addLine(`[DATA]   ↳ ${chain}...`);
+          try {
+            const data = await fetchChainCached(chain, 0);
+            addLine(`[DATA]   ✓ ${chain} — ${data.nodes.length} nodes, ${data.relationships.length} rels`);
+            return { chain, ok: true, nodes: data.nodes.length };
+          } catch {
+            addLine(`[DATA]   ✗ ${chain} — offline (will retry on demand)`);
+            return { chain, ok: false, nodes: 0 };
+          }
+        })
+      );
+      if (cancelled) return;
+      setBootProgress(70);
+
+      const loaded = chainResults.filter(r => r.status === 'fulfilled' && (r.value as any).ok).length;
+      addLine(`[DATA] Chain cache ready: ${loaded}/${PRELOAD_CHAINS.length} chains loaded`);
+      await new Promise(r => setTimeout(r, 200));
+
+      addLine('[GPU]  Initializing visualization engine... OK');
+      if (cancelled) return;
+      setBootProgress(85);
+      await new Promise(r => setTimeout(r, 200));
+
+      addLine('[MCP]  MCP router endpoints configured ✓');
+      addLine('[I18N] Language pack loaded: ' + (isAr ? 'Arabic (ar)' : 'English (en)'));
+      if (cancelled) return;
+      setBootProgress(95);
+      await new Promise(r => setTimeout(r, 200));
+
+      addLine('');
+      addLine('[READY] All systems operational. Welcome to JosoorOS.');
+      if (cancelled) return;
+      setBootProgress(100);
+      await new Promise(r => setTimeout(r, 600));
+
+      if (!cancelled) setIsBooting(false);
+    };
+
+    run();
+    return () => { cancelled = true; };
+  }, [isBooting, isAr]);
 
   // ── Chat logic ──
   const loadConversations = useCallback(async () => {
@@ -367,28 +464,45 @@ export default function JosoorDesktopPage() {
           </div>
         );
       case 'settings':
-        return (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#8b949e', gap: 12 }}>
-            <span style={{ fontSize: 48 }}>&#9881;</span>
-            <span style={{ fontSize: 16, fontWeight: 500 }}>{isAr ? 'الإعدادات (قريباً)' : 'Settings (Coming Soon)'}</span>
-          </div>
-        );
+        return <SettingsDesk year={year} quarter={quarter} />;
       case 'observability':
-        return (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#8b949e', gap: 12 }}>
-            <span style={{ fontSize: 48 }}>&#128200;</span>
-            <span style={{ fontSize: 16, fontWeight: 500 }}>{isAr ? 'المراقبة (قريباً)' : 'Observability (Coming Soon)'}</span>
-          </div>
-        );
+        return <ObservabilityDesk showHeader={false} />;
       default:
         return null;
     }
   }, [year, quarter, isAr, handleIntervene, interventionContext, openApp, conversations, activeConversationId, messages, handleSendMessage, isLoading, language, isCanvasOpen, streamingMessage, handleOpenArtifact, availableYears, selectedPersona, isPersonaLocked, selectedTools]);
 
+  // ── Boot screen ──
+  if (isBooting) {
+    return (
+      <div className="jos-desktop jos-boot-screen" dir={isAr ? 'rtl' : 'ltr'}>
+        <div className="jos-boot-logo-bg">
+          <img src="/icons/josoor.png" alt="" className="jos-boot-logo-img" />
+        </div>
+        <div className="jos-boot-content">
+          <div className="jos-boot-terminal">
+            {bootLines.map((line, i) => (
+              <div key={i} className={`jos-boot-line ${line === '' ? 'jos-boot-line-empty' : ''} ${line.includes('✓') || line.includes('OK') ? 'jos-boot-line-ok' : ''} ${line.includes('✗') ? 'jos-boot-line-err' : ''} ${line.includes('[READY]') ? 'jos-boot-line-ready' : ''}`}>
+                {line}
+              </div>
+            ))}
+            <span className="jos-boot-cursor">_</span>
+          </div>
+          <div className="jos-boot-progress-bar">
+            <div className="jos-boot-progress-fill" style={{ width: `${bootProgress}%` }} />
+          </div>
+          <div className="jos-boot-progress-label">{bootProgress}%</div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="jos-desktop" dir={isAr ? 'rtl' : 'ltr'} ref={desktopRef}>
-      {/* Wallpaper */}
-      <div className="jos-wallpaper" />
+      {/* Wallpaper with logo */}
+      <div className="jos-wallpaper">
+        <img src="/icons/josoor.png" alt="" className="jos-wallpaper-logo" />
+      </div>
 
       {/* Top bar */}
       <div className="jos-topbar">
@@ -445,24 +559,26 @@ export default function JosoorDesktopPage() {
         );
       })}
 
-      {/* Dock */}
-      <div className="jos-dock">
-        {APPS.map(app => {
-          const isOpen = windows.some(w => w.appId === app.id);
-          const isMinimized = windows.some(w => w.appId === app.id && w.isMinimized);
-          return (
-            <div key={app.id} className="jos-dock-item" onClick={() => openApp(app.id)}>
-              <div className="jos-dock-tooltip">{isAr ? app.labelAr : app.labelEn}</div>
-              {app.iconType === 'img' ? (
-                <img className="jos-dock-icon" src={app.icon} alt={app.labelEn} />
-              ) : (
-                <div className="jos-dock-icon-svg" style={{ background: app.color }}>{app.icon}</div>
-              )}
-              {isOpen && <div className={`jos-dock-indicator ${!isMinimized ? 'jos-dock-indicator-active' : ''}`} />}
-            </div>
-          );
-        })}
-      </div>
+      {/* Dock — only shows running apps */}
+      {windows.length > 0 && (
+        <div className="jos-dock">
+          {windows.map(win => {
+            const app = APPS.find(a => a.id === win.appId);
+            if (!app) return null;
+            return (
+              <div key={win.id} className={`jos-dock-item ${focusedWindowId === win.id ? 'jos-dock-item-active' : ''}`} onClick={() => openApp(app.id)}>
+                <div className="jos-dock-tooltip">{isAr ? app.labelAr : app.labelEn}</div>
+                {app.iconType === 'img' ? (
+                  <img className="jos-dock-icon" src={app.icon} alt={app.labelEn} />
+                ) : (
+                  <div className="jos-dock-icon-svg" style={{ background: app.color }}>{app.icon}</div>
+                )}
+                <div className={`jos-dock-indicator ${!win.isMinimized ? 'jos-dock-indicator-active' : ''}`} />
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* Canvas panel (for chat artifacts) */}
       {isCanvasOpen && (

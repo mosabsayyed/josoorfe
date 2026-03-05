@@ -15,16 +15,146 @@
   flex-direction: column;
 }
 
-/* ── Wallpaper ── */
+/* ── Wallpaper with centered logo ── */
 .jos-wallpaper {
   position: absolute;
   inset: 0;
   z-index: 0;
   background:
+    radial-gradient(ellipse at 50% 50%, rgba(244, 187, 48, 0.06) 0%, transparent 50%),
     radial-gradient(ellipse at 20% 50%, rgba(56, 30, 114, 0.4) 0%, transparent 60%),
     radial-gradient(ellipse at 80% 20%, rgba(20, 60, 100, 0.35) 0%, transparent 50%),
     radial-gradient(ellipse at 50% 80%, rgba(15, 40, 80, 0.3) 0%, transparent 50%),
     linear-gradient(160deg, #0d1117 0%, #161b22 40%, #0d1117 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.jos-wallpaper-logo {
+  width: 320px;
+  height: 320px;
+  object-fit: contain;
+  opacity: 0.06;
+  filter: grayscale(0.3);
+  pointer-events: none;
+  user-select: none;
+}
+
+/* ── Boot Screen ── */
+.jos-boot-screen {
+  background:
+    radial-gradient(ellipse at 50% 40%, rgba(244, 187, 48, 0.04) 0%, transparent 60%),
+    radial-gradient(ellipse at 20% 80%, rgba(56, 30, 114, 0.25) 0%, transparent 50%),
+    linear-gradient(180deg, #080b10 0%, #0d1117 30%, #111827 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.jos-boot-logo-bg {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.jos-boot-logo-img {
+  width: 400px;
+  height: 400px;
+  object-fit: contain;
+  opacity: 0.04;
+  filter: grayscale(0.5);
+}
+
+.jos-boot-content {
+  position: relative;
+  z-index: 1;
+  width: 680px;
+  max-width: 90vw;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.jos-boot-terminal {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+  padding: 20px 24px;
+  font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', 'Consolas', monospace;
+  font-size: 12px;
+  line-height: 1.7;
+  color: #8b949e;
+  max-height: 60vh;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.jos-boot-terminal::-webkit-scrollbar {
+  display: none;
+}
+
+.jos-boot-line {
+  white-space: pre;
+  animation: jos-boot-fadein 0.15s ease-out;
+}
+
+.jos-boot-line-empty {
+  height: 8px;
+}
+
+.jos-boot-line-ok {
+  color: #3fb950;
+}
+
+.jos-boot-line-err {
+  color: #f85149;
+}
+
+.jos-boot-line-ready {
+  color: #f4bb30;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.jos-boot-cursor {
+  display: inline-block;
+  color: #f4bb30;
+  animation: jos-blink 0.8s step-end infinite;
+}
+
+.jos-boot-progress-bar {
+  height: 3px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.jos-boot-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #f4bb30, #f59e0b);
+  border-radius: 2px;
+  transition: width 0.4s ease-out;
+}
+
+.jos-boot-progress-label {
+  text-align: center;
+  font-size: 11px;
+  color: #6e7681;
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+}
+
+@keyframes jos-boot-fadein {
+  from { opacity: 0; transform: translateY(2px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes jos-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
 }
 
 /* ── Top Bar (macOS-style menu bar) ── */
@@ -332,6 +462,10 @@
 
 .jos-dock-item:hover {
   transform: translateY(-4px) scale(1.15);
+}
+
+.jos-dock-item-active {
+  background: rgba(56, 139, 253, 0.12);
 }
 
 .jos-dock-icon {
