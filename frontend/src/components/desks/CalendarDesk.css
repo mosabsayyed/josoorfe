@@ -1,0 +1,211 @@
+/* CalendarDesk.css */
+
+.calendar-desk {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    background-color: var(--component-bg-primary);
+    color: var(--component-text-primary);
+    font-family: var(--component-font-family);
+    overflow-y: auto;
+}
+
+/* Header */
+.calendar-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid var(--component-panel-border);
+    background-color: var(--component-panel-bg);
+}
+
+.calendar-header-icon {
+    width: 24px;
+    height: 24px;
+    color: var(--component-text-accent);
+    flex-shrink: 0;
+}
+
+.calendar-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--component-text-primary);
+    margin: 0;
+}
+
+.calendar-subtitle {
+    font-size: 0.75rem;
+    color: var(--component-text-muted);
+    margin: 0.125rem 0 0 0;
+}
+
+/* Year Section */
+.calendar-year-section {
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--component-panel-border);
+}
+
+.calendar-year-nav {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 2rem;
+    margin-bottom: 1rem;
+}
+
+.calendar-nav-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 1px solid var(--component-panel-border);
+    background: var(--component-panel-bg);
+    color: var(--component-text-primary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.calendar-nav-btn:hover:not(:disabled) {
+    background: var(--component-bg-secondary);
+    border-color: var(--component-text-accent);
+}
+
+.calendar-nav-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+.calendar-year-display {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--component-text-accent);
+    min-width: 80px;
+    text-align: center;
+}
+
+.calendar-year-pills {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.calendar-year-pill {
+    padding: 0.375rem 0.875rem;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    border-radius: 1rem;
+    border: 1px solid var(--component-panel-border);
+    background: var(--component-panel-bg);
+    color: var(--component-text-secondary);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.calendar-year-pill:hover {
+    border-color: var(--component-text-accent);
+    color: var(--component-text-primary);
+}
+
+.calendar-year-pill.active {
+    background: var(--component-text-accent);
+    color: var(--component-text-on-accent);
+    border-color: var(--component-text-accent);
+}
+
+/* Quarter Section */
+.calendar-quarter-section {
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--component-panel-border);
+}
+
+.calendar-section-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--component-text-secondary);
+    margin: 0 0 1rem 0;
+}
+
+.calendar-quarter-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.75rem;
+}
+
+.calendar-quarter-card {
+    padding: 1rem;
+    border: 2px solid var(--component-panel-border);
+    border-radius: 0.5rem;
+    background: var(--component-panel-bg);
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.2s;
+}
+
+.calendar-quarter-card:hover {
+    border-color: var(--component-text-accent);
+}
+
+.calendar-quarter-card.active {
+    border-color: var(--component-text-accent);
+    background: rgba(244, 187, 48, 0.08);
+}
+
+.calendar-quarter-label {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--component-text-primary);
+    margin-bottom: 0.375rem;
+}
+
+.calendar-quarter-card.active .calendar-quarter-label {
+    color: var(--component-text-accent);
+}
+
+.calendar-quarter-months {
+    font-size: 0.6875rem;
+    color: var(--component-text-muted);
+}
+
+/* Summary */
+.calendar-summary {
+    padding: 1.5rem;
+    text-align: center;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+}
+
+.calendar-summary-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--component-text-muted);
+}
+
+.calendar-summary-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--component-text-accent);
+}
+
+.calendar-summary-months {
+    font-size: 0.875rem;
+    color: var(--component-text-secondary);
+}
+
+.calendar-summary-hint {
+    font-size: 0.6875rem;
+    color: var(--component-text-muted);
+    margin-top: 0.75rem;
+    max-width: 300px;
+}
