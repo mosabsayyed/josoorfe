@@ -5,8 +5,6 @@
   background: var(--component-bg-primary);
   box-sizing: border-box;
   overflow-x: auto;
-  transform: scale(0.9);
-  transform-origin: top center;
 }
 
 /* Stage: header + landscape. Landscape aspect-ratio drives layout. */

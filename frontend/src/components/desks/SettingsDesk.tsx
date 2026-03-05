@@ -17,7 +17,7 @@ import {
     AdminSettings,
     MCPEntry,
 } from '../../services/adminSettingsService';
-import '../../../pages/ObservabilityPage.css';
+import '../../pages/ObservabilityPage.css';
 
 const TOOL_OPTIONS = ['recall_memory', 'retrieve_instructions', 'read_neo4j_cypher'];
 

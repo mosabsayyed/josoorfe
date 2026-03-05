@@ -37,8 +37,8 @@ export default function ThemeToggle() {
       className="theme-toggle"
       onClick={toggle}
     >
-      <span style={{ fontSize: 16, lineHeight: 1 }}>{theme === 'dark' ? '☀️' : '🌙'}</span>
-      <span style={{ fontSize: 13 }}>{theme === 'dark' ? translations.light : translations.dark}</span>
+      <span style={{ fontSize: 16, lineHeight: 1 }}>{theme === 'dark' ? '🌙' : '☀️'}</span>
+      <span style={{ fontSize: 13 }}>{theme === 'dark' ? translations.dark : translations.light}</span>
     </button>
   );
 }

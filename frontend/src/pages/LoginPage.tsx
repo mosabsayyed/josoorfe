@@ -302,7 +302,7 @@ export function LoginPage({ language: propLanguage, onLanguageChange, onSkip, on
       } catch {
         // ignore localStorage errors
       }
-      if (!onLogin) navigate('/josoor', { replace: true });
+      if (!onLogin) navigate('/josoor-desktop', { replace: true });
     } catch (err: any) {
       alert(`Authentication error: ${err?.message || String(err)}`);
     }
