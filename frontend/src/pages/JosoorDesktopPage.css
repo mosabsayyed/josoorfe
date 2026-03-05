@@ -83,7 +83,7 @@
   gap: 2px;
   font-size: 13px;
   position: relative;
-  z-index: 100;
+  z-index: 1000;
 }
 
 .jdp-menu-trigger {
@@ -121,7 +121,7 @@
   border-radius: 6px;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
   padding: 4px 0;
-  z-index: 200;
+  z-index: 1100;
   animation: jdp-dropdown-in 120ms ease-out;
 }
 
@@ -170,7 +170,103 @@
 .jdp-menu-overlay {
   position: fixed;
   inset: 0;
-  z-index: 99;
+  z-index: 999;
+}
+
+/* ---- Profile Dropdown ---- */
+.jdp-profile-trigger {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  cursor: pointer;
+  color: var(--text-primary, #fff);
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+  transition: background 0.15s;
+}
+
+.jdp-profile-trigger:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.jdp-profile-avatar {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--accent-color, #60a5fa);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+  overflow: hidden;
+}
+
+.jdp-profile-dropdown {
+  position: absolute;
+  top: 100%;
+  inset-inline-end: 0;
+  margin-top: 4px;
+  min-width: 200px;
+  background: var(--bg-secondary, #1e1e3a);
+  border: 1px solid var(--border-color, #444);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  padding: 4px 0;
+  z-index: 1100;
+  animation: jdp-dropdown-in 120ms ease-out;
+}
+
+.jdp-profile-info {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border-color, #333);
+  margin-bottom: 4px;
+}
+
+.jdp-profile-info-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary, #fff);
+  margin: 0;
+}
+
+.jdp-profile-info-email {
+  font-size: 11px;
+  color: var(--text-secondary, #aaa);
+  margin: 2px 0 0;
+}
+
+/* ---- Action buttons (export/print/save) ---- */
+.jdp-action-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 4px;
+  color: var(--text-secondary, rgba(255, 255, 255, 0.6));
+  font-size: 15px;
+  display: flex;
+  align-items: center;
+  transition: color 0.15s, background 0.15s;
+  line-height: 1;
+}
+
+.jdp-action-btn:hover {
+  color: var(--text-primary, #fff);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.jdp-titlebar-divider {
+  width: 1px;
+  height: 18px;
+  background: rgba(255, 255, 255, 0.12);
+  margin: 0 4px;
 }
 
 /* ---- Toolbar ---- */

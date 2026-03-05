@@ -4,6 +4,7 @@
  * Self-contained: delete this file + CSS + 2 lines in App.tsx to revert.
  */
 import React, { useState, useEffect, useCallback, memo, Suspense } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { graphService } from '../services/graphService';
 import { ChatContainer } from '../components/chat';
@@ -79,10 +80,24 @@ const TOOLBAR_VIEWS = new Set<DesktopView>([
 export default function JosoorDesktopPage() {
   const { language } = useLanguage();
   const isAr = language === 'ar';
+  const navigate = useNavigate();
 
   // View state
   const [activeView, setActiveView] = useState<DesktopView>('home');
   const [openMenu, setOpenMenu] = useState<number | null>(null);
+  const [profileOpen, setProfileOpen] = useState(false);
+
+  // User profile
+  const [currentUser, setCurrentUser] = useState<any>(() => authService.getUser());
+  useEffect(() => {
+    const onAuth = () => setCurrentUser(authService.getUser());
+    window.addEventListener('storage', onAuth);
+    window.addEventListener('josoor_auth_change', onAuth as EventListener);
+    return () => {
+      window.removeEventListener('storage', onAuth);
+      window.removeEventListener('josoor_auth_change', onAuth as EventListener);
+    };
+  }, []);
 
   // Temporal controls
   const [year, setYear] = useState('2026');
@@ -257,8 +272,59 @@ export default function JosoorDesktopPage() {
           </div>
           <div className="jdp-titlebar-center">Josoor</div>
           <div className="jdp-titlebar-actions">
+            {/* Print / Save / Export */}
+            <button className="jdp-action-btn" title={isAr ? 'طباعة' : 'Print'} onClick={() => window.print()}>
+              🖨️
+            </button>
+            <button className="jdp-action-btn" title={isAr ? 'حفظ' : 'Save'}>
+              💾
+            </button>
+            <button className="jdp-action-btn" title={isAr ? 'تصدير' : 'Export'}>
+              📥
+            </button>
+            <div className="jdp-titlebar-divider" />
             <ThemeToggle />
             <LanguageToggle />
+            <div className="jdp-titlebar-divider" />
+            {/* Profile */}
+            <div style={{ position: 'relative' }}>
+              <button className="jdp-profile-trigger" onClick={() => setProfileOpen(!profileOpen)}>
+                <span className="jdp-profile-avatar">
+                  {currentUser?.user_metadata?.full_name?.[0]?.toUpperCase() || currentUser?.email?.[0]?.toUpperCase() || '?'}
+                </span>
+                <span style={{ maxWidth: 80, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {currentUser?.user_metadata?.full_name || currentUser?.email || (isAr ? 'ضيف' : 'Guest')}
+                </span>
+              </button>
+              {profileOpen && (
+                <>
+                  <div className="jdp-menu-overlay" onClick={() => setProfileOpen(false)} />
+                  <div className="jdp-profile-dropdown">
+                    {currentUser && (
+                      <div className="jdp-profile-info">
+                        <p className="jdp-profile-info-name">{currentUser?.user_metadata?.full_name || (isAr ? 'الحساب' : 'Account')}</p>
+                        <p className="jdp-profile-info-email">{currentUser?.email}</p>
+                      </div>
+                    )}
+                    <button className="jdp-dropdown-item" onClick={() => { setProfileOpen(false); }}>
+                      👤 {isAr ? 'الملف الشخصي' : 'Profile'}
+                    </button>
+                    <button className="jdp-dropdown-item" onClick={() => { setProfileOpen(false); setActiveView('settings' as DesktopView); }}>
+                      ⚙️ {isAr ? 'الإعدادات' : 'Settings'}
+                    </button>
+                    <div className="jdp-dropdown-sep" />
+                    <button className="jdp-dropdown-item" style={{ color: '#ef4444' }} onClick={async () => {
+                      try { await authService.logout(); } catch {}
+                      setCurrentUser(null);
+                      setProfileOpen(false);
+                      navigate('/landing');
+                    }}>
+                      🚪 {isAr ? 'تسجيل الخروج' : 'Logout'}
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </div>
 
