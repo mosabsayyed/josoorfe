@@ -328,10 +328,11 @@
   display: flex;
   min-height: 0;
   overflow: hidden;
-  /* Create stacking context so desk overlays (position:fixed) stay below chrome */
-  position: relative;
-  z-index: 0;
   background: var(--component-bg-primary);
+  /* transform creates a containing block for fixed-position descendants,
+     so desk overlays (position:fixed; inset:0) fill this area — not the viewport.
+     This keeps panels below the chrome without needing z-index wars. */
+  transform: translateZ(0);
 }
 
 .jdp-content-main {
