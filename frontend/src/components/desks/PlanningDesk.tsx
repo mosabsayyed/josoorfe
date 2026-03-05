@@ -156,10 +156,10 @@ function InterventionPlanning({ context, onClearContext }: InterventionPlanningP
   }, [context, t]);
 
   const ganttColumns = [
-    { id: 'text', header: 'Task', flexgrow: 1 },
-    { id: 'owner', header: 'Owner', width: 120, align: 'center' as const },
-    { id: 'start', header: 'Start', align: 'center' as const },
-    { id: 'duration', header: 'Duration', width: 80, align: 'center' as const },
+    { id: 'text', header: t('josoor.planning.ganttTask'), flexgrow: 1 },
+    { id: 'owner', header: t('josoor.planning.ganttOwner'), width: 120, align: 'center' as const },
+    { id: 'start', header: t('josoor.planning.ganttStart'), align: 'center' as const },
+    { id: 'duration', header: t('josoor.planning.ganttDuration'), width: 80, align: 'center' as const },
   ];
 
   // Convert plan to Gantt data format
@@ -411,10 +411,10 @@ function SavedPlansList() {
     });
 
     const ganttColumns = [
-      { id: 'text', header: 'Task', flexgrow: 1 },
-      { id: 'owner', header: 'Owner', width: 120, align: 'center' as const },
-      { id: 'start', header: 'Start', align: 'center' as const },
-      { id: 'duration', header: 'Duration', width: 80, align: 'center' as const },
+      { id: 'text', header: t('josoor.planning.ganttTask'), flexgrow: 1 },
+      { id: 'owner', header: t('josoor.planning.ganttOwner'), width: 120, align: 'center' as const },
+      { id: 'start', header: t('josoor.planning.ganttStart'), align: 'center' as const },
+      { id: 'duration', header: t('josoor.planning.ganttDuration'), width: 80, align: 'center' as const },
     ];
 
     const scales = [

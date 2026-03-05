@@ -506,6 +506,10 @@
       "selectedStrategy": "Selected Strategy",
       "generatingPlan": "Generating intervention plan...",
       "planNarrative": "Plan Summary",
+      "ganttTask": "Task",
+      "ganttOwner": "Owner",
+      "ganttStart": "Start",
+      "ganttDuration": "Duration",
       "editGantt": "Edit Timeline",
       "commitPlan": "Commit Plan",
       "cancelPlan": "Cancel",
@@ -1684,6 +1688,13 @@
     "settings": {
       "saveChanges": "Save Changes",
       "savedSuccessfully": "Settings saved successfully"
+    },
+    "calendar": {
+      "title": "Calendar",
+      "subtitle": "Set the fiscal year and quarter for all apps",
+      "selectQuarter": "Select Quarter",
+      "activeSelection": "Active Selection",
+      "hint": "All apps will use this year and quarter for data queries."
     },
     "dashboard": {
       "filters": {

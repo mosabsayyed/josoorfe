@@ -503,6 +503,10 @@
       "selectedStrategy": "الاستراتيجية المختارة",
       "generatingPlan": "جاري إنشاء خطة التدخل...",
       "planNarrative": "ملخص الخطة",
+      "ganttTask": "المهمة",
+      "ganttOwner": "المسؤول",
+      "ganttStart": "البداية",
+      "ganttDuration": "المدة",
       "editGantt": "تعديل الجدول الزمني",
       "commitPlan": "اعتماد الخطة",
       "cancelPlan": "إلغاء",
@@ -1677,6 +1681,13 @@
     "settings": {
       "saveChanges": "حفظ التغييرات",
       "savedSuccessfully": "تم حفظ الإعدادات بنجاح"
+    },
+    "calendar": {
+      "title": "التقويم",
+      "subtitle": "تعيين السنة المالية والربع لجميع التطبيقات",
+      "selectQuarter": "اختر الربع",
+      "activeSelection": "الاختيار الحالي",
+      "hint": "ستستخدم جميع التطبيقات هذه السنة والربع لاستعلامات البيانات."
     },
     "dashboard": {
       "filters": {

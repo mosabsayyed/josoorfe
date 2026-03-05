@@ -4,8 +4,8 @@
     display: flex;
     flex-direction: column;
     height: 100vh;
-    background-color: #020617;
-    color: #f9fafb;
+    background-color: var(--component-bg-primary);
+    color: var(--component-text-primary);
     font-family: var(--component-font-family);
     font-style: normal;
     overflow: hidden;
@@ -15,7 +15,7 @@
     position: sticky;
     top: 0;
     z-index: 100;
-    background-color: rgba(15, 23, 42, 0.98);
+    background-color: var(--component-panel-bg);
     border-bottom: 1px solid rgba(148, 163, 184, 0.3);
     padding: 1rem;
     backdrop-filter: blur(12px);
@@ -80,7 +80,7 @@
 }
 
 .insight-mode-filter {
-    background: rgba(30, 41, 59, 0.8);
+    background: var(--component-bg-secondary);
     border: 1px solid rgba(148, 163, 184, 0.3);
     border-radius: 0;
     color: var(--component-text-primary);

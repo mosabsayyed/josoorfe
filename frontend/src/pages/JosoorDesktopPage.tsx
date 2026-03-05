@@ -27,6 +27,7 @@ const ExplorerDesk = React.lazy(() => import('../components/desks/ExplorerDesk')
 const OntologyHome = React.lazy(() => import('../components/desks/OntologyHome'));
 const SettingsDesk = React.lazy(() => import('../components/desks/SettingsDesk').then(m => ({ default: m.SettingsDesk })));
 const ObservabilityDesk = React.lazy(() => import('../components/desks/ObservabilityDesk').then(m => ({ default: m.ObservabilityDashboard })));
+const CalendarDesk = React.lazy(() => import('../components/desks/CalendarDesk').then(m => ({ default: m.CalendarDesk })));
 
 // ── Boot sequence chains to preload ──
 const PRELOAD_CHAINS = [
@@ -61,6 +62,7 @@ const APPS: AppDef[] = [
   { id: 'home', labelEn: 'Ontology', labelAr: 'الأنطولوجيا', icon: '/icons/agenticAI.png', iconType: 'img', color: '', defaultWidth: 1000, defaultHeight: 700 },
   { id: 'settings', labelEn: 'Settings', labelAr: 'الإعدادات', icon: '/icons/adminsetting.png', iconType: 'img', color: '', defaultWidth: 600, defaultHeight: 500 },
   { id: 'observability', labelEn: 'Observability', labelAr: 'المراقبة', icon: '/icons/observability.png', iconType: 'img', color: '', defaultWidth: 1000, defaultHeight: 700 },
+  { id: 'calendar', labelEn: 'Calendar', labelAr: 'التقويم', icon: '📅', iconType: 'emoji', color: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)', defaultWidth: 520, defaultHeight: 500 },
 ];
 
 // ── Window state ──
@@ -467,6 +469,16 @@ export default function JosoorDesktopPage() {
         return <SettingsDesk year={year} quarter={quarter} />;
       case 'observability':
         return <ObservabilityDesk showHeader={false} />;
+      case 'calendar':
+        return (
+          <CalendarDesk
+            year={year}
+            quarter={quarter}
+            availableYears={availableYears}
+            onYearChange={setYear}
+            onQuarterChange={setQuarter}
+          />
+        );
       default:
         return null;
     }
