@@ -24,6 +24,7 @@ import { ChainDeskAura } from './components/desks/ChainDeskAura';
 import './index.css';
 
 const JosoorDesktopPage = React.lazy(() => import('./pages/JosoorDesktopPage'));
+const JosoorOSPage = React.lazy(() => import('./pages/JosoorOSPage'));
 
 const KnowledgeSeries = () => <div className="p-10 text-xl">Knowledge Series (Coming Soon)</div>;
 const Roadmap = () => <div className="p-10 text-xl">Roadmap (Coming Soon)</div>;
@@ -66,6 +67,13 @@ function AppContent() {
       <Route path="/josoor-desktop" element={
           <Suspense fallback={<div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', backgroundColor: 'var(--component-bg-primary)', color: 'var(--component-text-primary)' }}>Loading...</div>}>
             <JosoorDesktopPage />
+          </Suspense>
+      } />
+
+      {/* OS DESKTOP TEST — full windowed OS experiment */}
+      <Route path="/josoor-os" element={
+          <Suspense fallback={<div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', backgroundColor: 'var(--component-bg-primary)', color: 'var(--component-text-primary)' }}>Loading...</div>}>
+            <JosoorOSPage />
           </Suspense>
       } />
 
