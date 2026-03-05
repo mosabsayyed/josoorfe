@@ -64,7 +64,7 @@ function AppContent() {
 
       {/* DESKTOP TEST — macOS shell experiment */}
       <Route path="/josoor-desktop" element={
-          <Suspense fallback={<div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}>Loading...</div>}>
+          <Suspense fallback={<div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', backgroundColor: 'var(--component-bg-primary)', color: 'var(--component-text-primary)' }}>Loading...</div>}>
             <JosoorDesktopPage />
           </Suspense>
       } />
@@ -72,7 +72,7 @@ function AppContent() {
       {/* NEW JOSOOR ROUTE - The unified shell */}
       <Route path="/josoor" element={
         <ProtectedRoute>
-          <Suspense fallback={<div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}>Loading...</div>}>
+          <Suspense fallback={<div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', backgroundColor: 'var(--component-bg-primary)', color: 'var(--component-text-primary)' }}>Loading...</div>}>
             <JosoorShell />
           </Suspense>
         </ProtectedRoute>

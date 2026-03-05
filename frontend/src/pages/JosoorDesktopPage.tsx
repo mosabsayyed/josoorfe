@@ -490,10 +490,10 @@ export default function JosoorDesktopPage() {
           {isCanvasOpen && (
             <div style={{
               width: '35%',
-              borderInlineStart: '1px solid var(--border-color)',
+              borderInlineStart: '1px solid var(--component-panel-border)',
               overflow: 'hidden',
               flexShrink: 0,
-              backgroundColor: 'var(--bg-secondary)',
+              backgroundColor: 'var(--component-bg-secondary)',
             }}>
               <MemoizedCanvasManager
                 artifacts={canvasArtifacts}

@@ -43,6 +43,8 @@
   border-bottom: 1px solid var(--component-panel-border);
   flex-shrink: 0;
   user-select: none;
+  position: relative;
+  z-index: 10;
 }
 
 .jdp-traffic-lights {
@@ -296,6 +298,8 @@
   flex-shrink: 0;
   font-size: 13px;
   color: var(--component-text-secondary);
+  position: relative;
+  z-index: 9;
 }
 
 .jdp-toolbar label {
@@ -324,6 +328,10 @@
   display: flex;
   min-height: 0;
   overflow: hidden;
+  /* Create stacking context so desk overlays (position:fixed) stay below chrome */
+  position: relative;
+  z-index: 0;
+  background: var(--component-bg-primary);
 }
 
 .jdp-content-main {
@@ -332,6 +340,7 @@
   flex-direction: column;
   min-width: 0;
   overflow: hidden;
+  background: var(--component-bg-primary);
 }
 
 /* Chat conversation sidebar */
