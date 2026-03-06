@@ -330,7 +330,7 @@ function computeUrgency(props: Record<string, any>, labels: string[]): number {
 
 // ── Per-Instance RAG ──
 
-function getNodeInstanceRag(props: Record<string, any>, labels: string[]): RagStatus {
+export function getNodeInstanceRag(props: Record<string, any>, labels: string[]): RagStatus {
   if (labels.includes('EntityCapability')) {
     const es = props.execute_status;
     if (es === 'issues') return 'red';
@@ -598,6 +598,70 @@ function aggregateNodeRag(
     else result[nodeKey] = 'default';
   }
 
+  // ── Bottom-up RAG chain propagation ──
+  // RED propagates up, AMBER propagates up only onto GREEN, GREEN does not propagate.
+  // Both build and operate chains are processed.
+
+  const ragRank: Record<string, number> = { red: 3, amber: 2, green: 1, default: 0 };
+
+  const propagate = (source: string, target: string) => {
+    const srcStatus = result[source];
+    if (!srcStatus || srcStatus === 'green' || srcStatus === 'default') return;
+    const tgtStatus = result[target] || 'default';
+    if (ragRank[srcStatus] > ragRank[tgtStatus]) {
+      result[target] = srcStatus;
+    }
+  };
+
+  // Build chain (bottom → top):
+  //   projects → capabilities → risks → policyTools → sectorObjectives
+  //   projects → capabilities → risks → performance → sectorObjectives
+  //   changeAdoption → capabilities (then continues up via the paths above)
+  const buildChainPairs: [string, string][] = [
+    ['projects', 'capabilities'],
+    ['changeAdoption', 'capabilities'],
+    ['capabilities', 'risks'],
+    ['risks', 'policyTools'],
+    ['risks', 'performance'],
+    ['policyTools', 'sectorObjectives'],
+    ['performance', 'sectorObjectives'],
+  ];
+
+  // Operate chain (bottom → top):
+  //   orgUnits → capabilities → risks → policyTools → sectorObjectives
+  //   processes → capabilities → risks → performance → sectorObjectives
+  //   itSystems → capabilities → risks → policyTools → sectorObjectives
+  //   vendors → capabilities → risks → performance → sectorObjectives
+  //   cultureHealth → capabilities (then continues up via the paths above)
+  const operateChainPairs: [string, string][] = [
+    ['orgUnits', 'capabilities'],
+    ['processes', 'capabilities'],
+    ['itSystems', 'capabilities'],
+    ['vendors', 'capabilities'],
+    ['cultureHealth', 'capabilities'],
+    ['capabilities', 'risks'],
+    ['risks', 'policyTools'],
+    ['risks', 'performance'],
+    ['policyTools', 'sectorObjectives'],
+    ['performance', 'sectorObjectives'],
+  ];
+
+  // Collect unique pairs from both chains (order matters — bottom-up)
+  const allPairs: [string, string][] = [];
+  const seen = new Set<string>();
+  for (const pair of [...buildChainPairs, ...operateChainPairs]) {
+    const key = `${pair[0]}->${pair[1]}`;
+    if (!seen.has(key)) {
+      seen.add(key);
+      allPairs.push(pair);
+    }
+  }
+
+  // Propagate bottom-up: iterate in order so lower-level statuses flow upward
+  for (const [source, target] of allPairs) {
+    propagate(source, target);
+  }
+
   return result;
 }
 
@@ -641,21 +705,24 @@ function computeLineFlowHealth(
       }
     }
 
-    // No chain links exist between these types — show default (gold), not red
+    // No chain links exist between these types — treat as fully broken
     if (!hasAnyLinks) {
-      lineRag[key] = 'default';
-      lineDetails[key] = { from: fromKey, to: toKey, rag: 'default', connectivity: 0, fromTotal: fromNodes.size, fromConnected: 0, toTotal: toNodes.size, toConnected: 0, hasLinks: false };
+      lineRag[key] = 'red';
+      lineDetails[key] = { from: fromKey, to: toKey, rag: 'red', connectivity: 0, fromTotal: fromNodes.size, fromConnected: 0, toTotal: toNodes.size, toConnected: 0, hasLinks: false };
       continue;
     }
 
-    const ratioFrom = fromNodes.size > 0 ? connectedFrom.size / fromNodes.size : 0;
-    const ratioTo = toNodes.size > 0 ? connectedTo.size / toNodes.size : 0;
-    const connectivity = Math.min(ratioFrom || 0, ratioTo || 0);
+    // Broken relations: % of nodes that SHOULD have a link but DON'T
+    // Use the larger side as the expected total
+    const totalExpected = Math.max(fromNodes.size, toNodes.size);
+    const totalConnected = Math.max(connectedFrom.size, connectedTo.size);
+    const brokenPct = totalExpected > 0 ? 1 - (totalConnected / totalExpected) : 0;
+    const connectivity = 1 - brokenPct;
 
     let rag: RagStatus;
-    if (connectivity >= 0.8) rag = 'green';
-    else if (connectivity >= 0.4) rag = 'amber';
-    else rag = 'red';
+    if (brokenPct === 0) rag = 'green';        // 0% broken → all relations intact
+    else if (brokenPct <= 0.15) rag = 'amber';  // ≤15% broken → partial issues
+    else rag = 'red';                            // >15% broken → significant breakage
 
     lineRag[key] = rag;
     lineDetails[key] = { from: fromKey, to: toKey, rag, connectivity, fromTotal: fromNodes.size, fromConnected: connectedFrom.size, toTotal: toNodes.size, toConnected: connectedTo.size, hasLinks: true };
