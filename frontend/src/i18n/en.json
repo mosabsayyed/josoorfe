@@ -1760,7 +1760,8 @@
       "startHere": "Start Here",
       "settings": "Settings",
       "observability": "Observability",
-      "calendar": "Calendar"
+      "calendar": "Calendar",
+      "documents": "Documents"
     }
   }
 }
