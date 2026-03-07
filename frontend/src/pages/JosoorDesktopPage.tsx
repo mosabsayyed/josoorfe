@@ -10,6 +10,7 @@ import { ChatContainer } from '../components/chat';
 import { CanvasManager } from '../components/chat/CanvasManager';
 import { chatService } from '../services/chatService';
 import { fetchChainCached, injectChainCache } from '../services/chainsService';
+import { fetchSectorGraphData } from '../services/neo4jMcpService';
 import * as authService from '../services/authService';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTranslation } from 'react-i18next';
@@ -363,6 +364,15 @@ export default function JosoorDesktopPage() {
         }
       } catch (e: any) {
         addLine(`[DATA]   ✗ risk_plans — ${e.message || 'offline'}`);
+      }
+
+      // Preload Sector Desk data (2 Cypher + 3 chains → cached)
+      try {
+        addLine('[DATA]   ↳ sector_graph_data...');
+        const sectorResult = await fetchSectorGraphData();
+        addLine(`[DATA]   ✓ sector_graph — ${sectorResult.nodes.length} nodes`);
+      } catch (e: any) {
+        addLine(`[DATA]   ✗ sector_graph — ${e.message || 'offline'}`);
       }
 
       await new Promise(r => setTimeout(r, 200));
