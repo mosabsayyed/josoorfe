@@ -10,6 +10,7 @@ interface SectorDetailsPanelProps {
     onBackToNational?: () => void;
     onAssetClick?: (asset: GraphNode) => void;
     assets: GraphNode[];
+    allRegionAssets?: GraphNode[];  // Unfiltered assets for cross-sector output aggregation
     isLoading?: boolean;
     year?: number;
     quarter?: string;
@@ -201,6 +202,7 @@ const SectorDetailsPanel: React.FC<SectorDetailsPanelProps> = ({
     onBackToNational,
     onAssetClick,
     assets: allAssets,
+    allRegionAssets,
     isLoading = false,
     year,
     quarter,
@@ -353,7 +355,8 @@ const SectorDetailsPanel: React.FC<SectorDetailsPanelProps> = ({
         if (!megaRegion) return [];
 
         // Filter ALL assets in this region (no sector filter — outputs are cross-sector)
-        const assetsForOutput = allAssets.filter(node => {
+        const sourceAssets = allRegionAssets || allAssets;
+        const assetsForOutput = sourceAssets.filter(node => {
             if (!node || !node.region) return false;
             const nodeSector = node.sector?.toLowerCase();
             if (!nodeSector || !activeSectors.includes(nodeSector)) return false;
@@ -365,7 +368,12 @@ const SectorDetailsPanel: React.FC<SectorDetailsPanelProps> = ({
 
         // Aggregate capacities by sector category using structured fields
         const unitMatch = (a: any, unit: string) => (a.capacity_unit || '').toLowerCase() === unit.toLowerCase();
-        const subCatMatch = (a: any, keyword: string) => (a.sub_category || '').toLowerCase().includes(keyword.toLowerCase());
+        const subCatMatch = (a: any, keyword: string) => {
+            const val = (a.sub_category || '').toLowerCase();
+            const kw = keyword.toLowerCase();
+            // Exact word match to avoid "warehousing" matching "housing"
+            return val === kw || val.startsWith(kw + ' ') || val.endsWith(' ' + kw) || val.includes(' ' + kw + ' ');
+        };
 
         const waterCapacity = assetsForOutput
             .filter(a => a.sector?.toLowerCase() === 'water')
@@ -380,7 +388,7 @@ const SectorDetailsPanel: React.FC<SectorDetailsPanelProps> = ({
             .reduce((sum, a) => sum + getCapacityValue(a), 0);
 
         const hotelKeys = assetsForOutput
-            .filter(a => unitMatch(a, 'Hotel Keys') || subCatMatch(a, 'tourism'))
+            .filter(a => unitMatch(a, 'Hotel Keys'))
             .reduce((sum, a) => sum + getCapacityValue(a), 0);
 
         const industrialSpace = assetsForOutput
@@ -429,15 +437,7 @@ const SectorDetailsPanel: React.FC<SectorDetailsPanelProps> = ({
                 color: 'var(--sector-industry)'
             }
         ];
-    }, [allAssets, filteredAssets, selectedRegion, hoveredRegion, selectedSector, year, selectedPriority, selectedStatus, t]);
-
-    // DEBUG: Log props to understand rendering flow
-    console.log('[SectorDetailsPanel RENDER]', {
-        selectedAsset: selectedAsset ? selectedAsset.name : 'NULL',
-        selectedRegion: selectedRegion,
-        hasAssetClick: !!onAssetClick,
-        assetsCount: allAssets.length
-    });
+    }, [allAssets, allRegionAssets, selectedRegion, hoveredRegion, t]);
 
     // Normalize ID: "8.0" (string) and 8.0 (number→"8") must match
     // Converts to canonical "X.Y" format so all comparisons are consistent

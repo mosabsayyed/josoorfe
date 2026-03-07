@@ -234,7 +234,7 @@ async function _fetchSectorGraphDataInternal(): Promise<SectorGraphResult> {
 
     try {
         // SOURCE 2: Direct Cypher → ALL SectorPolicyTool nodes (chains only return a fraction)
-        const allPtQuery = `MATCH (n:SectorPolicyTool) RETURN n { .id, .name, .year, .level, .quarter, .status, .sector, .region, .description, .parent_id, .parent_year, .latitude, .longitude, .asset_type, .sub_category, .category, .priority, .rationale, .fiscal_action, .child_count, .tool_type, .impact_target, .delivery_channel, .cost_of_implementation, .capacity_metric, .capacity, .capacity_value, .capacity_unit, .capacity_secondary_value, .capacity_secondary_unit, .capacity_label, .completion_date, .investment, .investment_value, .investment_currency, .investment_label, .domain_id, .mapped_program_id, .mapped_program_label, .mapped_family, .mapped_capability, .mapped_source, .legacy_name } as node`;
+        const allPtQuery = `MATCH (n:SectorPolicyTool) RETURN n { .id, .name, .year, .level, .quarter, .status, .sector, .region, .description, .parent_id, .parent_year, .latitude, .longitude, .asset_type, .sub_category, .category, .priority, .rationale, .fiscal_action, .child_count, .tool_type, .impact_target, .delivery_channel, .cost_of_implementation, .capacity_metric, .capacity, .capacity_value, .capacity_unit, .capacity_secondary_value, .capacity_secondary_unit, .capacity_label, .completion_date, .investment, .investment_value, .investment_currency, .investment_label, .domain_id, .mapped_program_id, .mapped_program_label, .mapped_family, .mapped_capability, .mapped_source, .legacy_name } as node LIMIT 1000`;
         const directCypherPromise = callNeo4jTool('read_neo4j_cypher', { cypher_query: allPtQuery }).catch(err => {
             console.error('[Neo4jMCP] Source 2 (Direct Cypher) failed:', err);
             return [];
@@ -347,12 +347,22 @@ RETURN p { .id, .domain_id, .year, .parent_year } AS policy,
         }
 
         // Process L2 physical assets from direct Cypher (have short id, no _labels)
+        // Direct Cypher has ALL fields (capacity_unit, investment_value, etc.)
+        // so MERGE onto any existing chain node that may be missing those fields.
         for (const n of directCypherNodes) {
             if (!n.id) continue;
             // Add _labels for downstream filtering
             if (!n._labels) n._labels = ['SectorPolicyTool'];
             const key = `SectorPolicyTool:${n.id}-${n.year || n.parent_year || ''}`;
-            if (!uniqueMap.has(key)) {
+            if (uniqueMap.has(key)) {
+                // Merge: direct Cypher fields fill gaps in the chain node
+                const existing = uniqueMap.get(key);
+                for (const [k, v] of Object.entries(n)) {
+                    if (v != null && v !== '' && (existing[k] == null || existing[k] === '')) {
+                        existing[k] = v;
+                    }
+                }
+            } else {
                 uniqueMap.set(key, n);
             }
         }

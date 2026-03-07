@@ -856,6 +856,7 @@ export const SectorDesk: React.FC<SectorDeskProps> = ({ year: propYear, quarter:
                             hoveredRegion={hoveredRegion}
                             selectedAsset={null}
                             assets={filteredAssets}
+                            allRegionAssets={allAssets}
                             selectedSector={selectedSector}
                             year={Number(selectedYear)}
                             selectedPolicyTool={selectedPolicyTool}
@@ -879,6 +880,7 @@ export const SectorDesk: React.FC<SectorDeskProps> = ({ year: propYear, quarter:
                                 }
                             }}
                             assets={filteredAssets}
+                            allRegionAssets={allAssets}
                             selectedSector={selectedSector}
                             year={Number(selectedYear)}
                             waterL3Items={selectedSector === 'water' ? waterCascadeL3Items : []}
@@ -898,6 +900,7 @@ export const SectorDesk: React.FC<SectorDeskProps> = ({ year: propYear, quarter:
                                 }
                             }}
                             assets={filteredAssets}
+                            allRegionAssets={allAssets}
                             selectedSector={selectedSector}
                             year={Number(selectedYear)}
                             waterL3Items={selectedSector === 'water' ? waterCascadeL3Items : []}
@@ -937,6 +940,7 @@ export const SectorDesk: React.FC<SectorDeskProps> = ({ year: propYear, quarter:
                                 // Show L2 assets (all assets for the region, including L2 children)
                                 return result;
                             })()}
+                            allRegionAssets={allAssets}
                             selectedSector={selectedSector}
                             year={Number(selectedYear)}
                             waterL3Items={selectedSector === 'water' ? waterCascadeL3Items : []}
@@ -947,6 +951,7 @@ export const SectorDesk: React.FC<SectorDeskProps> = ({ year: propYear, quarter:
                             hoveredRegion={null}
                             selectedAsset={null}
                             assets={filteredAssets}
+                            allRegionAssets={allAssets}
                             selectedSector={selectedSector}
                             year={Number(selectedYear)}
                             waterL3Items={waterCascadeL3Items}

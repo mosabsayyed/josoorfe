@@ -590,6 +590,19 @@ const SectorMap: React.FC<SectorMapProps> = ({
     return () => observer.disconnect();
   }, []);
 
+  // Resize map when container dimensions change (e.g. app goes fullscreen)
+  const mapContainerRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const container = mapContainerRef.current;
+    if (!container) return;
+    const ro = new ResizeObserver(() => {
+      const map = mapRef.current?.getMap();
+      if (map) map.resize();
+    });
+    ro.observe(container);
+    return () => ro.disconnect();
+  }, []);
+
   // NO CONTROLLED ViewState - Allows smooth animations via mapRef.current.flyTo()
 
   // Filter Assets - minimal filtering (parent handles region/year/priority)
@@ -866,7 +879,7 @@ const SectorMap: React.FC<SectorMapProps> = ({
   }, [focusAssetId, allAssets]);
 
   return (
-    <div className="saudi-map-container">
+    <div className="saudi-map-container" ref={mapContainerRef}>
       <Map
         ref={mapRef}
         initialViewState={{
