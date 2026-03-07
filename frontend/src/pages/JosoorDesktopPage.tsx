@@ -9,9 +9,11 @@ import { graphService } from '../services/graphService';
 import { ChatContainer } from '../components/chat';
 import { CanvasManager } from '../components/chat/CanvasManager';
 import { chatService } from '../services/chatService';
-import { fetchChainCached } from '../services/chainsService';
+import { fetchChainCached, injectChainCache } from '../services/chainsService';
 import * as authService from '../services/authService';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useTranslation } from 'react-i18next';
+import { useAuth } from '../contexts/AuthContext';
 import type { ConversationSummary, Message as APIMessage } from '../types/api';
 import type { InterventionContext } from '../components/desks/PlanningDesk';
 import './JosoorDesktopPage.css';
@@ -26,7 +28,7 @@ const TutorialsDesk = React.lazy(() => import('../components/desks/TutorialsDesk
 const ExplorerDesk = React.lazy(() => import('../components/desks/ExplorerDesk').then(m => ({ default: m.ExplorerDesk })));
 const OntologyHome = React.lazy(() => import('../components/desks/OntologyHome'));
 const SettingsDesk = React.lazy(() => import('../app/josoor/views/admin/Settings'));
-const ObservabilityDesk = React.lazy(() => import('../app/josoor/views/admin/ObservabilityDashboard'));
+const ObservabilityDesk = React.lazy(() => import('../app/josoor/views/admin/Observability'));
 const CalendarDesk = React.lazy(() => import('../components/desks/CalendarDesk').then(m => ({ default: m.CalendarDesk })));
 
 // ── Boot sequence chains to preload ──
@@ -34,7 +36,10 @@ const PRELOAD_CHAINS = [
   'sector_value_chain',
   'capability_to_performance',
   'capability_to_policy',
+  'change_to_capability',
+  'sustainable_operations',
   'setting_strategic_initiatives',
+  'setting_strategic_priorities',
 ];
 
 const MemoizedCanvasManager = memo(CanvasManager);
@@ -42,28 +47,35 @@ const MemoizedCanvasManager = memo(CanvasManager);
 // ── App definitions ──
 interface AppDef {
   id: string;
-  labelEn: string;
-  labelAr: string;
-  icon: string; // path or emoji
+  i18nKey: string; // key under desktop.* in i18n
+  icon: string;
   iconType: 'img' | 'emoji';
-  color: string; // gradient background for emoji icons
+  color: string;
   defaultWidth: number;
   defaultHeight: number;
 }
 
-const APPS: AppDef[] = [
-  { id: 'observe', labelEn: 'Observe', labelAr: 'المراقبة', icon: '/icons/dbgraph.png', iconType: 'img', color: '', defaultWidth: 1000, defaultHeight: 700 },
-  { id: 'decide', labelEn: 'Decide', labelAr: 'القرارات', icon: '/icons/approach.png', iconType: 'img', color: '', defaultWidth: 1000, defaultHeight: 700 },
-  { id: 'deliver', labelEn: 'Deliver', labelAr: 'التنفيذ', icon: '/icons/architecture.png', iconType: 'img', color: '', defaultWidth: 1000, defaultHeight: 700 },
-  { id: 'reporting', labelEn: 'Reporting', labelAr: 'التقارير', icon: '/icons/reports.png', iconType: 'img', color: '', defaultWidth: 1000, defaultHeight: 700 },
-  { id: 'signals', labelEn: 'Signals', labelAr: 'الإشارات', icon: '/icons/twin.png', iconType: 'img', color: '', defaultWidth: 1000, defaultHeight: 700 },
-  { id: 'chat', labelEn: 'Expert Chat', labelAr: 'محادثة الخبير', icon: '/icons/expertchat.png', iconType: 'img', color: '', defaultWidth: 900, defaultHeight: 650 },
-  { id: 'tutorials', labelEn: 'Tutorials', labelAr: 'الدروس', icon: '/icons/demo.png', iconType: 'img', color: '', defaultWidth: 900, defaultHeight: 650 },
-  { id: 'home', labelEn: 'Ontology', labelAr: 'الأنطولوجيا', icon: '/icons/agenticAI.png', iconType: 'img', color: '', defaultWidth: 1000, defaultHeight: 700 },
-  { id: 'settings', labelEn: 'Settings', labelAr: 'الإعدادات', icon: '/icons/adminsetting.png', iconType: 'img', color: '', defaultWidth: 600, defaultHeight: 500 },
-  { id: 'observability', labelEn: 'Observability', labelAr: 'المراقبة', icon: '/icons/observability.png', iconType: 'img', color: '', defaultWidth: 1000, defaultHeight: 700 },
-  { id: 'calendar', labelEn: 'Calendar', labelAr: 'التقويم', icon: '📅', iconType: 'emoji', color: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)', defaultWidth: 520, defaultHeight: 500 },
+// Main apps (top-left grid) — "Start Here" first
+const MAIN_APPS: AppDef[] = [
+  { id: 'home', i18nKey: 'startHere', icon: '/icons/ontology.svg', iconType: 'img', color: '', defaultWidth: 1000, defaultHeight: 700 },
+  { id: 'observe', i18nKey: 'observe', icon: '/icons/observe.svg', iconType: 'img', color: '', defaultWidth: 1000, defaultHeight: 700 },
+  { id: 'decide', i18nKey: 'decide', icon: '/icons/decide.svg', iconType: 'img', color: '', defaultWidth: 1000, defaultHeight: 700 },
+  { id: 'deliver', i18nKey: 'deliver', icon: '/icons/deliver.svg', iconType: 'img', color: '', defaultWidth: 1000, defaultHeight: 700 },
+  { id: 'reporting', i18nKey: 'reporting', icon: '/icons/reporting.svg', iconType: 'img', color: '', defaultWidth: 1000, defaultHeight: 700 },
+  { id: 'signals', i18nKey: 'signals', icon: '/icons/signals.svg', iconType: 'img', color: '', defaultWidth: 1000, defaultHeight: 700 },
+  { id: 'chat', i18nKey: 'chat', icon: '/icons/chatexpert.svg', iconType: 'img', color: '', defaultWidth: 900, defaultHeight: 650 },
+  { id: 'tutorials', i18nKey: 'tutorials', icon: '/icons/tutorial.svg', iconType: 'img', color: '', defaultWidth: 900, defaultHeight: 650 },
+  { id: 'folder', i18nKey: 'documents', icon: '/att/ontology/FOLDER.svg', iconType: 'img', color: '', defaultWidth: 700, defaultHeight: 500 },
 ];
+
+// Utility apps (top-right vertical column)
+const UTILITY_APPS: AppDef[] = [
+  { id: 'settings', i18nKey: 'settings', icon: '/icons/Setting.svg', iconType: 'img', color: '', defaultWidth: 600, defaultHeight: 500 },
+  { id: 'observability', i18nKey: 'observability', icon: '/icons/observability.svg', iconType: 'img', color: '', defaultWidth: 1000, defaultHeight: 700 },
+  { id: 'calendar', i18nKey: 'calendar', icon: '/icons/calendar.svg', iconType: 'img', color: '', defaultWidth: 520, defaultHeight: 500 },
+];
+
+const APPS: AppDef[] = [...MAIN_APPS, ...UTILITY_APPS];
 
 // ── Window state ──
 interface WindowState {
@@ -90,17 +102,34 @@ function getStaggeredPosition(idx: number): { x: number; y: number } {
 
 // ── Component ──
 export default function JosoorDesktopPage() {
-  const { language } = useLanguage();
+  const { language, setLanguage } = useLanguage();
+  const { user, logout } = useAuth();
+  const { t } = useTranslation();
   const isAr = language === 'ar';
 
   const [windows, setWindows] = useState<WindowState[]>([]);
   const [focusedWindowId, setFocusedWindowId] = useState<string | null>(null);
   const [selectedIcon, setSelectedIcon] = useState<string | null>(null);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const profileMenuRef = useRef<HTMLDivElement>(null);
   const desktopRef = useRef<HTMLDivElement>(null);
 
-  // Temporal controls (shared across apps)
-  const [year, setYear] = useState('2026');
-  const [quarter, setQuarter] = useState('Q1');
+  // Temporal controls (shared across apps) — persist in localStorage
+  const [year, setYear] = useState(() => localStorage.getItem('jos-year') || '2026');
+  const [quarter, setQuarter] = useState(() => localStorage.getItem('jos-quarter') || 'Q1');
+
+  // Persist year/quarter changes
+  useEffect(() => { localStorage.setItem('jos-year', year); }, [year]);
+  useEffect(() => { localStorage.setItem('jos-quarter', quarter); }, [quarter]);
+
+  // Restore theme from localStorage on mount
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('jos-theme');
+    if (savedTheme) {
+      document.documentElement.setAttribute('data-theme', savedTheme);
+      document.documentElement.style.colorScheme = savedTheme;
+    }
+  }, []);
   const { data: temporalData } = useQuery({
     queryKey: ['neo4j-years'],
     queryFn: () => graphService.getYears(),
@@ -121,6 +150,67 @@ export default function JosoorDesktopPage() {
   const [isPersonaLocked, setIsPersonaLocked] = useState(false);
   const [interventionContext, setInterventionContext] = useState<InterventionContext | null>(null);
 
+  // ── Desktop icon positions (draggable) ──
+  const ICON_W = 120;
+  const ICON_H = 130;
+  const PAD_X = 32;
+  const PAD_Y = 24;
+
+  const buildDefaultPositions = useCallback(() => {
+    const positions: Record<string, { x: number; y: number }> = {};
+    // Main apps: grid from top-left, flowing top-to-bottom then left-to-right
+    const cols = Math.floor((window.innerWidth - PAD_X * 2 - 200) / ICON_W); // reserve space for utility column
+    MAIN_APPS.forEach((app, i) => {
+      const col = Math.floor(i / Math.max(1, Math.floor((window.innerHeight - 58 - PAD_Y * 2) / ICON_H)));
+      const row = i % Math.max(1, Math.floor((window.innerHeight - 58 - PAD_Y * 2) / ICON_H));
+      positions[app.id] = { x: PAD_X + col * ICON_W, y: PAD_Y + row * ICON_H };
+    });
+    // Utility apps: top-right, vertical stack
+    const rightX = window.innerWidth - PAD_X - ICON_W;
+    UTILITY_APPS.forEach((app, i) => {
+      positions[app.id] = { x: rightX, y: PAD_Y + i * ICON_H };
+    });
+    return positions;
+  }, []);
+
+  const [iconPositions, setIconPositions] = useState<Record<string, { x: number; y: number }>>(() => {
+    try {
+      const saved = localStorage.getItem('jos-icon-positions');
+      if (saved) return JSON.parse(saved);
+    } catch { /* ignore */ }
+    return buildDefaultPositions();
+  });
+
+  // Persist icon positions
+  useEffect(() => {
+    localStorage.setItem('jos-icon-positions', JSON.stringify(iconPositions));
+  }, [iconPositions]);
+
+  const handleIconDragStart = useCallback((e: React.MouseEvent, appId: string) => {
+    e.preventDefault();
+    const pos = iconPositions[appId] || { x: 0, y: 0 };
+    const startX = e.clientX;
+    const startY = e.clientY;
+    let dragging = false;
+
+    const handleMove = (ev: MouseEvent) => {
+      const dx = ev.clientX - startX;
+      const dy = ev.clientY - startY;
+      // Dead-zone: only start dragging after 5px movement
+      if (!dragging && Math.abs(dx) < 5 && Math.abs(dy) < 5) return;
+      dragging = true;
+      const newX = Math.max(0, Math.min(window.innerWidth - ICON_W, pos.x + dx));
+      const newY = Math.max(0, Math.min(window.innerHeight - 58 - ICON_H, pos.y + dy));
+      setIconPositions(prev => ({ ...prev, [appId]: { x: newX, y: newY } }));
+    };
+    const handleUp = () => {
+      document.removeEventListener('mousemove', handleMove);
+      document.removeEventListener('mouseup', handleUp);
+    };
+    document.addEventListener('mousemove', handleMove);
+    document.addEventListener('mouseup', handleUp);
+  }, [iconPositions]);
+
   // Clock
   const [clock, setClock] = useState('');
   useEffect(() => {
@@ -132,6 +222,40 @@ export default function JosoorDesktopPage() {
     const timer = setInterval(update, 30000);
     return () => clearInterval(timer);
   }, [isAr]);
+
+  // Close profile menu on outside click
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(e.target as Node)) {
+        setShowProfileMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
+
+  // ── Taskbar actions (print/save target the focused window) ──
+  const handlePrint = useCallback(() => {
+    if (!focusedWindowId) return;
+    const el = document.querySelector(`[data-window-id="${focusedWindowId}"]`) as HTMLElement;
+    if (!el) return;
+    // Mark this window for print isolation
+    el.classList.add('jos-print-target');
+    document.body.classList.add('jos-printing');
+    window.print();
+    el.classList.remove('jos-print-target');
+    document.body.classList.remove('jos-printing');
+  }, [focusedWindowId]);
+
+  // Save PDF — uses browser print dialog (user picks "Save as PDF")
+  // This handles full content, nested scrolls, pagination natively
+  const handleExportPDF = handlePrint;
+
+  const handleLogout = useCallback(async () => {
+    setShowProfileMenu(false);
+    try { await logout(); } catch { }
+    window.location.href = '/landing';
+  }, [logout]);
 
   // ── Boot sequence ──
   const [isBooting, setIsBooting] = useState(true);
@@ -193,6 +317,54 @@ export default function JosoorDesktopPage() {
 
       const loaded = chainResults.filter(r => r.status === 'fulfilled' && (r.value as any).ok).length;
       addLine(`[DATA] Chain cache ready: ${loaded}/${PRELOAD_CHAINS.length} chains loaded`);
+
+      // Preload RiskPlan relation via direct Cypher
+      try {
+        addLine('[DATA]   ↳ risk_plans (HAS_PLAN)...');
+        const mcpRes = await fetch('/1/mcp/', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json, text/event-stream' },
+          body: JSON.stringify({
+            jsonrpc: '2.0', id: Date.now(), method: 'tools/call',
+            params: { name: 'read_neo4j_cypher', arguments: {
+              cypher_query: `MATCH (r:EntityRisk)-[:HAS_PLAN]->(p:RiskPlan) RETURN r.id AS risk_id, r.name AS risk_name, r.status AS risk_status, r.build_band AS risk_build_band, r.operate_band AS risk_operate_band, p.id AS plan_id, p.name AS plan_name, p.status AS plan_status, p.sponsor AS plan_sponsor LIMIT 5000`
+            }}
+          }),
+        });
+        if (mcpRes.ok) {
+          const text = await mcpRes.text();
+          let parsed: any;
+          try { parsed = JSON.parse(text); } catch {
+            const dataLine = text.split('\n').find((l: string) => l.startsWith('data: '));
+            parsed = dataLine ? JSON.parse(dataLine.substring(6)) : null;
+          }
+          const rows = parsed?.result?.content?.[0]?.text ? JSON.parse(parsed.result.content[0].text) : [];
+          const nodes: any[] = [];
+          const relationships: any[] = [];
+          const seenNodes = new Set<string>();
+          console.log('[RiskPlan preload] raw rows:', rows.length, 'sample:', rows[0]);
+          for (const row of (Array.isArray(rows) ? rows : [])) {
+            const riskId = row.risk_id || '';
+            const planId = row.plan_id || '';
+            if (riskId && !seenNodes.has(`risk:${riskId}`)) {
+              seenNodes.add(`risk:${riskId}`);
+              nodes.push({ id: riskId, labels: ['EntityRisk'], properties: { domain_id: riskId, name: row.risk_name, status: row.risk_status, build_band: row.risk_build_band, operate_band: row.risk_operate_band } });
+            }
+            if (planId && !seenNodes.has(`plan:${planId}`)) {
+              seenNodes.add(`plan:${planId}`);
+              nodes.push({ id: planId, labels: ['RiskPlan'], properties: { domain_id: planId, name: row.plan_name, status: row.plan_status, progress: row.plan_progress, sponsor: row.plan_sponsor } });
+            }
+            if (riskId && planId) {
+              relationships.push({ start: riskId, end: planId, type: 'HAS_PLAN' });
+            }
+          }
+          injectChainCache('risk_plans', { nodes, relationships });
+          addLine(`[DATA]   ✓ risk_plans — ${nodes.length} nodes, ${relationships.length} rels`);
+        }
+      } catch (e: any) {
+        addLine(`[DATA]   ✗ risk_plans — ${e.message || 'offline'}`);
+      }
+
       await new Promise(r => setTimeout(r, 200));
 
       addLine('[GPU]  Initializing visualization engine... OK');
@@ -348,9 +520,9 @@ export default function JosoorDesktopPage() {
       return {
         ...w, isMaximized: true,
         prevBounds: { x: w.x, y: w.y, width: w.width, height: w.height },
-        x: 0, y: 28, // Below top bar
+        x: 0, y: 0,
         width: window.innerWidth,
-        height: window.innerHeight - 28 - 70, // Leave room for dock
+        height: window.innerHeight - 58, // Leave room for bottom taskbar
       };
     }));
   }, []);
@@ -465,6 +637,23 @@ export default function JosoorDesktopPage() {
             </div>
           </div>
         );
+      case 'folder':
+        return (
+          <div style={{ padding: 24, display: 'flex', flexWrap: 'wrap', gap: 20, alignContent: 'flex-start' }}>
+            {[
+              { name: isAr ? 'تقرير الأداء' : 'Performance Report', icon: '/att/ontology/REPORT.svg' },
+              { name: isAr ? 'تقرير المخاطر' : 'Risk Report', icon: '/att/ontology/REPORT.svg' },
+              { name: isAr ? 'تقرير القدرات' : 'Capability Report', icon: '/att/ontology/REPORT.svg' },
+              { name: isAr ? 'تقرير المشاريع' : 'Projects Report', icon: '/att/ontology/REPORT.svg' },
+              { name: isAr ? 'تقرير الامتثال' : 'Compliance Report', icon: '/att/ontology/REPORT.svg' },
+            ].map(file => (
+              <div key={file.name} style={{ width: 90, textAlign: 'center', cursor: 'pointer' }}>
+                <img src={file.icon} alt="" style={{ width: 48, height: 48, opacity: 0.9 }} />
+                <div style={{ fontSize: 11, color: '#e6edf3', marginTop: 4, wordBreak: 'break-word' }}>{file.name}</div>
+              </div>
+            ))}
+          </div>
+        );
       case 'settings':
         return <SettingsDesk />;
       case 'observability':
@@ -487,7 +676,7 @@ export default function JosoorDesktopPage() {
   // ── Boot screen ──
   if (isBooting) {
     return (
-      <div className="jos-desktop jos-boot-screen" dir={isAr ? 'rtl' : 'ltr'}>
+      <div className="jos-desktop jos-boot-screen" dir="ltr">
         <div className="jos-boot-logo-bg">
           <img src="/icons/josoor.png" alt="" className="jos-boot-logo-img" />
         </div>
@@ -516,33 +705,30 @@ export default function JosoorDesktopPage() {
         <img src="/icons/josoor.png" alt="" className="jos-wallpaper-logo" />
       </div>
 
-      {/* Top bar */}
-      <div className="jos-topbar">
-        <div className="jos-topbar-left">
-          <span className="jos-topbar-logo">Josoor</span>
-        </div>
-        <div className="jos-topbar-right">
-          <span>{clock}</span>
-        </div>
-      </div>
+      {/* (Taskbar is rendered at bottom) */}
 
       {/* Desktop icons area */}
       <div className="jos-icon-area" onClick={handleDesktopClick}>
-        {APPS.map(app => (
-          <div
-            key={app.id}
-            className={`jos-icon ${selectedIcon === app.id ? 'jos-icon-selected' : ''}`}
-            onClick={(e) => { e.stopPropagation(); setSelectedIcon(app.id); }}
-            onDoubleClick={() => handleIconDoubleClick(app.id)}
-          >
-            {app.iconType === 'img' ? (
-              <img className="jos-icon-img" src={app.icon} alt={app.labelEn} />
-            ) : (
-              <div className="jos-icon-svg" style={{ background: app.color }}>{app.icon}</div>
-            )}
-            <span className="jos-icon-label">{isAr ? app.labelAr : app.labelEn}</span>
-          </div>
-        ))}
+        {APPS.map(app => {
+          const pos = iconPositions[app.id] || { x: 0, y: 0 };
+          return (
+            <div
+              key={app.id}
+              className={`jos-icon ${selectedIcon === app.id ? 'jos-icon-selected' : ''}`}
+              style={{ position: 'absolute', left: pos.x, top: pos.y }}
+              onClick={(e) => { e.stopPropagation(); setSelectedIcon(app.id); }}
+              onDoubleClick={() => handleIconDoubleClick(app.id)}
+              onMouseDown={(e) => handleIconDragStart(e, app.id)}
+            >
+              {app.iconType === 'img' ? (
+                <img className="jos-icon-img" src={app.icon} alt={t(`josoor.desktop.${app.i18nKey}`)} />
+              ) : (
+                <div className="jos-icon-svg" style={{ background: app.color }}>{app.icon}</div>
+              )}
+              <span className="jos-icon-label">{t(`josoor.desktop.${app.i18nKey}`)}</span>
+            </div>
+          );
+        })}
       </div>
 
       {/* Windows */}
@@ -571,26 +757,90 @@ export default function JosoorDesktopPage() {
         );
       })}
 
-      {/* Dock — only shows running apps */}
-      {windows.length > 0 && (
-        <div className="jos-dock">
+      {/* Bottom taskbar (Windows-style) */}
+      <div className="jos-taskbar">
+        {/* Left: Actions */}
+        <div className="jos-taskbar-left">
+          <button className="jos-taskbar-action" onClick={handlePrint} title={isAr ? 'طباعة' : 'Print'}><img className="jos-taskbar-action-icon" src="/icons/print.svg" alt="Print" /></button>
+          <button className="jos-taskbar-action" onClick={handleExportPDF} title={isAr ? 'حفظ PDF' : 'Save PDF'}><img className="jos-taskbar-action-icon" src="/icons/save.svg" alt="Save" /></button>
+          <span className="jos-taskbar-sep" />
+          <button
+            className="jos-taskbar-action jos-taskbar-lang"
+            onClick={() => setLanguage(isAr ? 'en' : 'ar')}
+            title={isAr ? 'English' : 'العربية'}
+          >{isAr ? 'EN' : 'ع'}</button>
+          <button
+            className="jos-taskbar-action"
+            onClick={() => {
+              const root = document.documentElement;
+              const current = root.getAttribute('data-theme');
+              const next = current === 'light' ? 'dark' : 'light';
+              root.setAttribute('data-theme', next);
+              root.style.colorScheme = next;
+              localStorage.setItem('jos-theme', next);
+            }}
+            title={isAr ? 'تبديل السمة' : 'Toggle Theme'}
+          >🌓</button>
+        </div>
+
+        {/* Center: Running apps */}
+        <div className="jos-taskbar-apps">
           {windows.map(win => {
             const app = APPS.find(a => a.id === win.appId);
             if (!app) return null;
             return (
-              <div key={win.id} className={`jos-dock-item ${focusedWindowId === win.id ? 'jos-dock-item-active' : ''}`} onClick={() => openApp(app.id)}>
-                <div className="jos-dock-tooltip">{isAr ? app.labelAr : app.labelEn}</div>
+              <button
+                key={win.id}
+                className={`jos-taskbar-app ${focusedWindowId === win.id ? 'jos-taskbar-app-active' : ''} ${win.isMinimized ? 'jos-taskbar-app-minimized' : ''}`}
+                onClick={() => openApp(app.id)}
+                title={t(`josoor.desktop.${app.i18nKey}`)}
+              >
                 {app.iconType === 'img' ? (
-                  <img className="jos-dock-icon" src={app.icon} alt={app.labelEn} />
+                  <img className="jos-taskbar-app-icon" src={app.icon} alt="" />
                 ) : (
-                  <div className="jos-dock-icon-svg" style={{ background: app.color }}>{app.icon}</div>
+                  <span className="jos-taskbar-app-emoji">{app.icon}</span>
                 )}
-                <div className={`jos-dock-indicator ${!win.isMinimized ? 'jos-dock-indicator-active' : ''}`} />
-              </div>
+                <span className="jos-taskbar-app-label">{t(`josoor.desktop.${app.i18nKey}`)}</span>
+              </button>
             );
           })}
         </div>
-      )}
+
+        {/* Right: Brand, temporal, clock, profile */}
+        <div className="jos-taskbar-right">
+          <span className="jos-taskbar-brand">{isAr ? 'جسور' : 'Josoor'}</span>
+          <span className="jos-taskbar-sep" />
+          <span className="jos-taskbar-temporal" onClick={() => openApp('calendar')}>
+            {year} · {quarter}
+          </span>
+          <span className="jos-taskbar-sep" />
+          <span className="jos-taskbar-clock">{clock}</span>
+          <div className="jos-taskbar-profile-wrap" ref={profileMenuRef}>
+            <button
+              className="jos-taskbar-profile-btn"
+              onClick={() => setShowProfileMenu(p => !p)}
+            >
+              <span className="jos-taskbar-avatar">
+                {(user?.email || 'G')[0].toUpperCase()}
+              </span>
+            </button>
+            {showProfileMenu && (
+              <div className="jos-taskbar-profile-menu">
+                <div className="jos-taskbar-profile-email">
+                  {user?.email || (isAr ? 'ضيف' : 'Guest')}
+                </div>
+                <div className="jos-taskbar-profile-divider" />
+                <button className="jos-taskbar-profile-item" onClick={() => { setShowProfileMenu(false); openApp('settings'); }}>
+                  {isAr ? 'الإعدادات' : 'Settings'}
+                </button>
+                <button className="jos-taskbar-profile-item jos-taskbar-profile-logout" onClick={handleLogout}>
+                  {isAr ? 'تسجيل الخروج' : 'Log Out'}
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
 
       {/* Canvas panel (for chat artifacts) */}
       {isCanvasOpen && (
@@ -627,6 +877,7 @@ interface OSWindowProps {
 }
 
 function OSWindow({ win, app, isAr, isFocused, onClose, onMinimize, onMaximize, onFocus, onMove, onResize, children }: OSWindowProps) {
+  const { t } = useTranslation();
   const dragRef = useRef<{ startX: number; startY: number; origX: number; origY: number } | null>(null);
   const resizeRef = useRef<{ startX: number; startY: number; origW: number; origH: number; origX: number; origY: number; dir: string } | null>(null);
 
@@ -641,7 +892,7 @@ function OSWindow({ win, app, isAr, isFocused, onClose, onMinimize, onMaximize, 
       if (!dragRef.current) return;
       const dx = ev.clientX - dragRef.current.startX;
       const dy = ev.clientY - dragRef.current.startY;
-      onMove(dragRef.current.origX + dx, Math.max(28, dragRef.current.origY + dy));
+      onMove(dragRef.current.origX + dx, Math.max(0, dragRef.current.origY + dy));
     };
     const handleUp = () => {
       dragRef.current = null;
@@ -673,7 +924,7 @@ function OSWindow({ win, app, isAr, isFocused, onClose, onMinimize, onMaximize, 
       if (d.includes('e')) newW = Math.max(400, resizeRef.current.origW + dx);
       if (d.includes('w')) { newW = Math.max(400, resizeRef.current.origW - dx); newX = resizeRef.current.origX + dx; }
       if (d.includes('s')) newH = Math.max(300, resizeRef.current.origH + dy);
-      if (d.includes('n')) { newH = Math.max(300, resizeRef.current.origH - dy); newY = Math.max(28, resizeRef.current.origY + dy); }
+      if (d.includes('n')) { newH = Math.max(300, resizeRef.current.origH - dy); newY = Math.max(0, resizeRef.current.origY + dy); }
 
       onResize(newW, newH, newX, newY);
     };
@@ -689,6 +940,7 @@ function OSWindow({ win, app, isAr, isFocused, onClose, onMinimize, onMaximize, 
   return (
     <div
       className={`jos-window ${isFocused ? 'jos-window-focused' : ''} ${win.isMaximized ? 'jos-window-maximized' : ''}`}
+      data-window-id={win.id}
       style={{
         left: win.x, top: win.y, width: win.width, height: win.height, zIndex: win.zIndex,
       }}
@@ -703,7 +955,7 @@ function OSWindow({ win, app, isAr, isFocused, onClose, onMinimize, onMaximize, 
         </div>
         <span className="jos-window-title">
           {app.iconType === 'img' && <img className="jos-window-title-icon" src={app.icon} alt="" />}
-          {isAr ? app.labelAr : app.labelEn}
+          {t(`josoor.desktop.${app.i18nKey}`)}
         </span>
         {/* Spacer to balance the traffic lights */}
         <div style={{ width: 52 }} />

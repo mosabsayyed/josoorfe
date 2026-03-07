@@ -1642,10 +1642,10 @@ function buildL3(l3Node: NeoGraphNode): L3Capability {
     ? getNeo4jInt((l3Node as any).process_score)
     : (risk?.process_score != null ? getNeo4jInt(risk.process_score) : undefined);
 
-  // Exposure
+  // Exposure — read ONLY from capability node (same source as strip status)
   l3Cap.exposure_percent = mode === 'build'
-    ? (getNeo4jInt((l3Node as any).build_exposure_pct) || getNeo4jInt(risk?.build_exposure_pct))
-    : (getNeo4jInt((l3Node as any).regression_risk_pct) || getNeo4jInt(risk?.operate_exposure_pct_effective));
+    ? getNeo4jInt((l3Node as any).build_exposure_pct)
+    : getNeo4jInt((l3Node as any).regression_risk_pct);
 
   return l3Cap;
 }

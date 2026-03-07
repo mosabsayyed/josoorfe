@@ -1,4 +1,4 @@
-import type { TFunction } from 'i18next';
+type TFunc = (key: string, defaultValue?: string) => string;
 
 export type WaterL3Item = { id: string; title: string; value: string };
 export type WaterProgramFamilyId =
@@ -213,7 +213,7 @@ export function buildWaterPrograms(): WaterProgram[] {
 export type WaterVisionL2 = { id: string; title: string; value: string; l2: WaterVisionL3[] };
 export type WaterPillar = { id: string; title: string; value: string; l1: WaterVisionL2[] };
 
-export function getWaterProgramFamilies(t: TFunction): Array<{ id: WaterProgramFamilyId; label: string }> {
+export function getWaterProgramFamilies(t: TFunc): Array<{ id: WaterProgramFamilyId; label: string }> {
   return [
     { id: 'governance', label: t('josoor.sector.waterPrograms.governance', 'Institutional Restructuring & Governance') },
     { id: 'infrastructure_desalination', label: t('josoor.sector.waterPrograms.infrastructure_desalination', 'Infrastructure & Desalination') },
@@ -223,7 +223,7 @@ export function getWaterProgramFamilies(t: TFunction): Array<{ id: WaterProgramF
   ];
 }
 
-export function getWaterExecutionPrograms(t: TFunction): WaterExecutionProgram[] {
+export function getWaterExecutionPrograms(t: TFunc): WaterExecutionProgram[] {
   return [
     {
       id: 'swa-regulator-transition',
@@ -336,7 +336,7 @@ export function getWaterExecutionPrograms(t: TFunction): WaterExecutionProgram[]
   ];
 }
 
-export function buildWaterHighLevelHierarchy(t: TFunction): WaterPillar[] {
+export function buildWaterHighLevelHierarchy(t: TFunc): WaterPillar[] {
   return [
     {
       id: 'vibrant',

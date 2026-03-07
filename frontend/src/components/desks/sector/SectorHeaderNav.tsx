@@ -102,7 +102,7 @@ const SectorHeaderNav: React.FC<SectorHeaderNavProps> = ({
     };
 
     type CascadeL3 = { id: string; title: string; value: string };
-    type CascadeL2 = { id: string; title: string; value: string; l3: CascadeL3[] };
+    type CascadeL2 = { id: string; title: string; value: string; l3: CascadeL3[]; linkedPrograms?: string[] };
     type CascadeL1 = { id: string; title: string; value: string; l2: CascadeL2[] };
     type CascadePillar = { id: string; title: string; value: string; l1: CascadeL1[] };
     type CascadeL2Option = CascadeL1;

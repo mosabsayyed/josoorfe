@@ -75,7 +75,18 @@ export interface LineHealthDetail {
   fromConnected: number;
   toTotal: number;
   toConnected: number;
+  linkCount: number;
+  orphanCount: number;
+  bastardCount: number;
   hasLinks: boolean;
+  disconnectedFrom: { id: string; name: string }[];
+  disconnectedTo: { id: string; name: string }[];
+}
+
+export interface RiskStats {
+  buildRed: number; buildAmber: number; buildGreen: number;
+  operateRed: number; operateAmber: number; operateGreen: number;
+  total: number;
 }
 
 export interface OntologyRagState {
@@ -85,6 +96,7 @@ export interface OntologyRagState {
   lineDetails: Record<string, LineHealthDetail>;
   stripData: StripColumn[];
   nodeDetails: Record<string, NodeInstance[]>;
+  riskStats: RiskStats;
 }
 
 export interface StripColumn {
@@ -117,6 +129,7 @@ const LABEL_TO_NODE_KEY: Record<string, string> = {
   EntityProject: 'projects',
   EntityChangeAdoption: 'changeAdoption',
   EntityCultureHealth: 'cultureHealth',
+  RiskPlan: 'riskPlans',
 };
 
 const NODE_TO_COLUMN: Record<string, string> = {
@@ -133,31 +146,342 @@ const NODE_TO_COLUMN: Record<string, string> = {
   projects: 'velocity', changeAdoption: 'velocity',
 };
 
-// Connection pairs for line flow health (from 27 ALLCONN connections, deduplicated)
-const CONNECTION_PAIRS: [string, string][] = [
-  ['capabilities', 'orgUnits'],
-  ['capabilities', 'processes'],
-  ['capabilities', 'itSystems'],
-  ['capabilities', 'risks'],
-  ['itSystems', 'projects'],
-  ['itSystems', 'vendors'],
-  ['orgUnits', 'projects'],
-  ['orgUnits', 'processes'],
-  ['policyTools', 'capabilities'],
-  ['policyTools', 'adminRecords'],
-  ['policyTools', 'dataTransactions'],
-  ['policyTools', 'risks'],
-  ['performance', 'capabilities'],
-  ['projects', 'changeAdoption'],
-  ['projects', 'processes'],
-  ['sectorObjectives', 'performance'],
-  ['sectorObjectives', 'policyTools'],
-  ['adminRecords', 'dataTransactions'],
-  ['adminRecords', 'policyTools'],
-  ['dataTransactions', 'performance'],
-  ['riskPlans', 'risks'],
-  ['risks', 'performance'],
-  ['cultureHealth', 'orgUnits'],
+type VisualLegStep = {
+  relationTypes: string[];
+  fromTypes: string[];
+  toTypes: string[];
+  fromLevels?: string[];
+  toLevels?: string[];
+};
+
+type VisualLegPattern = {
+  startSide: 'from' | 'to';
+  steps: VisualLegStep[];
+};
+
+type VisualLegSpec = {
+  from: string;
+  to: string;
+  fromLevels?: string[];
+  toLevels?: string[];
+  patterns: VisualLegPattern[];
+};
+
+const SECTOR_STAKEHOLDER_KEYS = ['businessUp', 'citizen', 'govEntity'];
+
+// CONNECTION_PAIRS: All valid ontology-based connections with their canonical levels
+// Generated from 7 canonical chains in clean ontology (2026-03-07)
+// Format: 'from->to' => { fromLevels: [L1|L2|L3], toLevels: [L1|L2|L3], fromLabel, toLabel, direction }
+const CONNECTION_PAIRS: Record<string, { fromLevels: string[]; toLevels: string[]; direction: string }> = {
+  // L3 Entity-Entity pairs (change_to_capability, sustainable_operations chains)
+  'capabilities->orgUnits': { fromLevels: ['L3'], toLevels: ['L3'], direction: 'ROLE_GAPS←OPERATES' },
+  'capabilities->processes': { fromLevels: ['L3'], toLevels: ['L3'], direction: 'KNOWLEDGE_GAPS←OPERATES' },
+  'capabilities->itSystems': { fromLevels: ['L3'], toLevels: ['L3'], direction: 'AUTOMATION_GAPS←OPERATES' },
+  'capabilities->risks': { fromLevels: ['L3'], toLevels: ['L3'], direction: 'MONITORED_BY' },
+  'orgUnits->projects': { fromLevels: ['L3'], toLevels: ['L3'], direction: 'GAPS_SCOPE←CLOSE_GAPS' },
+  'orgUnits->processes': { fromLevels: ['L3'], toLevels: ['L3'], direction: 'APPLY' },
+  'processes->itSystems': { fromLevels: ['L3'], toLevels: ['L3'], direction: 'AUTOMATION' },
+  'itSystems->projects': { fromLevels: ['L3'], toLevels: ['L3'], direction: 'GAPS_SCOPE←CLOSE_GAPS' },
+  'itSystems->vendors': { fromLevels: ['L3'], toLevels: ['L3'], direction: 'DEPENDS_ON' },
+  'projects->changeAdoption': { fromLevels: ['L3'], toLevels: ['L3'], direction: 'ADOPTION_RISKS←INCREASE_ADOPTION' },
+  'projects->processes': { fromLevels: ['L3'], toLevels: ['L3'], direction: 'CLOSE_GAPS←GAPS_SCOPE' },
+  'cultureHealth->orgUnits': { fromLevels: ['L3'], toLevels: ['L3'], direction: 'MONITORS_FOR' },
+  'risks->riskPlans': { fromLevels: ['L3'], toLevels: ['L3'], direction: 'HAS_PLAN' },
+
+  // L2 Bridge pairs (capability_to_policy, capability_to_performance)
+  'risks->policyTools': { fromLevels: ['L2'], toLevels: ['L2'], direction: 'INFORMS' },
+  'risks->performance': { fromLevels: ['L2'], toLevels: ['L2'], direction: 'INFORMS' },
+  'policyTools->capabilities': { fromLevels: ['L2'], toLevels: ['L2'], direction: 'SETS_PRIORITIES' },
+  'performance->capabilities': { fromLevels: ['L2'], toLevels: ['L2'], direction: 'SETS_TARGETS' },
+
+  // L1 Sector pairs (sector_value_chain + chain junctions)
+  'sectorObjectives->policyTools': { fromLevels: ['L1'], toLevels: ['L1'], direction: 'REALIZED_VIA←GOVERNED_BY' },
+  'sectorObjectives->performance': { fromLevels: ['L1'], toLevels: ['L1'], direction: 'CASCADED_VIA←AGGREGATES_TO' },
+  'policyTools->adminRecords': { fromLevels: ['L1'], toLevels: ['L1'], direction: 'REFERS_TO' },
+  'adminRecords->dataTransactions': { fromLevels: ['L1'], toLevels: ['L1'], direction: 'APPLIED_ON→stakeholder→TRIGGERS_EVENT' },
+  'dataTransactions->performance': { fromLevels: ['L1'], toLevels: ['L1'], direction: 'MEASURED_BY' },
+  'policyTools->dataTransactions': { fromLevels: ['L1'], toLevels: ['L1'], direction: 'REFERS_TO→adminRecords→stakeholder→TRIGGERS_EVENT' },
+};
+
+// CONNECTION_LEVELS: Quick lookup for per-pair level info
+const CONNECTION_LEVELS = Object.entries(CONNECTION_PAIRS).reduce((acc, [key, value]) => {
+  acc[key] = { fromLevels: value.fromLevels, toLevels: value.toLevels };
+  return acc;
+}, {} as Record<string, { fromLevels: string[]; toLevels: string[] }>);
+
+// Canonical ontology-imposed legs for the visual dashboard.
+// REBUILT 2026-03-07: Pairs extracted STRICTLY from 7 canonical chains.
+// Every relation type and direction comes from chain definitions ONLY.
+// All 23 ontology relationship types mapped to visual legs with correct levels and directions.
+const VISUAL_LEG_SPECS: VisualLegSpec[] = [
+  // ────────────────────────────────────────────────────────────────────
+  // L1 SECTOR PAIRS (sector_value_chain)
+  // ────────────────────────────────────────────────────────────────────
+  {
+    from: 'sectorObjectives',
+    to: 'policyTools',
+    fromLevels: ['L1'],
+    toLevels: ['L1'],
+    patterns: [
+      { startSide: 'from', steps: [{ relationTypes: ['REALIZED_VIA'], fromTypes: ['sectorObjectives'], toTypes: ['policyTools'], fromLevels: ['L1'], toLevels: ['L1'] }] },
+      { startSide: 'to', steps: [{ relationTypes: ['GOVERNED_BY'], fromTypes: ['policyTools'], toTypes: ['sectorObjectives'], fromLevels: ['L1'], toLevels: ['L1'] }] },
+    ],
+  },
+  {
+    from: 'policyTools',
+    to: 'adminRecords',
+    fromLevels: ['L1'],
+    toLevels: ['L1'],
+    patterns: [
+      { startSide: 'from', steps: [{ relationTypes: ['REFERS_TO'], fromTypes: ['policyTools'], toTypes: ['adminRecords'], fromLevels: ['L1'], toLevels: ['L1'] }] },
+    ],
+  },
+  {
+    from: 'adminRecords',
+    to: 'dataTransactions',
+    fromLevels: ['L1'],
+    toLevels: ['L1'],
+    patterns: [
+      { startSide: 'from', steps: [{ relationTypes: ['APPLIED_ON'], fromTypes: ['adminRecords'], toTypes: ['businessUp', 'citizen', 'govEntity'], fromLevels: ['L1'], toLevels: ['L1'] }, { relationTypes: ['TRIGGERS_EVENT'], fromTypes: ['businessUp', 'citizen', 'govEntity'], toTypes: ['dataTransactions'], fromLevels: ['L1'], toLevels: ['L1'] }] },
+    ],
+  },
+  {
+    from: 'adminRecords',
+    to: 'businessUp',
+    fromLevels: ['L1'],
+    toLevels: ['L1'],
+    patterns: [
+      { startSide: 'from', steps: [{ relationTypes: ['APPLIED_ON'], fromTypes: ['adminRecords'], toTypes: ['businessUp'], fromLevels: ['L1'], toLevels: ['L1'] }] },
+    ],
+  },
+  {
+    from: 'adminRecords',
+    to: 'citizen',
+    fromLevels: ['L1'],
+    toLevels: ['L1'],
+    patterns: [
+      { startSide: 'from', steps: [{ relationTypes: ['APPLIED_ON'], fromTypes: ['adminRecords'], toTypes: ['citizen'], fromLevels: ['L1'], toLevels: ['L1'] }] },
+    ],
+  },
+  {
+    from: 'adminRecords',
+    to: 'govEntity',
+    fromLevels: ['L1'],
+    toLevels: ['L1'],
+    patterns: [
+      { startSide: 'from', steps: [{ relationTypes: ['APPLIED_ON'], fromTypes: ['adminRecords'], toTypes: ['govEntity'], fromLevels: ['L1'], toLevels: ['L1'] }] },
+    ],
+  },
+  {
+    from: 'businessUp',
+    to: 'dataTransactions',
+    fromLevels: ['L1'],
+    toLevels: ['L1'],
+    patterns: [
+      { startSide: 'from', steps: [{ relationTypes: ['TRIGGERS_EVENT'], fromTypes: ['businessUp'], toTypes: ['dataTransactions'], fromLevels: ['L1'], toLevels: ['L1'] }] },
+    ],
+  },
+  {
+    from: 'citizen',
+    to: 'dataTransactions',
+    fromLevels: ['L1'],
+    toLevels: ['L1'],
+    patterns: [
+      { startSide: 'from', steps: [{ relationTypes: ['TRIGGERS_EVENT'], fromTypes: ['citizen'], toTypes: ['dataTransactions'], fromLevels: ['L1'], toLevels: ['L1'] }] },
+    ],
+  },
+  {
+    from: 'govEntity',
+    to: 'dataTransactions',
+    fromLevels: ['L1'],
+    toLevels: ['L1'],
+    patterns: [
+      { startSide: 'from', steps: [{ relationTypes: ['TRIGGERS_EVENT'], fromTypes: ['govEntity'], toTypes: ['dataTransactions'], fromLevels: ['L1'], toLevels: ['L1'] }] },
+    ],
+  },
+  {
+    from: 'dataTransactions',
+    to: 'performance',
+    fromLevels: ['L1'],
+    toLevels: ['L1'],
+    patterns: [
+      { startSide: 'from', steps: [{ relationTypes: ['MEASURED_BY'], fromTypes: ['dataTransactions'], toTypes: ['performance'], fromLevels: ['L1'], toLevels: ['L1'] }] },
+    ],
+  },
+  {
+    from: 'sectorObjectives',
+    to: 'performance',
+    fromLevels: ['L1'],
+    toLevels: ['L1'],
+    patterns: [
+      { startSide: 'from', steps: [{ relationTypes: ['CASCADED_VIA'], fromTypes: ['sectorObjectives'], toTypes: ['performance'], fromLevels: ['L1'], toLevels: ['L1'] }] },
+      { startSide: 'to', steps: [{ relationTypes: ['AGGREGATES_TO'], fromTypes: ['performance'], toTypes: ['sectorObjectives'], fromLevels: ['L1'], toLevels: ['L1'] }] },
+    ],
+  },
+  // ────────────────────────────────────────────────────────────────────
+  // L2 BRIDGE PAIRS (setting_strategic_initiatives, capability_to_policy, capability_to_performance)
+  // ────────────────────────────────────────────────────────────────────
+  {
+    from: 'risks',
+    to: 'policyTools',
+    fromLevels: ['L2'],
+    toLevels: ['L2'],
+    patterns: [
+      { startSide: 'from', steps: [{ relationTypes: ['INFORMS'], fromTypes: ['risks'], toTypes: ['policyTools'], fromLevels: ['L2'], toLevels: ['L2'] }] },
+    ],
+  },
+  {
+    from: 'risks',
+    to: 'performance',
+    fromLevels: ['L2'],
+    toLevels: ['L2'],
+    patterns: [
+      { startSide: 'from', steps: [{ relationTypes: ['INFORMS'], fromTypes: ['risks'], toTypes: ['performance'], fromLevels: ['L2'], toLevels: ['L2'] }] },
+    ],
+  },
+  {
+    from: 'policyTools',
+    to: 'capabilities',
+    fromLevels: ['L2'],
+    toLevels: ['L2'],
+    patterns: [
+      { startSide: 'from', steps: [{ relationTypes: ['SETS_PRIORITIES'], fromTypes: ['policyTools'], toTypes: ['capabilities'], fromLevels: ['L2'], toLevels: ['L2'] }] },
+    ],
+  },
+  {
+    from: 'performance',
+    to: 'capabilities',
+    fromLevels: ['L2'],
+    toLevels: ['L2'],
+    patterns: [
+      { startSide: 'from', steps: [{ relationTypes: ['SETS_TARGETS'], fromTypes: ['performance'], toTypes: ['capabilities'], fromLevels: ['L2'], toLevels: ['L2'] }] },
+    ],
+  },
+  // ────────────────────────────────────────────────────────────────────
+  // L3 ENTITY PAIRS (change_to_capability, sustainable_operations)
+  // ────────────────────────────────────────────────────────────────────
+  {
+    from: 'capabilities',
+    to: 'orgUnits',
+    fromLevels: ['L3'],
+    toLevels: ['L3'],
+    patterns: [
+      { startSide: 'from', steps: [{ relationTypes: ['ROLE_GAPS'], fromTypes: ['capabilities'], toTypes: ['orgUnits'], fromLevels: ['L3'], toLevels: ['L3'] }] },
+      { startSide: 'to', steps: [{ relationTypes: ['OPERATES'], fromTypes: ['orgUnits'], toTypes: ['capabilities'], fromLevels: ['L3'], toLevels: ['L3'] }] },
+    ],
+  },
+  {
+    from: 'capabilities',
+    to: 'processes',
+    fromLevels: ['L3'],
+    toLevels: ['L3'],
+    patterns: [
+      { startSide: 'from', steps: [{ relationTypes: ['KNOWLEDGE_GAPS'], fromTypes: ['capabilities'], toTypes: ['processes'], fromLevels: ['L3'], toLevels: ['L3'] }] },
+    ],
+  },
+  {
+    from: 'capabilities',
+    to: 'itSystems',
+    fromLevels: ['L3'],
+    toLevels: ['L3'],
+    patterns: [
+      { startSide: 'from', steps: [{ relationTypes: ['AUTOMATION_GAPS'], fromTypes: ['capabilities'], toTypes: ['itSystems'], fromLevels: ['L3'], toLevels: ['L3'] }] },
+    ],
+  },
+  {
+    from: 'capabilities',
+    to: 'risks',
+    fromLevels: ['L3'],
+    toLevels: ['L3'],
+    patterns: [
+      { startSide: 'from', steps: [{ relationTypes: ['MONITORED_BY'], fromTypes: ['capabilities'], toTypes: ['risks'], fromLevels: ['L3'], toLevels: ['L3'] }] },
+    ],
+  },
+  {
+    from: 'orgUnits',
+    to: 'processes',
+    fromLevels: ['L3'],
+    toLevels: ['L3'],
+    patterns: [
+      { startSide: 'from', steps: [{ relationTypes: ['APPLY'], fromTypes: ['orgUnits'], toTypes: ['processes'], fromLevels: ['L3'], toLevels: ['L3'] }] },
+    ],
+  },
+  {
+    from: 'processes',
+    to: 'itSystems',
+    fromLevels: ['L3'],
+    toLevels: ['L3'],
+    patterns: [
+      { startSide: 'from', steps: [{ relationTypes: ['AUTOMATION'], fromTypes: ['processes'], toTypes: ['itSystems'], fromLevels: ['L3'], toLevels: ['L3'] }] },
+    ],
+  },
+  {
+    from: 'itSystems',
+    to: 'vendors',
+    fromLevels: ['L3'],
+    toLevels: ['L3'],
+    patterns: [
+      { startSide: 'from', steps: [{ relationTypes: ['DEPENDS_ON'], fromTypes: ['itSystems'], toTypes: ['vendors'], fromLevels: ['L3'], toLevels: ['L3'] }] },
+    ],
+  },
+  {
+    from: 'cultureHealth',
+    to: 'orgUnits',
+    fromLevels: ['L3'],
+    toLevels: ['L3'],
+    patterns: [
+      { startSide: 'from', steps: [{ relationTypes: ['MONITORS_FOR'], fromTypes: ['cultureHealth'], toTypes: ['orgUnits'], fromLevels: ['L3'], toLevels: ['L3'] }] },
+    ],
+  },
+  {
+    from: 'orgUnits',
+    to: 'projects',
+    fromLevels: ['L3'],
+    toLevels: ['L3'],
+    patterns: [
+      { startSide: 'from', steps: [{ relationTypes: ['GAPS_SCOPE'], fromTypes: ['orgUnits'], toTypes: ['projects'], fromLevels: ['L3'], toLevels: ['L3'] }] },
+      { startSide: 'to', steps: [{ relationTypes: ['CLOSE_GAPS'], fromTypes: ['projects'], toTypes: ['orgUnits'], fromLevels: ['L3'], toLevels: ['L3'] }] },
+    ],
+  },
+  {
+    from: 'processes',
+    to: 'projects',
+    fromLevels: ['L3'],
+    toLevels: ['L3'],
+    patterns: [
+      { startSide: 'from', steps: [{ relationTypes: ['GAPS_SCOPE'], fromTypes: ['processes'], toTypes: ['projects'], fromLevels: ['L3'], toLevels: ['L3'] }] },
+      { startSide: 'to', steps: [{ relationTypes: ['CLOSE_GAPS'], fromTypes: ['projects'], toTypes: ['processes'], fromLevels: ['L3'], toLevels: ['L3'] }] },
+    ],
+  },
+  {
+    from: 'itSystems',
+    to: 'projects',
+    fromLevels: ['L3'],
+    toLevels: ['L3'],
+    patterns: [
+      { startSide: 'from', steps: [{ relationTypes: ['GAPS_SCOPE'], fromTypes: ['itSystems'], toTypes: ['projects'], fromLevels: ['L3'], toLevels: ['L3'] }] },
+      { startSide: 'to', steps: [{ relationTypes: ['CLOSE_GAPS'], fromTypes: ['projects'], toTypes: ['itSystems'], fromLevels: ['L3'], toLevels: ['L3'] }] },
+    ],
+  },
+  {
+    from: 'projects',
+    to: 'changeAdoption',
+    fromLevels: ['L3'],
+    toLevels: ['L3'],
+    patterns: [
+      { startSide: 'from', steps: [{ relationTypes: ['ADOPTION_RISKS'], fromTypes: ['projects'], toTypes: ['changeAdoption'], fromLevels: ['L3'], toLevels: ['L3'] }] },
+      { startSide: 'to', steps: [{ relationTypes: ['INCREASE_ADOPTION'], fromTypes: ['changeAdoption'], toTypes: ['projects'], fromLevels: ['L3'], toLevels: ['L3'] }] },
+    ],
+  },
+  {
+    from: 'risks',
+    to: 'riskPlans',
+    fromLevels: ['L3'],
+    toLevels: ['L3'],
+    patterns: [
+      { startSide: 'from', steps: [{ relationTypes: ['HAS_PLAN'], fromTypes: ['risks'], toTypes: ['riskPlans'], fromLevels: ['L3'], toLevels: ['L3'] }] },
+    ],
+  },
 ];
 
 // Priority rules (absolute, no normalization):
@@ -166,8 +490,8 @@ const CONNECTION_PAIRS: [string, string][] = [
 
 // ── Data Fetching ──
 
-async function fetchChain(name: string): Promise<ChainData> {
-  const raw = await fetchChainCached(name, 0);
+async function fetchChain(name: string, year: number, quarter?: string | null): Promise<ChainData> {
+  const raw = await fetchChainCached(name, year, quarter);
   return parseChainEnvelope(raw);
 }
 
@@ -175,21 +499,45 @@ async function fetchChain(name: string): Promise<ChainData> {
 function parseChainEnvelope(envelope: any): ChainData {
   const rawNodes: any[] = envelope.nodes || [];
   const rawLinks: any[] = envelope.relationships || envelope.links || [];
-  return {
-    nodes: rawNodes.map((n: any) => {
-      const { embedding, ...props } = n.properties || {};
-      return {
-        id: n.id || props.id || props.domain_id || '',
-        labels: n.labels || [],
-        properties: props,
-      };
-    }),
-    links: rawLinks.map((r: any) => ({
-      type: r.type || '',
-      start: String(r.start ?? r.source ?? r.sourceId ?? ''),
-      end: String(r.end ?? r.target ?? r.targetId ?? ''),
-    })),
-  };
+
+  // ID FORMAT DIAGNOSTIC — log first node + first link to verify they match
+  if (rawNodes.length > 0 && rawLinks.length > 0) {
+    const sn = rawNodes[0];
+    const sl = rawLinks[0];
+    console.log('[PARSE-ID] node raw:', { id: sn.id, 'props.id': sn.properties?.id, 'props.domain_id': sn.properties?.domain_id });
+    console.log('[PARSE-ID] link raw:', { start: sl.start, source: sl.source, sourceId: sl.sourceId, end: sl.end, target: sl.target, targetId: sl.targetId });
+  }
+
+  const nodes = rawNodes.map((n: any) => {
+    const { embedding, ...props } = n.properties || {};
+    return {
+      id: String(n.id ?? props.id ?? props.domain_id ?? ''),
+      labels: n.labels || [],
+      properties: props,
+    };
+  });
+
+  const links = rawLinks.map((r: any) => ({
+    type: r.type || '',
+    start: String(r.start ?? r.source ?? r.sourceId ?? ''),
+    end: String(r.end ?? r.target ?? r.targetId ?? ''),
+  }));
+
+  // Verify ID intersection — if no node IDs appear in link endpoints, there's a format mismatch
+  if (nodes.length > 0 && links.length > 0) {
+    const nodeIds = new Set(nodes.map(n => n.id));
+    const linkEndpoints = new Set(links.flatMap(l => [l.start, l.end]));
+    const overlap = [...linkEndpoints].filter(id => nodeIds.has(id)).length;
+    if (overlap === 0) {
+      console.error('[PARSE-ID] MISMATCH: zero node IDs found in link endpoints!');
+      console.error('[PARSE-ID] Sample node IDs:', [...nodeIds].slice(0, 3));
+      console.error('[PARSE-ID] Sample link endpoints:', [...linkEndpoints].slice(0, 3));
+    } else {
+      console.log(`[PARSE-ID] OK: ${overlap}/${linkEndpoints.size} link endpoints match node IDs`);
+    }
+  }
+
+  return { nodes, links };
 }
 
 // All data comes from chain API responses — no direct Cypher/graph-server calls
@@ -364,16 +712,13 @@ export function getNodeInstanceRag(props: Record<string, any>, labels: string[])
   }
 
   if (labels.includes('EntityProject')) {
-    // status = 'complete' → green, otherwise check progress vs deadline
     if (props.status === 'complete') return 'green';
     const progress = parseFloat(props.progress_percentage);
     if (!isNaN(progress) && props.end_date) {
-      // Calculate expected progress based on timeline
       const start = new Date(props.start_date || props.end_date).getTime();
       const end = new Date(props.end_date).getTime();
       const now = Date.now();
       const elapsed = Math.max(0, Math.min(1, (now - start) / (end - start || 1)));
-      // Compare actual progress to expected (elapsed time fraction)
       if (elapsed > 0) {
         const ratio = progress / elapsed;
         if (ratio >= 0.9) return 'green';
@@ -392,8 +737,8 @@ export function getNodeInstanceRag(props: Record<string, any>, labels: string[])
   // EntityOrgUnit: gap = 0 (no gap, green) or 1 (has gap, amber/red)
   if (labels.includes('EntityOrgUnit')) {
     const gap = props.gap;
-    if (gap === 1 || gap === '1') return 'amber';  // has a gap
-    if (gap === 0 || gap === '0') return 'green';   // no gap
+    if (gap === 1 || gap === '1') return 'amber';
+    if (gap === 0 || gap === '0') return 'green';
     return 'default';
   }
 
@@ -424,6 +769,36 @@ export function getNodeInstanceRag(props: Record<string, any>, labels: string[])
     return 'default';
   }
 
+  // RiskPlan: status + progress
+  if (labels.includes('RiskPlan')) {
+    const status = props.status;
+    const progress = parseFloat(props.progress);
+    if (status === 'completed' || status === 'closed') return 'green';
+    if (status === 'overdue' || status === 'failed') return 'red';
+    if (!isNaN(progress)) {
+      if (progress >= 80) return 'green';
+      if (progress >= 40) return 'amber';
+      return 'red';
+    }
+    if (status === 'active' || status === 'in_progress') return 'amber';
+    return 'amber'; // plan exists = under monitoring
+  }
+
+  // EntityVendor: performance_rating or sla_compliance
+  if (labels.includes('EntityVendor')) {
+    const rating = parseFloat(props.performance_rating || props.sla_compliance);
+    if (!isNaN(rating)) {
+      if (rating >= 0.9) return 'green';
+      if (rating >= 0.7) return 'amber';
+      return 'red';
+    }
+    const status = props.status || props.vendor_status;
+    if (status === 'active' || status === 'compliant') return 'green';
+    if (status === 'warning' || status === 'review') return 'amber';
+    if (status === 'critical' || status === 'non-compliant') return 'red';
+    return 'amber'; // vendor exists = at minimum amber (needs monitoring)
+  }
+
   // EntityChangeAdoption: adoption_score vs resistance_score
   if (labels.includes('EntityChangeAdoption')) {
     const adoption = parseFloat(props.adoption_score);
@@ -438,7 +813,7 @@ export function getNodeInstanceRag(props: Record<string, any>, labels: string[])
       if (resistance >= 0.4) return 'amber';
       return 'green';
     }
-    return 'default';
+    return 'amber'; // change adoption exists = needs monitoring
   }
 
   // EntityCultureHealth: survey_score + trend
@@ -455,7 +830,7 @@ export function getNodeInstanceRag(props: Record<string, any>, labels: string[])
     if (trend === 'declining') return 'red';
     if (trend === 'stable') return 'amber';
     if (trend === 'improving') return 'green';
-    return 'default';
+    return 'amber'; // culture health exists = needs monitoring
   }
 
   // SectorObjective: if it exists in the chain, it's active
@@ -474,6 +849,32 @@ export function getNodeInstanceRag(props: Record<string, any>, labels: string[])
     if (status === 'amber' || status === 'at-risk') return 'amber';
     if (status === 'green' || status === 'on-track') return 'green';
     return 'green'; // exists in chain = active
+  }
+
+  // SectorAdminRecord: status = Published (green), Draft (amber), else red
+  if (labels.includes('SectorAdminRecord')) {
+    const status = (props.status || '').toLowerCase();
+    if (status === 'published' || status === 'active' || status === 'approved') return 'green';
+    if (status === 'draft' || status === 'review' || status === 'pending') return 'amber';
+    if (status) return 'red';
+    return 'amber';
+  }
+
+  // SectorDataTransaction: status-based
+  if (labels.includes('SectorDataTransaction')) {
+    const status = (props.status || '').toLowerCase();
+    if (status === 'active' || status === 'operational' || status === 'published') return 'green';
+    if (status === 'draft' || status === 'pending' || status === 'planned') return 'amber';
+    if (status) return 'red';
+    return 'amber';
+  }
+
+  // SectorGovEntity
+  if (labels.includes('SectorGovEntity')) {
+    const status = (props.status || '').toLowerCase();
+    if (status === 'active' || status === 'operational') return 'green';
+    if (status) return 'amber';
+    return 'green';
   }
 
   return 'default';
@@ -604,8 +1005,31 @@ function aggregateNodeRag(
 
   const ragRank: Record<string, number> = { red: 3, amber: 2, green: 1, default: 0 };
 
-  const propagate = (source: string, target: string) => {
-    const srcStatus = result[source];
+  // Compute build-only and operate-only risk aggregates
+  const riskInstances = nodesByType.get('risks') || [];
+  const buildRiskRag: RagStatus = (() => {
+    let worst: RagStatus = 'default';
+    for (const r of riskInstances) {
+      const band = r.props.build_band;
+      if (!band) continue;
+      const rag: RagStatus = (band === 'Red' || band === 'red') ? 'red' : (band === 'Amber' || band === 'amber') ? 'amber' : (band === 'Green' || band === 'green') ? 'green' : 'default';
+      if (ragRank[rag] > ragRank[worst]) worst = rag;
+    }
+    return worst;
+  })();
+  const operateRiskRag: RagStatus = (() => {
+    let worst: RagStatus = 'default';
+    for (const r of riskInstances) {
+      const band = r.props.operate_band;
+      if (!band) continue;
+      const rag: RagStatus = (band === 'Red' || band === 'red') ? 'red' : (band === 'Amber' || band === 'amber') ? 'amber' : (band === 'Green' || band === 'green') ? 'green' : 'default';
+      if (ragRank[rag] > ragRank[worst]) worst = rag;
+    }
+    return worst;
+  })();
+
+  const propagate = (source: string, target: string, overrideSourceRag?: RagStatus) => {
+    const srcStatus = overrideSourceRag ?? result[source];
     if (!srcStatus || srcStatus === 'green' || srcStatus === 'default') return;
     const tgtStatus = result[target] || 'default';
     if (ragRank[srcStatus] > ragRank[tgtStatus]) {
@@ -614,58 +1038,48 @@ function aggregateNodeRag(
   };
 
   // Build chain (bottom → top):
-  //   projects → capabilities → risks → policyTools → sectorObjectives
-  //   projects → capabilities → risks → performance → sectorObjectives
+  //   projects → capabilities → risks(build) → policyTools → sectorObjectives
+  //   projects → capabilities → risks(operate) → performance → sectorObjectives
   //   changeAdoption → capabilities (then continues up via the paths above)
-  const buildChainPairs: [string, string][] = [
-    ['projects', 'capabilities'],
-    ['changeAdoption', 'capabilities'],
-    ['capabilities', 'risks'],
-    ['risks', 'policyTools'],
-    ['risks', 'performance'],
-    ['policyTools', 'sectorObjectives'],
-    ['performance', 'sectorObjectives'],
+  const chainPairs: { source: string; target: string; overrideRag?: RagStatus }[] = [
+    { source: 'projects', target: 'capabilities' },
+    { source: 'changeAdoption', target: 'capabilities' },
+    { source: 'orgUnits', target: 'capabilities' },
+    { source: 'processes', target: 'capabilities' },
+    { source: 'itSystems', target: 'capabilities' },
+    { source: 'vendors', target: 'capabilities' },
+    { source: 'cultureHealth', target: 'capabilities' },
+    { source: 'capabilities', target: 'risks' },
+    // policyTools only affected by BUILD risks
+    { source: 'risks', target: 'policyTools', overrideRag: buildRiskRag },
+    // performance only affected by OPERATE risks
+    { source: 'risks', target: 'performance', overrideRag: operateRiskRag },
+    { source: 'policyTools', target: 'sectorObjectives' },
+    { source: 'performance', target: 'sectorObjectives' },
   ];
-
-  // Operate chain (bottom → top):
-  //   orgUnits → capabilities → risks → policyTools → sectorObjectives
-  //   processes → capabilities → risks → performance → sectorObjectives
-  //   itSystems → capabilities → risks → policyTools → sectorObjectives
-  //   vendors → capabilities → risks → performance → sectorObjectives
-  //   cultureHealth → capabilities (then continues up via the paths above)
-  const operateChainPairs: [string, string][] = [
-    ['orgUnits', 'capabilities'],
-    ['processes', 'capabilities'],
-    ['itSystems', 'capabilities'],
-    ['vendors', 'capabilities'],
-    ['cultureHealth', 'capabilities'],
-    ['capabilities', 'risks'],
-    ['risks', 'policyTools'],
-    ['risks', 'performance'],
-    ['policyTools', 'sectorObjectives'],
-    ['performance', 'sectorObjectives'],
-  ];
-
-  // Collect unique pairs from both chains (order matters — bottom-up)
-  const allPairs: [string, string][] = [];
-  const seen = new Set<string>();
-  for (const pair of [...buildChainPairs, ...operateChainPairs]) {
-    const key = `${pair[0]}->${pair[1]}`;
-    if (!seen.has(key)) {
-      seen.add(key);
-      allPairs.push(pair);
-    }
-  }
 
   // Propagate bottom-up: iterate in order so lower-level statuses flow upward
-  for (const [source, target] of allPairs) {
-    propagate(source, target);
+  for (const { source, target, overrideRag } of chainPairs) {
+    propagate(source, target, overrideRag);
   }
 
   return result;
 }
 
-// ── Line Flow Health (orphan node detection) ──
+// ── Line Flow Health (orphan + bastard detection per leg) ──
+//
+// For each CONNECTION_PAIR [fromType, toType] we check the chain links
+// that connect a fromType-node to a toType-node (in either direction).
+//
+// Orphan  = a from-node where the chain path STOPS — it has no link to
+//           any to-node on this leg. Dead end.
+// Bastard = a to-node that appears on the chain path and proceeds onward,
+//           but has no link FROM any from-node — it appears out of nowhere.
+//
+// brokenPct = (orphans + bastards) / (fromTotal + toTotal)
+//   0%       → green (dotted, animated)
+//   1–15%    → amber (dotted, slow)
+//   >15%     → red   (solid)
 
 function computeLineFlowHealth(
   chains: ChainData[],
@@ -674,58 +1088,141 @@ function computeLineFlowHealth(
   const lineRag: Record<string, RagStatus> = {};
   const lineDetails: Record<string, LineHealthDetail> = {};
 
-  for (const [fromKey, toKey] of CONNECTION_PAIRS) {
-    const fromNodes = new Set((nodesByType.get(fromKey) || []).map(n => n.id));
-    const toNodes = new Set((nodesByType.get(toKey) || []).map(n => n.id));
+  // Build nodeIdToLevel from ALL chain nodes (not year-filtered).
+  // Level lookup must cover nodes that may be filtered out of nodesByType by year,
+  // because their IDs still appear as link endpoints in relAdj.
+  const nodeIdToLevel = new Map<string, string | null>();
+  for (const chain of chains) {
+    for (const n of chain.nodes) {
+      if (nodeIdToLevel.has(n.id)) continue;
+      const p = n.properties;
+      const raw = p?.level ?? p?.ontology_level ?? p?.node_level ?? p?.layer;
+      nodeIdToLevel.set(n.id, typeof raw === 'string' && raw.trim() ? raw.trim().toUpperCase() : null);
+    }
+  }
 
-    const key = `${fromKey}->${toKey}`;
+  // Build relation adjacency from ALL chain links.
+  // relAdj[relType][sourceId] = Set<targetIds>
+  const relAdj = new Map<string, Map<string, Set<string>>>();
+  for (const chain of chains) {
+    for (const link of chain.links) {
+      if (!relAdj.has(link.type)) relAdj.set(link.type, new Map());
+      const bySource = relAdj.get(link.type)!;
+      if (!bySource.has(link.start)) bySource.set(link.start, new Set());
+      bySource.get(link.start)!.add(link.end);
+    }
+  }
 
-    if (fromNodes.size === 0 && toNodes.size === 0) {
+  const matchLevel = (nodeId: string, levels?: string[]): boolean => {
+    if (!levels || levels.length === 0) return true;
+    const lv = nodeIdToLevel.get(nodeId);
+    return !!lv && levels.includes(lv);
+  };
+
+  // DIAGNOSTIC: sample one spec to expose ID/level format in console
+  {
+    const sampleNodes = nodesByType.get('capabilities') || [];
+    const sampleChainNode = chains[0]?.nodes[0];
+    const sampleLink = chains[0]?.links[0];
+    console.log('[DIAG] capabilities node sample:', sampleNodes[0]);
+    console.log('[DIAG] chain node raw sample:', sampleChainNode, '→ id type:', typeof sampleChainNode?.id);
+    console.log('[DIAG] chain link sample:', sampleLink, '→ start type:', typeof sampleLink?.start);
+    console.log('[DIAG] nodeIdToLevel sample entries:', [...nodeIdToLevel.entries()].slice(0, 3));
+    console.log('[DIAG] relAdj keys (relation types):', [...relAdj.keys()]);
+    const capIds = sampleNodes.slice(0, 2).map(n => n.id);
+    console.log('[DIAG] capabilities node IDs sample:', capIds);
+    if (capIds.length > 0) {
+      const monitoredBy = relAdj.get('MONITORED_BY');
+      console.log('[DIAG] MONITORED_BY sources sample:', monitoredBy ? [...monitoredBy.keys()].slice(0, 3) : 'NOT FOUND');
+      console.log('[DIAG] MONITORED_BY from cap[0]:', monitoredBy?.get(capIds[0]));
+    }
+  }
+
+  for (const spec of VISUAL_LEG_SPECS) {
+    // fromNodes and toNodes: year-filtered nodes of correct type and level
+    const fromNodes = (nodesByType.get(spec.from) || []).filter(n => matchLevel(n.id, spec.fromLevels));
+    const toNodes   = (nodesByType.get(spec.to)   || []).filter(n => matchLevel(n.id, spec.toLevels));
+
+    const key = `${spec.from}->${spec.to}`;
+    const totalNodes = fromNodes.length + toNodes.length;
+
+    if (totalNodes === 0) {
+      const rawFrom = nodesByType.get(spec.from) || [];
+      const rawTo = nodesByType.get(spec.to) || [];
+      console.log(`[LINE-SKIP] ${key}: 0 nodes after level filter. raw ${spec.from}=${rawFrom.length}, raw ${spec.to}=${rawTo.length}, fromLevels=${spec.fromLevels}, toLevels=${spec.toLevels}`);
+      if (rawFrom.length > 0) console.log(`[LINE-SKIP] ${key}: sample ${spec.from} level=`, nodeIdToLevel.get(rawFrom[0].id));
+      if (rawTo.length > 0) console.log(`[LINE-SKIP] ${key}: sample ${spec.to} level=`, nodeIdToLevel.get(rawTo[0].id));
       lineRag[key] = 'default';
-      lineDetails[key] = { from: fromKey, to: toKey, rag: 'default', connectivity: 0, fromTotal: 0, fromConnected: 0, toTotal: 0, toConnected: 0, hasLinks: false };
+      lineDetails[key] = { from: spec.from, to: spec.to, rag: 'default', connectivity: 0, fromTotal: 0, fromConnected: 0, toTotal: 0, toConnected: 0, linkCount: 0, orphanCount: 0, bastardCount: 0, hasLinks: false, disconnectedFrom: [], disconnectedTo: [] };
       continue;
     }
 
-    // Count nodes connected via chain links (both directions)
+    const fromIds = new Set(fromNodes.map(n => n.id));
+    const toIds   = new Set(toNodes.map(n => n.id));
+
     const connectedFrom = new Set<string>();
-    const connectedTo = new Set<string>();
-    let hasAnyLinks = false;
-    for (const chain of chains) {
-      for (const link of chain.links) {
-        if (fromNodes.has(link.start) && toNodes.has(link.end)) {
-          connectedFrom.add(link.start);
-          connectedTo.add(link.end);
-          hasAnyLinks = true;
+    const connectedTo   = new Set<string>();
+
+    // All specs are single-hop. For each pattern follow exactly one relation.
+    for (const pattern of spec.patterns) {
+      const step = pattern.steps[0];
+      if (!step) continue;
+
+      if (pattern.startSide === 'from') {
+        // fromId -[relType]-> targetId must be in toIds
+        for (const fromId of fromIds) {
+          for (const relType of step.relationTypes) {
+            for (const targetId of (relAdj.get(relType)?.get(fromId) ?? [])) {
+              if (toIds.has(targetId)) {
+                connectedFrom.add(fromId);
+                connectedTo.add(targetId);
+              }
+            }
+          }
         }
-        if (fromNodes.has(link.end) && toNodes.has(link.start)) {
-          connectedFrom.add(link.end);
-          connectedTo.add(link.start);
-          hasAnyLinks = true;
+      } else {
+        // toId -[relType]-> targetId must be in fromIds
+        for (const toId of toIds) {
+          for (const relType of step.relationTypes) {
+            for (const targetId of (relAdj.get(relType)?.get(toId) ?? [])) {
+              if (fromIds.has(targetId)) {
+                connectedTo.add(toId);
+                connectedFrom.add(targetId);
+              }
+            }
+          }
         }
       }
     }
 
-    // No chain links exist between these types — treat as fully broken
-    if (!hasAnyLinks) {
-      lineRag[key] = 'red';
-      lineDetails[key] = { from: fromKey, to: toKey, rag: 'red', connectivity: 0, fromTotal: fromNodes.size, fromConnected: 0, toTotal: toNodes.size, toConnected: 0, hasLinks: false };
-      continue;
-    }
+    const disFrom = fromNodes.filter(n => !connectedFrom.has(n.id));
+    const disTo   = toNodes.filter(n => !connectedTo.has(n.id));
+    const orphanCount  = disFrom.length;
+    const bastardCount = disTo.length;
+    const brokenCount  = orphanCount + bastardCount;
+    const brokenPct    = brokenCount / totalNodes;
 
-    // Broken relations: % of nodes that SHOULD have a link but DON'T
-    // Use the larger side as the expected total
-    const totalExpected = Math.max(fromNodes.size, toNodes.size);
-    const totalConnected = Math.max(connectedFrom.size, connectedTo.size);
-    const brokenPct = totalExpected > 0 ? 1 - (totalConnected / totalExpected) : 0;
-    const connectivity = 1 - brokenPct;
+    const rag: RagStatus = brokenPct === 0 ? 'green' : brokenPct <= 0.15 ? 'amber' : 'red';
 
-    let rag: RagStatus;
-    if (brokenPct === 0) rag = 'green';        // 0% broken → all relations intact
-    else if (brokenPct <= 0.15) rag = 'amber';  // ≤15% broken → partial issues
-    else rag = 'red';                            // >15% broken → significant breakage
+    console.log(`[LINE] ${key}: from=${fromNodes.length} unlinked=${orphanCount}, to=${toNodes.length} unlinked=${bastardCount} (${(brokenPct * 100).toFixed(1)}%) → ${rag}`);
 
     lineRag[key] = rag;
-    lineDetails[key] = { from: fromKey, to: toKey, rag, connectivity, fromTotal: fromNodes.size, fromConnected: connectedFrom.size, toTotal: toNodes.size, toConnected: connectedTo.size, hasLinks: true };
+    lineDetails[key] = {
+      from: spec.from,
+      to: spec.to,
+      rag,
+      connectivity: 1 - brokenPct,
+      fromTotal: fromNodes.length,
+      fromConnected: fromNodes.length - orphanCount,
+      toTotal: toNodes.length,
+      toConnected: toNodes.length - bastardCount,
+      linkCount: connectedFrom.size,
+      orphanCount,
+      bastardCount,
+      hasLinks: connectedFrom.size > 0,
+      disconnectedFrom: disFrom.map(n => ({ id: n.props.domain_id || n.id, name: n.props.name || '' })),
+      disconnectedTo: disTo.map(n => ({ id: n.props.domain_id || n.id, name: n.props.name || '' })),
+    };
   }
 
   return { lineRag, lineDetails };
@@ -787,7 +1284,10 @@ export type LoadingStep = { label: string; status: 'loading' | 'done' | 'error';
 export async function fetchOntologyRagState(
   onProgress?: (steps: LoadingStep[]) => void,
 ): Promise<OntologyRagState> {
-  const year = new Date().getFullYear();
+  const storedYear = typeof window !== 'undefined' ? localStorage.getItem('jos-year') : null;
+  const storedQuarter = typeof window !== 'undefined' ? localStorage.getItem('jos-quarter') : null;
+  const year = storedYear ? parseInt(storedYear, 10) : new Date().getFullYear();
+  const quarter = storedQuarter && storedQuarter !== 'all' ? storedQuarter : null;
 
   // Track loading steps for real-time UI feedback
   const steps: LoadingStep[] = [
@@ -795,6 +1295,9 @@ export async function fetchOntologyRagState(
     { label: 'Policy & Risk Chains', status: 'loading' },
     { label: 'Performance Chains', status: 'loading' },
     { label: 'Sector Value Chain', status: 'loading' },
+    { label: 'Sustainable Operations', status: 'loading' },
+    { label: 'Strategic Initiatives', status: 'loading' },
+    { label: 'Strategic Priorities', status: 'loading' },
   ];
   const emit = () => onProgress?.([...steps]);
   emit();
@@ -815,30 +1318,43 @@ export async function fetchOntologyRagState(
     }
   };
 
+  // Always fetch with year=0 (all data) to hit the boot cache.
+  // Year/quarter filtering happens locally in the nodesByType filter below.
   const safeChain = (name: string, idx: number) =>
-    tracked(idx, () => fetchChain(name)).catch(() => ({ nodes: [] as ChainNode[], links: [] as ChainLink[] }));
+    tracked(idx, () => fetchChain(name, 0, null)).catch(() => ({ nodes: [] as ChainNode[], links: [] as ChainLink[] }));
 
-  // Parallel chain fetches — all 4 fire at once
-  const [changeToCap, capToPolicy, capToPerf, sectorChain] = await Promise.all([
+  // All reads from centralized cache (preloaded by JosoorDesktopPage at OS boot)
+  const [changeToCap, capToPolicy, capToPerf, sectorChain, sustainOps, stratInit, stratPriorities, riskPlans] = await Promise.all([
     safeChain('change_to_capability', 0),
     safeChain('capability_to_policy', 1),
     safeChain('capability_to_performance', 2),
     safeChain('sector_value_chain', 3),
+    safeChain('sustainable_operations', 4),
+    safeChain('setting_strategic_initiatives', 5),
+    safeChain('setting_strategic_priorities', 6),
+    safeChain('risk_plans', 7),
   ]);
 
-  const chains = [changeToCap, capToPolicy, capToPerf, sectorChain];
+  const chains = [changeToCap, capToPolicy, capToPerf, sectorChain, sustainOps, stratInit, stratPriorities, riskPlans];
   const totalNodes = chains.reduce((s, c) => s + c.nodes.length, 0);
-  console.log('[OntologyService] All fetches complete. Total nodes:', totalNodes, 'per chain:', chains.map(c => c.nodes.length));
+  console.log('[OntologyService] All cache reads complete. Total nodes:', totalNodes, 'per chain:', chains.map(c => c.nodes.length));
+  // DEBUG: ID format comparison
+  for (const c of chains) {
+    if (c.nodes.length > 0 && c.links.length > 0) {
+      console.log('[ID-CHECK] node.id sample:', c.nodes[0].id, typeof c.nodes[0].id, '| link.start sample:', c.links[0].start, typeof c.links[0].start);
+      break;
+    }
+  }
 
   // Diagnostic: log what node types each chain returned
+  const chainNames = ['change_to_capability', 'capability_to_policy', 'capability_to_performance', 'sector_value_chain', 'sustainable_operations', 'setting_strategic_initiatives', 'setting_strategic_priorities'];
   for (const [i, chain] of chains.entries()) {
     const labelCounts: Record<string, number> = {};
     for (const n of chain.nodes) {
       const lbl = n.labels[0] || 'unknown';
       labelCounts[lbl] = (labelCounts[lbl] || 0) + 1;
     }
-    const names = ['change_to_capability', 'capability_to_policy', 'capability_to_performance', 'sector_value_chain'];
-    console.log(`[OntologyService] ${names[i]}: ${chain.nodes.length} nodes, ${chain.links.length} links`, labelCounts);
+    console.log(`[OntologyService] ${chainNames[i]}: ${chain.nodes.length} nodes, ${chain.links.length} links`, labelCounts);
   }
 
   // 1. Impact scores (upstream fan-out)
@@ -850,8 +1366,8 @@ export async function fetchOntologyRagState(
     if (score > maxImpact) maxImpact = score;
   }
 
-  // 2. Group nodes by type — DEDUPLICATE by ID, FILTER to current year
-  const nodesByType = new Map<string, { props: Record<string, any>; labels: string[]; id: string }[]>();
+  // 2. Group all selected-slice nodes by type (deduplicated)
+  const allNodesByType = new Map<string, { props: Record<string, any>; labels: string[]; id: string }[]>();
   const seenIds = new Set<string>();
 
   for (const chain of chains) {
@@ -859,18 +1375,43 @@ export async function fetchOntologyRagState(
       if (seenIds.has(n.id)) continue;
       seenIds.add(n.id);
 
-      // Filter to current year (nodes have year as integer property)
-      const nodeYear = typeof n.properties.year === 'object' ? n.properties.year?.low : n.properties.year;
-      if (nodeYear && nodeYear !== year) continue;
-
       const label = n.labels.find(l => LABEL_TO_NODE_KEY[l]);
       if (!label) continue;
       const key = LABEL_TO_NODE_KEY[label];
-      if (!nodesByType.has(key)) nodesByType.set(key, []);
+      if (!allNodesByType.has(key)) allNodesByType.set(key, []);
 
       const enriched = { ...n.properties };
-      nodesByType.get(key)!.push({ props: enriched, labels: n.labels, id: n.id });
+      allNodesByType.get(key)!.push({ props: enriched, labels: n.labels, id: n.id });
     }
+  }
+
+  // 2b. Year + quarter filtered subset — used for node RAG, line math, and panel display
+  console.log('[FILTER] year =', year, '| quarter =', quarter);
+  const allTypeCounts: Record<string, number> = {};
+  for (const [k, v] of allNodesByType) allTypeCounts[k] = v.length;
+  console.log('[FILTER] allNodesByType counts BEFORE filter:', allTypeCounts);
+  // Sample a node to see its year/quarter props
+  const sampleEntry = [...allNodesByType.entries()][0];
+  if (sampleEntry) {
+    const sn = sampleEntry[1][0];
+    console.log('[FILTER] sample node:', sampleEntry[0], '| id:', sn.id, '| year:', sn.props.year, typeof sn.props.year, '| quarter:', sn.props.quarter, typeof sn.props.quarter);
+  }
+
+  // Normalize quarter: localStorage stores 'Q1', nodes store 4 (numeric)
+  const quarterNum = quarter ? parseInt(quarter.replace(/\D/g, ''), 10) || null : null;
+
+  const nodesByType = new Map<string, { props: Record<string, any>; labels: string[]; id: string }[]>();
+  for (const [key, nodes] of allNodesByType) {
+    const filtered = nodes.filter(n => {
+      const nodeYear = typeof n.props.year === 'object' ? n.props.year?.low : n.props.year;
+      const nq = n.props.quarter ?? null;
+      const nodeQ = typeof nq === 'number' ? nq : (typeof nq === 'string' ? parseInt(nq.replace(/\D/g, ''), 10) || null : null);
+      const yearOk = !nodeYear || !year || Number(nodeYear) <= year;
+      // Cumulative: include if (same year, quarter <= selected) OR (prior year)
+      const quarterOk = !quarterNum || !nodeQ || Number(nodeYear) < year || nodeQ <= quarterNum;
+      return yearOk && quarterOk;
+    });
+    if (filtered.length > 0) nodesByType.set(key, filtered);
   }
 
   // 3. Downstream exposure: which nodes have upstream reds cascading into them
@@ -879,7 +1420,7 @@ export async function fetchOntologyRagState(
   // 4. Building color: own RAG + upstream cascade
   const nodeRag = aggregateNodeRag(nodesByType, impactScores, downstreamExposure);
 
-  // 4. Line color: data flow health (orphan detection)
+  // 4b. Line color: data flow health for the selected slice only
   const { lineRag, lineDetails } = computeLineFlowHealth(chains, nodesByType);
 
   // 5. Line weight (placeholder — could be based on relationship count)
@@ -1051,7 +1592,22 @@ export async function fetchOntologyRagState(
   console.log('[OntologyService] nodeRag (building colors):', nodeRag);
   console.log('[OntologyService] lineRag sample:', Object.entries(lineRag).slice(0, 5));
 
-  return { nodeRag, lineRag, lineWeight, lineDetails, stripData, nodeDetails };
+  // Compute risk stats split by build/operate
+  const riskStats: RiskStats = { buildRed: 0, buildAmber: 0, buildGreen: 0, operateRed: 0, operateAmber: 0, operateGreen: 0, total: 0 };
+  const allRiskInstances = nodesByType.get('risks') || [];
+  for (const r of allRiskInstances) {
+    riskStats.total++;
+    const bb = (r.props.build_band || '').toLowerCase();
+    if (bb === 'red') riskStats.buildRed++;
+    else if (bb === 'amber') riskStats.buildAmber++;
+    else if (bb === 'green') riskStats.buildGreen++;
+    const ob = (r.props.operate_band || '').toLowerCase();
+    if (ob === 'red') riskStats.operateRed++;
+    else if (ob === 'amber') riskStats.operateAmber++;
+    else if (ob === 'green') riskStats.operateGreen++;
+  }
+
+  return { nodeRag, lineRag, lineWeight, lineDetails, stripData, nodeDetails, riskStats };
 }
 
 export { COLUMN_NARRATIVES_AR };

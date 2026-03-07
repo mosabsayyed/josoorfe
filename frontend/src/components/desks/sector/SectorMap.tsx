@@ -103,6 +103,7 @@ const MAIN_CATEGORY_ICONS: Record<MainCategory, string> = {
 };
 
 const MAIN_CATEGORY_GLOWS: Record<MainCategory, string> = {
+  'All': '',
   'Mining': glowMining,
   'Water': glowWater,
   'Energy': glowEnergy,
@@ -112,6 +113,7 @@ const MAIN_CATEGORY_GLOWS: Record<MainCategory, string> = {
 };
 
 const LEGEND_ICONS: Record<MainCategory, string> = {
+  'All': '',
   'Mining': legendMining,
   'Water': legendWater,
   'Energy': legendEnergy,
@@ -129,6 +131,7 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 const MAIN_CATEGORY_COLORS: Record<MainCategory, string> = {
+  'All': 'var(--component-text-primary)',
   'Mining': 'var(--sector-mining)',
   'Water': 'var(--sector-water)',
   'Energy': 'var(--sector-energy)',

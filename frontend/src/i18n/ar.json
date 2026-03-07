@@ -434,6 +434,7 @@
       "reportingDeskSub": "رؤى الذكاء الاصطناعي",
       "tutorials": "الدروس المتعددة الوسائط",
       "tutorialsSub": "معرفة التوأم الرقمي",
+      "documents": "المستندات",
       "roadmap": "خريطة الطريق",
       "roadmapSub": "(قريباً)",
       "explorer": "مستكشف الرسم البياني",
@@ -1739,6 +1740,20 @@
       "newChat": "محادثة جديدة",
       "errorSendingMessage": "خطأ في إرسال الرسالة.",
       "executiveControlTower": "برج التحكم التنفيذي"
+    },
+    "desktop": {
+      "observe": "رصد",
+      "decide": "قرار",
+      "deliver": "تنفيذ",
+      "reporting": "التقارير",
+      "signals": "إشارات",
+      "chat": "محادثة الخبير",
+      "tutorials": "الدروس",
+      "ontology": "الأنطولوجيا",
+      "startHere": "ابدأ هنا",
+      "settings": "الإعدادات",
+      "observability": "المراقبة",
+      "calendar": "التقويم"
     }
   }
 }

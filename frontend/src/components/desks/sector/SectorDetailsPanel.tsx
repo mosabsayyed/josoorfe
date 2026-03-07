@@ -159,6 +159,40 @@ function formatNumber(value: number): string {
     return value.toFixed(0);
 }
 
+/**
+ * Format investment from structured fields (ETL-written).
+ * Falls back to raw investment string if structured fields unavailable.
+ */
+function formatInvestment(asset: any): string | null {
+    if (asset.investment_value != null && asset.investment_value > 0) {
+        const val = asset.investment_value;
+        const currency = asset.investment_currency || 'SAR';
+        const formatted = val >= 1e9 ? `${(val / 1e9).toFixed(1)}B`
+            : val >= 1e6 ? `${(val / 1e6).toFixed(1)}M`
+            : val >= 1e3 ? `${(val / 1e3).toFixed(1)}K`
+            : val.toFixed(0);
+        return `${currency} ${formatted}`;
+    }
+    if (asset.investment_label) return asset.investment_label;
+    return asset.investment || null;
+}
+
+/**
+ * Format capacity from structured fields (ETL-written).
+ * Falls back to capacity_metric || capacity string.
+ */
+function formatCapacity(asset: any): string | null {
+    if (asset.capacity_value != null && asset.capacity_value > 0) {
+        const primary = `${formatNumber(asset.capacity_value)} ${asset.capacity_unit || ''}`.trim();
+        if (asset.capacity_secondary_value != null && asset.capacity_secondary_value > 0) {
+            return `${primary} – ${formatNumber(asset.capacity_secondary_value)} ${asset.capacity_secondary_unit || asset.capacity_unit || ''}`.trim();
+        }
+        return primary;
+    }
+    if (asset.capacity_label) return asset.capacity_label;
+    return asset.capacity_metric || asset.capacity || null;
+}
+
 const SectorDetailsPanel: React.FC<SectorDetailsPanelProps> = ({
     selectedSector,
     selectedRegion,
@@ -301,100 +335,60 @@ const SectorDetailsPanel: React.FC<SectorDetailsPanelProps> = ({
     }, [allAssets, selectedSector, selectedRegion]);
 
     // Calculate sector outputs for BOTH L1 (national) and L2 (regional) views
+    // Outputs aggregate ALL sectors in the region (cross-sector summary), not filtered by active sector
     const sectorOutputs: SectorOutput[] = useMemo(() => {
-        // L1 no hover: drawer is hidden, return empty (no need to calculate)
-        // L1 mouseover region: show that region's outputs WITH ALL SAME FILTERS as L2
-        // L2 selected region: show that region's outputs
-        let assetsForOutput: typeof allAssets | null = null;
-        
-        if (selectedRegion) {
-            // L2 view: use filteredAssets (already filtered by selectedRegion + sector)
-            assetsForOutput = filteredAssets;
-        } else if (hoveredRegion) {
-            // L1 mouseover: filter by hovered region AND apply ALL SAME FILTERS as filteredAssets
-            const MEGA_REGIONS = [
-                { id: 'Northern', name: 'Northern', regions: ['Northern', 'Tabuk', 'Jawf', 'Hail'] },
-                { id: 'Western', name: 'Western', regions: ['Western', 'Makkah', 'Madinah', 'Jazan'] },
-                { id: 'Eastern', name: 'Eastern', regions: ['Eastern', 'Baha'] },
-                { id: 'Central', name: 'Central', regions: ['Central', 'Riyadh', 'Qassim', 'Asir', 'Najran'] }
-            ];
-            const activeSectors = ['water', 'energy', 'mining', 'industry', 'logistics', 'giga'];
-            const megaRegion = MEGA_REGIONS.find(r => r.id === hoveredRegion);
-            
-            if (megaRegion) {
-                assetsForOutput = allAssets.filter(node => {
-                    if (!node) return false;
-                    
-                    // Filter out policy tools (no region) - only physical assets for outputs
-                    if (!node.region) return false;
-                    
-                    const nodeSector = node.sector?.toLowerCase();
-                    if (!nodeSector) return false;
+        const MEGA_REGIONS = [
+            { id: 'Northern', name: 'Northern', regions: ['Northern', 'Tabuk', 'Jawf', 'Hail'] },
+            { id: 'Western', name: 'Western', regions: ['Western', 'Makkah', 'Madinah', 'Jazan'] },
+            { id: 'Eastern', name: 'Eastern', regions: ['Eastern', 'Baha'] },
+            { id: 'Central', name: 'Central', regions: ['Central', 'Riyadh', 'Qassim', 'Asir', 'Najran'] }
+        ];
+        const activeSectors = ['water', 'energy', 'mining', 'industry', 'logistics', 'giga'];
 
-                    // Sector filter
-                    if (selectedSector === 'all') {
-                        if (!activeSectors.includes(nodeSector)) return false;
-                    } else if (selectedSector !== 'All Factors' && nodeSector !== selectedSector.toLowerCase()) {
-                        if (!(selectedSector.toLowerCase() === 'economy' && ['mining', 'industry', 'energy'].includes(nodeSector))) {
-                            return false;
-                        }
-                    }
+        // Determine target region
+        const targetRegionId = selectedRegion || hoveredRegion;
+        if (!targetRegionId) return [];
 
-                    // Region filter (megaRegion)
-                    if (!megaRegion.regions.includes(node.region)) return false;
+        const megaRegion = MEGA_REGIONS.find(r => r.id === targetRegionId);
+        if (!megaRegion) return [];
 
-                    // Year filter: keep ALL assets (don't remove future ones)
-                    // Assets with completion beyond selected year are still shown —
-                    // their status reflects "Planned" via SectorDesk's year dedup logic
+        // Filter ALL assets in this region (no sector filter — outputs are cross-sector)
+        const assetsForOutput = allAssets.filter(node => {
+            if (!node || !node.region) return false;
+            const nodeSector = node.sector?.toLowerCase();
+            if (!nodeSector || !activeSectors.includes(nodeSector)) return false;
+            if (!megaRegion.regions.includes(node.region)) return false;
+            return true;
+        });
 
-                    // Priority filter (if specified and not "All")
-                    if (selectedPriority && selectedPriority !== 'All') {
-                        if (node.priority?.toUpperCase() !== selectedPriority.toUpperCase()) return false;
-                    }
+        if (!assetsForOutput.length) return [];
 
-                    // Status filter (if specified and not "All")
-                    if (selectedStatus && selectedStatus !== 'All') {
-                        const normalizedStatus = node.status?.toLowerCase();
-                        const selectedStatusLower = selectedStatus.toLowerCase();
-                        if (normalizedStatus !== selectedStatusLower && 
-                            !(selectedStatusLower === 'existing' && (normalizedStatus === 'operational' || normalizedStatus === 'existing'))) {
-                            return false;
-                        }
-                    }
+        // Aggregate capacities by sector category using structured fields
+        const unitMatch = (a: any, unit: string) => (a.capacity_unit || '').toLowerCase() === unit.toLowerCase();
+        const subCatMatch = (a: any, keyword: string) => (a.sub_category || '').toLowerCase().includes(keyword.toLowerCase());
 
-                    return true;
-                });
-            }
-        } else {
-            // L1 no hover: drawer is hidden anyway, return empty
-            return [];
-        }
-
-        if (!assetsForOutput) return [];
-
-        // Aggregate capacities by sector category
         const waterCapacity = assetsForOutput
             .filter(a => a.sector?.toLowerCase() === 'water')
             .reduce((sum, a) => sum + getCapacityValue(a), 0);
 
         const energyCapacity = assetsForOutput
-            .filter(a => a.sector?.toLowerCase() === 'energy')
+            .filter(a => a.sector?.toLowerCase() === 'energy' && !unitMatch(a, 'Homes'))
             .reduce((sum, a) => sum + getCapacityValue(a), 0);
 
         const housingUnits = assetsForOutput
-            .filter(a => a.sector?.toLowerCase() === 'giga' && (a.asset_type?.toLowerCase().includes('housing') || a.asset_type?.toLowerCase().includes('residential')))
+            .filter(a => unitMatch(a, 'Homes') || subCatMatch(a, 'housing') || subCatMatch(a, 'residential'))
             .reduce((sum, a) => sum + getCapacityValue(a), 0);
 
         const hotelKeys = assetsForOutput
-            .filter(a => a.sector?.toLowerCase() === 'giga' && a.asset_type?.toLowerCase().includes('hotel'))
+            .filter(a => unitMatch(a, 'Hotel Keys') || subCatMatch(a, 'tourism'))
             .reduce((sum, a) => sum + getCapacityValue(a), 0);
 
         const industrialSpace = assetsForOutput
-            .filter(a => a.sector?.toLowerCase() === 'industry')
+            .filter(a => a.sector?.toLowerCase() === 'industry' && !unitMatch(a, 'Vehicles/yr') && !subCatMatch(a, 'automotive'))
             .reduce((sum, a) => sum + getCapacityValue(a), 0);
 
         const automotiveProduction = assetsForOutput
-            .filter(a => a.sector?.toLowerCase() === 'industry' && a.asset_type?.toLowerCase().includes('automotive'))
+            .filter(a => unitMatch(a, 'Vehicles/yr') || subCatMatch(a, 'automotive'))
             .reduce((sum, a) => sum + getCapacityValue(a), 0);
 
         return [
@@ -984,13 +978,13 @@ const SectorDetailsPanel: React.FC<SectorDetailsPanelProps> = ({
 
                     {/* Metrics Grid */}
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
-                        {selectedAsset.capacity_metric && (
+                        {formatCapacity(selectedAsset) && (
                             <div>
                                 <div style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--component-text-muted)', marginBottom: '4px', letterSpacing: '0.5px' }}>
                                     {t('josoor.sector.capacity')}
                                 </div>
                                 <div style={{ fontSize: '16px', fontWeight: 600, color: 'var(--component-text-primary)' }}>
-                                    {selectedAsset.capacity_metric}
+                                    {formatCapacity(selectedAsset)}
                                 </div>
                             </div>
                         )}
@@ -1008,13 +1002,13 @@ const SectorDetailsPanel: React.FC<SectorDetailsPanelProps> = ({
                     </div>
 
                     {/* Investment */}
-                    {selectedAsset.investment && (
+                    {formatInvestment(selectedAsset) && (
                         <div style={{ marginBottom: '1.5rem' }}>
                             <div style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--component-text-muted)', marginBottom: '4px', letterSpacing: '0.5px' }}>
                                 {t('josoor.sector.investmentValue')}
                             </div>
                             <div style={{ fontSize: '20px', fontWeight: 700, color: 'var(--component-color-warning)' }}>
-                                {selectedAsset.investment}
+                                {formatInvestment(selectedAsset)}
                             </div>
                         </div>
                     )}
@@ -1082,7 +1076,7 @@ const SectorDetailsPanel: React.FC<SectorDetailsPanelProps> = ({
                                             {sector}
                                         </span>
                                         <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--component-text-primary)' }}>
-                                            {percentage}%
+                                            {`${percentage}%`}
                                         </span>
                                     </div>
                                 ))}
@@ -1151,7 +1145,7 @@ const SectorDetailsPanel: React.FC<SectorDetailsPanelProps> = ({
                             )}
 
                             {/* Capacity (if not already shown above) */}
-                            {selectedAsset.capacity && selectedAsset.capacity !== selectedAsset.capacity_metric && (
+                            {selectedAsset.capacity && selectedAsset.capacity !== (selectedAsset.capacity_metric || formatCapacity(selectedAsset)) && (
                                 <div style={{ marginBottom: '1.5rem' }}>
                                     <div style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--component-text-muted)', marginBottom: '4px', letterSpacing: '0.5px' }}>
                                         {t('josoor.sector.capacityDetails')}
@@ -1289,7 +1283,7 @@ const SectorDetailsPanel: React.FC<SectorDetailsPanelProps> = ({
                                             {sector}
                                         </span>
                                         <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--component-text-primary)' }}>
-                                            {percentage}%
+                                            {`${percentage}%`}
                                         </span>
                                     </div>
                                 ))}
@@ -1476,14 +1470,14 @@ const SectorDetailsPanel: React.FC<SectorDetailsPanelProps> = ({
 
                                     {/* Asset Details Summary */}
                                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', fontSize: '12px', color: 'var(--component-text-muted)', marginTop: '6px' }}>
-                                        {asset.capacity_metric && (
+                                        {formatCapacity(asset) && (
                                             <span style={{ background: 'rgba(59, 130, 246, 0.1)', padding: '2px 6px', borderRadius: '3px' }}>
-                                                {asset.capacity_metric}
+                                                {formatCapacity(asset)}
                                             </span>
                                         )}
-                                        {asset.investment && (
+                                        {formatInvestment(asset) && (
                                             <span style={{ background: 'rgba(251, 191, 36, 0.1)', padding: '2px 6px', borderRadius: '3px' }}>
-                                                💰 {asset.investment}
+                                                💰 {formatInvestment(asset)}
                                             </span>
                                         )}
                                         {asset.completion_date && (

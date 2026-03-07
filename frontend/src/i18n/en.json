@@ -437,6 +437,7 @@
       "reportingDeskSub": "AI Insights",
       "tutorials": "Multimedia Tutorials",
       "tutorialsSub": "Twin Knowledge",
+      "documents": "Documents",
       "roadmap": "Roadmap",
       "roadmapSub": "(Coming Soon)",
       "explorer": "Graph Explorer",
@@ -1746,6 +1747,20 @@
       "newChat": "New Chat",
       "errorSendingMessage": "Error sending message.",
       "executiveControlTower": "Executive Control Tower"
+    },
+    "desktop": {
+      "observe": "Observe",
+      "decide": "Decide",
+      "deliver": "Deliver",
+      "reporting": "Reporting",
+      "signals": "Signals",
+      "chat": "Expert Chat",
+      "tutorials": "Tutorials",
+      "ontology": "Ontology",
+      "startHere": "Start Here",
+      "settings": "Settings",
+      "observability": "Observability",
+      "calendar": "Calendar"
     }
   }
 }

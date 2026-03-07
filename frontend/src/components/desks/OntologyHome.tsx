@@ -1,5 +1,5 @@
 import './OntologyHome.css';
-import { useState, useEffect } from 'react';
+import { Fragment, useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { fetchOntologyRagState, type OntologyRagState, type NodeInstance, type LoadingStep, type LineHealthDetail, type UpstreamRedSource, type LinkedNode, COLUMN_NARRATIVES_AR } from '../../services/ontologyService';
 
@@ -17,6 +17,16 @@ const VB_X = 12;  // viewBox x offset (maps old coords to new landscape)
 const VB_Y = 797; // viewBox y offset
 
 type RagStatus = 'green' | 'amber' | 'red' | 'default';
+
+type LineAnnotation = {
+  top?: { en: string; ar: string };
+  bottom?: { en: string; ar: string };
+  mx: number;
+  my: number;
+  dx?: number;
+  topDy?: number;
+  bottomDy?: number;
+};
 
 // Node positions in the 5850×3378 coordinate space
 // Extracted from landscape.svg rect elements (actual building image positions)
@@ -39,7 +49,36 @@ const NODE_POS: Record<string, { x: number; y: number; w: number; h: number }> =
 };
 
 // Which nodes are clickable (have drill-down data)
-const CLICKABLE_NODES = new Set(['sectorObjectives', 'policyTools', 'performance', 'risks', 'capabilities', 'orgUnits', 'processes', 'itSystems', 'projects']);
+const CLICKABLE_NODES = new Set(['sectorObjectives', 'policyTools', 'performance', 'risks', 'capabilities', 'orgUnits', 'processes', 'itSystems', 'projects', 'riskPlans', 'cultureHealth', 'vendors', 'changeAdoption', 'adminRecords', 'dataTransactions']);
+
+// Canonical relation diagnostics per visual leg.
+// Placements are manually offset from the line midpoint to avoid overlapping
+// the line itself, the landscape artwork, and node shapes.
+const LINE_LABELS: Record<string, LineAnnotation> = {
+  'capabilities->orgUnits':       { top: { en: 'ROLE_GAPS', ar: 'فجوات الأدوار' }, bottom: { en: 'OPERATES', ar: 'تُشغّل' }, mx: 4030, my: 1637, topDy: -50, bottomDy: 22 },
+  'capabilities->processes':      { top: { en: 'KNOWLEDGE_GAPS', ar: 'فجوات المعرفة' }, bottom: { en: 'OPERATES', ar: 'تُشغّل' }, mx: 4085, my: 2148, topDy: -50, bottomDy: 22 },
+  'capabilities->itSystems':      { top: { en: 'AUTOMATION_GAPS', ar: 'فجوات الأتمتة' }, bottom: { en: 'OPERATES', ar: 'يُشغّل' }, mx: 4030, my: 2679, topDy: -50, bottomDy: 22 },
+  'capabilities->risks':          { top: { en: 'MONITORED_BY', ar: 'مراقب بواسطة' }, mx: 3267, my: 2120, topDy: -26 },
+  'itSystems->projects':          { top: { en: 'GAPS_SCOPE', ar: 'نطاق الفجوات' }, bottom: { en: 'CLOSE_GAPS', ar: 'سد الفجوات' }, mx: 5040, my: 2679, topDy: -50, bottomDy: 22 },
+  'itSystems->vendors':           { top: { en: 'DEPENDS_ON', ar: 'يعتمد على' }, mx: 4280, my: 3093, topDy: -30 },
+  'orgUnits->projects':           { top: { en: 'GAPS_SCOPE', ar: 'نطاق الفجوات' }, bottom: { en: 'CLOSE_GAPS', ar: 'سد الفجوات' }, mx: 5040, my: 1637, topDy: -50, bottomDy: 22 },
+  'orgUnits->processes':          { top: { en: 'APPLY', ar: 'تطبيق' }, mx: 4434, my: 1952, topDy: -26 },
+  'policyTools->adminRecords':    { top: { en: 'REFERS_TO', ar: 'يشير إلى' }, bottom: { en: 'APPLIED_ON', ar: 'مطبق على' }, mx: 1560, my: 1630, dx: -158, topDy: -16, bottomDy: 165 },
+
+  'risks->policyTools':           { top: { en: 'INFORMS', ar: 'يُبلغ' }, mx: 2317, my: 1357, topDy: -26 },
+  'projects->changeAdoption':     { top: { en: 'ADOPTION_RISKS', ar: 'مخاطر التبني' }, bottom: { en: 'INCREASE_ADOPTION', ar: 'زيادة التبني' }, mx: 5607, my: 2497, dx: -158, topDy: -50, bottomDy: 22 },
+  'processes->projects':          { top: { en: 'GAPS_SCOPE', ar: 'نطاق الفجوات' }, bottom: { en: 'CLOSE_GAPS', ar: 'سد الفجوات' }, mx: 4900, my: 2148, topDy: -50, bottomDy: 22 },
+  'sectorObjectives->performance':{ top: { en: 'CASCADED_VIA', ar: 'يتدرج عبر' }, bottom: { en: 'AGGREGATES_TO', ar: 'يتجمع إلى' }, mx: 965, my: 3294, topDy: -50, bottomDy: 22 },
+  'sectorObjectives->policyTools':{ top: { en: 'REALIZED_VIA', ar: 'يتحقق عبر' }, bottom: { en: 'GOVERNED_BY', ar: 'محكوم بواسطة' }, mx: 915, my: 1242, topDy: -50, bottomDy: 22 },
+  'adminRecords->dataTransactions':{ top: { en: 'TRIGGERS_EVENT', ar: 'ينشئ حدث' }, mx: 1635, my: 2670, dx: -200, topDy: -22 },
+  'dataTransactions->performance':{ top: { en: 'MEASURED_BY', ar: 'يقاس بواسطة' }, mx: 1635, my: 2884, dx: -200, topDy: -18 },
+  'risks->performance':           { top: { en: 'INFORMS', ar: 'يُبلغ' }, mx: 2317, my: 3056, topDy: -18 },
+  'policyTools->capabilities':    { top: { en: 'SETS_PRIORITIES', ar: 'يحدد الأولويات' }, mx: 2800, my: 1208, topDy: -26 },
+  'performance->capabilities':    { top: { en: 'SETS_TARGETS', ar: 'يحدد المستهدفات' }, mx: 2800, my: 3280, topDy: -26 },
+  'cultureHealth->orgUnits':      { top: { en: 'MONITORS_FOR', ar: 'يراقب' }, mx: 4270, my: 1378, topDy: -28 },
+  'processes->itSystems':         { top: { en: 'AUTOMATION', ar: 'أتمتة' }, mx: 4434, my: 2474, topDy: -18 },
+  'risks->riskPlans':             { top: { en: 'HAS_PLAN', ar: 'لديه خطة' }, mx: 3017, my: 2560, dx: -120, topDy: -18 },
+};
 
 // Node label map for side panel
 const NODE_LABELS: Record<string, { en: string; ar: string }> = {
@@ -101,6 +140,58 @@ export default function OntologyHome() {
     style: { cursor: 'pointer' } as React.CSSProperties,
   });
 
+  const getLineOverlayPos = (mx: number, my: number, dx = 0, dy = 0) => {
+    const x = (((mx + dx) - VB_X) / VW) * 100;
+    const y = (((my + dy) - VB_Y) / VH) * 100;
+    const left = rtl ? 100 - x : x;
+    return { left: `${left}%`, top: `${y}%` };
+  };
+
+  const getNodeBadgePos = (nodeKey: string) => {
+    const node = NODE_POS[nodeKey];
+    if (!node) return null;
+
+    const isRightHeavy = node.x + node.w / 2 > (VB_X + VW * 0.78);
+    const badgeX = node.x + node.w - Math.min(32, node.w * 0.14);
+    let badgeY = node.y + Math.min(32, node.h * 0.18);
+    if (nodeKey === 'policyTools') badgeY += 200;
+    // Move debug pill below the count badge to prevent any horizontal intersection
+    return {
+      count: getLineOverlayPos(badgeX, badgeY),
+      debug: getLineOverlayPos(badgeX, badgeY + 42),
+    };
+  };
+
+  const getNodeBadgeCount = (nodeKey: string): number => {
+    if (!ragState) return 0;
+    return ragState.nodeDetails[nodeKey]?.length ?? 0;
+  };
+
+  const getNodeDebugText = (nodeKey: string): string | null => {
+    if (!ragState) return null;
+
+    let orphanTotal = 0;
+    let bastardTotal = 0;
+    let hasOutgoing = false;
+    let hasIncoming = false;
+
+    for (const detail of Object.values(ragState.lineDetails)) {
+      if (detail.from === nodeKey) {
+        orphanTotal += detail.orphanCount;
+        hasOutgoing = true;
+      }
+      if (detail.to === nodeKey) {
+        bastardTotal += detail.bastardCount;
+        hasIncoming = true;
+      }
+    }
+
+    if (hasOutgoing && hasIncoming) return `O:${orphanTotal} B:${bastardTotal}`;
+    if (hasOutgoing) return `O:${orphanTotal}`;
+    if (hasIncoming) return `B:${bastardTotal}`;
+    return null;
+  };
+
   return (
     <div className="ontology-home" dir={rtl ? 'rtl' : 'ltr'} lang={lang}>
 
@@ -132,14 +223,15 @@ export default function OntologyHome() {
         {/* ── Layer 0: Column Header Strip ── */}
         <div className="ont-header-strip">
           {[
-            { key: 'goals',    en: 'Goals',              ar: 'الأهداف',              pct: 15.42 },
-            { key: 'sector',   en: 'Sector Outputs',      ar: 'المخرجات القطاعية',     pct: 24.84 },
-            { key: 'health',   en: 'Health',              ar: 'الصحة',                pct: 14.78 },
-            { key: 'capacity', en: 'Capacity',            ar: 'القدرات',              pct: 29.17 },
-            { key: 'velocity', en: 'Velocity',            ar: 'سرعة التحول',          pct: 15.79 },
+            { key: 'goals',    en: 'Goals',              ar: 'الأهداف',              pct: 15.42, icon: '/att/ontology/header-goals.png' },
+            { key: 'sector',   en: 'Sector Outputs',      ar: 'المخرجات القطاعية',     pct: 24.84, icon: '/att/ontology/header-sector-output.png' },
+            { key: 'health',   en: 'Health',              ar: 'الصحة',                pct: 14.78, icon: '/att/ontology/header-health.png' },
+            { key: 'capacity', en: 'Capacity',            ar: 'القدرات',              pct: 29.17, icon: '/att/ontology/header-capacity.png' },
+            { key: 'velocity', en: 'Velocity',            ar: 'سرعة التحول',          pct: 15.79, icon: '/att/ontology/header-velocity.png' },
           ].map((col, i) => (
             <div key={col.key} className="ont-header-col" style={{ flex: `0 0 ${col.pct}%` }}>
               {i > 0 && <span className="ont-header-arrow">{rtl ? '\u2190' : '\u2192'}</span>}
+              <img src={col.icon} alt="" style={{ height: 32, marginRight: 6 }} draggable={false} />
               <span className="ont-header-label">{lang === 'ar' ? col.ar : col.en}</span>
             </div>
           ))}
@@ -232,20 +324,6 @@ export default function OntologyHome() {
             <path d="M4687 1654L4670 1637L4687 1620" />
           </g>
 
-          {/* #6: policyTools → capabilities (solid) */}
-          <g className={`ont-conn ont-rel-line--${getLineRag('policyTools', 'capabilities')}`} {...lineClick('policyTools', 'capabilities')}>
-            <path d="M1928 1217L1911 1234L1928 1251" />
-            <path d="M1912 1234H3738C3742.42 1234 3746 1237.58 3746 1242V1983" />
-            <path d="M3729 1966L3746 1983L3763 1966" />
-          </g>
-
-          {/* #7: performance → capabilities (dashed) */}
-          <g className={`ont-conn ont-rel-line--${getLineRag('performance', 'capabilities')}`} {...lineClick('performance', 'capabilities')}>
-            <path d="M1816 3293L1799 3310L1816 3327" />
-            <path d="M1805 3310H3742C3746.42 3310 3750 3306.42 3750 3302V2342" strokeDasharray="8 8" />
-            <path d="M3733 2359L3750 2342L3767 2359" />
-          </g>
-
           {/* #8: projects → changeAdoption (solid) */}
           <g className={`ont-conn ont-rel-line--${getLineRag('projects', 'changeAdoption')}`} {...lineClick('projects', 'changeAdoption')}>
             <path d="M5625 2377L5608 2360L5591 2377" />
@@ -253,8 +331,8 @@ export default function OntologyHome() {
             <path d="M5590 2616L5607 2633L5624 2616" />
           </g>
 
-          {/* #9: projects → processes (solid) */}
-          <g className={`ont-conn ont-rel-line--${getLineRag('projects', 'processes')}`} {...lineClick('projects', 'processes')}>
+          {/* #9: processes → projects (solid) */}
+          <g className={`ont-conn ont-rel-line--${getLineRag('processes', 'projects')}`} {...lineClick('processes', 'projects')}>
             <path d="M5114 2131L5131 2148L5114 2165" />
             <path d="M5131 2148H4670" />
             <path d="M4687 2131L4670 2148L4687 2165" />
@@ -309,13 +387,6 @@ export default function OntologyHome() {
             <path d="M462 2373L494 2373L494 2377L462 2377L462 2373Z" className="ont-conn-arrow" />
           </g>
 
-          {/* #17: riskPlans → risks (solid, vertical) */}
-          <g className={`ont-conn ont-rel-line--${getLineRag('riskPlans', 'risks')}`} {...lineClick('riskPlans', 'risks')}>
-            <path d="M3013 2413V2647" />
-            <path d="M2996 2630L3013 2647L3030 2630" />
-            <path d="M3029 2413H2997V2417H3029V2413Z" className="ont-conn-arrow" />
-          </g>
-
           {/* #18: dataTransactions → performance (solid, vertical) */}
           <g className={`ont-conn ont-rel-line--${getLineRag('dataTransactions', 'performance')}`} {...lineClick('dataTransactions', 'performance')}>
             <path d="M1635 2841V2926" />
@@ -330,18 +401,18 @@ export default function OntologyHome() {
             <path d="M462 2066L494 2066L494 2062L462 2062L462 2066Z" className="ont-conn-arrow" />
           </g>
 
-          {/* #20: adminRecords → policyTools (dashed, right sweep) */}
-          <g className={`ont-conn ont-rel-line--${getLineRag('adminRecords', 'policyTools')}`} {...lineClick('adminRecords', 'policyTools')}>
-            <path d="M1823 1483H2029C2033.42 1483 2037 1486.58 2037 1491V1929" strokeDasharray="8 8" />
+          {/* #20: adminRecords → citizen (dashed, right sweep from adminRecords) */}
+          <g className={`ont-conn ont-rel-line--${getLineRag('adminRecords', 'dataTransactions')}`} {...lineClick('adminRecords', 'dataTransactions')}>
+            <path d="M1781 1760H2029C2033.42 1760 2037 1763.58 2037 1768V1929" strokeDasharray="8 8" />
             <path d="M2020 1912L2037 1929L2054 1912" />
-            <path d="M1823 1467L1823 1499L1827 1499L1827 1467L1823 1467Z" className="ont-conn-arrow" />
+            <path d="M1781 1744L1781 1776L1785 1776L1785 1744L1781 1744Z" className="ont-conn-arrow" />
           </g>
 
-          {/* #21: policyTools → adminRecords (dashed, left sweep) */}
-          <g className={`ont-conn ont-rel-line--${getLineRag('policyTools', 'adminRecords')}`} {...lineClick('policyTools', 'adminRecords')}>
-            <path d="M1397 1479H1224C1219.58 1479 1216 1482.58 1216 1487V1925" strokeDasharray="8 8" />
+          {/* #21: adminRecords → govEntity (dashed, left sweep from adminRecords) */}
+          <g className={`ont-conn ont-rel-line--${getLineRag('adminRecords', 'dataTransactions')}`} {...lineClick('adminRecords', 'dataTransactions')}>
+            <path d="M1493 1760H1224C1219.58 1760 1216 1763.58 1216 1768V1925" strokeDasharray="8 8" />
             <path d="M1233 1908L1216 1925L1199 1908" />
-            <path d="M1397 1463L1397 1495L1393 1495L1393 1463L1397 1463Z" className="ont-conn-arrow" />
+            <path d="M1493 1744L1493 1776L1489 1776L1489 1744L1493 1744Z" className="ont-conn-arrow" />
           </g>
 
           {/* #22: policyTools → dataTransactions (dashed, left sweep) */}
@@ -358,8 +429,8 @@ export default function OntologyHome() {
             <path d="M2061 2586L2029 2586L2029 2590L2061 2590L2061 2586Z" className="ont-conn-arrow" />
           </g>
 
-          {/* #24: policyTools → risks (solid, long sweep) */}
-          <g className={`ont-conn ont-rel-line--${getLineRag('policyTools', 'risks')}`} {...lineClick('policyTools', 'risks')}>
+          {/* #24: risks → policyTools (solid, INFORMS sweep) */}
+          <g className={`ont-conn ont-rel-line--${getLineRag('risks', 'policyTools')}`} {...lineClick('risks', 'policyTools')}>
             <path d="M2791 1976V1365C2791 1360.58 2787.42 1357 2783 1357H1843" />
             <path d="M1860 1374L1843 1357L1860 1340" />
             <path d="M2807 1976L2775 1976L2775 1972L2807 1972L2807 1976Z" className="ont-conn-arrow" />
@@ -386,37 +457,117 @@ export default function OntologyHome() {
             <path d="M4111 1245L4111 1277L4115 1277L4115 1245L4111 1245Z" className="ont-conn-arrow" />
           </g>
 
-          {/* RAG building-top SVGs — replace white roof piece with colored version */}
-          {/* Fixed size from Figma export: 124×111 in the 5850×3378 coordinate space */}
+          {/* #6: policyTools → capabilities (solid) */}
+          <g className={`ont-conn ont-rel-line--${getLineRag('policyTools', 'capabilities')}`} {...lineClick('policyTools', 'capabilities')}>
+            <path d="M1928 1217L1911 1234L1928 1251" />
+            <path d="M1912 1234H3738C3742.42 1234 3746 1237.58 3746 1242V1983" />
+            <path d="M3729 1966L3746 1983L3763 1966" />
+          </g>
+
+          {/* #7: performance → capabilities (dashed) */}
+          <g className={`ont-conn ont-rel-line--${getLineRag('performance', 'capabilities')}`} {...lineClick('performance', 'capabilities')}>
+            <path d="M1816 3293L1799 3310L1816 3327" />
+            <path d="M1805 3310H3742C3746.42 3310 3750 3306.42 3750 3302V2342" strokeDasharray="8 8" />
+            <path d="M3733 2359L3750 2342L3767 2359" />
+          </g>
+
+          {/* #28: risks → riskPlans (solid, straight down to riskPlans) */}
+          <g className={`ont-conn ont-rel-line--${getLineRag('risks', 'riskPlans')}`} {...lineClick('risks', 'riskPlans')}>
+            <path d="M3017 2380V2654" />
+            <path d="M3000 2637L3017 2654L3034 2637" />
+            <path d="M3033 2380H3001V2384H3033V2380Z" className="ont-conn-arrow" />
+          </g>
+
+          {/* RAG overlays per node shape type */}
           {Object.entries(NODE_POS).map(([key, pos]) => {
             const rag = getNodeRag(key);
-            const ragSrc: Record<string, string> = {
+            const isBuilding = pos.w > 400;
+            const isCoin = pos.w < 210;
+            const isPlatform = !isBuilding && !isCoin;
+            const isAdminPlatform = key === 'adminRecords' || key === 'dataTransactions';
+
+            // Buildings: pre-colored diamond SVGs
+            const buildingSrc: Record<string, string> = {
               green: '/att/ontology/rag-green.svg',
               amber: '/att/ontology/rag-yellow.svg',
               red:   '/att/ontology/rag-red.svg',
             };
-            const src = ragSrc[rag];
-            // All RAG SVGs are 124×111 from Figma — fixed size, centered on building top edge
-            const imgW = 124;
-            const imgH = 111;
-            const cx = pos.x + pos.w / 2;
-            const imgX = cx - imgW / 2;
-            const imgY = pos.y + imgH - 40;
+            // Coins: pre-colored coin SVGs
+            const coinSrc: Record<string, string> = {
+              green: '/att/ontology/coin-green.svg',
+              amber: '/att/ontology/coin-amber.svg',
+              red:   '/att/ontology/coin-red.svg',
+            };
+            // Admin platforms: pre-colored admin SVGs
+            const adminSrc: Record<string, string> = {
+              green: '/att/ontology/admin-green.svg',
+              amber: '/att/ontology/admin-amber.svg',
+              red:   '/att/ontology/admin-red.svg',
+            };
+            // Operations platforms: pre-colored operations SVGs
+            const opsSrc: Record<string, string> = {
+              green: '/att/ontology/operations-green.svg',
+              amber: '/att/ontology/operations-amber.svg',
+              red:   '/att/ontology/operations-red.svg',
+            };
+
+            // Pick the right image source
+            const imgSrc = isBuilding ? buildingSrc[rag]
+              : isCoin ? coinSrc[rag]
+              : isAdminPlatform ? adminSrc[rag]
+              : opsSrc[rag];
+
             return (
               <g key={key}>
-                {src && (
+                {/* Buildings (w>400): pre-colored diamond on top face */}
+                {isBuilding && imgSrc && (
                   <image
-                    href={src}
-                    x={imgX} y={imgY}
-                    width={imgW} height={imgH}
+                    href={imgSrc}
+                    x={pos.x + pos.w / 2 - 62} y={pos.y + 71}
+                    width={124} height={111}
                     className={`ont-node-diamond ont-node-diamond--${rag}`}
                     preserveAspectRatio="xMidYMid meet"
                   />
                 )}
+                {/* Coins (192×161 SVG): centered in bounding box */}
+                {isCoin && imgSrc && (
+                  <image
+                    href={imgSrc}
+                    x={pos.x + (pos.w - 192) / 2} y={pos.y + (pos.h - 161) / 2}
+                    width={192} height={161}
+                    className={`ont-node-diamond ont-node-diamond--${rag}`}
+                    preserveAspectRatio="xMidYMid meet"
+                  />
+                )}
+                {/* Admin platforms: 70% scaled, shifted up */}
+                {isPlatform && isAdminPlatform && imgSrc && (() => {
+                  const sw = pos.w * 0.7;
+                  const sh = pos.h * 0.7;
+                  return (
+                    <image
+                      href={imgSrc}
+                      x={pos.x + (pos.w - sw) / 2 - 2} y={pos.y}
+                      width={sw} height={sh}
+                      className={`ont-node-diamond ont-node-diamond--${rag}`}
+                      preserveAspectRatio="xMidYMid meet"
+                    />
+                  );
+                })()}
+                {/* Operations platforms: stretch to fill exact landscape rect */}
+                {isPlatform && !isAdminPlatform && imgSrc && (
+                  <image
+                    href={imgSrc}
+                    x={pos.x - 7} y={pos.y}
+                    width={pos.w + 12} height={pos.h + 12}
+                    className={`ont-node-diamond ont-node-diamond--${rag}`}
+                    preserveAspectRatio="none"
+                  />
+                )}
+                {/* Click target for drill-down */}
                 {CLICKABLE_NODES.has(key) && (
                   <rect
                     x={pos.x} y={pos.y}
-                    width={pos.w} height={pos.h * 0.4}
+                    width={pos.w} height={pos.h}
                     fill="transparent"
                     style={{ cursor: 'pointer', pointerEvents: 'all' }}
                     onClick={() => { setSelectedNode(key); setShowAllIssues(false); setTracePath([]); }}
@@ -426,6 +577,54 @@ export default function OntologyHome() {
             );
           })}
         </svg>
+
+        {ragState && Object.entries(LINE_LABELS).map(([key, meta]) => {
+          const detail = ragState.lineDetails[key] || ragState.lineDetails[`${key.split('->')[1]}->${key.split('->')[0]}`];
+          if (!detail && !key.includes('adminRecords') && !key.includes('dataTransactions')) return null;
+
+          const rag = ragState.lineRag[key] || 'default';
+          const topText = meta.top ? (lang === 'ar' ? meta.top.ar : meta.top.en) : null;
+          const bottomText = meta.bottom ? (lang === 'ar' ? meta.bottom.ar : meta.bottom.en) : null;
+          const dx = meta.dx || 0;
+          const className = `ont-line-chip ont-line-chip--${rag}`;
+
+          return (
+            <Fragment key={key}>
+              {topText && (
+                <div
+                  className={`${className} ont-line-chip--relation`}
+                  style={getLineOverlayPos(meta.mx, meta.my, dx, meta.topDy ?? -28)}
+                >
+                  {topText}
+                </div>
+              )}
+              {bottomText && (
+                <div
+                  className={`${className} ont-line-chip--relation ont-line-chip--secondary`}
+                  style={getLineOverlayPos(meta.mx, meta.my, dx, meta.bottomDy ?? -2)}
+                >
+                  {bottomText}
+                </div>
+              )}
+            </Fragment>
+          );
+        })}
+
+        {ragState && Object.keys(NODE_POS).map((nodeKey) => {
+          const badgePos = getNodeBadgePos(nodeKey);
+          if (!badgePos) return null;
+
+          const rag = getNodeRag(nodeKey);
+          const total = getNodeBadgeCount(nodeKey);
+
+          return (
+            <Fragment key={`${nodeKey}-badge`}>
+              <div className={`ont-endpoint-badge ont-endpoint-badge--${rag}`} style={badgePos.count}>
+                <span className="ont-endpoint-badge__count">{total}</span>
+              </div>
+            </Fragment>
+          );
+        })}
 
         </div>{/* end ont-landscape-wrap */}
 
@@ -448,9 +647,37 @@ export default function OntologyHome() {
           const counts = { green: greens.length, amber: ambers.length, red: reds.length, total: instances.length };
           const healthPct = counts.total > 0 ? Math.round((counts.green / counts.total) * 100) : 0;
 
+          // Detect if RAG comes from chain propagation rather than own instances
+          const ownWorstRag: RagStatus = counts.red > 0 ? 'red' : counts.amber > 0 ? 'amber' : counts.green > 0 ? 'green' : 'default';
+          const isPropagated = nodeRag === 'red' && ownWorstRag !== 'red' || nodeRag === 'amber' && ownWorstRag === 'green';
+
+          // Compute at-risk count for propagated panels
+          let propagatedAtRiskCount = 0;
+          let propagatedRiskType = '';
+          if (isPropagated) {
+            const _riskInsts = ragState?.nodeDetails['risks'] || [];
+            const _bandKey = selectedNode === 'performance' ? 'operate_band' : 'build_band';
+            const _badRiskIds = new Set(_riskInsts
+              .filter(r => { const b = (r.props[_bandKey] || '').toLowerCase(); return b === 'red' || b === 'amber'; })
+              .map(r => r.id));
+            const _thisInsts = ragState?.nodeDetails[selectedNode!] || [];
+            propagatedAtRiskCount = _thisInsts.filter(inst =>
+              inst.upstreamNodes.some(u => _badRiskIds.has(u.id)) ||
+              inst.downstreamNodes.some(d => _badRiskIds.has(d.id))
+            ).length;
+            propagatedRiskType = selectedNode === 'performance'
+              ? (lang === 'ar' ? 'مخاطر تشغيل' : 'operate risks')
+              : (lang === 'ar' ? 'مخاطر بناء' : 'build risks');
+          }
+
           // Generate human-readable verdict
           const verdict = (() => {
             if (counts.total === 0) return lang === 'ar' ? 'لا توجد بيانات' : 'No data available';
+            if (isPropagated) {
+              return lang === 'ar'
+                ? `الحالة ناتجة عن ${propagatedRiskType}`
+                : `Status caused by ${propagatedRiskType}`;
+            }
             if (nodeRag === 'red') return lang === 'ar'
               ? `${counts.red} عنصر يحتاج تدخل فوري من أصل ${counts.total}`
               : `${counts.red} of ${counts.total} need immediate attention`;
@@ -512,25 +739,52 @@ export default function OntologyHome() {
                   <div style={{ fontSize: 13, color: 'var(--component-text-primary)', lineHeight: 1.5 }}>
                     {verdict}
                   </div>
+                  {isPropagated && (
+                    <button
+                      onClick={() => setSelectedNode('risks')}
+                      style={{ marginTop: 8, background: 'none', border: 'none', color: ragColors[nodeRag], cursor: 'pointer', fontSize: 12, fontWeight: 600, padding: 0, textDecoration: 'underline' }}
+                    >
+                      {lang === 'ar' ? 'عرض المخاطر ←' : '→ View Risks'}
+                    </button>
+                  )}
                 </div>
 
                 {/* ── Health Bar ── */}
                 {counts.total > 0 && (
                   <div style={{ marginBottom: 16 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, marginBottom: 4, color: 'var(--component-text-secondary)' }}>
-                      <span>{lang === 'ar' ? 'نسبة السلامة' : 'Health rate'}</span>
-                      <span style={{ fontWeight: 700, color: ragColors[nodeRag] }}>{healthPct}%</span>
-                    </div>
-                    <div style={{ display: 'flex', height: 6, borderRadius: 3, overflow: 'hidden', background: 'var(--component-bg-secondary)' }}>
-                      {counts.green > 0 && <div style={{ flex: counts.green, background: '#22c55e', transition: 'flex 0.6s' }} />}
-                      {counts.amber > 0 && <div style={{ flex: counts.amber, background: '#f59e0b', transition: 'flex 0.6s' }} />}
-                      {counts.red > 0 && <div style={{ flex: counts.red, background: '#ef4444', transition: 'flex 0.6s' }} />}
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, marginTop: 3, color: 'var(--component-text-secondary)' }}>
-                      <span>{counts.green} {lang === 'ar' ? 'سليم' : 'healthy'}</span>
-                      <span>{counts.amber} {lang === 'ar' ? 'تحت المراقبة' : 'watch'}</span>
-                      <span>{counts.red} {lang === 'ar' ? 'حرج' : 'critical'}</span>
-                    </div>
+                    {isPropagated ? (
+                      <>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, marginBottom: 4, color: 'var(--component-text-secondary)' }}>
+                          <span>{lang === 'ar' ? 'متأثر' : 'Affected'}</span>
+                          <span style={{ fontWeight: 700, color: ragColors[nodeRag] }}>{propagatedAtRiskCount} / {counts.total}</span>
+                        </div>
+                        <div style={{ display: 'flex', height: 6, borderRadius: 3, overflow: 'hidden', background: 'var(--component-bg-secondary)' }}>
+                          {(counts.total - propagatedAtRiskCount) > 0 && <div style={{ flex: counts.total - propagatedAtRiskCount, background: '#22c55e', transition: 'flex 0.6s' }} />}
+                          {propagatedAtRiskCount > 0 && <div style={{ flex: propagatedAtRiskCount, background: ragColors[nodeRag], transition: 'flex 0.6s' }} />}
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, marginTop: 3, color: 'var(--component-text-secondary)' }}>
+                          <span style={{ color: '#22c55e' }}>{counts.total - propagatedAtRiskCount} {lang === 'ar' ? 'سليم' : 'clear'}</span>
+                          <span style={{ color: ragColors[nodeRag] }}>{propagatedAtRiskCount} {lang === 'ar' ? 'متأثر' : 'affected'}</span>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, marginBottom: 4, color: 'var(--component-text-secondary)' }}>
+                          <span>{lang === 'ar' ? 'نسبة السلامة' : 'Health rate'}</span>
+                          <span style={{ fontWeight: 700, color: ragColors[nodeRag] }}>{healthPct}%</span>
+                        </div>
+                        <div style={{ display: 'flex', height: 6, borderRadius: 3, overflow: 'hidden', background: 'var(--component-bg-secondary)' }}>
+                          {counts.green > 0 && <div style={{ flex: counts.green, background: '#22c55e', transition: 'flex 0.6s' }} />}
+                          {counts.amber > 0 && <div style={{ flex: counts.amber, background: '#f59e0b', transition: 'flex 0.6s' }} />}
+                          {counts.red > 0 && <div style={{ flex: counts.red, background: '#ef4444', transition: 'flex 0.6s' }} />}
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, marginTop: 3, color: 'var(--component-text-secondary)' }}>
+                          <span>{counts.green} {lang === 'ar' ? 'سليم' : 'healthy'}</span>
+                          <span>{counts.amber} {lang === 'ar' ? 'تحت المراقبة' : 'watch'}</span>
+                          <span>{counts.red} {lang === 'ar' ? 'حرج' : 'critical'}</span>
+                        </div>
+                      </>
+                    )}
                   </div>
                 )}
 
@@ -545,6 +799,151 @@ export default function OntologyHome() {
                     {insight}
                   </div>
                 )}
+
+                {/* ── Propagated: show THIS node's items at risk from upstream ── */}
+                {isPropagated && ragState && (() => {
+                  // Show the node's own instances that are connected to upstream risks
+                  const nodeKey = selectedNode!;
+                  const thisInstances = ragState.nodeDetails[nodeKey] || [];
+                  const riskInsts = ragState.nodeDetails['risks'] || [];
+                  const bandKey = nodeKey === 'performance' ? 'operate_band' : 'build_band';
+                  const sectionLabel = nodeKey === 'performance'
+                    ? (lang === 'ar' ? 'عناصر متأثرة بمخاطر التشغيل' : 'Items affected by operate risks')
+                    : (lang === 'ar' ? 'عناصر متأثرة بمخاطر البناء' : 'Items affected by build risks');
+
+                  // Build a set of risk IDs that are red/amber in the relevant band
+                  const badRiskIds = new Set(riskInsts
+                    .filter(r => { const b = (r.props[bandKey] || '').toLowerCase(); return b === 'red' || b === 'amber'; })
+                    .map(r => r.id));
+
+                  // Find items from THIS node type that have upstream connections to bad risks
+                  const atRisk = thisInstances.filter(inst =>
+                    inst.upstreamNodes.some(u => badRiskIds.has(u.id)) ||
+                    inst.downstreamNodes.some(d => badRiskIds.has(d.id))
+                  );
+
+                  if (atRisk.length === 0) return null;
+                  const top3 = atRisk.slice(0, 3);
+                  const rest = atRisk.slice(3);
+
+                  const isCompact = nodeKey === 'performance';
+                  const renderAtRiskItem = (inst: NodeInstance, idx: number) => {
+                    if (isCompact) {
+                      return (
+                        <div key={inst.id} style={{ padding: '6px 10px', borderRadius: 6, background: `${ragColors[nodeRag]}08`, border: `1px solid ${ragColors[nodeRag]}20`, display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <span style={{ width: 5, height: 5, borderRadius: '50%', background: ragColors[nodeRag], flexShrink: 0 }} />
+                          <span style={{ fontSize: 12, color: 'var(--component-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>{inst.name}</span>
+                        </div>
+                      );
+                    }
+                    // Full detail for policyTools
+                    const connectedRisks = riskInsts.filter(r =>
+                      badRiskIds.has(r.id) && (
+                        inst.upstreamNodes.some(u => u.id === r.id) ||
+                        inst.downstreamNodes.some(d => d.id === r.id)
+                      )
+                    );
+                    return (
+                      <div key={inst.id} style={{ padding: '10px 12px', borderRadius: 8, background: `${ragColors[nodeRag]}08`, border: `1px solid ${ragColors[nodeRag]}30` }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <div style={{ width: 22, height: 22, borderRadius: '50%', flexShrink: 0, background: `${ragColors[nodeRag]}20`, color: ragColors[nodeRag], display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700 }}>
+                            {idx + 1}
+                          </div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--component-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {inst.name}
+                            </div>
+                            {inst.props.domain_id && (
+                              <div style={{ fontSize: 10, color: 'var(--component-text-secondary)', fontFamily: 'monospace' }}>{inst.props.domain_id}</div>
+                            )}
+                          </div>
+                        </div>
+                        {connectedRisks.length > 0 && (
+                          <div style={{ marginTop: 6, paddingLeft: 32 }}>
+                            <div style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--component-text-secondary)', marginBottom: 3 }}>
+                              {lang === 'ar' ? 'المخاطر المرتبطة' : 'Connected Risks'}
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                              {connectedRisks.map(r => {
+                                const band = (r.props[bandKey] || '').toLowerCase();
+                                const rColor = band === 'red' ? '#ef4444' : '#f59e0b';
+                                return (
+                                  <div key={r.id} style={{ fontSize: 10, color: rColor, display: 'flex', alignItems: 'center', gap: 4 }}>
+                                    <span style={{ width: 5, height: 5, borderRadius: '50%', background: rColor, flexShrink: 0 }} />
+                                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.name}</span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  };
+
+                  return (
+                    <div style={{ marginBottom: 16 }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--component-text-secondary)', marginBottom: 8 }}>
+                        {sectionLabel} ({atRisk.length})
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        {top3.map((inst, i) => renderAtRiskItem(inst, i))}
+                      </div>
+                      {rest.length > 0 && (
+                        <>
+                          <button
+                            onClick={() => setShowAllIssues(!showAllIssues)}
+                            style={{ width: '100%', marginTop: 8, padding: '6px 0', border: 'none', cursor: 'pointer', background: 'none', fontSize: 11, fontWeight: 600, color: 'var(--component-text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}
+                          >
+                            <span style={{ transform: showAllIssues ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', display: 'inline-block' }}>▼</span>
+                            {showAllIssues ? (lang === 'ar' ? 'إخفاء' : 'Hide') : (lang === 'ar' ? `+${rest.length} عناصر أخرى` : `+${rest.length} more items`)}
+                          </button>
+                          {showAllIssues && (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 250, overflowY: 'auto' }}>
+                              {rest.map((inst, i) => renderAtRiskItem(inst, i + 3))}
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  );
+                })()}
+                {selectedNode === 'risks' && ragState?.riskStats && (() => {
+                  const rs = ragState.riskStats;
+                  const sections = [
+                    { key: 'build', label: lang === 'ar' ? 'مخاطر البناء' : 'Build Risks', r: rs.buildRed, a: rs.buildAmber, g: rs.buildGreen },
+                    { key: 'operate', label: lang === 'ar' ? 'مخاطر التشغيل' : 'Operate Risks', r: rs.operateRed, a: rs.operateAmber, g: rs.operateGreen },
+                  ];
+                  return (
+                    <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+                      {sections.map(s => {
+                        const total = s.r + s.a + s.g;
+                        const worst = s.r > 0 ? '#ef4444' : s.a > 0 ? '#f59e0b' : '#22c55e';
+                        return (
+                          <div key={s.key} style={{ flex: 1, padding: '10px 12px', borderRadius: 8, background: 'var(--component-bg-secondary)', borderTop: `3px solid ${worst}` }}>
+                            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--component-text-primary)', marginBottom: 6 }}>{s.label}</div>
+                            {total > 0 ? (
+                              <>
+                                <div style={{ display: 'flex', height: 4, borderRadius: 2, overflow: 'hidden', marginBottom: 4 }}>
+                                  {s.g > 0 && <div style={{ flex: s.g, background: '#22c55e' }} />}
+                                  {s.a > 0 && <div style={{ flex: s.a, background: '#f59e0b' }} />}
+                                  {s.r > 0 && <div style={{ flex: s.r, background: '#ef4444' }} />}
+                                </div>
+                                <div style={{ fontSize: 10, color: 'var(--component-text-secondary)', display: 'flex', justifyContent: 'space-between' }}>
+                                  <span style={{ color: '#22c55e' }}>{s.g}</span>
+                                  <span style={{ color: '#f59e0b' }}>{s.a}</span>
+                                  <span style={{ color: '#ef4444' }}>{s.r}</span>
+                                </div>
+                              </>
+                            ) : (
+                              <div style={{ fontSize: 10, color: 'var(--component-text-secondary)' }}>{lang === 'ar' ? 'لا بيانات' : 'No data'}</div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
 
                 {/* ── Prioritized Issue List: top 3 visible + collapsible rest ── */}
                 {(() => {
@@ -866,27 +1265,24 @@ export default function OntologyHome() {
             ragState?.lineDetails[key] || ragState?.lineDetails[`${selectedLine.to}->${selectedLine.from}`];
           if (!detail) return null;
 
+
           const fromLbl = NODE_LABELS[selectedLine.from]?.[lang as 'en' | 'ar'] ?? selectedLine.from;
           const toLbl = NODE_LABELS[selectedLine.to]?.[lang as 'en' | 'ar'] ?? selectedLine.to;
           const ragColors: Record<RagStatus, string> = { red: '#ef4444', amber: '#f59e0b', green: '#22c55e', default: '#64748b' };
-          const connPct = Math.round(detail.connectivity * 100);
-          const fromPct = detail.fromTotal > 0 ? Math.round((detail.fromConnected / detail.fromTotal) * 100) : 0;
-          const toPct = detail.toTotal > 0 ? Math.round((detail.toConnected / detail.toTotal) * 100) : 0;
+          const healthPct = Math.round(detail.connectivity * 100);
+          const brokenTotal = detail.orphanCount + detail.bastardCount;
+          const total = detail.fromTotal + detail.toTotal;
 
-          const explanation = (() => {
-            if (!detail.hasLinks) return lang === 'ar'
-              ? 'لا توجد روابط مباشرة بين هذين النوعين في السلاسل النشطة'
-              : 'No direct links between these types in active chains';
-            if (detail.rag === 'green') return lang === 'ar'
-              ? 'غالبية العناصر مرتبطة — البيانات تتدفق بشكل سليم'
-              : 'Most nodes are connected — data flows actively between them';
-            if (detail.rag === 'amber') return lang === 'ar'
-              ? 'بعض العناصر غير مرتبطة — تدفق البيانات جزئي'
-              : 'Some nodes are orphaned — partial data flow, gaps in connectivity';
-            return lang === 'ar'
-              ? 'أغلب العناصر غير مرتبطة — لا يوجد تدفق بيانات فعلي'
-              : 'Most nodes are disconnected — no meaningful data flow between them';
-          })();
+          const renderNodeRow = (n: { id: string; name: string }) => (
+            <div key={n.id} style={{
+              padding: '6px 10px', display: 'flex', alignItems: 'center', gap: 8,
+              background: '#ef444415', border: '1px solid #ef444430', borderRadius: 6, marginBottom: 4,
+            }}>
+              <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#ef4444', flexShrink: 0 }} />
+              <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--component-text-primary)', flexShrink: 0 }}>{n.id}</span>
+              <span style={{ fontSize: 13, color: 'var(--component-text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{n.name}</span>
+            </div>
+          );
 
           return (
             <div className="ont-panel-overlay">
@@ -897,71 +1293,93 @@ export default function OntologyHome() {
                   style={{ float: rtl ? 'left' : 'right', background: 'none', border: 'none', color: 'var(--component-text-primary)', fontSize: 20, cursor: 'pointer' }}
                 >&#x2715;</button>
 
-                {/* Connection Header */}
+                {/* Header */}
                 <div style={{
                   padding: '14px 16px', borderRadius: 10, marginBottom: 16,
                   background: `${ragColors[detail.rag]}12`,
                   borderLeft: `4px solid ${ragColors[detail.rag]}`,
                 }}>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: ragColors[detail.rag], marginBottom: 4, fontFamily: 'var(--component-font-family)' }}>
-                    {fromLbl} {rtl ? '\u2190' : '\u2192'} {toLbl}
+                  <div style={{ fontSize: 16, fontWeight: 700, color: ragColors[detail.rag], marginBottom: 4 }}>
+                    {fromLbl} {rtl ? '←' : '→'} {toLbl}
                   </div>
-                  <div style={{ fontSize: 22, fontWeight: 800, color: ragColors[detail.rag] }}>
-                    {detail.hasLinks ? `${connPct}%` : '—'}
+                  <div style={{ fontSize: 26, fontWeight: 800, color: ragColors[detail.rag] }}>
+                    {detail.hasLinks ? `${healthPct}%` : '—'}
                   </div>
-                  <div style={{ fontSize: 11, color: 'var(--component-text-secondary)' }}>
-                    {lang === 'ar' ? 'صحة الاتصال' : 'Connection health'}
+                  <div style={{ fontSize: 13, color: 'var(--component-text-secondary)', marginTop: 2 }}>
+                    {lang === 'ar' ? 'صحة الاتصال' : 'Connection Health'}
                   </div>
                 </div>
 
                 {/* Health Bar */}
                 {detail.hasLinks && (
                   <div style={{ marginBottom: 16 }}>
-                    <div style={{ height: 6, borderRadius: 3, overflow: 'hidden', background: 'var(--component-bg-secondary)' }}>
-                      <div style={{ width: `${connPct}%`, height: '100%', background: ragColors[detail.rag], transition: 'width 0.6s' }} />
+                    <div style={{ height: 8, borderRadius: 4, overflow: 'hidden', background: 'var(--component-bg-secondary)' }}>
+                      <div style={{ width: `${healthPct}%`, height: '100%', background: ragColors[detail.rag], transition: 'width 0.6s' }} />
                     </div>
                   </div>
                 )}
 
-                {/* From/To Stats */}
-                {detail.hasLinks && (
-                  <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-                    <div style={{ flex: 1, padding: '10px 12px', borderRadius: 8, background: 'var(--component-bg-secondary)' }}>
-                      <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--component-text-secondary)', marginBottom: 4 }}>{fromLbl}</div>
-                      <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--component-text-primary)' }}>{detail.fromConnected}/{detail.fromTotal}</div>
-                      <div style={{ fontSize: 10, color: 'var(--component-text-secondary)' }}>
-                        {lang === 'ar' ? `${fromPct}% مرتبط` : `${fromPct}% connected`}
-                      </div>
-                      {detail.fromTotal - detail.fromConnected > 0 && (
-                        <div style={{ fontSize: 10, color: '#ef4444', marginTop: 2 }}>
-                          {detail.fromTotal - detail.fromConnected} {lang === 'ar' ? 'يتيم' : 'orphans'}
-                        </div>
-                      )}
-                    </div>
-                    <div style={{ flex: 1, padding: '10px 12px', borderRadius: 8, background: 'var(--component-bg-secondary)' }}>
-                      <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--component-text-secondary)', marginBottom: 4 }}>{toLbl}</div>
-                      <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--component-text-primary)' }}>{detail.toConnected}/{detail.toTotal}</div>
-                      <div style={{ fontSize: 10, color: 'var(--component-text-secondary)' }}>
-                        {lang === 'ar' ? `${toPct}% مرتبط` : `${toPct}% connected`}
-                      </div>
-                      {detail.toTotal - detail.toConnected > 0 && (
-                        <div style={{ fontSize: 10, color: '#ef4444', marginTop: 2 }}>
-                          {detail.toTotal - detail.toConnected} {lang === 'ar' ? 'يتيم' : 'orphans'}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Explanation */}
+                {/* Formula */}
                 <div style={{
-                  padding: '10px 12px', borderRadius: 8,
-                  background: 'var(--component-bg-secondary)',
-                  fontSize: 12, lineHeight: 1.6, color: 'var(--component-text-primary)',
-                  fontStyle: 'italic',
+                  padding: '12px 14px', borderRadius: 8, marginBottom: 16,
+                  background: 'var(--component-bg-secondary)', lineHeight: 1.8,
                 }}>
-                  {explanation}
+                  <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--component-text-secondary)', marginBottom: 6 }}>
+                    {lang === 'ar' ? 'الحساب' : 'Calculation'}
+                  </div>
+                  <div style={{ fontSize: 14, color: 'var(--component-text-primary)', fontWeight: 600 }}>
+                    ({detail.orphanCount} + {detail.bastardCount}) / {total} = {brokenTotal}/{total} = {Math.round((1 - detail.connectivity) * 100)}% {lang === 'ar' ? 'غير مرتبط' : 'unlinked'}
+                  </div>
+                  <div style={{ marginTop: 6, fontSize: 13, color: 'var(--component-text-secondary)' }}>
+                    {lang === 'ar'
+                      ? `${detail.orphanCount} ${fromLbl} بدون وجهة + ${detail.bastardCount} ${toLbl} بدون مصدر`
+                      : `${detail.orphanCount} ${fromLbl} with no destination + ${detail.bastardCount} ${toLbl} with no source`}
+                  </div>
+                  <div style={{ marginTop: 4, fontSize: 12, color: 'var(--component-text-secondary)' }}>
+                    {lang === 'ar'
+                      ? '0% = أخضر · ≤15% = أصفر · >15% = أحمر'
+                      : '0% = green · ≤15% = amber · >15% = red'}
+                  </div>
                 </div>
+
+                {/* Group 1: From-side not connected */}
+                {detail.disconnectedFrom.length > 0 && (
+                  <div style={{ marginBottom: 16 }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--component-text-secondary)', marginBottom: 8 }}>
+                      {lang === 'ar'
+                        ? `${fromLbl} بدون وجهة (${detail.orphanCount})`
+                        : `${fromLbl} not reaching ${toLbl} (${detail.orphanCount})`}
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', maxHeight: 220, overflowY: 'auto' }}>
+                      {detail.disconnectedFrom.map(renderNodeRow)}
+                    </div>
+                  </div>
+                )}
+
+                {/* Group 2: To-side not connected */}
+                {detail.disconnectedTo.length > 0 && (
+                  <div style={{ marginBottom: 16 }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--component-text-secondary)', marginBottom: 8 }}>
+                      {lang === 'ar'
+                        ? `${toLbl} بدون مصدر (${detail.bastardCount})`
+                        : `${toLbl} not fed by ${fromLbl} (${detail.bastardCount})`}
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', maxHeight: 220, overflowY: 'auto' }}>
+                      {detail.disconnectedTo.map(renderNodeRow)}
+                    </div>
+                  </div>
+                )}
+
+                {/* All connected */}
+                {detail.hasLinks && detail.orphanCount === 0 && detail.bastardCount === 0 && (
+                  <div style={{
+                    padding: '14px 16px', borderRadius: 8,
+                    background: '#22c55e12', color: '#22c55e',
+                    fontSize: 14, fontWeight: 600, textAlign: 'center',
+                  }}>
+                    {lang === 'ar' ? 'جميع العناصر مرتبطة بشكل سليم' : 'All elements are properly connected'}
+                  </div>
+                )}
               </div>
             </div>
           );

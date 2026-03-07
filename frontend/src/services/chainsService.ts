@@ -49,8 +49,8 @@ const _chainPromises = new Map<string, Promise<{ nodes: any[]; relationships: an
  * Fetch a chain with caching. First caller fetches, subsequent callers get cached data.
  * Both enterpriseService and ontologyService should use this instead of direct fetch.
  */
-export async function fetchChainCached(chainName: string, year: number = 0): Promise<{ nodes: any[]; relationships: any[] }> {
-  const key = `${chainName}:${year}`;
+export async function fetchChainCached(chainName: string, year: number = 0, quarter?: string | null): Promise<{ nodes: any[]; relationships: any[] }> {
+  const key = `${chainName}:${year}:${quarter || 'all'}`;
 
   // Return cached data if available
   if (_chainCache.has(key)) {
@@ -65,7 +65,8 @@ export async function fetchChainCached(chainName: string, year: number = 0): Pro
   }
 
   const promise = (async () => {
-    const url = `/api/v1/chains/${chainName}?year=${year}`;
+    const quarterParam = quarter ? `&quarter=${encodeURIComponent(quarter)}` : '';
+    const url = `/api/v1/chains/${chainName}?year=${year}${quarterParam}`;
     console.log(`[ChainCache] FETCH: ${url}`);
 
     const controller = new AbortController();
@@ -93,6 +94,13 @@ export async function fetchChainCached(chainName: string, year: number = 0): Pro
 export function invalidateChainCache(): void {
   _chainCache.clear();
   _chainPromises.clear();
+}
+
+/** Inject external data into the chain cache (e.g. RiskPlan from direct Cypher) */
+export function injectChainCache(chainName: string, data: { nodes: any[]; relationships: any[] }): void {
+  const key = `${chainName}:0:all`;
+  _chainCache.set(key, data);
+  console.log(`[ChainCache] INJECTED: ${chainName} (${data.nodes.length} nodes, ${data.relationships.length} rels)`);
 }
 
 class ChainsService {

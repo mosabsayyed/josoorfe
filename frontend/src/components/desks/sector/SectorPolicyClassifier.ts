@@ -1,4 +1,5 @@
-import { GraphNode, GraphConnection } from '../../admin/visualizations/GraphVisualization';
+export type GraphNode = { id: string; name: string; group: string; level?: string; sector?: string; [k: string]: any };
+export type GraphConnection = { source: string; target: string; type: string; [k: string]: any };
 
 export interface PolicyToolCounts {
     enforce: number;

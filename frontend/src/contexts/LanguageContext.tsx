@@ -13,12 +13,24 @@ const LanguageContext = createContext<LanguageContextType | undefined>(undefined
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const { i18n } = useTranslation();
-  const [language, setLanguageState] = useState<Language>((i18n.language as Language) || 'ar');
+  const [language, setLanguageState] = useState<Language>(() => {
+    const saved = localStorage.getItem('jos-lang') as Language | null;
+    if (saved === 'en' || saved === 'ar') return saved;
+    return (i18n.language as Language) || 'ar';
+  });
   const isRTL = language === 'ar';
+
+  // Sync i18n on mount if localStorage had a different language
+  useEffect(() => {
+    if (i18n.language !== language) {
+      i18n.changeLanguage(language);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const setLanguage = (lang: Language) => {
     setLanguageState(lang);
     i18n.changeLanguage(lang);
+    localStorage.setItem('jos-lang', lang);
   };
 
   // Sync document direction and lang attribute
