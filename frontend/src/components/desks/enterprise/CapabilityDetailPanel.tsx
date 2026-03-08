@@ -88,7 +88,7 @@ function projectDisplayValues(proj: any) {
 // SEMI-CIRCULAR GAUGE — inline SVG
 // ═══════════════════════════════════════════════════════════
 
-function SemiGauge({ value, band, subtitle, centerLabel }: { value: number; band?: string; subtitle?: string; centerLabel?: string }) {
+function SemiGauge({ value, band, subtitle, centerLabel, statusLabel }: { value: number; band?: string; subtitle?: string; centerLabel?: string; statusLabel?: string }) {
   const width = 180;
   const height = 105;
   const strokeW = 14;
@@ -130,16 +130,16 @@ function SemiGauge({ value, band, subtitle, centerLabel }: { value: number; band
         <text x={cx} y={cy - 20} textAnchor="middle" fill="var(--component-text-primary)" fontSize="28" fontWeight="700">
           {centerLabel || `${Math.round(value)}%`}
         </text>
-        {/* Band label */}
-        {band && (
+        {/* Status label */}
+        {(statusLabel || band) && (
           <text x={cx} y={cy - 2} textAnchor="middle" fill={color} fontSize="12" fontWeight="600"
             style={{ textTransform: 'uppercase' } as any}>
-            {band.toUpperCase()}
+            {(statusLabel || band || '').toUpperCase()}
           </text>
         )}
       </svg>
       {subtitle && (
-        <div style={{ fontSize: '12px', color: 'var(--component-text-muted)', marginTop: '2px', textAlign: 'center' }}>
+        <div style={{ fontSize: '16px', fontWeight: 600, color: 'var(--component-text-secondary)', marginTop: '2px', textAlign: 'center' }}>
           {subtitle}
         </div>
       )}
@@ -203,60 +203,124 @@ function MaturityBlocks({ current, target }: { current: number; target: number }
 }
 
 /** Stage Gate Progress — shows S1–S5 boxes per dimension */
-function StageGateProgress({ dimensions, target }: {
-  dimensions: Array<{ label: string; level: number; isWeakest: boolean }>;
+function StageGateProgress({ dimensions, target, diagnostics }: {
+  dimensions: Array<{ label: string; level: number; isWeakest: boolean; key?: string }>;
   target: number;
+  diagnostics?: Map<string, { coveringProject: any; dimRisk: number | null; dimDelay: number | null; dimPersistence: number | null; linkedEntity: any }>;
 }) {
   const stageNames = ['S1', 'S2', 'S3', 'S4', 'S5'];
 
   return (
     <div style={{ marginBottom: '1.5rem' }}>
-      {dimensions.map(dim => (
-        <div key={dim.label} style={{ marginBottom: '12px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
-            <span style={{
-              fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px',
-              color: dim.isWeakest ? '#f59e0b' : 'var(--component-text-muted)'
-            }}>
-              {dim.label} {dim.isWeakest && '\u26A0'}
-            </span>
-            <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--component-text-primary)' }}>
-              S{Math.round(dim.level)}
-            </span>
-          </div>
-          <div style={{ display: 'flex', gap: '3px' }}>
-            {stageNames.map((name, idx) => {
-              const stageNum = idx + 1;
-              const currentLevel = Math.round(dim.level);
-              const isAchieved = stageNum <= currentLevel;
-              const isTarget = stageNum === target;
-              const isWithinTarget = stageNum <= target && stageNum > currentLevel;
+      {dimensions.map(dim => {
+        const diag = diagnostics?.get(dim.key || dim.label.toLowerCase());
+        const isRegressed = dim.level < 3 && diag;
+        const isBarRaised = isRegressed && diag?.coveringProject;
 
-              return (
-                <div key={name} style={{
-                  flex: 1, height: '24px', borderRadius: '3px',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: '10px', fontWeight: 600,
-                  background: isAchieved
-                    ? 'var(--component-text-accent)'
-                    : isWithinTarget
-                      ? 'rgba(244,187,48,0.15)'
-                      : 'rgba(255,255,255,0.04)',
-                  color: isAchieved
-                    ? 'var(--component-text-on-accent, #000)'
-                    : isWithinTarget
+        return (
+          <div key={dim.label} style={{ marginBottom: isRegressed ? '16px' : '12px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+              <span style={{
+                fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px',
+                color: dim.isWeakest ? '#f59e0b' : 'var(--component-text-muted)'
+              }}>
+                {dim.label} {dim.isWeakest && '\u26A0'}
+              </span>
+              <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--component-text-primary)' }}>
+                S{Math.round(dim.level)}
+              </span>
+            </div>
+            <div style={{ display: 'flex', gap: '3px' }}>
+              {stageNames.map((name, idx) => {
+                const stageNum = idx + 1;
+                const currentLevel = Math.round(dim.level);
+                const isAchieved = stageNum <= currentLevel;
+                const isTarget = stageNum === target;
+                const isWithinTarget = stageNum <= target && stageNum > currentLevel;
+
+                return (
+                  <div key={name} style={{
+                    flex: 1, height: '24px', borderRadius: '3px',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: '10px', fontWeight: 600,
+                    background: isAchieved
                       ? 'var(--component-text-accent)'
-                      : 'rgba(255,255,255,0.2)',
-                  border: isTarget ? '2px solid var(--component-text-accent)' : '1px solid rgba(255,255,255,0.06)',
-                  transition: 'all 0.3s ease'
-                }}>
-                  {name}
+                      : isWithinTarget
+                        ? 'rgba(244,187,48,0.15)'
+                        : 'rgba(255,255,255,0.04)',
+                    color: isAchieved
+                      ? 'var(--component-text-on-accent, #000)'
+                      : isWithinTarget
+                        ? 'var(--component-text-accent)'
+                        : 'rgba(255,255,255,0.2)',
+                    border: isTarget ? '2px solid var(--component-text-accent)' : '1px solid rgba(255,255,255,0.06)',
+                    transition: 'all 0.3s ease'
+                  }}>
+                    {name}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Inline diagnostic for regressed dimensions */}
+            {isRegressed && (
+              <div style={{
+                marginTop: '6px', padding: '8px 10px', borderRadius: '4px',
+                background: isBarRaised ? 'rgba(245,158,11,0.06)' : 'rgba(239,68,68,0.06)',
+                borderLeft: `3px solid ${isBarRaised ? '#f59e0b' : '#ef4444'}`,
+                fontSize: '12px'
+              }}>
+                <div style={{ fontWeight: 600, color: isBarRaised ? '#f59e0b' : '#ef4444', marginBottom: '3px' }}>
+                  {isBarRaised ? 'Transformation Gap — Project' : 'Operational Regression'}
                 </div>
-              );
-            })}
+
+                {isBarRaised ? (
+                  <>
+                    <div style={{ color: 'var(--component-text-primary)', fontWeight: 600 }}>
+                      <span style={{ opacity: 0.6, marginRight: '6px' }}>{diag.coveringProject.domain_id}</span>
+                      {diag.coveringProject.name}
+                      <span style={{ fontWeight: 400, color: 'var(--component-text-muted)', marginLeft: '6px' }}>· {capitalize(diag.coveringProject.status)}</span>
+                    </div>
+                  </>
+                ) : (
+                  <div style={{ color: 'var(--component-text-secondary)', fontSize: '12px' }}>
+                    {dim.key === 'people' && diag.linkedEntity?.cultureHealth && (
+                      <span>
+                        <span style={{ opacity: 0.6, marginRight: '4px' }}>{diag.linkedEntity.cultureHealth.domain_id}</span>
+                        {diag.linkedEntity.cultureHealth.name} — Survey: {diag.linkedEntity.cultureHealth.survey_score ?? '—'}/{diag.linkedEntity.cultureHealth.target ?? '—'} · Trend: {diag.linkedEntity.cultureHealth.trend ?? '—'}
+                      </span>
+                    )}
+                    {dim.key === 'people' && !diag.linkedEntity?.cultureHealth && (
+                      <span style={{ color: 'var(--component-text-muted)' }}>No Culture Health survey data linked</span>
+                    )}
+                    {dim.key === 'tools' && diag.linkedEntity?.vendor && (
+                      <span>
+                        <span style={{ opacity: 0.6, marginRight: '4px' }}>{diag.linkedEntity.vendor.domain_id}</span>
+                        {diag.linkedEntity.vendor.name} — Rating: {diag.linkedEntity.vendor.performance_rating ?? '—'}/5{diag.linkedEntity.vendor.sla_compliance != null ? ` · SLA: ${diag.linkedEntity.vendor.sla_compliance}%` : ''}
+                      </span>
+                    )}
+                    {dim.key === 'tools' && !diag.linkedEntity?.vendor && (
+                      <span style={{ color: 'var(--component-text-muted)' }}>No Vendor performance data linked</span>
+                    )}
+                    {dim.key === 'process' && (
+                      <span style={{ color: 'var(--component-text-muted)' }}>No covering project — new knowledge or training required</span>
+                    )}
+                  </div>
+                )}
+
+                {(diag.dimRisk != null || diag.dimDelay != null) && (
+                  <div style={{ display: 'flex', gap: '10px', marginTop: '4px', color: 'var(--component-text-muted)' }}>
+                    {diag.dimRisk != null && (
+                      <span>Risk: <span style={{ fontWeight: 600, color: diag.dimRisk > 0.6 ? '#ef4444' : diag.dimRisk > 0.3 ? '#f59e0b' : '#10b981' }}>{(diag.dimRisk * 100).toFixed(0)}%</span></span>
+                    )}
+                    {diag.dimDelay != null && <span>Delay: <span style={{ fontWeight: 600 }}>{diag.dimDelay}d</span></span>}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
@@ -464,7 +528,7 @@ function ProjectCard({ proj }: { proj: any }) {
     }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
         <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--component-text-primary)' }}>
-          {proj.name}
+          <span style={{ opacity: 0.5, marginRight: '6px' }}>{proj.domain_id}</span>{proj.name}
         </span>
         <span style={{ fontSize: '11px', fontWeight: 600, color: d.color }}>
           {d.statusLabel}
@@ -519,7 +583,15 @@ function L3DetailView({ l3, onClose, onAIAnalysis }: { l3: L3Capability; onClose
     : l3StatusField === 'at-risk' || l3StatusField === 'in-progress-atrisk' ? 'amber'
     : l3StatusField === 'ontrack' || l3StatusField === 'in-progress-ontrack' ? 'green'
     : undefined;
-  const l3KpiPct = l3.kpi_achievement_pct != null ? Math.round(Number(l3.kpi_achievement_pct)) : null;
+  // L3 KPI % from Process L3 actual/target (same source as matrix)
+  const l3KpiPct = (() => {
+    const pm = processMetrics.find((m: any) => m.metric_name && m.target != null) || processMetrics.find((m: any) => m.metric_name) || null;
+    if (!pm) return null;
+    const actual = pm.actual != null ? Number(pm.actual) : null;
+    const target = pm.target != null ? Number(pm.target) : null;
+    if (actual == null || target == null || target <= 0) return null;
+    return Math.max(0, Math.min(100, Math.round((actual / target) * 100)));
+  })();
   const l3KpiCenterLabel = l3KpiPct != null ? `${l3KpiPct}%` : (l3KpiBand ? capitalize(l3StatusField || '') : undefined);
 
   const headerTitle = (
@@ -540,32 +612,33 @@ function L3DetailView({ l3, onClose, onAIAnalysis }: { l3: L3Capability; onClose
             value={l3KpiPct ?? (l3KpiBand === 'green' ? 90 : l3KpiBand === 'amber' ? 70 : 30)}
             band={l3KpiBand}
             centerLabel={l3KpiCenterLabel}
-            subtitle={`${primaryProcessMetric?.metric_name || l3StatusField || 'KPI'} \u00B7 ${l3KpiCenterLabel}`}
+            subtitle={primaryProcessMetric?.metric_name || 'KPI'}
+            statusLabel={l3StatusField || undefined}
           />
 
-          <div style={{
-            background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
-            borderRadius: '8px', padding: '12px', marginBottom: '1.25rem'
-          }}>
-            <div style={{ ...labelStyle, marginBottom: '6px' }}>KPI Connectivity</div>
-            <div style={{ fontSize: '13px', color: 'var(--component-text-primary)', marginBottom: '8px', lineHeight: 1.5 }}>
-              {`L3 Process Metrics (${processMetrics.length}) \u2192 Capability ${cap.name || cap.id}`}
-            </div>
-            {primaryProcessMetric?.metric_type && (
-              <div style={{ fontSize: '12px', color: 'var(--component-text-secondary)', fontStyle: 'italic', marginBottom: '8px' }}>
-                {`Type: ${primaryProcessMetric.metric_type}`}
-              </div>
-            )}
-            {processMetrics.length > 0 && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                {processMetrics.map((pm: any, idx: number) => (
-                  <div key={`${pm.metric_name || idx}`} style={{ fontSize: '12px', color: 'var(--component-text-secondary)' }}>
-                    {`${pm.metric_name || 'metric'}: ${pm.actual ?? '\u2014'} / ${pm.target ?? '\u2014'} ${pm.unit || ''}`}
+          {/* Process metric actual/target values under gauge */}
+          {processMetrics.length > 0 && (
+            <div style={{
+              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px',
+              marginBottom: '1.25rem'
+            }}>
+              {processMetrics.map((pm: any, idx: number) => {
+                const trendIcon = pm.trend === 'improving' ? '\u2191' : pm.trend === 'declining' ? '\u2193' : pm.trend ? '\u2192' : '';
+                const trendColor = pm.trend === 'improving' ? '#10b981' : pm.trend === 'declining' ? '#ef4444' : '#f59e0b';
+                return (
+                  <div key={`${pm.metric_name || idx}`} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '18px' }}>
+                    <span style={{ color: 'var(--component-text-primary)', fontWeight: 700 }}>
+                      {pm.actual ?? '\u2014'} / {pm.target ?? '\u2014'} {pm.unit || ''}
+                    </span>
+                    {trendIcon && <span style={{ color: trendColor, fontWeight: 700, fontSize: '20px' }}>{trendIcon}</span>}
+                    {pm.indicator_type && (
+                      <span style={{ color: 'var(--component-text-muted)', fontStyle: 'italic', fontSize: '14px' }}>{pm.indicator_type}</span>
+                    )}
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
+                );
+              })}
+            </div>
+          )}
         </>
       ) : (
         <div style={{
@@ -637,7 +710,20 @@ function L3DetailView({ l3, onClose, onAIAnalysis }: { l3: L3Capability; onClose
           {/* 3. Maturity */}
           <MaturityBlocks current={l3.maturity_level} target={l3.target_maturity_level} />
 
-          {/* 3b. Stage Gate Progress — 3 dimensions toward target */}
+          {/* 3b. Stage Gate Progress — 3 dimensions toward target
+           *
+           * DIMENSION MATURITY LOGIC (SST Stage Gate Model):
+           * - people_score, process_score, tools_score = maturity level (1-5) per dimension
+           * - Capability maturity_level = MIN of the 3 dimension levels
+           * - To activate (move to operate): ALL 3 dimensions must reach target (min S3)
+           * - BUILD mode: dimensions < target → projects exist to close the gap
+           *
+           * DATA SOURCE ISSUE (2026-03-07):
+           * - Currently ETL (run_risk_agent.py) writes FAKE random-seeded values (0-100 scale)
+           * - These should be actual maturity levels (1-5) stored on EntityCapability
+           * - Real source: OrgUnit(People), Process(Process), ITSystem(Tools) linked via gap relations
+           * - Until ETL is fixed, values here may be incorrect
+           */}
           {(l3.people_score != null || l3.process_score != null || l3.tools_score != null) && (() => {
             const dims = [
               { label: t('josoor.enterprise.detailPanel.people', 'People'), level: l3.people_score || 1 },
@@ -684,12 +770,28 @@ function L3DetailView({ l3, onClose, onAIAnalysis }: { l3: L3Capability; onClose
           {/* 1. KPI Achievement Gauge + explicit KPI connectivity */}
           {L3KpiSection}
 
-          {/* 2. Regression Risk Dimensions */}
+          {/* 2. Regression Risk Dimensions
+           *
+           * OPERATE MODE INVARIANT:
+           * - Cap is operational (status='active') → all 3 dimensions were at maturity >= S3
+           * - If any dimension < S3 now, two scenarios:
+           *   A) BAR RAISED: transformation raised the bar, project exists to close gap
+           *   B) REGRESSION: conditions that achieved S3 failed (culture drop, vendor SLA, knowledge loss)
+           * - Weakest dimension = primary regression risk driver
+           *
+           * DATA SOURCE: EntityRisk people_score/process_score/tools_score (1-5 scale)
+           * WHY DATA:
+           *   People: role_gaps_risk, role_gaps_delay_days, role_gaps_persistence
+           *          + OrgUnit → MONITORS_FOR → CultureHealth (survey_score, trend)
+           *   Tools:  it_systems_risk, it_systems_delay_days, it_systems_persistence
+           *          + ITSystem → DEPENDS_ON → Vendor (performance_rating, SLA)
+           *   Process: project_outputs_risk, project_outputs_delay_days, project_outputs_persistence
+           */}
           {(l3.people_score != null || l3.process_score != null || l3.tools_score != null) && (() => {
             const dims = [
-              { label: t('josoor.enterprise.detailPanel.people', 'People'), level: l3.people_score || 1 },
-              { label: t('josoor.enterprise.detailPanel.process', 'Process'), level: l3.process_score || 1 },
-              { label: t('josoor.enterprise.detailPanel.tools', 'Tools'), level: l3.tools_score || 1 }
+              { key: 'people', label: t('josoor.enterprise.detailPanel.people', 'People'), level: l3.people_score || 1 },
+              { key: 'process', label: t('josoor.enterprise.detailPanel.process', 'Process'), level: l3.process_score || 1 },
+              { key: 'tools', label: t('josoor.enterprise.detailPanel.tools', 'Tools'), level: l3.tools_score || 1 }
             ].filter(d => d.level != null);
             const minLevel = Math.min(...dims.map(d => d.level));
             const allSame = dims.every(d => d.level === dims[0].level);
@@ -698,88 +800,35 @@ function L3DetailView({ l3, onClose, onAIAnalysis }: { l3: L3Capability; onClose
               isWeakest: !allSame && d.level === minLevel
             }));
 
+            // Build diagnostics map for dimensions < S3
+            const diagMap = new Map<string, any>();
+            for (const dim of dims) {
+              if (dim.level >= 3) continue;
+              const gapType = dim.key === 'people' ? 'People' : dim.key === 'tools' ? 'Tools' : 'Process';
+              const coveringProject = projects.find((p: any) => p._pillar === gapType && p.status === 'active');
+              const riskPrefix = dim.key === 'people' ? 'role_gaps' : dim.key === 'tools' ? 'it_systems' : 'project_outputs';
+              const entityType = dim.key === 'people' ? 'OrgUnit' : dim.key === 'tools' ? 'ITSystem' : 'Process';
+              diagMap.set(dim.key, {
+                coveringProject,
+                dimRisk: risk?.[`${riskPrefix}_risk`] ?? null,
+                dimDelay: risk?.[`${riskPrefix}_delay_days`] ?? null,
+                dimPersistence: risk?.[`${riskPrefix}_persistence`] ?? null,
+                linkedEntity: entities.find((e: any) => e.type === entityType) || null,
+              });
+            }
+
             return (
               <>
                 <h3 style={sectionTitleStyle}>{t('josoor.enterprise.detailPanel.regressionDimensions', 'Regression Risk Dimensions')}</h3>
                 <div style={{ fontSize: '12px', color: 'var(--component-text-muted)', marginBottom: '12px' }}>
                   {t('josoor.enterprise.detailPanel.regressionDimensionsDesc', 'Health of the 3 operational dimensions. Weakest dimension drives regression risk.')}
                 </div>
-                <StageGateProgress dimensions={dimensionsWithWeakest} target={l3.target_maturity_level} />
+                <StageGateProgress dimensions={dimensionsWithWeakest} target={l3.target_maturity_level} diagnostics={diagMap} />
               </>
             );
           })()}
 
-          {/* 3. Process Metrics */}
-          {(() => {
-            const processMetrics: any[] = cap.processMetrics || [];
-            if (processMetrics.length === 0) return null;
-
-            return (
-              <>
-                <h3 style={sectionTitleStyle}>{t('josoor.enterprise.detailPanel.processMetrics')}</h3>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '1.5rem' }}>
-                  {processMetrics.map((pm: any) => {
-                    const actual = pm.actual != null ? Number(pm.actual) : null;
-                    const target = pm.target != null ? Number(pm.target) : null;
-                    const baseline = pm.baseline != null ? Number(pm.baseline) : null;
-                    const isLowerBetter = pm.metric_type === 'cycle_time' || pm.metric_type === 'cost';
-                    let pct: number | null = null;
-                    if (actual != null && target != null && baseline != null && baseline !== target) {
-                      pct = isLowerBetter
-                        ? Math.round(((baseline - actual) / (baseline - target)) * 100)
-                        : Math.round(((actual - (baseline || 0)) / (target - (baseline || 0))) * 100);
-                      pct = Math.max(0, Math.min(pct, 100));
-                    } else if (actual != null && target != null && target > 0) {
-                      pct = isLowerBetter ? Math.round((target / actual) * 100) : Math.round((actual / target) * 100);
-                      pct = Math.max(0, Math.min(pct, 100));
-                    }
-                    const barColor = pct != null ? achievementColor(pct) : '#3b82f6';
-                    const trendIcon = pm.trend === 'improving' ? '\u2191' : pm.trend === 'declining' ? '\u2193' : '\u2192';
-                    const trendColor = pm.trend === 'improving' ? '#10b981' : pm.trend === 'declining' ? '#ef4444' : '#f59e0b';
-
-                    return (
-                      <div key={pm.id} style={{
-                        background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)',
-                        borderRadius: '6px', padding: '10px 14px'
-                      }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                          <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--component-text-primary)' }}>
-                            {pm.metric_name || pm.name}
-                          </div>
-                          <span style={{ fontSize: '14px', fontWeight: 600, color: trendColor }}>{trendIcon}</span>
-                        </div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '6px' }}>
-                          <span style={{ fontSize: '20px', fontWeight: 700, color: 'var(--component-text-primary)' }}>
-                            {actual != null ? actual : '\u2014'}
-                          </span>
-                          <span style={{ fontSize: '13px', color: 'var(--component-text-muted)' }}>
-                            {t('josoor.enterprise.detailPanel.target')}: {target != null ? target : '\u2014'} {pm.unit || ''}
-                          </span>
-                        </div>
-                        {pct != null && (
-                          <div style={{ height: '8px', background: 'rgba(255,255,255,0.06)', borderRadius: '4px', overflow: 'hidden' }}>
-                            <div style={{ height: '100%', width: `${pct}%`, background: barColor, borderRadius: '4px' }} />
-                          </div>
-                        )}
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px' }}>
-                          <span style={{ fontSize: '11px', color: 'var(--component-text-muted)' }}>
-                            {pm.metric_type ? pm.metric_type.replace('_', ' ') : ''}
-                          </span>
-                          {pm.indicator_type && (
-                            <span style={{ fontSize: '11px', color: 'var(--component-text-muted)', fontStyle: 'italic' }}>
-                              {pm.indicator_type}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </>
-            );
-          })()}
-
-          {/* 4. Operating Entities (collapsible) */}
+          {/* 3. Operating Entities (collapsible) */}
           {entities.length > 0 && (
             <CollapsibleSection title={t('josoor.enterprise.detailPanel.operationalFootprint')} count={entities.length} defaultOpen={false}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '0.5rem' }}>
@@ -790,7 +839,7 @@ function L3DetailView({ l3, onClose, onAIAnalysis }: { l3: L3Capability; onClose
                       display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0'
                     }}>
                       <div>
-                        <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--component-text-primary)' }}>{ent.name}</span>
+                        <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--component-text-primary)' }}><span style={{ opacity: 0.5, marginRight: '6px' }}>{ent.domain_id}</span>{ent.name}</span>
                         <span style={{ fontSize: '11px', color: 'var(--component-text-muted)', marginLeft: '8px' }}>
                           {t(`josoor.enterprise.detailPanel.${typeKey}`)}
                         </span>
@@ -850,7 +899,14 @@ function L2DetailView({ l2, onClose, selectedYear, selectedQuarter, onAIAnalysis
     : l2StatusField === 'at-risk' || l2StatusField === 'in-progress-atrisk' ? 'amber'
     : l2StatusField === 'ontrack' || l2StatusField === 'in-progress-ontrack' ? 'green'
     : undefined;
-  const kpiPct = l2.kpi_achievement_pct != null ? Math.round(Number(l2.kpi_achievement_pct)) : null;
+  // L2 KPI % from SectorPerformance L2 actual_value/target (same source as matrix)
+  const kpiPct = (() => {
+    if (!primaryPerf) return null;
+    const actual = primaryPerf.actual_value != null ? Number(primaryPerf.actual_value) : null;
+    const target = primaryPerf.target != null ? Number(primaryPerf.target) : null;
+    if (actual == null || target == null || target <= 0) return null;
+    return Math.max(0, Math.min(100, Math.round((actual / target) * 100)));
+  })();
   const kpiCenterLabel = kpiPct != null ? `${kpiPct}%` : (gaugeBand ? capitalize(l2StatusField || '') : undefined);
   // Collect L3 process metric inputs (Process L3 → Cap L3 → this Cap L2)
   const l2ProcessInputs: any[] = [];
@@ -959,14 +1015,22 @@ function L2DetailView({ l2, onClose, selectedYear, selectedQuarter, onAIAnalysis
         );
       })()}
 
-      {/* 1. KPI Achievement Gauge — from execute_status/build_status (same as strip) */}
+      {/* 1. KPI Achievement Gauge — from SectorPerformance L2 actual_value/target */}
       {(kpiPct != null || gaugeBand) ? (
-        <SemiGauge
-          value={kpiPct ?? (gaugeBand === 'green' ? 90 : gaugeBand === 'amber' ? 70 : 30)}
-          band={gaugeBand}
-          centerLabel={kpiCenterLabel}
-          subtitle={`${primaryPerf?.name || l2.name} \u00B7 ${kpiCenterLabel}`}
-        />
+        <>
+          <SemiGauge
+            value={kpiPct ?? (gaugeBand === 'green' ? 90 : gaugeBand === 'amber' ? 70 : 30)}
+            band={gaugeBand}
+            centerLabel={kpiCenterLabel}
+            subtitle={primaryPerf?.name || l2.name}
+            statusLabel={l2StatusField || undefined}
+          />
+          {primaryPerf && (
+            <div style={{ display: 'flex', justifyContent: 'center', fontSize: '18px', fontWeight: 700, color: 'var(--component-text-primary)', marginBottom: '1rem' }}>
+              {`${primaryPerf.actual_value ?? '\u2014'} / ${primaryPerf.target ?? '\u2014'} ${primaryPerf.unit || ''}`}
+            </div>
+          )}
+        </>
       ) : null}
 
       {/* 2. Maturity */}
@@ -1083,7 +1147,7 @@ function L2DetailView({ l2, onClose, selectedYear, selectedQuarter, onAIAnalysis
                   borderRadius: '6px', padding: '8px 10px'
                 }}>
                   <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--component-text-primary)' }}>
-                    {`${perf.id || perf.domain_id || '\u2014'} \u00B7 ${perf.name || 'Sector Performance'}`}
+                    {`${perf.domain_id || '\u2014'} \u00B7 ${perf.name || 'Sector Performance'}`}
                   </div>
                   <div style={{ fontSize: '12px', color: 'var(--component-text-secondary)' }}>
                     {`Actual ${perf.actual_value ?? '\u2014'} / Target ${perf.target ?? '\u2014'} ${perf.unit || ''}`}
@@ -1113,13 +1177,13 @@ function L2DetailView({ l2, onClose, selectedYear, selectedQuarter, onAIAnalysis
           {allProjects.map((proj: any) => {
             const d = projectDisplayValues(proj);
             return (
-              <div key={proj.id} style={{
+              <div key={proj.domain_id || proj.id} style={{
                 background: 'rgba(255,255,255,0.03)', border: `1px solid ${d.isOverdue ? 'rgba(239,68,68,0.2)' : 'rgba(255,255,255,0.06)'}`,
                 borderRadius: '6px', padding: '8px 12px'
               }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
                   <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--component-text-primary)' }}>
-                    {proj.name}
+                    <span style={{ opacity: 0.5, marginRight: '6px' }}>{proj.domain_id}</span>{proj.name}
                   </span>
                   <span style={{ fontSize: '11px', fontWeight: 600, color: d.color }}>
                     {d.statusLabel}

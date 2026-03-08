@@ -28,30 +28,52 @@ export function CapabilityMatrix({
 }: CapabilityMatrixProps) {
   const { t } = useTranslation();
 
-  const getL3KpiPct = (l3: L3Capability): number | null => {
-    const rawCap: any = l3.rawCapability || {};
-    const kpis: any[] = rawCap.l2Kpis || [];
-    if (!kpis.length) return null;
+  // L3 KPI: from EntityProcess matched to same-level cap (operate mode only)
+  const getL3Process = (l3: L3Capability): any | null => {
+    if (l3.mode === 'build') return null;
+    const metrics: any[] = (l3.rawCapability || {} as any).processMetrics || [];
+    return metrics.find((m: any) => m.metric_name && m.target != null) || metrics.find((m: any) => m.metric_name) || null;
+  };
 
-    const matched = kpis.find((entry: any) => (entry?.inputs || []).some((inp: any) => String(inp?.cap_id || '') === String(l3.id))) || kpis[0];
-    const actual = matched?.kpi?.actual_value != null ? Number(matched.kpi.actual_value) : null;
-    const target = matched?.kpi?.target != null ? Number(matched.kpi.target) : null;
-    if (actual == null || target == null || Number.isNaN(actual) || Number.isNaN(target) || target <= 0) return null;
+  const getL3KpiPct = (l3: L3Capability): number | null => {
+    const proc = getL3Process(l3);
+    if (!proc) return null;
+    const actual = proc.actual != null ? Number(proc.actual) : null;
+    const target = proc.target != null ? Number(proc.target) : null;
+    if (actual == null || target == null || target <= 0) return null;
     return Math.max(0, Math.min(100, Math.round((actual / target) * 100)));
   };
 
-  const getL2RollupPct = (l2: L2Capability): number | null => {
-    const values = l2.l3
-      .filter(l3 => !isL3Dimmed(l3))
-      .map(getL3KpiPct)
-      .filter((v): v is number => v != null);
-    if (!values.length) return null;
-    return Math.round(values.reduce((sum, v) => sum + v, 0) / values.length);
+  // L2 KPI: from SectorPerformance via upwardChain.performanceTargets
+  const getL2Perf = (l2: L2Capability): any | null => {
+    const pts = l2.upwardChain?.performanceTargets || [];
+    // Prefer one with actual_value and target
+    return pts.find((p: any) => p.actual_value != null && p.target != null) || pts[0] || null;
   };
+
+  const getL2KpiPct = (l2: L2Capability): number | null => {
+    const perf = getL2Perf(l2);
+    if (!perf) return null;
+    const actual = perf.actual_value != null ? Number(perf.actual_value) : null;
+    const target = perf.target != null ? Number(perf.target) : null;
+    if (actual == null || target == null || target <= 0) return null;
+    return Math.max(0, Math.min(100, Math.round((actual / target) * 100)));
+  };
+
+  const getL2KpiName = (l2: L2Capability): string | null => {
+    const perf = getL2Perf(l2);
+    return perf?.name || null;
+  };
+
+  const isL2Operate = (l2: L2Capability): boolean =>
+    l2.l3.some(l3 => l3.mode === 'execute');
+
+  const isL1Operate = (l1: L1Capability): boolean =>
+    l1.l2.some(l2 => isL2Operate(l2));
 
   const getL1RollupPct = (l1: L1Capability): number | null => {
     const values = l1.l2
-      .map(getL2RollupPct)
+      .map(getL2KpiPct)
       .filter((v): v is number => v != null);
     if (!values.length) return null;
     return Math.round(values.reduce((sum, v) => sum + v, 0) / values.length);
@@ -108,7 +130,7 @@ export function CapabilityMatrix({
 
           return (
             <div key={l1.id} className="capability-row-l1">
-              <div className="capability-grid" style={{ gridTemplateColumns: '10% 14% 1fr', gridTemplateRows: `repeat(${totalL2Count}, 100px)` }}>
+              <div className="capability-grid" style={{ gridTemplateColumns: '10% 14% 1fr', gridTemplateRows: `repeat(${totalL2Count}, minmax(100px, auto))` }}>
                 {/* L1 Cell - Spans all rows */}
                 <div
                   className="capability-cell-l1"
@@ -133,17 +155,27 @@ export function CapabilityMatrix({
                       <span className="maturity-slash">/</span>
                       <span className="maturity-target">{l1.target_maturity_level}</span>
                     </div>
-                    <div className="cell-kpi-rollup">
-                      <span className="kpi-rollup-label">KPI</span>
-                      <span className="kpi-rollup-value">{l1Rollup != null ? `${l1Rollup}%` : '—'}</span>
-                    </div>
+                    {isL1Operate(l1) && (
+                      <div className="cell-kpi-rollup">
+                        <span className="kpi-rollup-label">KPI</span>
+                        <span className="kpi-rollup-value">{l1Rollup != null ? `${l1Rollup}%` : '—'}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
 
                 {/* L2 and L3 cells */}
-                {l1.l2.map((l2) => {
+                {[...l1.l2].sort((a, b) => {
+                  const pa = a.id.split('.').map(Number);
+                  const pb = b.id.split('.').map(Number);
+                  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+                    if ((pa[i] || 0) !== (pb[i] || 0)) return (pa[i] || 0) - (pb[i] || 0);
+                  }
+                  return 0;
+                }).map((l2) => {
                   const l2Dimmed = l1Dimmed || isL2Dimmed(l2);
-                  const l2Rollup = getL2RollupPct(l2);
+                  const l2Kpi = getL2KpiPct(l2);
+                  const l2KpiName = getL2KpiName(l2);
 
                   return (
                     <div key={`l2-row-${l2.id}`} className="l2-row-contents">
@@ -165,24 +197,25 @@ export function CapabilityMatrix({
                         <div className="cell-content-wrapper">
                           <div className="cell-id">{l2.id}</div>
                           <div className="cell-name-l2">{l2.name}</div>
-                          <div className="cell-description">{l2.description}</div>
                           <div className="cell-maturity">
                             <span className="maturity-label">{t('josoor.enterprise.maturityLabel')} </span>
                             <span className="maturity-value">{l2.maturity_level}</span>
                             <span className="maturity-slash">/</span>
                             <span className="maturity-target">{l2.target_maturity_level}</span>
                           </div>
-                          <div className="cell-kpi-rollup">
-                            <span className="kpi-rollup-label">KPI</span>
-                            <span className="kpi-rollup-value">{l2Rollup != null ? `${l2Rollup}%` : '—'}</span>
-                          </div>
+                          {isL2Operate(l2) && (
+                            <div className="cell-kpi-rollup">
+                              <span className="kpi-rollup-label">{l2KpiName || 'KPI'}</span>
+                              <span className="kpi-rollup-value">{l2Kpi != null ? `${l2Kpi}%` : '—'}</span>
+                            </div>
+                          )}
                         </div>
                       </div>
 
                       {/* L3 Container */}
                       <div className="l3-container-cell">
                         <div className="l3-flex-wrapper">
-                          {l2.l3.map((l3) => {
+                          {[...l2.l3].sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true })).map((l3) => {
                             const statusColor = getL3StatusColor(l3);
                             const l3Dimmed = l1Dimmed || l2Dimmed || isL3Dimmed(l3);
                             const overlayContent = getOverlayContent(l3, selectedOverlay);
@@ -224,6 +257,19 @@ export function CapabilityMatrix({
                                   <div className="l3-maturity">
                                     {l3.maturity_level}/{l3.target_maturity_level}
                                   </div>
+
+                                  {/* KPI for operate-mode L3 */}
+                                  {l3.mode === 'execute' && (() => {
+                                    const proc = getL3Process(l3);
+                                    if (!proc) return null;
+                                    const pct = getL3KpiPct(l3);
+                                    return (
+                                      <div className="cell-kpi-rollup l3-kpi">
+                                        <span className="kpi-rollup-label">{proc.metric_name}</span>
+                                        <span className="kpi-rollup-value">{pct != null ? `${pct}%` : '—'}</span>
+                                      </div>
+                                    );
+                                  })()}
 
                                   {/* Overlay Content Display (only when NOT dimmed) */}
                                   {!l3Dimmed && overlayContent && (

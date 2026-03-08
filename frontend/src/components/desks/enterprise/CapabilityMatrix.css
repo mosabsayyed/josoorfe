@@ -48,10 +48,10 @@
 }
 
 .cell-id {
-    font-size: 12px;
-    color: var(--component-text-muted, #9CA3AF);
+    font-size: 14px;
+    color: var(--component-text-primary, #F9FAFB);
     margin-bottom: 0.25rem;
-    font-family: monospace;
+    font-weight: 700;
 }
 
 .cell-name-l1 {

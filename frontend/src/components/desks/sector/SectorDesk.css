@@ -1176,10 +1176,10 @@
     pointer-events: auto;
 }
 
-/* Mobile drawer - overlay behavior */
+/* Drawer - overlay behavior (contained within app window) */
 @media (max-width: 768px) {
     .sector-details-panel.drawer {
-        position: fixed;
+        position: absolute;
         left: 0;
         right: 0;
         bottom: 0;

@@ -7,9 +7,15 @@
     "badge": "Delivery at the Speed of Ambition\nVision 2030",
     "pitchLabel": "The Challenge:",
     "pitch": "Two contradictions that public sector entities cannot ignore while adhering to regulatory requirements of accountability and oversight:",
-    "pitchPoints": ["Delaying scaled adoption of AI within national directives", "Risks of using AI based on probabilistic models"],
+    "pitchPoints": [
+      "Delaying scaled adoption of AI within national directives",
+      "Risks of using AI based on probabilistic models"
+    ],
     "bestPracticesLabel": "Best Practices:",
-    "bestPracticesPoints": ["Provide an enterprise architecture of deterministic software that governs AI tasks", "Assign it specific tasks (e.g. complex data processing) with the tools needed to achieve them"],
+    "bestPracticesPoints": [
+      "Provide an enterprise architecture of deterministic software that governs AI tasks",
+      "Assign it specific tasks (e.g. complex data processing) with the tools needed to achieve them"
+    ],
     "intelligence": [
       {
         "figure": "10×",
@@ -1762,6 +1768,19 @@
       "observability": "Observability",
       "calendar": "Calendar",
       "documents": "Documents"
+    },
+    "ontology": {
+      "ai": {
+        "executiveReport": "AI Report",
+        "columnAnalysis": "Analyze",
+        "helpMode": "Help Mode",
+        "helpModeActive": "Click any element for help",
+        "loading": "Analyzing...",
+        "topIssues": "Priority Issues",
+        "allItems": "All Items",
+        "sectorHealthReport": "Sector Health Report",
+        "columnAnalysisTitle": "Column Analysis"
+      }
     }
   }
 }

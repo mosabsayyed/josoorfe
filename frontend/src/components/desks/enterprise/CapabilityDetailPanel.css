@@ -1,7 +1,7 @@
 /* CapabilityDetailPanel.css — overlay + animation only (layout uses SectorDesk shared classes) */
 
 .detail-panel-overlay {
-    position: fixed;
+    position: absolute;
     inset: 0;
     background-color: rgba(0, 0, 0, 0.4);
     z-index: 200;

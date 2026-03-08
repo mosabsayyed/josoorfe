@@ -1,7 +1,10 @@
 import './OntologyHome.css';
-import { Fragment, useState, useEffect } from 'react';
+import { Fragment, useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { fetchOntologyRagState, type OntologyRagState, type NodeInstance, type LoadingStep, type LineHealthDetail, type UpstreamRedSource, type LinkedNode, COLUMN_NARRATIVES_AR } from '../../services/ontologyService';
+import { chatService } from '../../services/chatService';
+import StrategyReportModal from './sector/StrategyReportModal';
+import type { Artifact } from '../../types/api';
 
 /*
  * SST Ontology Architecture Diagram
@@ -100,7 +103,15 @@ const NODE_LABELS: Record<string, { en: string; ar: string }> = {
 };
 
 
-export default function OntologyHome() {
+interface OntologyHomeProps {
+  onContinueInChat?: (conversationId: number) => void;
+  helpMode?: boolean;
+  onHelpToggle?: () => void;
+  year?: number | string;
+  quarter?: string;
+}
+
+export default function OntologyHome({ onContinueInChat, helpMode: helpModeProp, onHelpToggle, year, quarter }: OntologyHomeProps) {
   const { i18n } = useTranslation();
   const lang = i18n.language === 'ar' ? 'ar' : 'en';
   const rtl = lang === 'ar';
@@ -112,7 +123,33 @@ export default function OntologyHome() {
   const [selectedLine, setSelectedLine] = useState<{ from: string; to: string } | null>(null);
   const [tracePath, setTracePath] = useState<string[]>([]); // drill-down trace stack
 
+  // AI integration state
+  const [aiModalOpen, setAiModalOpen] = useState(false);
+  const [aiHtml, setAiHtml] = useState('');
+  const [aiArtifacts, setAiArtifacts] = useState<Artifact[]>([]);
+  const [aiConversationId, setAiConversationId] = useState<number | null>(null);
+  const [aiTitle, setAiTitle] = useState('');
+  const [aiLoading, setAiLoading] = useState(false);
+  const [microHelpModeInternal, setMicroHelpModeInternal] = useState(false);
+  const microHelpMode = helpModeProp ?? microHelpModeInternal;
+  const setMicroHelpMode = onHelpToggle ?? (() => setMicroHelpModeInternal(prev => !prev));
+  const [microAnswer, setMicroAnswer] = useState<{ text: string; title: string; scope: 'landscape' | 'block1' | 'item' } | null>(null);
+
+  // Escape key exits micro help mode
   useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (microAnswer) { setMicroAnswer(null); return; }
+        if (microHelpMode) { if (onHelpToggle) onHelpToggle(); else setMicroHelpModeInternal(false); }
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [microHelpMode, onHelpToggle]);
+
+  useEffect(() => {
+    setRagState(null);
+    setSelectedNode(null);
     fetchOntologyRagState(setLoadingSteps)
       .then(state => {
         setRagState(state);
@@ -123,7 +160,224 @@ export default function OntologyHome() {
         console.error('[OntologyHome] RAG fetch failed:', err);
         // Don't clear steps — show the error state
       });
-  }, []);
+  }, [year, quarter]);
+
+  // ── AI Query Builders ──
+  const buildExecutiveQuery = useCallback((): string => {
+    if (!ragState) return '';
+    const ar = lang === 'ar';
+    const strip = ragState.stripData || [];
+    const period = `${year || 2026} Q${quarter || '1'}`;
+    const lines: string[] = [
+      ar ? `لوحة المعلومات القطاعية — نظرة عامة` : `SECTOR DASHBOARD — OVERVIEW`,
+      ar ? `الفترة: ${period}` : `Period: ${period}`,
+      ``,
+      ar ? `ملخص الحالة حسب المجال:` : `STATUS SUMMARY BY DOMAIN:`,
+    ];
+    for (const s of strip) {
+      const colName = COLUMN_TITLES[s.column]?.[lang] ?? s.column;
+      lines.push(ar
+        ? `  ${colName}: ${s.green} على المسار الصحيح | ${s.amber} في خطر | ${s.red} حرج`
+        : `  ${colName}: ${s.green} on track | ${s.amber} at risk | ${s.red} critical`);
+      if (s.narrative) lines.push(`    ${ar ? 'الملخص' : 'Summary'}: ${s.narrative}`);
+    }
+    const reds: string[] = [];
+    const ambers: string[] = [];
+    for (const [nodeType, instances] of Object.entries(ragState.nodeDetails)) {
+      const label = NODE_LABELS[nodeType]?.[lang] ?? nodeType;
+      for (const inst of instances) {
+        const domainId = inst.props.domain_id || inst.id;
+        if (inst.rag === 'red' && reds.length < 10) reds.push(`[${domainId}] ${inst.name} (${label})`);
+        if (inst.rag === 'amber' && ambers.length < 10) ambers.push(`[${domainId}] ${inst.name} (${label})`);
+      }
+    }
+    lines.push(``, ar ? `بنود حرجة:` : `CRITICAL ITEMS:`, reds.length ? reds.map(r => `  - ${r}`).join('\n') : ar ? '  لا شيء' : '  None');
+    lines.push(``, ar ? `بنود في خطر:` : `AT-RISK ITEMS:`, ambers.length ? ambers.map(a => `  - ${a}`).join('\n') : ar ? '  لا شيء' : '  None');
+    if (ragState.lineFlowHealth) {
+      lines.push(``, ar ? `سلامة سلسلة القيمة:` : `VALUE CHAIN INTEGRITY:`);
+      for (const [key, health] of Object.entries(ragState.lineFlowHealth)) {
+        lines.push(ar
+          ? `  ${key}: ${health.status} (${health.orphans} غير مرتبط، ${health.bastards} روابط مقطوعة)`
+          : `  ${key}: ${health.status} (${health.orphans} disconnected, ${health.bastards} broken links)`);
+      }
+    }
+    lines.push(``, ar
+      ? `بناءً على هذه البيانات، أعدّ تقريراً تنفيذياً شاملاً عن وضع القطاع: أين تتركز أبرز التعرّضات؟ ما أهم 3 أولويات عاجلة لهذا الربع؟ وما الملخص المناسب لعرضه على الوزير؟`
+      : `Based on this data, produce a comprehensive executive report on sector health: where are the biggest exposures? What are the top 3 urgent priorities this quarter? And what is the minister-level summary?`);
+    return lines.join('\n');
+  }, [ragState, lang, year, quarter]);
+
+  const COLUMN_NODE_MAP: Record<string, string[]> = {
+    goals: ['sectorObjectives'],
+    sector: ['policyTools', 'adminRecords', 'dataTransactions'],
+    health: ['performance', 'risks'],
+    capacity: ['capabilities', 'orgUnits', 'processes', 'itSystems'],
+    velocity: ['projects', 'changeAdoption', 'cultureHealth', 'vendors'],
+  };
+
+  const buildColumnQuery = useCallback((columnKey: string): string => {
+    if (!ragState) return '';
+    const ar = lang === 'ar';
+    const strip = ragState.stripData?.find(s => s.column === columnKey);
+    const colName = COLUMN_TITLES[columnKey]?.[lang] ?? columnKey;
+    const period = `${year || 2026} Q${quarter || '1'}`;
+    const lines: string[] = [
+      ar ? `${colName} — تحليل قطاعي` : `${colName.toUpperCase()} — SECTOR ANALYSIS`,
+      ar ? `الفترة: ${period}` : `Period: ${period}`,
+      ``,
+    ];
+    if (strip) {
+      lines.push(ar ? `توزيع الحالة:` : `STATUS DISTRIBUTION:`);
+      lines.push(ar
+        ? `  على المسار الصحيح: ${strip.green} | في خطر: ${strip.amber} | حرج: ${strip.red}`
+        : `  On Track: ${strip.green} | At Risk: ${strip.amber} | Critical: ${strip.red}`);
+      if (strip.narrative) lines.push(`  ${ar ? 'الملخص' : 'Summary'}: ${strip.narrative}`);
+    }
+    const nodeTypes = COLUMN_NODE_MAP[columnKey] || [];
+    const items: string[] = [];
+    for (const nt of nodeTypes) {
+      const instances = ragState.nodeDetails[nt] || [];
+      const label = NODE_LABELS[nt]?.[lang] ?? nt;
+      for (const inst of instances) {
+        const status = ar
+          ? (inst.rag === 'red' ? 'حرج' : inst.rag === 'amber' ? 'في خطر' : 'على المسار الصحيح')
+          : (inst.rag === 'red' ? 'CRITICAL' : inst.rag === 'amber' ? 'AT RISK' : 'ON TRACK');
+        const domainId = inst.props.domain_id || inst.id;
+        items.push(`  - [${domainId}] ${inst.name} (${label}) — ${status}`);
+      }
+    }
+    if (items.length) {
+      lines.push(``, ar ? `البنود (${items.length} إجمالي):` : `ITEMS (${items.length} total):`, ...items.slice(0, 30));
+      if (items.length > 30) lines.push(ar ? `  ... و ${items.length - 30} أخرى` : `  ... and ${items.length - 30} more`);
+    }
+    lines.push(``, ar
+      ? `بناءً على هذه البيانات، حلّل مجال "${colName}": ما وضعه الحالي؟ ما أبرز التحديات؟ ما التبعيات المؤثرة عليه؟ وما التوصيات القابلة للتنفيذ؟`
+      : `Based on this data, analyze "${colName}": what is its current standing? What are the key issues? What dependencies affect it? And what are the actionable recommendations?`);
+    return lines.join('\n');
+  }, [ragState, lang, year, quarter]);
+
+  const buildMicroQuery = useCallback((target: string, scope: 'landscape' | 'block1' | 'item'): string => {
+    if (!ragState) return '';
+    const ar = lang === 'ar';
+    if (scope === 'landscape') {
+      const nodeRag = ragState.nodeRag[target] ?? 'default';
+      const count = ragState.nodeDetails[target]?.length ?? 0;
+      const instances = ragState.nodeDetails[target] || [];
+      const redCount = instances.filter(i => i.rag === 'red').length;
+      const amberCount = instances.filter(i => i.rag === 'amber').length;
+      const label = NODE_LABELS[target]?.[lang] ?? target;
+      return ar
+        ? `فئة: ${label} | الحالة: ${nodeRag} | الإجمالي: ${count} | حرج: ${redCount} | في خطر: ${amberCount}`
+        : `Category: ${label} | Status: ${nodeRag} | Total: ${count} | Critical: ${redCount} | At Risk: ${amberCount}`;
+    }
+    if (scope === 'block1') {
+      const instances = ragState.nodeDetails[target] || [];
+      const top3 = instances.filter(i => i.rag === 'red' || i.rag === 'amber').slice(0, 3);
+      const label = NODE_LABELS[target]?.[lang] ?? target;
+      const items = top3.map(i => `${i.name}(${i.rag})`).join(', ');
+      return ar
+        ? `أبرز التحديات في ${label}: ${items}`
+        : `Top issues in ${label}: ${items}`;
+    }
+    // scope === 'item'
+    let inst: NodeInstance | undefined;
+    for (const insts of Object.values(ragState.nodeDetails)) {
+      inst = insts.find(i => i.id === target);
+      if (inst) break;
+    }
+    if (!inst) return ar ? `بند: ${target}` : `Item: ${target}`;
+    const upLinks = inst.upstreamNodes.slice(0, 3).map(u => `${u.name}(${u.rag})`).join(', ');
+    const downLinks = inst.downstreamNodes.slice(0, 3).map(d => `${d.name}(${d.rag})`).join(', ');
+    return ar
+      ? `بند: ${inst.name} | المعرّف: ${inst.props.domain_id || inst.id} | الحالة: ${inst.rag} | يعتمد على: ${upLinks || 'لا شيء'} | يؤثر على: ${downLinks || 'لا شيء'}`
+      : `Item: ${inst.name} | ID: ${inst.props.domain_id || inst.id} | Status: ${inst.rag} | Depends on: ${upLinks || 'none'} | Affects: ${downLinks || 'none'}`;
+  }, [ragState, lang]);
+
+  // Professional column titles (not internal keys)
+  const COLUMN_TITLES: Record<string, { en: string; ar: string }> = {
+    goals: { en: 'Strategic Goals', ar: 'الأهداف الاستراتيجية' },
+    sector: { en: 'Sector Outputs', ar: 'المخرجات القطاعية' },
+    health: { en: 'Risk & Compliance', ar: 'المخاطر والامتثال' },
+    capacity: { en: 'Organizational Capacity', ar: 'القدرات المؤسسية' },
+    velocity: { en: 'Transformation Progress', ar: 'تقدم التحول' },
+  };
+
+  const handleOntologyAI = useCallback(async (
+    tier: 'executive' | 'column' | 'micro',
+    context: string,
+    scope?: 'landscape' | 'block1' | 'item'
+  ) => {
+    const promptKeyMap = { executive: 'ontology_executive' as const, column: 'ontology_column' as const, micro: 'ontology_micro' as const };
+    const query = tier === 'executive' ? buildExecutiveQuery()
+      : tier === 'column' ? buildColumnQuery(context)
+      : buildMicroQuery(context, scope || 'landscape');
+
+    if (!query) return;
+
+    // Exit help mode after a micro click
+    if (tier === 'micro') {
+      if (onHelpToggle) onHelpToggle(); else setMicroHelpModeInternal(false);
+    }
+
+    // Resolve title for micro tooltip
+    const microScope = scope || 'landscape';
+    let microTitle = '';
+    if (tier === 'micro') {
+      if (microScope === 'landscape') {
+        microTitle = NODE_LABELS[context]?.[lang] ?? context;
+      } else if (microScope === 'block1') {
+        microTitle = lang === 'ar' ? 'أهم المشكلات' : 'Top Issues';
+      } else {
+        // single item — find its name
+        let itemName = context;
+        if (ragState) {
+          for (const insts of Object.values(ragState.nodeDetails)) {
+            const found = insts.find(i => i.id === context);
+            if (found) { itemName = found.name; break; }
+          }
+        }
+        microTitle = itemName;
+      }
+      setMicroAnswer({ text: lang === 'ar' ? 'جاري التحليل...' : 'Analyzing...', title: microTitle, scope: microScope });
+    } else {
+      setAiLoading(true);
+      const colTitle = COLUMN_TITLES[context]?.[lang] ?? context;
+      setAiTitle(tier === 'executive'
+        ? (lang === 'ar' ? 'تقرير وضع القطاع' : 'Sector Status Report')
+        : colTitle);
+      setAiModalOpen(true);
+      setAiHtml('');
+      setAiArtifacts([]);
+    }
+
+    try {
+      const response = await chatService.sendMessage({
+        query,
+        prompt_key: promptKeyMap[tier],
+      });
+
+      const answer = response.llm_payload?.answer || response.answer || response.message || '';
+      const artifacts = response.llm_payload?.artifacts || response.artifacts || [];
+
+      if (tier === 'micro') {
+        const cleanText = answer.replace(/<[^>]+>/g, '');
+        setMicroAnswer({ text: cleanText, title: microTitle, scope: microScope });
+      } else {
+        setAiHtml(answer);
+        setAiArtifacts(artifacts);
+        if (response.conversation_id) setAiConversationId(response.conversation_id);
+      }
+    } catch (err: any) {
+      const errMsg = `<p style="color:#ef4444">${lang === 'ar' ? 'حدث خطأ' : 'Analysis failed'}: ${err.message || err}</p>`;
+      if (tier === 'micro') {
+        setMicroAnswer({ text: lang === 'ar' ? 'حدث خطأ' : 'Failed', title: microTitle, scope: microScope });
+      } else {
+        setAiHtml(errMsg);
+      }
+    } finally {
+      setAiLoading(false);
+    }
+  }, [buildExecutiveQuery, buildColumnQuery, buildMicroQuery, lang, ragState]);
 
   const getNodeRag = (key: string): RagStatus => ragState?.nodeRag[key] ?? 'default';
 
@@ -218,16 +472,16 @@ export default function OntologyHome() {
         </div>
       )}
 
-      <div className="ont-svg-stage">
+      <div className={`ont-svg-stage ${microHelpMode ? 'ont-help-mode' : ''}`}>
 
         {/* ── Layer 0: Column Header Strip ── */}
         <div className="ont-header-strip">
           {[
-            { key: 'goals',    en: 'Goals',              ar: 'الأهداف',              pct: 15.42, icon: '/att/ontology/header-goals.png' },
-            { key: 'sector',   en: 'Sector Outputs',      ar: 'المخرجات القطاعية',     pct: 24.84, icon: '/att/ontology/header-sector-output.png' },
-            { key: 'health',   en: 'Health',              ar: 'الصحة',                pct: 14.78, icon: '/att/ontology/header-health.png' },
-            { key: 'capacity', en: 'Capacity',            ar: 'القدرات',              pct: 29.17, icon: '/att/ontology/header-capacity.png' },
-            { key: 'velocity', en: 'Velocity',            ar: 'سرعة التحول',          pct: 15.79, icon: '/att/ontology/header-velocity.png' },
+            { key: 'goals',    en: 'Goals',           ar: 'الأهداف',           pct: 15.42, icon: '/att/ontology/header-goals.png' },
+            { key: 'sector',   en: 'Sector Outputs',  ar: 'المخرجات القطاعية',  pct: 24.84, icon: '/att/ontology/header-sector-output.png' },
+            { key: 'health',   en: 'Health',          ar: 'الصحة',             pct: 14.78, icon: '/att/ontology/header-health.png' },
+            { key: 'capacity', en: 'Capacity',        ar: 'القدرات',           pct: 29.17, icon: '/att/ontology/header-capacity.png' },
+            { key: 'velocity', en: 'Velocity',        ar: 'سرعة التحول',       pct: 15.79, icon: '/att/ontology/header-velocity.png' },
           ].map((col, i) => (
             <div key={col.key} className="ont-header-col" style={{ flex: `0 0 ${col.pct}%` }}>
               {i > 0 && <span className="ont-header-arrow">{rtl ? '\u2190' : '\u2192'}</span>}
@@ -237,33 +491,29 @@ export default function OntologyHome() {
           ))}
         </div>
 
-        {/* ── Layer 1: KPI Signal Strip (between header and landscape) ── */}
+        {/* ── Layer 1: KPI Signal Strip (RAG bars with numbers + AI button per column) ── */}
         <div className="ont-strip ont-layer-strip">
           {(ragState?.stripData || []).map(col => {
-            const total = (col.green + col.amber + col.red) || 1;
-            const gPct = (col.green / total) * 100;
-            const aPct = (col.amber / total) * 100;
-            const rPct = (col.red / total) * 100;
-            const narrative = lang === 'ar'
-              ? (col.priorityReds > 0
-                  ? (COLUMN_NARRATIVES_AR[col.column]?.bad(col.priorityReds) ?? col.narrative)
-                  : (COLUMN_NARRATIVES_AR[col.column]?.good ?? col.narrative))
-              : col.narrative;
+            const total = col.green + col.amber + col.red;
             return (
               <div key={col.column} className="ont-strip__cell">
-                <div className="ont-strip__bar">
-                  {gPct > 0 && <div className="ont-strip__bar-seg ont-strip__bar-seg--green" style={{ width: `${gPct}%` }} />}
-                  {aPct > 0 && <div className="ont-strip__bar-seg ont-strip__bar-seg--amber" style={{ width: `${aPct}%` }} />}
-                  {rPct > 0 && <div className="ont-strip__bar-seg ont-strip__bar-seg--red" style={{ width: `${rPct}%` }} />}
+                <div className="ont-strip__rag-bar">
+                  {total === 0
+                    ? <div className="ont-strip__rag-seg ont-strip__rag-seg--empty" style={{ flex: 1 }}><span>—</span></div>
+                    : <>
+                        {col.green > 0 && <div className="ont-strip__rag-seg ont-strip__rag-seg--green" style={{ flex: col.green }}><span>{col.green}</span></div>}
+                        {col.amber > 0 && <div className="ont-strip__rag-seg ont-strip__rag-seg--amber" style={{ flex: col.amber }}><span>{col.amber}</span></div>}
+                        {col.red > 0 && <div className="ont-strip__rag-seg ont-strip__rag-seg--red" style={{ flex: col.red }}><span>{col.red}</span></div>}
+                      </>
+                  }
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'center', gap: 8, fontSize: 10, marginTop: 2, marginBottom: 2 }}>
-                  {col.green > 0 && <span style={{ color: '#22c55e', fontWeight: 600 }}>{col.green} {lang === 'ar' ? 'سليم' : 'on track'}</span>}
-                  {col.amber > 0 && <span style={{ color: '#f59e0b', fontWeight: 600 }}>{col.amber} {lang === 'ar' ? 'متابعة' : 'at risk'}</span>}
-                  {col.red > 0 && <span style={{ color: '#ef4444', fontWeight: 600 }}>{col.red} {lang === 'ar' ? 'حرج' : 'critical'}</span>}
-                </div>
-                <span className={`ont-strip__count ${col.priorityReds > 0 ? 'ont-strip__count--alert' : 'ont-strip__count--clear'}`}>
-                  {narrative}
-                </span>
+                <button
+                  className="ont-ai-strip-btn"
+                  onClick={(e) => { e.stopPropagation(); handleOntologyAI('column', col.column); }}
+                >
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" style={{ marginRight: 3 }}><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg>
+                  {lang === 'ar' ? 'تحليل' : 'Analyze'}
+                </button>
               </div>
             );
           })}
@@ -569,8 +819,12 @@ export default function OntologyHome() {
                     x={pos.x} y={pos.y}
                     width={pos.w} height={pos.h}
                     fill="transparent"
+                    className={microHelpMode ? 'ont-micro-target' : ''}
                     style={{ cursor: 'pointer', pointerEvents: 'all' }}
-                    onClick={() => { setSelectedNode(key); setShowAllIssues(false); setTracePath([]); }}
+                    onClick={() => {
+                      if (microHelpMode) { handleOntologyAI('micro', key, 'landscape'); return; }
+                      setSelectedNode(key); setShowAllIssues(false); setTracePath([]);
+                    }}
                   />
                 )}
               </g>
@@ -625,6 +879,18 @@ export default function OntologyHome() {
             </Fragment>
           );
         })}
+
+        {/* ── Tier 1: AI Report Button ── */}
+        {ragState && (
+          <button
+            className="ont-ai-report-btn"
+            onClick={() => handleOntologyAI('executive', '')}
+            disabled={aiLoading}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg>
+            <span>{lang === 'ar' ? 'تقرير ذكي' : 'AI Report'}</span>
+          </button>
+        )}
 
         </div>{/* end ont-landscape-wrap */}
 
@@ -722,10 +988,25 @@ export default function OntologyHome() {
             <div className="ont-panel-overlay">
               <div className="ont-panel-backdrop" onClick={() => setSelectedNode(null)} />
               <div className="ont-panel">
-                <button
-                  onClick={() => setSelectedNode(null)}
-                  style={{ float: rtl ? 'left' : 'right', background: 'none', border: 'none', color: 'var(--component-text-primary)', fontSize: 20, cursor: 'pointer' }}
-                >&#x2715;</button>
+                {/* ── Panel Header ── */}
+                <div style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  padding: '0 0 8px 0', marginBottom: 10,
+                  borderBottom: '1px solid var(--component-panel-border)',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ width: 10, height: 10, borderRadius: '50%', background: ragColors[nodeRag], flexShrink: 0 }} />
+                    <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--component-text-primary)' }}>{nodeLbl}</span>
+                  </div>
+                  <button
+                    onClick={() => setSelectedNode(null)}
+                    style={{
+                      background: 'var(--component-bg-secondary)', border: '1px solid var(--component-panel-border)',
+                      borderRadius: 6, width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      color: 'var(--component-text-secondary)', fontSize: 14, cursor: 'pointer', flexShrink: 0,
+                    }}
+                  >&#x2715;</button>
+                </div>
 
                 {/* ── Verdict Banner ── */}
                 <div style={{
@@ -733,9 +1014,6 @@ export default function OntologyHome() {
                   background: `${ragColors[nodeRag]}12`,
                   borderLeft: `4px solid ${ragColors[nodeRag]}`,
                 }}>
-                  <div style={{ fontSize: 16, fontWeight: 700, color: ragColors[nodeRag], marginBottom: 4, fontFamily: 'var(--component-font-family)' }}>
-                    {nodeLbl}
-                  </div>
                   <div style={{ fontSize: 13, color: 'var(--component-text-primary)', lineHeight: 1.5 }}>
                     {verdict}
                   </div>
@@ -800,53 +1078,39 @@ export default function OntologyHome() {
                   </div>
                 )}
 
-                {/* ── Propagated: show THIS node's items at risk from upstream ── */}
-                {isPropagated && ragState && (() => {
-                  // Show the node's own instances that are connected to upstream risks
-                  const nodeKey = selectedNode!;
-                  const thisInstances = ragState.nodeDetails[nodeKey] || [];
-                  const riskInsts = ragState.nodeDetails['risks'] || [];
-                  const bandKey = nodeKey === 'performance' ? 'operate_band' : 'build_band';
-                  const sectionLabel = nodeKey === 'performance'
-                    ? (lang === 'ar' ? 'عناصر متأثرة بمخاطر التشغيل' : 'Items affected by operate risks')
-                    : (lang === 'ar' ? 'عناصر متأثرة بمخاطر البناء' : 'Items affected by build risks');
+                {/* ── Block 1: Top Issues (standardized for ALL node types) ── */}
+                {(() => {
+                  const allIssues = [...reds, ...ambers];
+                  if (allIssues.length === 0) return null;
+                  const top3 = allIssues.slice(0, 3);
+                  const rest = allIssues.slice(3);
 
-                  // Build a set of risk IDs that are red/amber in the relevant band
-                  const badRiskIds = new Set(riskInsts
-                    .filter(r => { const b = (r.props[bandKey] || '').toLowerCase(); return b === 'red' || b === 'amber'; })
-                    .map(r => r.id));
+                  // Get upstream/downstream connections that are red/amber for any item
+                  const getUpstreamIssues = (inst: NodeInstance): LinkedNode[] =>
+                    [...inst.upstreamNodes, ...inst.downstreamNodes].filter(n => n.rag === 'red' || n.rag === 'amber');
 
-                  // Find items from THIS node type that have upstream connections to bad risks
-                  const atRisk = thisInstances.filter(inst =>
-                    inst.upstreamNodes.some(u => badRiskIds.has(u.id)) ||
-                    inst.downstreamNodes.some(d => badRiskIds.has(d.id))
-                  );
+                  const sectionLabel = isPropagated
+                    ? (selectedNode === 'performance'
+                        ? (lang === 'ar' ? 'عناصر متأثرة بمخاطر التشغيل' : 'Items affected by operate risks')
+                        : (lang === 'ar' ? 'عناصر متأثرة بمخاطر البناء' : 'Items affected by build risks'))
+                    : (lang === 'ar' ? 'قائمة الأولويات' : 'Priority List');
 
-                  if (atRisk.length === 0) return null;
-                  const top3 = atRisk.slice(0, 3);
-                  const rest = atRisk.slice(3);
-
-                  const isCompact = nodeKey === 'performance';
-                  const renderAtRiskItem = (inst: NodeInstance, idx: number) => {
-                    if (isCompact) {
-                      return (
-                        <div key={inst.id} style={{ padding: '6px 10px', borderRadius: 6, background: `${ragColors[nodeRag]}08`, border: `1px solid ${ragColors[nodeRag]}20`, display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <span style={{ width: 5, height: 5, borderRadius: '50%', background: ragColors[nodeRag], flexShrink: 0 }} />
-                          <span style={{ fontSize: 12, color: 'var(--component-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>{inst.name}</span>
-                        </div>
-                      );
-                    }
-                    // Full detail for policyTools
-                    const connectedRisks = riskInsts.filter(r =>
-                      badRiskIds.has(r.id) && (
-                        inst.upstreamNodes.some(u => u.id === r.id) ||
-                        inst.downstreamNodes.some(d => d.id === r.id)
-                      )
-                    );
+                  const renderStandardItem = (inst: NodeInstance, idx: number) => {
+                    const upstream = getUpstreamIssues(inst);
                     return (
-                      <div key={inst.id} style={{ padding: '10px 12px', borderRadius: 8, background: `${ragColors[nodeRag]}08`, border: `1px solid ${ragColors[nodeRag]}30` }}>
+                      <div key={inst.id} data-micro-target="item" data-micro-id={inst.id} className={microHelpMode ? 'ont-micro-target' : ''} onClick={(e) => { if (microHelpMode) { e.stopPropagation(); handleOntologyAI('micro', inst.id, 'item'); } }} style={{
+                        padding: '10px 12px', borderRadius: 8,
+                        background: `${ragColors[inst.rag]}08`,
+                        border: `1px solid ${ragColors[inst.rag]}30`,
+                        cursor: microHelpMode ? 'help' : undefined,
+                      }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                          <div style={{ width: 22, height: 22, borderRadius: '50%', flexShrink: 0, background: `${ragColors[nodeRag]}20`, color: ragColors[nodeRag], display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700 }}>
+                          <div style={{
+                            width: 22, height: 22, borderRadius: '50%', flexShrink: 0,
+                            background: `${ragColors[inst.rag]}20`, color: ragColors[inst.rag],
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            fontSize: 11, fontWeight: 700,
+                          }}>
                             {idx + 1}
                           </div>
                           <div style={{ flex: 1, minWidth: 0 }}>
@@ -856,21 +1120,24 @@ export default function OntologyHome() {
                             {inst.props.domain_id && (
                               <div style={{ fontSize: 10, color: 'var(--component-text-secondary)', fontFamily: 'monospace' }}>{inst.props.domain_id}</div>
                             )}
+                            <div style={{ fontSize: 11, color: ragColors[inst.rag], marginTop: 2 }}>
+                              {getIssueContext(inst)}
+                            </div>
                           </div>
                         </div>
-                        {connectedRisks.length > 0 && (
+                        {upstream.length > 0 && (
                           <div style={{ marginTop: 6, paddingLeft: 32 }}>
                             <div style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--component-text-secondary)', marginBottom: 3 }}>
-                              {lang === 'ar' ? 'المخاطر المرتبطة' : 'Connected Risks'}
+                              {lang === 'ar' ? 'متأثر بـ' : 'Affected by'}
                             </div>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                              {connectedRisks.map(r => {
-                                const band = (r.props[bandKey] || '').toLowerCase();
-                                const rColor = band === 'red' ? '#ef4444' : '#f59e0b';
+                              {upstream.slice(0, 3).map(n => {
+                                const nTypeLbl = NODE_LABELS[n.nodeType]?.[lang as 'en' | 'ar'] ?? n.nodeType;
                                 return (
-                                  <div key={r.id} style={{ fontSize: 10, color: rColor, display: 'flex', alignItems: 'center', gap: 4 }}>
-                                    <span style={{ width: 5, height: 5, borderRadius: '50%', background: rColor, flexShrink: 0 }} />
-                                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.name}</span>
+                                  <div key={n.id} style={{ fontSize: 10, color: ragColors[n.rag], display: 'flex', alignItems: 'center', gap: 4 }}>
+                                    <span style={{ width: 5, height: 5, borderRadius: '50%', background: ragColors[n.rag], flexShrink: 0 }} />
+                                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{n.name}</span>
+                                    <span style={{ color: 'var(--component-text-secondary)', fontSize: 9, flexShrink: 0 }}>({nTypeLbl})</span>
                                   </div>
                                 );
                               })}
@@ -882,17 +1149,24 @@ export default function OntologyHome() {
                   };
 
                   return (
-                    <div style={{ marginBottom: 16 }}>
-                      <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--component-text-secondary)', marginBottom: 8 }}>
-                        {sectionLabel} ({atRisk.length})
+                    <div data-micro-target="block1" className={microHelpMode ? 'ont-micro-target' : ''} onClick={() => { if (microHelpMode) { handleOntologyAI('micro', selectedNode, 'block1'); } }} style={{ marginBottom: 16, cursor: microHelpMode ? 'help' : undefined }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--component-text-secondary)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <span>{sectionLabel} ({allIssues.length})</span>
+                        <button
+                          className="ont-ai-strip-btn"
+                          style={{ fontSize: 9, padding: '2px 6px' }}
+                          onClick={(e) => { e.stopPropagation(); handleOntologyAI('micro', selectedNode, 'block1'); }}
+                          disabled={aiLoading}
+                          title={lang === 'ar' ? 'تحليل أهم الأولويات' : 'Analyze top priorities'}
+                        >✦ {lang === 'ar' ? 'تحليل' : 'Analyze'}</button>
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                        {top3.map((inst, i) => renderAtRiskItem(inst, i))}
+                        {top3.map((inst, i) => renderStandardItem(inst, i))}
                       </div>
                       {rest.length > 0 && (
                         <>
                           <button
-                            onClick={() => setShowAllIssues(!showAllIssues)}
+                            onClick={(e) => { e.stopPropagation(); setShowAllIssues(!showAllIssues); }}
                             style={{ width: '100%', marginTop: 8, padding: '6px 0', border: 'none', cursor: 'pointer', background: 'none', fontSize: 11, fontWeight: 600, color: 'var(--component-text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}
                           >
                             <span style={{ transform: showAllIssues ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', display: 'inline-block' }}>▼</span>
@@ -900,7 +1174,7 @@ export default function OntologyHome() {
                           </button>
                           {showAllIssues && (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 250, overflowY: 'auto' }}>
-                              {rest.map((inst, i) => renderAtRiskItem(inst, i + 3))}
+                              {rest.map((inst, i) => renderStandardItem(inst, i + 3))}
                             </div>
                           )}
                         </>
@@ -945,270 +1219,41 @@ export default function OntologyHome() {
                   );
                 })()}
 
-                {/* ── Prioritized Issue List: top 3 visible + collapsible rest ── */}
-                {(() => {
-                  const allIssues = [...reds, ...ambers];
-                  if (allIssues.length === 0) return null;
-                  const topItems = allIssues.slice(0, 3);
-                  const restItems = allIssues.slice(3);
-
-                  // Human-readable urgency reason per instance
-                  const getUrgencyReason = (inst: NodeInstance): string => {
-                    const u = inst.urgency;
-                    if (inst.props.end_date) {
-                      const days = Math.round((new Date(inst.props.end_date).getTime() - Date.now()) / (1000*60*60*24));
-                      if (days <= 0) return lang === 'ar' ? 'متأخر عن الموعد' : 'Overdue';
-                      if (days <= 90) return lang === 'ar' ? `${days} يوم متبقي` : `${days} days left`;
-                      if (days <= 180) return lang === 'ar' ? `${Math.round(days/30)} أشهر متبقية` : `${Math.round(days/30)} months left`;
-                      return lang === 'ar' ? 'الموعد بعيد' : 'Distant deadline';
-                    }
-                    if (inst.props.execute_status === 'issues') return lang === 'ar' ? 'تشغيل متعطل الآن' : 'Operations broken now';
-                    if (inst.props.execute_status === 'at-risk') return lang === 'ar' ? 'أداء متراجع' : 'Performance declining';
-                    if (u >= 0.8) return lang === 'ar' ? 'عاجل' : 'Urgent';
-                    if (u >= 0.5) return lang === 'ar' ? 'متوسط الإلحاح' : 'Moderate urgency';
-                    return lang === 'ar' ? 'غير عاجل' : 'Low urgency';
-                  };
-
-                  const renderItem = (inst: NodeInstance, idx: number) => {
-                    const urgencyColor = inst.urgency >= 0.7 ? '#ef4444' : inst.urgency >= 0.4 ? '#f59e0b' : '#64748b';
-                    const impactColor = inst.impact > 3 ? '#ef4444' : inst.impact > 0 ? '#f59e0b' : '#64748b';
-                    return (
-                    <div key={inst.id} style={{
-                      padding: '10px 12px', borderRadius: 8,
-                      background: `${ragColors[inst.rag]}08`,
-                      border: `1px solid ${ragColors[inst.rag]}30`,
-                    }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <div style={{
-                          width: 22, height: 22, borderRadius: '50%', flexShrink: 0,
-                          background: `${ragColors[inst.rag]}20`, color: ragColors[inst.rag],
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          fontSize: 11, fontWeight: 700,
-                        }}>
-                          {idx + 1}
-                        </div>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--component-text-primary)', marginBottom: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {/* ── Block 2: All Items (scrollable) ── */}
+                {instances.length > 0 && (
+                  <div data-micro-target="block2" style={{ marginBottom: 16 }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--component-text-secondary)', marginBottom: 8 }}>
+                      {lang === 'ar' ? `جميع العناصر (${instances.length})` : `All Items (${instances.length})`}
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 3, maxHeight: 200, overflowY: 'auto' }}>
+                      {instances.map(inst => (
+                        <div
+                          key={inst.id}
+                          data-micro-target="item"
+                          data-micro-id={inst.id}
+                          className={microHelpMode ? 'ont-micro-target' : ''}
+                          onClick={() => { if (microHelpMode) { handleOntologyAI('micro', inst.id, 'item'); } }}
+                          style={{
+                            padding: '6px 10px', borderRadius: 6, display: 'flex', alignItems: 'center', gap: 6,
+                            background: `${ragColors[inst.rag]}08`,
+                            border: `1px solid ${ragColors[inst.rag]}15`,
+                            cursor: microHelpMode ? 'help' : undefined,
+                          }}
+                        >
+                          <span style={{ width: 6, height: 6, borderRadius: '50%', background: ragColors[inst.rag], flexShrink: 0 }} />
+                          <span style={{ fontSize: 12, color: 'var(--component-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
                             {inst.name}
-                          </div>
+                          </span>
                           {inst.props.domain_id && (
-                            <div style={{ fontSize: 10, color: 'var(--component-text-secondary)', fontFamily: 'monospace' }}>
+                            <span style={{ fontSize: 9, color: 'var(--component-text-secondary)', fontFamily: 'monospace', flexShrink: 0 }}>
                               {inst.props.domain_id}
-                            </div>
+                            </span>
                           )}
-                          <div style={{ fontSize: 11, color: ragColors[inst.rag], marginTop: 2 }}>
-                            {getIssueContext(inst)}
-                          </div>
                         </div>
-                      </div>
-                      {/* Impact × Urgency breakdown */}
-                      <div style={{ marginTop: 8, paddingLeft: 32, display: 'flex', gap: 12 }}>
-                        <div style={{ flex: 1 }}>
-                          <div style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--component-text-secondary)', marginBottom: 3 }}>
-                            {lang === 'ar' ? 'التأثير' : 'Impact'}
-                          </div>
-                          <div style={{ fontSize: 12, fontWeight: 700, color: impactColor }}>
-                            {inst.impact > 0
-                              ? (lang === 'ar' ? `${inst.impact} مؤشرات` : `${inst.impact} KPIs`)
-                              : (lang === 'ar' ? 'لا تأثير مباشر' : 'No downstream')}
-                          </div>
-                        </div>
-                        <div style={{ flex: 1 }}>
-                          <div style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--component-text-secondary)', marginBottom: 3 }}>
-                            {lang === 'ar' ? 'الإلحاح' : 'Urgency'}
-                          </div>
-                          <div style={{ fontSize: 12, fontWeight: 700, color: urgencyColor }}>
-                            {getUrgencyReason(inst)}
-                          </div>
-                        </div>
-                        <div style={{ flex: 1 }}>
-                          <div style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--component-text-secondary)', marginBottom: 3 }}>
-                            {lang === 'ar' ? 'الأولوية' : 'Priority'}
-                          </div>
-                          <div style={{ fontSize: 12, fontWeight: 700, color: inst.priority > 0.5 ? '#ef4444' : inst.priority > 0.2 ? '#f59e0b' : '#64748b' }}>
-                            {inst.priority > 0.5 ? (lang === 'ar' ? 'حرج' : 'Critical')
-                              : inst.priority > 0.2 ? (lang === 'ar' ? 'مرتفع' : 'High')
-                              : (lang === 'ar' ? 'منخفض' : 'Low')}
-                          </div>
-                        </div>
-                      </div>
-                      {/* Trace breadcrumb: back button + trail */}
-                      {tracePath.length > 0 && (
-                        <div style={{ marginTop: 6, paddingLeft: 32, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                          <div
-                            onClick={(e) => { e.stopPropagation(); setTracePath(prev => prev.slice(0, -1)); }}
-                            style={{
-                              padding: '2px 8px', borderRadius: 4, cursor: 'pointer',
-                              background: 'var(--component-bg-secondary)', border: '1px solid var(--component-panel-border)',
-                              fontSize: 10, fontWeight: 700, color: 'var(--component-text-primary)',
-                              display: 'flex', alignItems: 'center', gap: 3,
-                            }}
-                          >
-                            {'\u2190'} {lang === 'ar' ? 'رجوع' : 'Back'}
-                          </div>
-                          {tracePath.length > 1 && (
-                            <div
-                              onClick={(e) => { e.stopPropagation(); setTracePath([]); }}
-                              style={{
-                                padding: '2px 6px', borderRadius: 4, cursor: 'pointer',
-                                fontSize: 9, color: 'var(--component-text-secondary)',
-                                textDecoration: 'underline',
-                              }}
-                            >
-                              {lang === 'ar' ? 'مسح الكل' : 'Clear'}
-                            </div>
-                          )}
-                          <div style={{ fontSize: 9, color: 'var(--component-text-secondary)', display: 'flex', alignItems: 'center', gap: 3 }}>
-                            {tracePath.map((tid, idx) => {
-                              // Find node info for breadcrumb label
-                              let label = tid;
-                              for (const [nt, insts] of Object.entries(ragState?.nodeDetails || {})) {
-                                const found = insts.find((n: NodeInstance) => n.id === tid);
-                                if (found) { label = found.props.name || found.props.title || tid; break; }
-                              }
-                              return (
-                                <span key={tid}>
-                                  {idx > 0 && <span style={{ margin: '0 2px' }}>{'\u203A'}</span>}
-                                  <span
-                                    onClick={(e) => { e.stopPropagation(); setTracePath(prev => prev.slice(0, idx + 1)); }}
-                                    style={{ cursor: 'pointer', textDecoration: idx < tracePath.length - 1 ? 'underline' : 'none', fontWeight: idx === tracePath.length - 1 ? 700 : 400 }}
-                                  >
-                                    {label}
-                                  </span>
-                                </span>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      )}
-                      {/* Linked node chips: upstream (affected by) + downstream (affects) */}
-                      {(() => {
-                        // Determine which node's connections to show: last in tracePath, or the issue itself
-                        const traceId = tracePath.length > 0 ? tracePath[tracePath.length - 1] : null;
-                        let traceInstance: NodeInstance | null = null;
-                        if (traceId && ragState) {
-                          for (const [, insts] of Object.entries(ragState.nodeDetails)) {
-                            const found = insts.find((n: NodeInstance) => n.id === traceId);
-                            if (found) { traceInstance = found; break; }
-                          }
-                        }
-                        const displayInst = traceInstance || inst;
-                        return [
-                          { nodes: displayInst.upstreamNodes, label: lang === 'ar' ? 'يتأثر بـ' : 'Affected by', arrow: '\u2190' },
-                          { nodes: displayInst.downstreamNodes, label: lang === 'ar' ? 'يؤثر على' : 'Affects', arrow: '\u2192' },
-                        ].map(({ nodes, label, arrow }) => nodes.length > 0 && (
-                          <div key={label} style={{ marginTop: 6, paddingLeft: 32 }}>
-                            <div style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--component-text-secondary)', marginBottom: 4 }}>
-                              {arrow} {label}{nodes.filter(n => n.rag === 'red').length > 0 && <span style={{ color: '#ef4444', marginLeft: 4 }}>{nodes.filter(n => n.rag === 'red').length} critical</span>}
-                            </div>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                              {nodes.map(dn => {
-                                const dnLbl = NODE_LABELS[dn.nodeType]?.[lang as 'en' | 'ar'] ?? dn.nodeType;
-                                return (
-                                  <div
-                                    key={dn.id}
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      // Push this node onto the trace stack (avoid duplicates at the end)
-                                      setTracePath(prev => prev[prev.length - 1] === dn.id ? prev : [...prev, dn.id]);
-                                    }}
-                                    style={{
-                                      padding: '3px 8px', borderRadius: 6, cursor: 'pointer',
-                                      background: `${ragColors[dn.rag]}15`,
-                                      border: `1px solid ${ragColors[dn.rag]}30`,
-                                      fontSize: 10, color: ragColors[dn.rag], fontWeight: 600,
-                                      display: 'flex', alignItems: 'center', gap: 4,
-                                    }}
-                                  >
-                                    <span style={{ width: 5, height: 5, borderRadius: '50%', background: ragColors[dn.rag], flexShrink: 0 }} />
-                                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
-                                      {dn.name}
-                                    </span>
-                                    <span style={{ color: 'var(--component-text-secondary)', fontSize: 9, flexShrink: 0 }}>
-                                      ({dnLbl})
-                                    </span>
-                                    <span style={{ fontSize: 8, flexShrink: 0 }}>{'\u203A'}</span>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        ));
-                      })()}
-                      {/* Mitigation Plans */}
-                      {inst.linkedPlans.length > 0 && (
-                        <div style={{ marginTop: 6, paddingLeft: 32 }}>
-                          <div style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--component-text-secondary)', marginBottom: 4 }}>
-                            {lang === 'ar' ? 'خطط التخفيف' : 'Mitigation Plans'}
-                          </div>
-                          {inst.linkedPlans.map(plan => (
-                            <div
-                              key={plan.id}
-                              onClick={(e) => { e.stopPropagation(); setSelectedNode('riskPlans'); setShowAllIssues(false); setTracePath([]); }}
-                              style={{
-                                padding: '5px 10px', borderRadius: 6, marginBottom: 3, cursor: 'pointer',
-                                background: plan.isOnTrack ? '#22c55e12' : '#ef444412',
-                                border: `1px solid ${plan.isOnTrack ? '#22c55e30' : '#ef444430'}`,
-                                display: 'flex', alignItems: 'center', gap: 6,
-                              }}
-                            >
-                              <span style={{ fontSize: 12 }}>{plan.isOnTrack ? '\u2714' : '\u26A0'}</span>
-                              <div style={{ flex: 1, minWidth: 0 }}>
-                                <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--component-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                  {plan.name}
-                                </div>
-                                <div style={{ fontSize: 10, color: plan.isOnTrack ? '#22c55e' : '#ef4444' }}>
-                                  {plan.isOnTrack
-                                    ? (lang === 'ar' ? 'الخطة فعالة — تخفيف المخاطر' : 'Plan active — risk mitigated')
-                                    : (lang === 'ar' ? `الخطة ${plan.status === 'overdue' ? 'متأخرة' : 'متوقفة'} — المخاطر قائمة` : `Plan ${plan.status} — risk NOT mitigated`)}
-                                </div>
-                              </div>
-                              {inst.rawRag === 'red' && plan.isOnTrack && (
-                                <span style={{ fontSize: 9, padding: '2px 6px', borderRadius: 4, background: '#22c55e20', color: '#22c55e', fontWeight: 700, flexShrink: 0 }}>
-                                  {lang === 'ar' ? 'خُفض' : 'Downgraded'}
-                                </span>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      )}
+                      ))}
                     </div>
-                  )};
-
-                  return (
-                    <div style={{ marginBottom: 16 }}>
-                      <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--component-text-secondary)', marginBottom: 8 }}>
-                        {lang === 'ar' ? `قائمة الأولويات (${allIssues.length})` : `Priority List (${allIssues.length})`}
-                      </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                        {topItems.map((inst, idx) => renderItem(inst, idx))}
-                      </div>
-                      {restItems.length > 0 && (
-                        <>
-                          <button
-                            onClick={() => setShowAllIssues(!showAllIssues)}
-                            style={{
-                              width: '100%', marginTop: 8, padding: '6px 0', border: 'none', cursor: 'pointer',
-                              background: 'none', fontSize: 11, fontWeight: 600,
-                              color: 'var(--component-text-secondary)',
-                              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
-                            }}
-                          >
-                            <span style={{ transform: showAllIssues ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', display: 'inline-block' }}>▼</span>
-                            {showAllIssues
-                              ? (lang === 'ar' ? 'إخفاء' : 'Hide')
-                              : (lang === 'ar' ? `+${restItems.length} مشكلات أخرى` : `+${restItems.length} more issues`)}
-                          </button>
-                          {showAllIssues && (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 250, overflowY: 'auto' }}>
-                              {restItems.map((inst, idx) => renderItem(inst, idx + 3))}
-                            </div>
-                          )}
-                        </>
-                      )}
-                    </div>
-                  );
-                })()}
+                  </div>
+                )}
 
                 {/* ── Summary Stats ── */}
                 {counts.total > 0 && (
@@ -1386,6 +1431,41 @@ export default function OntologyHome() {
         })()}
 
       </div>
+
+      {/* ── AI Report Modal ── */}
+      <StrategyReportModal
+        isOpen={aiModalOpen}
+        onClose={() => { setAiModalOpen(false); setAiHtml(''); setAiArtifacts([]); }}
+        htmlContent={aiLoading ? `<div style="text-align:center;padding:40px;color:var(--component-text-secondary)">${lang === 'ar' ? 'جاري التحليل...' : 'Analyzing...'}</div>` : aiHtml}
+        artifacts={aiArtifacts}
+        onContinueInChat={() => {
+          setAiModalOpen(false);
+          if (aiConversationId && onContinueInChat) onContinueInChat(aiConversationId);
+        }}
+        title={aiTitle}
+      />
+
+      {/* ── Micro Help Answer Tooltip ── */}
+      {microAnswer && (
+        <div className="ont-micro-answer">
+          <div className="ont-micro-answer__header">
+            <span className="ont-micro-answer__title">{microAnswer.title}</span>
+            <button className="ont-micro-answer__close" onClick={() => setMicroAnswer(null)}>&#x2715;</button>
+          </div>
+          <div className="ont-micro-answer__body">
+            {microAnswer.scope === 'block1' && <div className="ont-micro-answer__badge">{lang === 'ar' ? 'أعلى ٣ أولويات' : 'Top 3 Priorities'}</div>}
+            {microAnswer.scope === 'item' && <div className="ont-micro-answer__badge ont-micro-answer__badge--item">{lang === 'ar' ? 'تفاصيل العنصر' : 'Item Detail'}</div>}
+            <div className="ont-micro-answer__text">{microAnswer.text}</div>
+          </div>
+        </div>
+      )}
+
+      {/* ── AI Loading Overlay ── */}
+      {aiLoading && (
+        <div className="ont-ai-loading">
+          <div className="ont-ai-loading__spinner" />
+        </div>
+      )}
     </div>
   );
 }

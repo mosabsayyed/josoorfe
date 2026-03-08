@@ -150,6 +150,7 @@ export default function JosoorDesktopPage() {
   const [selectedTools, setSelectedTools] = useState<string[]>(['recall_memory', 'recall_vision_memory']);
   const [isPersonaLocked, setIsPersonaLocked] = useState(false);
   const [interventionContext, setInterventionContext] = useState<InterventionContext | null>(null);
+  const [helpMode, setHelpMode] = useState(false);
 
   // ── Desktop icon positions (draggable) ──
   const ICON_W = 120;
@@ -557,7 +558,7 @@ export default function JosoorDesktopPage() {
   const renderAppContent = useCallback((appId: string) => {
     switch (appId) {
       case 'home':
-        return <OntologyHome />;
+        return <OntologyHome helpMode={helpMode} onHelpToggle={() => setHelpMode(prev => !prev)} onContinueInChat={(id: number) => { setActiveConversationId(id); openApp('chat'); }} year={year} quarter={quarter} />;
       case 'observe':
         return (
           <SectorDesk
@@ -759,6 +760,8 @@ export default function JosoorDesktopPage() {
             onFocus={() => focusWindow(win.id)}
             onMove={(x, y) => setWindows(prev => prev.map(w => w.id === win.id ? { ...w, x, y } : w))}
             onResize={(width, height, x, y) => setWindows(prev => prev.map(w => w.id === win.id ? { ...w, width, height, x: x ?? w.x, y: y ?? w.y } : w))}
+            helpMode={helpMode}
+            onHelpToggle={() => setHelpMode(prev => !prev)}
           >
             <Suspense fallback={<div className="jos-app-loading"><div className="jos-spinner" />{isAr ? 'جاري التحميل...' : 'Loading...'}</div>}>
               {renderAppContent(win.appId)}
@@ -884,9 +887,12 @@ interface OSWindowProps {
   onMove: (x: number, y: number) => void;
   onResize: (w: number, h: number, x?: number, y?: number) => void;
   children: React.ReactNode;
+  titleBarExtra?: React.ReactNode;
+  helpMode?: boolean;
+  onHelpToggle?: () => void;
 }
 
-function OSWindow({ win, app, isAr, isFocused, onClose, onMinimize, onMaximize, onFocus, onMove, onResize, children }: OSWindowProps) {
+function OSWindow({ win, app, isAr, isFocused, onClose, onMinimize, onMaximize, onFocus, onMove, onResize, children, titleBarExtra, helpMode, onHelpToggle }: OSWindowProps) {
   const { t } = useTranslation();
   const dragRef = useRef<{ startX: number; startY: number; origX: number; origY: number } | null>(null);
   const resizeRef = useRef<{ startX: number; startY: number; origW: number; origH: number; origX: number; origY: number; dir: string } | null>(null);
@@ -967,8 +973,17 @@ function OSWindow({ win, app, isAr, isFocused, onClose, onMinimize, onMaximize, 
           {app.iconType === 'img' && <img className="jos-window-title-icon" src={app.icon} alt="" />}
           {t(`josoor.desktop.${app.i18nKey}`)}
         </span>
-        {/* Spacer to balance the traffic lights */}
-        <div style={{ width: 52 }} />
+        {/* Extra title bar buttons */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginLeft: 'auto' }} onMouseDown={e => e.stopPropagation()}>
+          {titleBarExtra}
+          <button
+            className={`jos-help-btn ${helpMode ? 'jos-help-btn--active' : ''}`}
+            onClick={onHelpToggle}
+            title={isAr ? 'مساعدة' : 'Help'}
+          >
+            ?
+          </button>
+        </div>
       </div>
 
       {/* Content */}

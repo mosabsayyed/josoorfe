@@ -9,34 +9,15 @@
  */
 
 import { useEffect, useRef, useMemo, useState, memo } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { MessageBubble, ThinkingIndicator } from './MessageBubble';
 import { ChatInput } from './ChatInput';
 import { ChatToolbar } from './ChatToolbar';
 import { CondensationIndicator } from './CondensationIndicator';
 import { ScrollArea } from '../ui/scroll-area';
-import { BarChart3, FileText, Table, MessageSquare, LogOut } from 'lucide-react';
+import { BarChart3, FileText, Table, MessageSquare } from 'lucide-react';
 import type { Message as APIMessage } from '../../types/api';
-import ThemeToggle from '../ThemeToggle';
-import LanguageToggle from '../LanguageToggle';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { getUser, logout as authLogout, getGuestConversations, isGuestMode } from '../../services/authService';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '../ui/dropdown-menu';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from '../ui/dialog';
-import { Button } from '../ui/button';
 import '../../styles/chat.css';
 import '../../styles/message-bubble.css';
 import '../../styles/sidebar.css';
@@ -97,39 +78,21 @@ export const ChatContainer = memo(function ChatContainer({
   selectedTools = [],
   onToolsChange,
 }: ChatContainerProps) {
-  const navigate = useNavigate();
   const { t } = useTranslation();
-  const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [currentUser, setCurrentUser] = useState<any>(() => getUser());
   const [showCondensationDetails, setShowCondensationDetails] = useState(false);
   const [condensationMetadata, setCondensationMetadata] = useState<any>(null);
 
-  // Listen for auth changes
-  useEffect(() => {
-    const onStorage = () => setCurrentUser(getUser());
-    window.addEventListener('storage', onStorage);
-    window.addEventListener('josoor_auth_change', onStorage as EventListener);
-    return () => {
-      window.removeEventListener('storage', onStorage);
-      window.removeEventListener('josoor_auth_change', onStorage as EventListener);
-    };
-  }, []);
-
   // Detect condensation metadata in messages
   useEffect(() => {
-    // Look for condensation metadata in any message
     for (const msg of messages) {
       if (msg.metadata?.condenser_result) {
         setCondensationMetadata(msg.metadata.condenser_result);
         break;
       }
-      // Alternative: look for system messages indicating condensation
       if (
         msg.role === 'system' &&
         msg.content.includes('PRIOR CONTEXT (compressed)')
       ) {
-        // Extract metadata from the system message if available
         setCondensationMetadata({
           found: true,
           inSystemMessage: true,
@@ -141,20 +104,6 @@ export const ChatContainer = memo(function ChatContainer({
   const { language: ctxLanguage } = useLanguage();
   const effectiveLanguage = language ?? ctxLanguage;
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
-    const themeAttr = document.documentElement.getAttribute('data-theme');
-    return (themeAttr as 'light' | 'dark') || 'dark';
-  });
-
-  useEffect(() => {
-    const updateTheme = () => {
-      const themeAttr = document.documentElement.getAttribute('data-theme');
-      setTheme((themeAttr as 'light' | 'dark') || 'dark');
-    };
-    const observer = new MutationObserver(updateTheme);
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
-    return () => observer.disconnect();
-  }, []);
 
   // Combine regular messages with streaming message
   const displayMessages = useMemo(() => {
@@ -191,181 +140,9 @@ export const ChatContainer = memo(function ChatContainer({
   };
 
   const hasMessages = displayMessages.length > 0;
-  const hasVisionPrefix = !!title && (title.includes('KSA VISION') || title.includes('رؤية المملكة')) && title.includes('•');
-  const [visionPrefix, visionSuffix] = hasVisionPrefix ? (title || '').split('•').map(part => part.trim()) : ['', ''];
 
   return (
     <div className="chat-container-root">
-      <div className="chat-top-controls" style={{ display: "flex", alignItems: "center", fontWeight: "400", justifyContent: "space-between", padding: "8px 16px", gap: "16px", backgroundColor: 'var(--component-panel-bg)', borderBottom: '1px solid rgba(255, 255, 255, 0.1)', height: '60px' }}>
-        {/* LEFT: Title */}
-        <div dir={effectiveLanguage === 'ar' ? 'rtl' : 'ltr'} style={{ display: "flex", alignItems: "center", gap: "12px", color: 'var(--component-text-primary)' }}>
-          {title && !hasVisionPrefix && (
-            <span style={{ color: 'var(--component-text-accent)', fontSize: '14px', fontWeight: 600 }}>{title}</span>
-          )}
-          {title && hasVisionPrefix && (
-            <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: '8px', color: 'var(--component-text-accent)' }}>
-              <span style={{ fontSize: '20px', fontWeight: 700, lineHeight: '40px' }}>{visionPrefix}</span>
-              <span style={{ fontSize: '14px', fontWeight: 600 }}>{`• ${visionSuffix}`}</span>
-            </span>
-          )}
-        </div>
-
-        {/* RIGHT: Controls */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          {/* Year/Quarter Filters */}
-          <div style={{ display: 'flex', gap: '8px', backgroundColor: 'rgba(255,255,255,0.05)', padding: '4px 8px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)' }}>
-            <select
-              value={year}
-              onChange={(e) => onYearChange?.(e.target.value)}
-              style={{ backgroundColor: 'transparent', color: 'var(--component-text-primary)', border: 'none', fontSize: '14px', fontWeight: 600, cursor: 'pointer', outline: 'none', padding: '2px 8px' }}
-            >
-              {availableYears.map(y => (
-                <option key={y} value={y} style={{ color: '#000' }}>{y}</option>
-              ))}
-            </select>
-            <div style={{ width: '1px', backgroundColor: 'rgba(255,255,255,0.2)' }} />
-            <select
-              value={quarter}
-              onChange={(e) => onQuarterChange?.(e.target.value)}
-              style={{ backgroundColor: 'transparent', color: 'var(--component-text-accent)', border: 'none', fontSize: '14px', fontWeight: 600, cursor: 'pointer', outline: 'none', padding: '2px 8px' }}
-            >
-              {['Q1', 'Q2', 'Q3', 'Q4', 'All'].map(q => (
-                <option key={q} value={q} style={{ color: '#000' }}>{q}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Divider */}
-          <div style={{ width: '1px', height: '24px', backgroundColor: 'rgba(255,255,255,0.1)' }} />
-
-          {/* Export/Share Buttons */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <button title={t('josoor.chat.exportReport')} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: '6px', borderRadius: '6px', color: 'rgba(255,255,255,0.7)', display: 'flex', alignItems: 'center' }}>
-              <span style={{ fontSize: '18px' }}>📥</span>
-            </button>
-            <button title={t('josoor.chat.shareView')} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: '6px', borderRadius: '6px', color: 'rgba(255,255,255,0.7)', display: 'flex', alignItems: 'center' }}>
-              <span style={{ fontSize: '18px' }}>🔗</span>
-            </button>
-          </div>
-
-          {/* Divider */}
-          <div style={{ width: '1px', height: '24px', backgroundColor: 'rgba(255,255,255,0.1)' }} />
-
-          {/* Onboarding Button */}
-          <button
-            onClick={() => window.dispatchEvent(new CustomEvent('start-onboarding'))}
-            title={t('josoor.chat.replayTour')}
-            style={{ background: 'rgba(255,255,255,0.1)', border: 'none', cursor: 'pointer', padding: '4px 8px', borderRadius: '4px', color: 'var(--component-text-accent)', fontSize: '16px', fontWeight: 700, width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-          >
-            ?
-          </button>
-
-          {/* Language & Theme Toggles */}
-          <LanguageToggle />
-          <ThemeToggle />
-
-          {/* Profile Dropdown - Copied from Sidebar */}
-          {currentUser ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <div className="account-row clickable" style={{ cursor: 'pointer', padding: '4px 8px', borderRadius: '24px', display: 'flex', alignItems: 'center', gap: '8px', backgroundColor: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
-                  <div style={{ position: 'relative', background: 'var(--component-color-success)', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '28px', height: '28px', borderRadius: '50%' }}>
-                    <img src="https://cdn.builder.io/api/v1/image/assets%2Fc88de0889c4545b98ff911f5842e062a%2Faa1d3e8edf5b47d1b88df2eb208d3cac" alt="profile" style={{ width: '100%', height: '100%', display: 'block', borderRadius: '50%' }} />
-                  </div>
-                  <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--component-text-primary)', maxWidth: '100px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{currentUser?.user_metadata?.full_name || currentUser?.email || (t('josoor.chat.account'))}</span>
-                </div>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" side="bottom" style={{ width: '240px', backgroundColor: 'var(--component-panel-bg)', color: 'var(--component-text-primary)', border: '1px solid var(--component-panel-border)' }}>
-                <div style={{ padding: '12px', borderBottom: '1px solid var(--component-panel-border)', marginBottom: '4px' }}>
-                  <p style={{ margin: 0, fontWeight: 600, fontSize: '14px' }}>{currentUser?.user_metadata?.full_name || (t('josoor.chat.account'))}</p>
-                  <p style={{ margin: 0, fontSize: '12px', color: 'var(--component-text-secondary)' }}>{currentUser?.email}</p>
-                </div>
-                <DropdownMenuItem className="clickable" onSelect={(e) => { e.preventDefault(); setIsProfileOpen(true); }}>
-                  <span>👤 {t('josoor.chat.profile')}</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem className="clickable" onSelect={(e) => { e.preventDefault(); setIsSettingsOpen(true); }}>
-                  <span>⚙️ {t('josoor.chat.settings')}</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem className="clickable" style={{ color: 'var(--component-color-danger)' }} onClick={async () => {
-                  try { await authLogout(); } catch { }
-                  try { localStorage.removeItem('josoor_user'); localStorage.setItem('josoor_authenticated', 'false'); } catch { }
-                  setCurrentUser(null);
-                  navigate('/landing');
-                }}>
-                  <span>🚪 {t('josoor.chat.logout')}</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          ) : (
-            <button className="clickable" style={{ padding: '4px 12px', borderRadius: '24px', backgroundColor: 'rgba(244,187,48,0.1)', border: '1px solid rgba(244,187,48,0.3)', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }} onClick={() => navigate('/login')}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '24px', height: '24px' }}>
-                <img src="https://cdn.builder.io/api/v1/image/assets%2Fc88de0889c4545b98ff911f5842e062a%2Faa1d3e8edf5b47d1b88df2eb208d3cac" alt="profile" style={{ width: '100%', height: '100%', display: 'block' }} />
-              </div>
-              <div style={{ textAlign: 'left', lineHeight: 1 }}>
-                <p style={{ margin: 0, fontSize: '12px', fontWeight: 600, color: 'var(--component-text-accent)' }}>{t('josoor.chat.guest')}</p>
-                <p style={{ margin: 0, fontSize: '10px', color: 'var(--component-text-accent)', opacity: 0.8 }}>{t('josoor.chat.loginToSave')}</p>
-              </div>
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Profile Dialog */}
-      <Dialog open={isProfileOpen} onOpenChange={setIsProfileOpen}>
-        <DialogContent style={{ maxWidth: '425px', width: '100%' }}>
-          <DialogHeader>
-            <DialogTitle>{t('josoor.chat.profile')}</DialogTitle>
-            <DialogDescription>{t('josoor.chat.account')}</DialogDescription>
-          </DialogHeader>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px', padding: '16px 0' }}>
-            <div style={{ height: '96px', width: '96px', borderRadius: '50%', backgroundColor: 'var(--component-color-success)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-              <img src="https://cdn.builder.io/api/v1/image/assets%2Fc88de0889c4545b98ff911f5842e062a%2Faa1d3e8edf5b47d1b88df2eb208d3cac" alt="profile" style={{ height: '100%', width: '100%', objectFit: 'cover' }} />
-            </div>
-            <div style={{ textAlign: 'center' }}>
-              <h3 style={{ fontSize: '18px', fontWeight: 600, margin: 0 }}>{currentUser?.user_metadata?.full_name || currentUser?.email || (t('josoor.chat.account'))}</h3>
-              <p style={{ fontSize: '14px', color: 'var(--component-text-muted)', margin: 0 }}>{currentUser?.email}</p>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button onClick={() => setIsProfileOpen(false)}>{t('josoor.chat.close')}</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Settings Dialog */}
-      <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
-        <DialogContent style={{ maxWidth: '425px', width: '100%' }}>
-          <DialogHeader>
-            <DialogTitle>{t('josoor.chat.settings')}</DialogTitle>
-            <DialogDescription>{t('josoor.chat.customizePreferences')}</DialogDescription>
-          </DialogHeader>
-          <div style={{ display: 'grid', gap: '16px', padding: '16px 0' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 3fr', alignItems: 'center', gap: '16px' }}>
-              <span style={{ textAlign: 'right', fontWeight: 500 }}>{t('josoor.chat.theme')}</span>
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <Button
-                  variant={theme === 'light' ? 'default' : 'outline'}
-                  onClick={() => { document.documentElement.setAttribute('data-theme', 'light'); }}
-                  style={{ flex: 1 }}
-                >
-                  {t('josoor.chat.light')}
-                </Button>
-                <Button
-                  variant={theme === 'dark' ? 'default' : 'outline'}
-                  onClick={() => { document.documentElement.setAttribute('data-theme', 'dark'); }}
-                  style={{ flex: 1 }}
-                >
-                  {t('josoor.chat.dark')}
-                </Button>
-              </div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button onClick={() => setIsSettingsOpen(false)}>{t('josoor.chat.close')}</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
       {/* Content Area - Takes remaining space */}
       <div
         style={{

@@ -374,7 +374,7 @@ export default function JosoorShell() {
                     {activeView !== 'chat' && (
                         <div style={{ flex: 1, height: '100%', overflow: ['home', 'settings', 'providers', 'ab-testing', 'monitoring', 'observability', 'reporting-desk'].includes(activeView) ? 'auto' : 'hidden' }}>
                             <Suspense fallback={<div style={{ padding: '2rem', color: 'white' }}>{t('josoor.common.loadingView')}</div>}>
-                                {activeView === 'home' && <OntologyHome />}
+                                {activeView === 'home' && <OntologyHome onContinueInChat={(id: number) => { setActiveConversationId(id); setActiveView('chat'); }} />}
                                 {activeView === 'sector-desk' && (
                                     <SectorDesk
                                         year={year}

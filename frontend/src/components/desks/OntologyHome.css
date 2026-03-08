@@ -52,6 +52,65 @@
   opacity: 0.6;
 }
 
+/* unused header-seg kept for potential future use */
+.ont-header-seg {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-width: 0;
+  font-family: var(--component-font-family);
+  font-size: clamp(9px, 0.8vw, 12px);
+  font-weight: 700;
+  color: #000;
+  transition: flex 0.6s ease;
+}
+
+.ont-header-seg--green  { background: var(--component-color-success, #22c55e); }
+.ont-header-seg--amber  { background: var(--component-color-warning, #f59e0b); }
+.ont-header-seg--red    { background: var(--component-color-danger, #ef4444); }
+.ont-header-seg--empty  { background: var(--component-bg-secondary); color: var(--component-text-secondary); }
+
+.ont-header-seg span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 0 3px;
+}
+
+.ont-header-ai-btn {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 28px;
+  padding: 0 14px;
+  gap: 5px;
+  border: none;
+  border-radius: 4px;
+  background: linear-gradient(135deg, var(--component-text-accent, #f4bb30) 0%, #b8860b 100%);
+  color: #000;
+  font-size: clamp(9px, 0.8vw, 12px);
+  font-weight: 700;
+  font-family: var(--component-font-family);
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 2px 8px rgba(244, 187, 48, 0.3);
+  white-space: nowrap;
+}
+.ont-header-ai-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(244, 187, 48, 0.4);
+}
+.ont-header-ai-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+.ont-header-ai-btn svg {
+  flex-shrink: 0;
+}
+
 /* ── Landscape container: maintains aspect ratio ── */
 .ont-landscape-wrap {
   position: relative;
@@ -328,7 +387,6 @@
   display: flex;
   gap: 2px;
   padding: 6px 0.5%;
-  pointer-events: none;
 }
 
 .ont-strip__cell {
@@ -342,6 +400,16 @@
   background: color-mix(in srgb, var(--component-panel-bg) 85%, transparent);
   border: 1px solid var(--component-panel-border);
   border-radius: 3px;
+}
+
+.ont-strip__cell--clickable {
+  cursor: pointer;
+  pointer-events: auto;
+  transition: border-color 0.2s, transform 0.15s;
+}
+.ont-strip__cell--clickable:hover {
+  border-color: var(--component-text-accent, #f4bb30);
+  transform: scaleY(1.1);
 }
 
 .ont-strip__bar {
@@ -376,9 +444,41 @@
   font-family: var(--component-font-family-ar);
 }
 
+/* RAG bar with numbers inside segments */
+.ont-strip__rag-bar {
+  width: 90%;
+  height: 20px;
+  border-radius: 4px;
+  display: flex;
+  overflow: hidden;
+  background: var(--component-bg-secondary);
+}
+
+.ont-strip__rag-seg {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-width: 0;
+  font-family: var(--component-font-family);
+  font-size: clamp(8px, 0.7vw, 11px);
+  font-weight: 700;
+  color: #000;
+  transition: flex 0.6s ease;
+}
+.ont-strip__rag-seg span {
+  white-space: nowrap;
+  padding: 0 2px;
+}
+
+.ont-strip__rag-seg--green  { background: var(--component-color-success, #22c55e); }
+.ont-strip__rag-seg--amber  { background: var(--component-color-warning, #f59e0b); }
+.ont-strip__rag-seg--red    { background: var(--component-color-danger, #ef4444); }
+.ont-strip__rag-seg--empty  { background: var(--component-bg-secondary); color: var(--component-text-secondary); }
+
 /* ── Side Panel ── */
 .ont-panel-overlay {
-  position: fixed;
+  position: absolute;
   inset: 0;
   z-index: 100;
   display: flex;
@@ -398,7 +498,7 @@
   background: var(--component-panel-bg);
   border-left: 1px solid var(--component-panel-border);
   overflow-y: auto;
-  padding: 16px;
+  padding: 8px 16px 16px;
   z-index: 1;
   font-family: var(--component-font-family);
   color: var(--component-text-primary);
@@ -464,6 +564,239 @@
 .ont-loading-count {
   font-weight: 600;
   font-variant-numeric: tabular-nums;
+}
+
+/* ── Help Mode Cursor ── */
+.ont-help-mode { cursor: help; }
+.ont-help-mode * { cursor: help !important; }
+
+/* ── Help Mode Hover Highlights ── */
+.ont-help-mode .ont-micro-target {
+  transition: outline 0.15s, box-shadow 0.15s, background 0.15s;
+  border-radius: 8px;
+}
+.ont-help-mode .ont-micro-target:hover {
+  outline: 2px solid var(--component-text-accent, #f4bb30);
+  outline-offset: 2px;
+  box-shadow: 0 0 16px rgba(244, 187, 48, 0.25);
+  background: rgba(244, 187, 48, 0.06) !important;
+}
+/* SVG rect targets in landscape */
+.ont-help-mode rect.ont-micro-target {
+  transition: fill 0.15s, stroke 0.15s;
+}
+.ont-help-mode rect.ont-micro-target:hover {
+  fill: rgba(244, 187, 48, 0.12) !important;
+  stroke: var(--component-text-accent, #f4bb30);
+  stroke-width: 2;
+  outline: none;
+  box-shadow: none;
+}
+
+/* ── AI Report Button (Tier 1) ── */
+.ont-ai-report-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 8px;
+  background: linear-gradient(135deg, var(--component-text-accent, #f4bb30) 0%, #b8860b 100%);
+  color: #000;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 2px 12px rgba(244, 187, 48, 0.3);
+  transition: transform 0.2s, box-shadow 0.2s;
+  font-family: var(--component-font-family);
+}
+.ont-ai-report-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 20px rgba(244, 187, 48, 0.4);
+}
+.ont-ai-report-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+[dir="rtl"] .ont-ai-report-btn {
+  right: auto;
+  left: 12px;
+}
+
+/* ── Column Strip AI Button (Tier 2) ── */
+.ont-ai-strip-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 3px 8px;
+  border: 1px solid var(--component-text-accent, #f4bb30);
+  border-radius: 4px;
+  background: rgba(244, 187, 48, 0.1);
+  color: var(--component-text-accent, #f4bb30);
+  font-family: var(--component-font-family);
+  font-size: clamp(7px, 0.6vw, 10px);
+  font-weight: 700;
+  cursor: pointer;
+  pointer-events: auto;
+  transition: background 0.2s, transform 0.15s;
+  white-space: nowrap;
+}
+.ont-ai-strip-btn:hover {
+  background: rgba(244, 187, 48, 0.25);
+  transform: translateY(-1px);
+}
+
+/* ── Help Mode Toggle (Tier 3) — sits in header strip ── */
+.ont-help-toggle {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  margin-left: auto;
+  margin-right: 4px;
+  border: 2px solid var(--component-panel-border);
+  border-radius: 50%;
+  background: var(--component-bg-secondary);
+  color: var(--component-text-secondary);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+.ont-help-toggle:hover {
+  border-color: var(--component-text-accent, #f4bb30);
+  color: var(--component-text-accent, #f4bb30);
+}
+.ont-help-toggle--active {
+  background: var(--component-text-accent, #f4bb30);
+  color: #000;
+  border-color: var(--component-text-accent, #f4bb30);
+  box-shadow: 0 0 12px rgba(244, 187, 48, 0.4);
+}
+[dir="rtl"] .ont-help-toggle {
+  margin-left: 4px;
+  margin-right: auto;
+}
+
+/* ── Micro Answer Tooltip (Tier 3) ── */
+.ont-micro-answer {
+  position: absolute;
+  top: 12px;
+  right: 16px;
+  z-index: 1000;
+  width: 360px;
+  max-height: 60vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  border-radius: 10px;
+  background: var(--component-panel-bg, #161b22);
+  border: 1px solid rgba(255, 193, 7, 0.25);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 193, 7, 0.08);
+  animation: ont-micro-fadein 0.15s ease-out;
+}
+.ont-micro-answer__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: rgba(255, 193, 7, 0.06);
+  border-bottom: 1px solid rgba(255, 193, 7, 0.12);
+  flex-shrink: 0;
+}
+.ont-micro-answer__title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #ffc107;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ont-micro-answer__close {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 5px;
+  color: var(--component-text-secondary);
+  font-size: 12px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.1s;
+}
+.ont-micro-answer__close:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--component-text-primary);
+}
+.ont-micro-answer__body {
+  padding: 12px;
+  overflow-y: auto;
+  flex: 1;
+}
+.ont-micro-answer__badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  margin-bottom: 8px;
+}
+.ont-micro-answer__badge--item {
+  background: rgba(59, 130, 246, 0.12);
+  color: #60a5fa;
+  border-color: rgba(59, 130, 246, 0.2);
+}
+.ont-micro-answer__text {
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--component-text-primary);
+}
+[dir="rtl"] .ont-micro-answer {
+  right: auto;
+  left: 16px;
+}
+@keyframes ont-micro-fadein {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ── AI Loading Overlay ── */
+.ont-ai-loading {
+  position: absolute;
+  inset: 0;
+  z-index: 999;
+  background: rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: all;
+}
+.ont-ai-loading__spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(244, 187, 48, 0.2);
+  border-top-color: var(--component-text-accent, #f4bb30);
+  border-radius: 50%;
+  animation: ont-spin 0.8s linear infinite;
+}
+@keyframes ont-spin {
+  to { transform: rotate(360deg); }
 }
 
 /* ── Responsive ── */

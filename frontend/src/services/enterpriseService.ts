@@ -269,6 +269,7 @@ interface RawEnterpriseData {
   chainChangeToCap: any;    // change_to_capability chain {nodes, links}
   chainCapToPolicy: any;    // capability_to_policy chain {nodes, links}
   chainCapToPerf: any;      // capability_to_performance chain {nodes, links}
+  chainSustainable: any;    // sustainable_operations chain {nodes, links} — CultureHealth, Vendor
   processMetrics: any[]; // EntityProcess metrics — extracted from chains
   l2Kpis: any[];         // L2 KPIs — extracted from chains
 }
@@ -300,7 +301,7 @@ function extractEntitiesFromChains(chains: Array<{ nodes: any[]; links: any[] }>
 
   // Build global link index for relationship traversal
   const knowledgeGapsLinks: Array<{ source: string; target: string }> = [];
-  const feedsIntoLinks: Array<{ source: string; target: string }> = [];
+  // FEEDS_INTO deprecated per ontology — L2 KPIs come from chain traversal instead
 
   for (const chain of chains) {
     if (!chain?.nodes) continue;
@@ -422,8 +423,6 @@ function extractEntitiesFromChains(chains: Array<{ nodes: any[]; links: any[] }>
       const tgt = String(link.targetId ?? link.target ?? '');
       if (rType === 'KNOWLEDGE_GAPS') {
         knowledgeGapsLinks.push({ source: src, target: tgt });
-      } else if (rType === 'FEEDS_INTO') {
-        feedsIntoLinks.push({ source: src, target: tgt });
       }
     }
   }
@@ -444,7 +443,8 @@ function extractEntitiesFromChains(chains: Array<{ nodes: any[]; links: any[] }>
     // Cap → Process (source=cap, target=process)
     const capNode = capByCompositeId.get(link.source);
     const procNode = processMap.get(link.target);
-    if (capNode && procNode && capNode.level === procNode.level && procNode.metric_name) {
+    // Only match process with same ID as capability (1:1 by domain ID)
+    if (capNode && procNode && capNode.id === procNode.id && capNode.level === procNode.level && procNode.metric_name) {
       processMetrics.push({
         cap_id: capNode.id,
         cap_year: capNode.year,
@@ -467,7 +467,8 @@ function extractEntitiesFromChains(chains: Array<{ nodes: any[]; links: any[] }>
     // Also check reverse direction (target=cap, source=process)
     const capNodeRev = capByCompositeId.get(link.target);
     const procNodeRev = processMap.get(link.source);
-    if (capNodeRev && procNodeRev && capNodeRev.level === procNodeRev.level && procNodeRev.metric_name) {
+    // Only match process with same ID as capability (1:1 by domain ID)
+    if (capNodeRev && procNodeRev && capNodeRev.id === procNodeRev.id && capNodeRev.level === procNodeRev.level && procNodeRev.metric_name) {
       processMetrics.push({
         cap_id: capNodeRev.id,
         cap_year: capNodeRev.year,
@@ -489,83 +490,11 @@ function extractEntitiesFromChains(chains: Array<{ nodes: any[]; links: any[] }>
     }
   }
 
-  // Build l2Kpis: follow KNOWLEDGE_GAPS → FEEDS_INTO to find Process → SectorPerformance
-  // Format: { perf_id, perf_year, kpi: { ... }, inputs: [...] }
-  // First, build Process → SectorPerformance map via FEEDS_INTO
-  const procToPerf = new Map<string, string[]>(); // processCompositeId → perfCompositeIds
-  for (const link of feedsIntoLinks) {
-    const procNode = processMap.get(link.source);
-    const perfNode = perfMap.get(link.target);
-    if (procNode && perfNode) {
-      if (!procToPerf.has(link.source)) procToPerf.set(link.source, []);
-      procToPerf.get(link.source)!.push(link.target);
-    }
-    // Reverse check
-    const procNodeRev = processMap.get(link.target);
-    const perfNodeRev = perfMap.get(link.source);
-    if (procNodeRev && perfNodeRev) {
-      if (!procToPerf.has(link.target)) procToPerf.set(link.target, []);
-      procToPerf.get(link.target)!.push(link.source);
-    }
-  }
+  // L2 KPIs come from chain traversal (Cap L3 → MONITORED_BY → Risk L3 ← PARENT_OF ← Risk L2 → INFORMS → SectorPerformance L2)
+  // via extractChainOverlays → performanceTargets, aggregated in buildL2.
+  // FEEDS_INTO relations are deprecated per ontology — no cross-level links allowed.
 
-  // Group by SectorPerformance: for each perf node, collect all contributing processes + their cap
-  const l2KpiAgg = new Map<string, { kpi: any; inputs: any[] }>();
-  for (const pm of processMetrics) {
-    // Find the process composite ID
-    const procEntries = Array.from(processMap.entries());
-    const procEntry = procEntries.find(([, p]) => p.id === pm.proc.id && p.year === pm.proc.year);
-    if (!procEntry) continue;
-    const [procCompositeId] = procEntry;
-    const perfIds = procToPerf.get(procCompositeId) || [];
-    for (const perfCompositeId of perfIds) {
-      const perf = perfMap.get(perfCompositeId);
-      if (!perf || perf.level !== 'L2') continue;
-      // Year matching: process year must match perf year, and cap year must match process year
-      if (perf.year && pm.proc.year && perf.year !== pm.proc.year) continue;
-      if (pm.cap_year && pm.proc.year && pm.cap_year !== pm.proc.year) continue;
-
-      const key = `${perf.id}_${perf.year}`;
-      if (!l2KpiAgg.has(key)) {
-        l2KpiAgg.set(key, {
-          kpi: {
-            id: perf.id,
-            domain_id: perf.domain_id,
-            name: perf.name,
-            year: perf.year,
-            actual_value: perf.actual_value,
-            target: perf.target,
-            unit: perf.unit,
-            formula_description: perf.formula_description,
-          },
-          inputs: [],
-        });
-      }
-      const entry = l2KpiAgg.get(key)!;
-      if (!entry.inputs.find((i: any) => i.id === pm.proc.id && i.cap_id === pm.cap_id)) {
-        entry.inputs.push({
-          id: pm.proc.id,
-          year: pm.proc.year,
-          metric_name: pm.proc.metric_name,
-          actual: pm.proc.actual,
-          target: pm.proc.target,
-          unit: pm.proc.unit,
-          metric_type: pm.proc.metric_type,
-          cap_id: pm.cap_id,
-          cap_name: '', // Not critical — was available from Cypher but not used downstream
-        });
-      }
-    }
-  }
-
-  const l2Kpis = Array.from(l2KpiAgg.values()).map(entry => ({
-    perf_id: entry.kpi.id,
-    perf_year: entry.kpi.year,
-    kpi: entry.kpi,
-    inputs: entry.inputs,
-  }));
-
-  return { caps, risks, processMetrics, l2Kpis };
+  return { caps, risks, processMetrics, l2Kpis: [] };
 }
 
 let _rawDataCache: RawEnterpriseData | null = null;
@@ -671,7 +600,7 @@ async function fetchAllEnterpriseData(): Promise<RawEnterpriseData> {
   if (_rawDataPromise) return _rawDataPromise;
 
   _rawDataPromise = (async () => {
-    console.log('[EnterpriseService] ONE-SHOT: 3 chains...');
+    console.log('[EnterpriseService] ONE-SHOT: 4 chains...');
 
     const safeChain = (name: string) =>
       runChainOnce(name, { year: 0 }).catch(err => {
@@ -683,17 +612,18 @@ async function fetchAllEnterpriseData(): Promise<RawEnterpriseData> {
     const chainChangeToCap = await safeChain('change_to_capability');
     const chainCapToPolicy = await safeChain('capability_to_policy');
     const chainCapToPerf = await safeChain('capability_to_performance');
+    const chainSustainable = await safeChain('sustainable_operations');
 
-    // Extract all entities from chains
-    const extracted = extractEntitiesFromChains([chainChangeToCap, chainCapToPolicy, chainCapToPerf]);
+    // Extract all entities from chains (including sustainable for CultureHealth/Vendor)
+    const extracted = extractEntitiesFromChains([chainChangeToCap, chainCapToPolicy, chainCapToPerf, chainSustainable]);
 
-    console.log(`[EnterpriseService] ALL DONE: changeToCap=${chainChangeToCap.nodes.length}, capToPolicy=${chainCapToPolicy.nodes.length}, capToPerf=${chainCapToPerf.nodes.length}`);
+    console.log(`[EnterpriseService] ALL DONE: changeToCap=${chainChangeToCap.nodes.length}, capToPolicy=${chainCapToPolicy.nodes.length}, capToPerf=${chainCapToPerf.nodes.length}, sustainable=${chainSustainable.nodes.length}`);
     console.log(`[EnterpriseService] Extracted: ${extracted.caps.length} caps, ${extracted.risks.length} risks, ${extracted.processMetrics.length} metrics, ${extracted.l2Kpis.length} KPIs`);
 
     _rawDataCache = {
       caps: extracted.caps,
       risks: extracted.risks,
-      chainChangeToCap, chainCapToPolicy, chainCapToPerf,
+      chainChangeToCap, chainCapToPolicy, chainCapToPerf, chainSustainable,
       processMetrics: extracted.processMetrics,
       l2Kpis: extracted.l2Kpis,
     };
@@ -902,6 +832,36 @@ function extractChainOverlays(chainData: { nodes: any[]; links: any[] }): Map<st
       if (p) its.push({ ...p, type: 'ITSystem' });
     }
 
+    // ── 2-hop: OrgUnit → MONITORS_FOR → CultureHealth ──
+    for (const org of orgs) {
+      const orgCompositeId = Array.from(chain.nodeById.entries())
+        .find(([, n]) => n.label === 'EntityOrgUnit' && n.domainId === org.domain_id)?.[0];
+      if (!orgCompositeId) continue;
+      const chIds = neighbors(orgCompositeId, 'MONITORS_FOR');
+      for (const chId of chIds) {
+        const ch = getNodeIfLabel(chain, chId, 'EntityCultureHealth');
+        if (ch) {
+          org.cultureHealth = ch;
+          break;
+        }
+      }
+    }
+
+    // ── 2-hop: ITSystem → DEPENDS_ON → Vendor ──
+    for (const it of its) {
+      const itCompositeId = Array.from(chain.nodeById.entries())
+        .find(([, n]) => n.label === 'EntityITSystem' && n.domainId === it.domain_id)?.[0];
+      if (!itCompositeId) continue;
+      const vIds = neighbors(itCompositeId, 'DEPENDS_ON');
+      for (const vid of vIds) {
+        const v = getNodeIfLabel(chain, vid, 'EntityVendor');
+        if (v) {
+          it.vendor = v;
+          break;
+        }
+      }
+    }
+
     const entities = [...orgs, ...procs, ...its];
     if (entities.length > 0) overlay.operatingEntities = entities;
 
@@ -1108,7 +1068,7 @@ function filterAndBuildGraph(raw: RawEnterpriseData, year: number | 'all', quart
     nodeByBizId.set(node.id, node);
   }
 
-  const chainDatasets = [raw.chainChangeToCap, raw.chainCapToPolicy, raw.chainCapToPerf].filter(d => d?.nodes);
+  const chainDatasets = [raw.chainChangeToCap, raw.chainCapToPolicy, raw.chainCapToPerf, raw.chainSustainable].filter(d => d?.nodes);
   for (const chainData of chainDatasets) {
     const overlays = extractChainOverlays(chainData);
 
@@ -1630,17 +1590,12 @@ function buildL3(l3Node: NeoGraphNode): L3Capability {
     l3Cap.execute_status = (l3Node as any).execute_status || undefined;
   }
 
-  // Dimension scores: capability node first, then risk node fallback
+  // Dimension scores: EntityRisk ONLY (1-5 scale)
+  // EntityCapability scores are 0-100 fake ETL values — do NOT use
   const risk = (l3Node as any).risk;
-  l3Cap.people_score = (l3Node as any).people_score != null
-    ? getNeo4jInt((l3Node as any).people_score)
-    : (risk?.people_score != null ? getNeo4jInt(risk.people_score) : undefined);
-  l3Cap.tools_score = (l3Node as any).tools_score != null
-    ? getNeo4jInt((l3Node as any).tools_score)
-    : (risk?.tools_score != null ? getNeo4jInt(risk.tools_score) : undefined);
-  l3Cap.process_score = (l3Node as any).process_score != null
-    ? getNeo4jInt((l3Node as any).process_score)
-    : (risk?.process_score != null ? getNeo4jInt(risk.process_score) : undefined);
+  l3Cap.people_score = risk?.people_score != null ? Number(risk.people_score) : undefined;
+  l3Cap.tools_score = risk?.tools_score != null ? Number(risk.tools_score) : undefined;
+  l3Cap.process_score = risk?.process_score != null ? Number(risk.process_score) : undefined;
 
   // Exposure — read ONLY from capability node (same source as strip status)
   l3Cap.exposure_percent = mode === 'build'

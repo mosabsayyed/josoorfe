@@ -120,6 +120,7 @@ export function Sidebar({
   }, [isCollapsed]);
 
   const [currentUser, setCurrentUser] = useState<any | null>(() => getUser());
+  const [showAbout, setShowAbout] = useState(false);
 
   useEffect(() => {
     const onStorage = () => {
@@ -317,11 +318,50 @@ export function Sidebar({
           </button>
 
           {!collapsed && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', margin: '0 auto' }}>
+            <div
+              onClick={() => setShowAbout(true)}
+              style={{ display: 'flex', alignItems: 'center', gap: '10px', margin: '0 auto', cursor: 'pointer' }}
+            >
               <img src="/icons/josoor.png" alt="Josoor" style={{ width: '40px', height: '40px', objectFit: 'contain', flexShrink: 0 }} />
               <span style={{ color: 'var(--component-text-accent)', font: '700 20px __Inter_d65c78, sans-serif', lineHeight: '40px' }}>
                 {t('josoor.chat.josoor')}
               </span>
+            </div>
+          )}
+
+          {/* About popup */}
+          {showAbout && (
+            <div
+              onClick={() => setShowAbout(false)}
+              style={{
+                position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                zIndex: 9999
+              }}
+            >
+              <div
+                onClick={(e) => e.stopPropagation()}
+                style={{
+                  background: 'var(--component-panel-bg)', border: '1px solid rgba(255,255,255,0.1)',
+                  borderRadius: '12px', padding: '32px 40px', textAlign: 'center',
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px',
+                  minWidth: '280px'
+                }}
+              >
+                <img src="/att/cube/logo-aitwintech.svg" alt="AI Twin Tech" style={{ height: '64px', objectFit: 'contain' }} />
+                <div style={{ fontSize: '20px', fontWeight: 700, color: 'var(--component-text-accent)' }}>AI Twin Tech</div>
+                <div style={{ fontSize: '13px', color: 'var(--component-text-muted)' }}>&copy; 2026 AI Twin Tech. All rights reserved.</div>
+                <button
+                  onClick={() => setShowAbout(false)}
+                  style={{
+                    marginTop: '8px', padding: '6px 24px', borderRadius: '6px',
+                    background: 'var(--component-text-accent)', color: 'var(--component-text-on-accent, #000)',
+                    border: 'none', fontSize: '13px', fontWeight: 600, cursor: 'pointer'
+                  }}
+                >
+                  {t('josoor.chat.close', 'Close')}
+                </button>
+              </div>
             </div>
           )}
         </div>

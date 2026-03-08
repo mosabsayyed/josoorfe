@@ -38,7 +38,7 @@ export interface ChatRequest {
   persona?: string;
   conversation_id?: number;
   desk_type?: 'general_chat' | 'sector_desk' | 'planning_desk' | 'reporting_desk' | 'intervention_planning';
-  prompt_key?: 'strategy_brief' | 'sector_desk_strategy_brief' | 'risk_advisory' | 'intervention_planning' | 'general_analysis' | 'stakeholder_communication';
+  prompt_key?: 'strategy_brief' | 'sector_desk_strategy_brief' | 'risk_advisory' | 'intervention_planning' | 'general_analysis' | 'stakeholder_communication' | 'ontology_executive' | 'ontology_column' | 'ontology_micro';
   history?: Array<{ role: string; content: string }>;
   file_ids?: string[];
   model_override?: string;
