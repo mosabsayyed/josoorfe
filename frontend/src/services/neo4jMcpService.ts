@@ -1,5 +1,6 @@
 import { PolicyCategory } from '../components/desks/sector/SectorPolicyClassifier';
 import { enrichOntologyNode } from './ontologyValueOverlay';
+import { fetchChainCached } from './chainsService';
 
 // Configuration
 // ALIGNMENT FIX: Restored trailing slash per User's working CURL command
@@ -228,8 +229,6 @@ export function invalidateSectorCache() {
 }
 
 async function _fetchSectorGraphDataInternal(): Promise<SectorGraphResult> {
-    const baseUrl = window.location.origin;
-
     console.log('[Neo4jMCP] Fetching Sector Graph Data from 4 sources + direct links...');
 
     try {
@@ -250,46 +249,35 @@ RETURN p { .id, .domain_id, .year, .parent_year } AS policy,
             return [];
         });
 
-        // SOURCE 1 + 3 + 4: Chain queries — ALL in parallel with Source 2
-        const [svcResp, buildResp, operateResp, directCypherRaw, directPolicyCapRaw] = await Promise.all([
-            fetch(`${baseUrl}/api/business-chain/sector_value_chain?year=0&excludeEmbeddings=true`),
-            fetch(`${baseUrl}/api/v1/chains/capability_to_policy?year=0&row_limit=5000`),
-            fetch(`${baseUrl}/api/v1/chains/capability_to_performance?year=0&row_limit=5000`),
+        // SOURCE 1 + 3 + 4: All 3 chains via shared cache (/api/v1/chains/)
+        // fetchChainCached returns { nodes: [{nId, nLabels, nProps, id, labels, properties}], relationships: [...] }
+        // Already normalized — no manual JSON parsing needed.
+        const [svcRaw, buildRaw, operateRaw, directCypherRaw, directPolicyCapRaw] = await Promise.all([
+            fetchChainCached('sector_value_chain', 0),
+            fetchChainCached('capability_to_policy', 0),
+            fetchChainCached('capability_to_performance', 0),
             directCypherPromise,
             directPolicyCapPromise
         ]);
 
-        if (!svcResp.ok) throw new Error(`sector_value_chain HTTP ${svcResp.status}`);
-        if (!buildResp.ok) throw new Error(`capability_to_policy HTTP ${buildResp.status}`);
-        if (!operateResp.ok) throw new Error(`capability_to_performance HTTP ${operateResp.status}`);
-
-        const [svcData, buildRaw, operateRaw] = await Promise.all([
-            svcResp.json(),
-            buildResp.json(),
-            operateResp.json()
-        ]);
-
-        // Normalize v1 chain response {results[0].nodes, results[0].relationships}
-        // into {nodes: [{elementId, labels, properties}], links: [{id, type, source, target}]}
-        // so downstream extractPolicyRiskFromChain / extractOperateRiskForPolicyTools work unchanged.
-        const normalizeV1Response = (raw: any): { nodes: any[]; links: any[] } => {
-            const result = raw.results?.[0] || {};
-            const nodes = (result.nodes || []).map((n: any) => ({
-                elementId: n.id,
-                labels: n.labels || [],
-                properties: n.properties || {}
-            }));
-            const links = (result.relationships || []).map((r: any) => ({
-                id: `${r.start}-${r.type}-${r.end}`,
+        // Convert chainsService normalized output → {nodes, links} shape expected by getChainNodes below
+        const fromCache = (raw: { nodes: any[]; relationships: any[] }): { nodes: any[]; links: any[] } => ({
+            nodes: raw.nodes.map(n => ({
+                elementId: n.nId || n.id,
+                labels: n.nLabels || n.labels || [],
+                properties: n.nProps || n.properties || {}
+            })),
+            links: raw.relationships.map(r => ({
+                id: `${r.source || r.start}-${r.type}-${r.target || r.end}`,
                 type: r.type,
-                source: r.start,
-                target: r.end
-            }));
-            return { nodes, links };
-        };
+                source: r.source || r.start,
+                target: r.target || r.end
+            }))
+        });
 
-        const buildData = normalizeV1Response(buildRaw);
-        const operateData = normalizeV1Response(operateRaw);
+        const svcData = fromCache(svcRaw);
+        const buildData = fromCache(buildRaw);
+        const operateData = fromCache(operateRaw);
 
         const directCypherNodes = (directCypherRaw?.data || directCypherRaw || []).map((r: any) => r.node || r).filter(Boolean);
         const directPolicyCapRows = (directPolicyCapRaw?.data || directPolicyCapRaw || []).filter(Boolean);
@@ -312,12 +300,10 @@ RETURN p { .id, .domain_id, .year, .parent_year } AS policy,
         console.log(`[Neo4jMCP] Source 2 (Direct Cypher): ${directCypherNodes.length} SectorPolicyTool nodes`);
         console.log(`[Neo4jMCP] Direct policy-cap links: ${policyCapLinks.length}`);
 
-        // Extract nodes from chain responses for dedup merge
-        // Normalize id to domain_id (short format like "4.0") for frontend consistency
+        // node.id is already the short string id (e.g. "1.0") — no normalization needed
         const getChainNodes = (data: { nodes: any[] }) => (data.nodes || []).map((n: any) => {
             const props = n.properties || {};
             const { embedding, Embedding, embedding_generated_at, ...clean } = props;
-            if (clean.domain_id) clean.id = clean.domain_id;
             return enrichOntologyNode({ ...clean, _labels: n.labels });
         });
 
@@ -329,17 +315,14 @@ RETURN p { .id, .domain_id, .year, .parent_year } AS policy,
         console.log(`[Neo4jMCP] Source 3 (capability_to_policy): ${buildNodes.length} nodes`);
         console.log(`[Neo4jMCP] Source 4 (capability_to_performance): ${operateNodes.length} nodes`);
 
-        // Merge & deduplicate by domain_id+year (domain_id is the original short id like "1.0")
+        // Merge & deduplicate: unique key = label:id:year
         const uniqueMap = new Map<string, any>();
 
-        // Process chain nodes (have composite id + domain_id from query)
         for (const nodes of [svcNodes, buildNodes, operateNodes]) {
             for (const n of nodes) {
                 if (!n.id) continue;
-                // Use domain_id for dedup key (matches direct Cypher format)
-                const domainId = n.domain_id || n.id;
                 const label = (n._labels || [])[0] || '';
-                const key = `${label}:${domainId}-${n.year || n.parent_year || ''}`;
+                const key = `${label}:${n.id}:${n.year || n.parent_year || ''}`;
                 if (!uniqueMap.has(key)) {
                     uniqueMap.set(key, n);
                 }

@@ -104,10 +104,13 @@ export function QuickChainsPanel({ defaultYear = 2025, onChainResult }: QuickCha
             <span>{t('josoor.chat.chains.chain')} {lastResult.chain_key}</span>
             <span>{t('josoor.chat.chains.id')} {lastResult.id}</span>
             <span>{t('josoor.chat.chains.yearLabel')} {lastResult.year}</span>
-            <span>{t('josoor.chat.chains.count')} {lastResult.count}</span>
+            <span>{t('josoor.chat.chains.count')} {lastResult.result_count ?? lastResult.count}</span>
             {lastResult.mode && <span>{t('josoor.chat.chains.modeLabel')} {lastResult.mode}</span>}
           </div>
-          <pre className="quick-chains-pre">{JSON.stringify(lastResult.results?.slice(0, 2) || [], null, 2)}</pre>
+          <pre className="quick-chains-pre">{JSON.stringify(
+            Object.entries(lastResult.nodes || {}).slice(0, 2).map(([nId, val]) => ({ nId, ...val })),
+            null, 2
+          )}</pre>
         </div>
       )}
     </div>

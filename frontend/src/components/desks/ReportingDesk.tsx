@@ -183,32 +183,32 @@ function ControlOutcomes({ archiveCollapsed, setArchiveCollapsed }: { archiveCol
               {/* Timeline nodes */}
               <div className="timeline-nodes">
                 <div className="timeline-node">
-                  <div className="node-icon bg-green">
+                  <div className="node-icon bg-accent">
                     <CheckCircle size={16} color="var(--component-text-primary)" />
                   </div>
                   <div className="text-center">
-                    <div className="node-label text-green">{t('josoor.reporting.interventionDecision')}</div>
+                    <div className="node-label">{t('josoor.reporting.interventionDecision')}</div>
                     <div className="metric-label">2025-12-15</div>
                     <div className="timeline-detail">{t('josoor.reporting.pauseProjectX')}</div>
                   </div>
                 </div>
 
                 <div className="timeline-node">
-                  <div className="node-icon bg-amber">
+                  <div className="node-icon bg-accent">
                     <Clock size={16} color="var(--component-text-primary)" />
                   </div>
                   <div className="text-center">
-                    <div className="node-label text-amber">{t('josoor.reporting.executionWindow')}</div>
+                    <div className="node-label">{t('josoor.reporting.executionWindow')}</div>
                     <div className="metric-label">Q1 2026 • 45 days</div>
                   </div>
                 </div>
 
                 <div className="timeline-node">
-                  <div className="node-icon bg-blue">
+                  <div className="node-icon bg-accent">
                     <BarChart3 size={16} color="var(--component-text-primary)" />
                   </div>
                   <div className="text-center">
-                    <div className="node-label text-blue">{t('josoor.reporting.measurementPoint')}</div>
+                    <div className="node-label">{t('josoor.reporting.measurementPoint')}</div>
                     <div className="metric-label">2026-03-31 • Q1 Close</div>
                   </div>
                 </div>
@@ -264,7 +264,7 @@ function ControlOutcomes({ archiveCollapsed, setArchiveCollapsed }: { archiveCol
 
                   <div className="metric-card">
                     <div className="metric-label">{t('josoor.reporting.mode')}</div>
-                    <div className="badge-sm badge-bg-blue text-center">
+                    <div className="badge-sm badge-bg-amber text-center">
                       {t('josoor.reporting.build')}
                     </div>
                   </div>
@@ -273,11 +273,11 @@ function ControlOutcomes({ archiveCollapsed, setArchiveCollapsed }: { archiveCol
 
               {/* AFTER Column */}
               <div>
-                <div className="comparison-col-header header-green">
+                <div className="comparison-col-header header-accent">
                   {t('josoor.reporting.after')} (Mar 2026)
                 </div>
                 <div className="metrics-grid">
-                  <div className="metric-card metric-card-green-border">
+                  <div className="metric-card">
                     <div className="metric-label">{t('josoor.reporting.riskExposure')}</div>
                     <div className="metric-val-flex">
                       <div className="val-large text-green">38%</div>
@@ -291,7 +291,7 @@ function ControlOutcomes({ archiveCollapsed, setArchiveCollapsed }: { archiveCol
                     </div>
                   </div>
 
-                  <div className="metric-card metric-card-green-border">
+                  <div className="metric-card">
                     <div className="metric-label">{t('josoor.reporting.leakage')}</div>
                     <div className="metric-val-flex">
                       <div className="val-large text-green">12%</div>
@@ -305,7 +305,7 @@ function ControlOutcomes({ archiveCollapsed, setArchiveCollapsed }: { archiveCol
                     </div>
                   </div>
 
-                  <div className="metric-card metric-card-green-border">
+                  <div className="metric-card">
                     <div className="metric-label">{t('josoor.reporting.load')}</div>
                     <div className="metric-val-flex">
                       <div className="val-large text-green">3</div>
@@ -314,7 +314,7 @@ function ControlOutcomes({ archiveCollapsed, setArchiveCollapsed }: { archiveCol
                     <div className="trend-badge text-green">-2</div>
                   </div>
 
-                  <div className="metric-card metric-card-green-border">
+                  <div className="metric-card">
                     <div className="metric-label">{t('josoor.reporting.mode')}</div>
                     <div className="badge-sm badge-bg-green text-center">
                       {t('josoor.reporting.operate')}
@@ -382,7 +382,7 @@ function ControlOutcomes({ archiveCollapsed, setArchiveCollapsed }: { archiveCol
               </div>
             </div>
 
-            <div className="residual-block border-red-2">
+            <div className="residual-block">
               <div className="block-header-red">
                 {t('josoor.reporting.escalationRequired')}
               </div>

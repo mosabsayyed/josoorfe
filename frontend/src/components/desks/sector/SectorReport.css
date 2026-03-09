@@ -9,6 +9,30 @@
     /* Force override of pre-wrap */
     word-wrap: break-word;
 }
+/* Typography — inline font styles are stripped in StrategyReportModal before render */
+.josoor-report-content * {
+    font-family: inherit;
+    line-height: inherit;
+}
+.josoor-report-content code,
+.josoor-report-content pre,
+.josoor-report-content code * {
+    font-family: monospace;
+}
+/* Arabic: Tajawal for body, Cairo for headings */
+[dir="rtl"] .josoor-report-content {
+    font-family: var(--component-font-family-ar, 'Tajawal', sans-serif);
+}
+[dir="rtl"] .josoor-report-content h1,
+[dir="rtl"] .josoor-report-content h2,
+[dir="rtl"] .josoor-report-content h3,
+[dir="rtl"] .josoor-report-content h4 {
+    font-family: var(--component-font-heading-ar, 'Cairo', sans-serif);
+}
+[dir="rtl"] .josoor-report-content code,
+[dir="rtl"] .josoor-report-content pre {
+    font-family: monospace;
+}
 
 .josoor-report-content h1,
 .josoor-report-content h2,

@@ -690,10 +690,10 @@
 .ont-micro-answer {
   position: absolute;
   top: 12px;
-  right: 16px;
+  left: 16px;
   z-index: 1000;
-  width: 360px;
-  max-height: 60vh;
+  width: 432px;
+  max-height: 72vh;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -762,14 +762,73 @@
   color: #60a5fa;
   border-color: rgba(59, 130, 246, 0.2);
 }
-.ont-micro-answer__text {
+/* ── Micro Insight Cards ── */
+.ont-micro-answer__cards {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ont-micro-card {
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  border-left: 3px solid #60a5fa;
+  animation: ont-micro-card-in 0.25s ease-out both;
+}
+.ont-micro-card:nth-child(2) { animation-delay: 0.06s; }
+.ont-micro-card:nth-child(3) { animation-delay: 0.12s; }
+.ont-micro-card:nth-child(4) { animation-delay: 0.18s; }
+.ont-micro-card__label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 4px;
+}
+.ont-micro-card__text {
   font-size: 13px;
-  line-height: 1.7;
+  line-height: 1.6;
   color: var(--component-text-primary);
 }
+@keyframes ont-micro-card-in {
+  from { opacity: 0; transform: translateX(-8px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+[dir="rtl"] .ont-micro-card {
+  border-left: none;
+  border-right: 3px solid #60a5fa;
+}
+[dir="rtl"] .ont-micro-card { border-right-color: inherit; }
+@keyframes ont-micro-card-in-rtl {
+  from { opacity: 0; transform: translateX(8px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+[dir="rtl"] .ont-micro-card { animation-name: ont-micro-card-in-rtl; }
+
+/* ── Micro Loading ── */
+.ont-micro-answer__loading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 0;
+  color: var(--component-text-secondary);
+  font-size: 13px;
+}
+.ont-micro-answer__spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(255, 193, 7, 0.2);
+  border-top-color: #ffc107;
+  border-radius: 50%;
+  animation: ont-micro-spin 0.7s linear infinite;
+}
+@keyframes ont-micro-spin {
+  to { transform: rotate(360deg); }
+}
+
 [dir="rtl"] .ont-micro-answer {
-  right: auto;
-  left: 16px;
+  left: auto;
+  right: 16px;
 }
 @keyframes ont-micro-fadein {
   from { opacity: 0; transform: translateY(-6px); }

@@ -963,10 +963,11 @@
     --wx-gantt-border-color: var(--component-panel-border);
     --wx-gantt-scale-bg: var(--component-panel-bg);
     --wx-gantt-scale-color: var(--component-text-secondary);
-    --wx-gantt-task-bg: var(--component-color-info);
-    --wx-gantt-task-color: #ffffff;
+    --wx-gantt-task-bg: #ffffff;
+    --wx-gantt-task-color: var(--component-bg-primary);
     --wx-gantt-milestone-color: var(--component-text-accent);
-    --wx-gantt-summary-color: var(--component-text-accent);
+    --wx-gantt-milestone-color: var(--component-color-success);
+    --wx-gantt-summary-color: #000000;
     --wx-gantt-link-color: var(--component-text-muted);
     --wx-gantt-grid-bg: var(--component-bg-primary);
     --wx-gantt-grid-color: var(--component-text-primary);
@@ -989,19 +990,33 @@
     --wx-grid-header-font-color: var(--component-text-secondary);
     --wx-grid-body-font-color: var(--component-text-primary);
 
-    /* Task bar text */
-    --wx-gantt-task-font-color: #ffffff;
-    --wx-gantt-task-color: var(--component-color-info);
-    --wx-gantt-task-fill-color: var(--component-color-info);
-    --wx-gantt-task-border-color: var(--component-color-info);
-    --wx-gantt-task-border: 1px solid var(--component-color-info);
+    /* Task bars — white with dark text, subtle border */
+    --wx-gantt-task-font-color: var(--component-bg-primary);
+    --wx-gantt-task-color: #ffffff;
+    --wx-gantt-task-fill-color: #ffffff;
+    --wx-gantt-task-border-color: var(--component-panel-border);
+    --wx-gantt-task-border: 2px solid var(--component-panel-border);
 
-    /* Summary/project bars */
-    --wx-gantt-project-color: var(--component-text-accent);
-    --wx-gantt-project-font-color: var(--component-text-on-accent);
-    --wx-gantt-project-fill-color: var(--component-text-accent);
-    --wx-gantt-project-border-color: var(--component-text-accent);
-    --wx-gantt-project-border: 1px solid var(--component-text-accent);
+    /* Summary/project bars — black with 2px white border */
+    --wx-gantt-project-color: #000000;
+    --wx-gantt-project-font-color: #ffffff;
+    --wx-gantt-project-fill-color: #000000;
+    --wx-gantt-project-border-color: #ffffff;
+    --wx-gantt-project-border: 2px solid #ffffff;
+
+    /* Milestone — success green */
+    --wx-gantt-milestone-color: var(--component-color-success);
+
+    /* Links — muted */
+    --wx-gantt-link-marker-color: var(--component-text-muted);
+    --wx-gantt-link-marker-background: var(--component-panel-bg);
+
+    /* Override any blue/yellow defaults */
+    --wx-color-primary: var(--component-text-accent);
+    --wx-color-success: var(--component-color-success);
+    --wx-color-warning: var(--component-color-warning);
+    --wx-color-danger: var(--component-color-danger);
+    --wx-color-info: var(--component-panel-border);
 
     /* Bar styling */
     --wx-gantt-bar-border-radius: 4px;
@@ -1014,6 +1029,30 @@
 /* Force dark backgrounds on all SVAR internal containers */
 .gantt-container div[class*="x2-"] {
     color: var(--component-text-primary);
+}
+
+/* RTL fix: mirror bars + links layers horizontally, then un-mirror text inside each bar */
+[dir="rtl"] .gantt-container .wx-bars,
+[dir="rtl"] .gantt-container .wx-links {
+    transform: scaleX(-1);
+}
+[dir="rtl"] .gantt-container .wx-bar .wx-content,
+[dir="rtl"] .gantt-container .wx-bar .wx-text-out {
+    transform: scaleX(-1);
+}
+
+/* Shrink grid columns area to give more space to timeline */
+.gantt-container .wx-sidebar {
+    flex: 0 0 350px !important;
+}
+
+/* Force styles on bars where CSS vars aren't picked up */
+.gantt-container .wx-bar.wx-summary {
+    border: 2px solid #ffffff !important;
+}
+.gantt-container .wx-bar.wx-task .wx-content,
+.gantt-container .wx-bar.wx-task .wx-text-out {
+    color: var(--component-bg-primary) !important;
 }
 
 /* Scale headers (month/week row) */
@@ -1056,7 +1095,7 @@
 /* Buttons */
 .btn-intervention-primary {
     padding: 0.5rem 1rem;
-    background-color: var(--component-color-danger);
+    background-color: var(--component-text-accent);
     color: var(--component-text-on-accent);
     font-size: 0.875rem;
     font-weight: 700;
@@ -1067,7 +1106,7 @@
 }
 
 .btn-intervention-primary:hover {
-    background-color: var(--component-color-danger);
+    background-color: var(--component-text-accent);
     filter: brightness(0.85);
 }
 

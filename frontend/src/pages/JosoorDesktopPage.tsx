@@ -8,6 +8,7 @@ import { useQuery } from '@tanstack/react-query';
 import { graphService } from '../services/graphService';
 import { ChatContainer } from '../components/chat';
 import { CanvasManager } from '../components/chat/CanvasManager';
+const DevChatPanel = React.lazy(() => import('../components/devchat/DevChatPanel'));
 import { chatService } from '../services/chatService';
 import { fetchChainCached, injectChainCache } from '../services/chainsService';
 import { fetchSectorGraphData } from '../services/neo4jMcpService';
@@ -65,7 +66,7 @@ const MAIN_APPS: AppDef[] = [
   { id: 'reporting', i18nKey: 'reporting', icon: '/icons/reporting.svg', iconType: 'img', color: '', defaultWidth: 1000, defaultHeight: 700 },
   { id: 'signals', i18nKey: 'signals', icon: '/icons/signals.svg', iconType: 'img', color: '', defaultWidth: 1000, defaultHeight: 700 },
   { id: 'chat', i18nKey: 'chat', icon: '/icons/chatexpert.svg', iconType: 'img', color: '', defaultWidth: 900, defaultHeight: 650 },
-  { id: 'tutorials', i18nKey: 'tutorials', icon: '/icons/tutorial.svg', iconType: 'img', color: '', defaultWidth: 900, defaultHeight: 650 },
+  { id: 'tutorials', i18nKey: 'tutorials', icon: '/icons/tutorial.jpg', iconType: 'img', color: '', defaultWidth: 900, defaultHeight: 650 },
   { id: 'folder', i18nKey: 'documents', icon: '/att/ontology/FOLDER.svg', iconType: 'img', color: '', defaultWidth: 700, defaultHeight: 500 },
 ];
 
@@ -140,6 +141,7 @@ export default function JosoorDesktopPage() {
 
   // Chat state
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
+  const [showChatHistory, setShowChatHistory] = useState(true);
   const [activeConversationId, setActiveConversationId] = useState<number | null>(null);
   const [messages, setMessages] = useState<APIMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -151,6 +153,7 @@ export default function JosoorDesktopPage() {
   const [isPersonaLocked, setIsPersonaLocked] = useState(false);
   const [interventionContext, setInterventionContext] = useState<InterventionContext | null>(null);
   const [helpMode, setHelpMode] = useState(false);
+  const [showAbout, setShowAbout] = useState(false);
 
   // ── Desktop icon positions (draggable) ──
   const ICON_W = 120;
@@ -590,37 +593,84 @@ export default function JosoorDesktopPage() {
         return <TutorialsDesk />;
       case 'chat':
         return (
-          <div style={{ display: 'flex', height: '100%' }}>
-            {/* Chat sidebar */}
+          <div style={{ display: 'flex', height: '100%', direction: isAr ? 'rtl' : 'ltr' }}>
+            {/* Chat sidebar — collapses to a thin strip */}
             <div style={{
-              width: 200, flexShrink: 0,
+              width: showChatHistory ? 200 : 28, flexShrink: 0,
               borderInlineEnd: '1px solid rgba(255,255,255,0.08)',
               background: 'rgba(13,17,23,0.5)',
               display: 'flex', flexDirection: 'column', overflow: 'hidden',
+              transition: 'width 0.2s ease',
             }}>
+              {/* Always-visible header: collapse toggle + new chat */}
               <div style={{
-                padding: '10px 12px', fontSize: 12, fontWeight: 600,
-                color: '#8b949e', textTransform: 'uppercase', letterSpacing: 0.5,
+                display: 'flex', flexDirection: 'column', flexShrink: 0,
                 borderBottom: '1px solid rgba(255,255,255,0.06)',
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
               }}>
-                <span>{isAr ? 'المحادثات' : 'Chats'}</span>
-                <button onClick={() => { setActiveConversationId(null); setMessages([]); }} style={{
-                  background: '#388bfd', color: '#fff', border: 'none', borderRadius: 4,
-                  padding: '2px 8px', fontSize: 11, cursor: 'pointer', fontWeight: 600,
-                }}>{isAr ? '+ جديد' : '+ New'}</button>
+                {/* menu icon toggle — always fits in 28px */}
+                <button
+                  onClick={(e) => { e.stopPropagation(); setShowChatHistory(h => !h); }}
+                  title={showChatHistory ? (isAr ? 'طي' : 'Collapse') : (isAr ? 'توسيع' : 'Expand')}
+                  style={{
+                    background: 'none', border: 'none', cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', gap: 6,
+                    padding: '6px 6px', width: '100%',
+                    color: 'var(--component-text-muted)',
+                  }}
+                >
+                  <img src="/icons/menu.png" alt="toggle" style={{ width: 16, height: 16, flexShrink: 0, opacity: 0.7 }} />
+                  {showChatHistory && <span style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5, color: 'var(--component-text-muted)', whiteSpace: 'nowrap' }}>{isAr ? 'المحادثات' : 'Chats'}</span>}
+                </button>
+                {/* + new chat — always visible */}
+                <button
+                  onClick={(e) => { e.stopPropagation(); setActiveConversationId(null); setMessages([]); }}
+                  title={isAr ? 'محادثة جديدة' : 'New chat'}
+                  style={{
+                    background: 'none', border: 'none', borderTop: '1px solid rgba(255,255,255,0.04)',
+                    cursor: 'pointer', padding: '5px 6px', display: 'flex', alignItems: 'center', gap: 6,
+                    color: 'var(--component-text-accent)', width: '100%',
+                  }}
+                >
+                  <span style={{ fontSize: 16, fontWeight: 700, lineHeight: 1, flexShrink: 0 }}>+</span>
+                  {showChatHistory && <span style={{ fontSize: 11, fontWeight: 600, whiteSpace: 'nowrap' }}>{isAr ? 'محادثة جديدة' : 'New Chat'}</span>}
+                </button>
               </div>
+
+              {showChatHistory && (
+              <>
               <div style={{ flex: 1, overflowY: 'auto', padding: '4px 0' }}>
-                {conversations.map(c => (
-                  <button key={c.id} onClick={() => setActiveConversationId(c.id)} style={{
-                    display: 'block', width: '100%', padding: '8px 12px',
-                    background: activeConversationId === c.id ? 'rgba(56,139,253,0.15)' : 'transparent',
-                    border: 'none', color: activeConversationId === c.id ? '#58a6ff' : '#e6edf3',
-                    fontSize: 12, textAlign: 'start', cursor: 'pointer',
-                    whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontFamily: 'inherit',
-                  }}>{c.title}</button>
-                ))}
+                {conversations.map(c => {
+                  const isActive = activeConversationId === c.id;
+                  const ago = (() => {
+                    const d = new Date(c.created_at || c.updated_at);
+                    const diffMs = Date.now() - d.getTime();
+                    const mins = Math.floor(diffMs / 60000);
+                    if (mins < 1) return isAr ? 'الآن' : 'now';
+                    if (mins < 60) return isAr ? `${mins} د` : `${mins}m`;
+                    const hrs = Math.floor(diffMs / 3600000);
+                    if (hrs < 24) return isAr ? `${hrs} س` : `${hrs}h`;
+                    const days = Math.floor(diffMs / 86400000);
+                    return isAr ? `${days} ي` : `${days}d`;
+                  })();
+                  return (
+                    <div
+                      key={c.id}
+                      onClick={() => setActiveConversationId(c.id)}
+                      className={`jos-chat-conv-item${isActive ? ' active' : ''}`}
+                      dir={isAr ? 'rtl' : 'ltr'}
+                    >
+                      <p className="jos-chat-conv-title">{c.title}</p>
+                      <div className="jos-chat-conv-meta">
+                        <span>{ago}</span>
+                        <span>·</span>
+                        <span>{c.message_count} {isAr ? 'رسالة' : 'msg'}</span>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
+              </>
+              )}
             </div>
             {/* Chat main */}
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
@@ -682,7 +732,7 @@ export default function JosoorDesktopPage() {
       default:
         return null;
     }
-  }, [year, quarter, isAr, handleIntervene, interventionContext, openApp, conversations, activeConversationId, messages, handleSendMessage, isLoading, language, isCanvasOpen, streamingMessage, handleOpenArtifact, availableYears, selectedPersona, isPersonaLocked, selectedTools]);
+  }, [year, quarter, isAr, handleIntervene, interventionContext, openApp, conversations, activeConversationId, messages, handleSendMessage, isLoading, language, isCanvasOpen, streamingMessage, handleOpenArtifact, availableYears, selectedPersona, isPersonaLocked, selectedTools, showChatHistory]);
 
   // ── Boot screen ──
   if (isBooting) {
@@ -821,7 +871,7 @@ export default function JosoorDesktopPage() {
 
         {/* Right: Brand, temporal, clock, profile */}
         <div className="jos-taskbar-right">
-          <span className="jos-taskbar-brand">{isAr ? 'جسور' : 'Josoor'}</span>
+          <span className="jos-taskbar-brand" onClick={() => setShowAbout(true)} style={{ cursor: 'pointer' }}>{isAr ? 'جسور' : 'Josoor'}</span>
           <span className="jos-taskbar-sep" />
           <span className="jos-taskbar-temporal" onClick={() => openApp('calendar')}>
             {year} · {quarter}
@@ -854,6 +904,45 @@ export default function JosoorDesktopPage() {
           </div>
         </div>
       </div>
+
+      {/* About popup */}
+      {showAbout && (
+        <div
+          onClick={() => setShowAbout(false)}
+          style={{
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+            background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            zIndex: 99999,
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: 'var(--component-panel-bg, #1a1a2e)', border: '1px solid rgba(255,255,255,0.1)',
+              borderRadius: '12px', padding: '32px 40px', textAlign: 'center',
+              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px',
+              minWidth: '280px',
+            }}
+          >
+            <img src="/att/cube/logo-aitwintech.svg" alt="AI Twin Tech" style={{ height: '64px', objectFit: 'contain' }} />
+            <div style={{ fontSize: '20px', fontWeight: 700, color: 'var(--component-text-accent, #fff)' }}>AI Twin Tech</div>
+            <div style={{ fontSize: '13px', color: 'var(--component-text-muted, #888)' }}>&copy; 2026 AI Twin Tech. All rights reserved.</div>
+            <button
+              onClick={() => setShowAbout(false)}
+              style={{
+                marginTop: '8px', padding: '6px 24px', borderRadius: '6px',
+                background: 'var(--component-text-accent, #fff)', color: 'var(--component-text-on-accent, #000)',
+                border: 'none', fontSize: '13px', fontWeight: 600, cursor: 'pointer',
+              }}
+            >
+              {isAr ? 'إغلاق' : 'Close'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* DevChat floating panel */}
+      <Suspense fallback={null}><DevChatPanel /></Suspense>
 
       {/* Canvas panel (for chat artifacts) */}
       {isCanvasOpen && (

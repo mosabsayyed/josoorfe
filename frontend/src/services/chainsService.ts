@@ -22,7 +22,9 @@ export interface ChainResponse {
   id: string;
   year: number;
   count: number;
-  results: any[];
+  nodes: Record<string, { nLabels: string[]; nProps: Record<string, any> }>;
+  edges: Array<{ source: string; target: string; type: string; props: any }>;
+  result_count: number;
   clarification_needed: boolean;
   mode?: 'narrative' | 'diagnostic' | string;
   description?: string;
@@ -75,11 +77,28 @@ export async function fetchChainCached(chainName: string, year: number = 0, quar
     if (!res.ok) throw new Error(`Chain ${chainName}: HTTP ${res.status}`);
 
     const data = await res.json();
-    const envelope = data.results?.[0] || {};
-    const result = {
-      nodes: envelope.nodes || [],
-      relationships: envelope.relationships || envelope.links || [],
-    };
+    const nodesDict: Record<string, any[]> = data.nodes || {};
+    const edgesArr: any[] = data.edges || [];
+
+    // nodes = { "EntityCapability": [{id: "1.0", name, year, ...}], ... }
+    // edges = [{ source_label, source_id, target_label, target_id, type, props }]
+    const nodes: any[] = [];
+    for (const [label, nodeArr] of Object.entries(nodesDict)) {
+      for (const nodeObj of nodeArr) {
+        const id = String(nodeObj.id ?? '');
+        nodes.push({ nId: id, nLabels: [label], nProps: nodeObj, id, labels: [label], properties: nodeObj });
+      }
+    }
+    const relationships = edgesArr.map((e: any) => ({
+      type: e.type,
+      source: String(e.source_id),
+      target: String(e.target_id),
+      start: String(e.source_id),
+      end: String(e.target_id),
+      properties: e.props || {},
+    }));
+
+    const result = { nodes, relationships };
 
     _chainCache.set(key, result);
     _chainPromises.delete(key);

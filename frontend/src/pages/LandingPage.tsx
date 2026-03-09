@@ -6,13 +6,13 @@ import Header from '../components/layout/Header';
 // Landing page section components
 import Hero from '../components/landing/Hero';
 import AItoIA from '../components/landing/AItoIA';
-import Promise from '../components/landing/Promise';
 import Platform from '../components/landing/Platform';
+import Promise from '../components/landing/Promise';
 import StrategyHouse from '../components/landing/StrategyHouse';
 import BetaForm from '../components/landing/BetaForm';
 import useSnapScroll from '../hooks/useSnapScroll';
 
-const SNAP_SECTIONS = ['hero', 'platform', 'promise', 'strategy-house', 'aitoia'];
+const SNAP_SECTIONS = ['hero', 'aitoia', 'platform', 'strategy-house', 'promise', 'beta'];
 
 export default function LandingPage() {
   const { language, isRTL } = useLanguage();
@@ -38,20 +38,13 @@ export default function LandingPage() {
       trustTitle: t('hero.trustTitle'),
       trustDesc: t('hero.trustDesc'),
       figures: (t('hero.figures', { returnObjects: true }) as string[]) || [],
+      middleTagline: t('hero.middleTagline'),
     },
     promise: {
       tag: t('promise.tag'),
       title: t('promise.title'),
       subtitle: t('promise.subtitle'),
       personas: (t('promise.personas', { returnObjects: true }) as Array<{ role: string; before: string; after: string }>),
-    },
-    platform: {
-      tag: t('platform.tag'),
-      title: t('platform.title'),
-      subtitle: t('platform.subtitle'),
-      modes: (t('platform.modes', { returnObjects: true }) as Array<{ title: string; desc: string }>),
-      twinEnginesLabel: t('architecture.twinEngines'),
-      engines: (t('architecture.engines', { returnObjects: true }) as Array<{ title: string; desc: string }>),
     },
     strategyHouse: {
       tag: t('strategyHouse.tag'),
@@ -337,12 +330,7 @@ export default function LandingPage() {
         z-index: 10;
       }
 
-      .aitoia-canvas {
-        position: absolute;
-        top: 0;
-        left: 0;
-        z-index: 1;
-      }
+      /* canvas removed — static dark bg used instead */
 
       .aitoia-glass {
         position: relative;
@@ -457,36 +445,96 @@ export default function LandingPage() {
         border-right-color: var(--component-text-accent);
       }
 
-      /* ── Challenge 3-column layout ── */
+      /* ── Challenge 2-column layout ── */
       .challenge-columns {
         display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 24px;
-        margin-top: 24px;
+        grid-template-columns: 2fr 1fr;
+        gap: 32px;
+        margin-top: 28px;
+        align-items: stretch;
       }
       .challenge-col {
-        padding: 24px;
+        padding: 28px;
         background: rgba(31, 41, 55, 0.4);
-        border-radius: 12px;
+        border-radius: 14px;
         border: 1px solid rgba(255, 255, 255, 0.08);
       }
       .challenge-col h3 {
-        font-size: 22px;
+        font-size: 20px;
         font-weight: 700;
         color: var(--component-text-accent);
-        margin-bottom: 10px;
+        margin-bottom: 18px;
+        letter-spacing: 0.02em;
       }
       .challenge-col p {
         font-size: 18px;
-        line-height: 1.6;
+        line-height: 1.7;
         color: var(--component-text-secondary);
         margin: 0;
+      }
+
+      /* Left: numbered reasons */
+      .challenge-reasons ol {
+        list-style: none;
+        counter-reset: reason;
+        margin: 0;
+        padding: 0;
+      }
+      .challenge-reasons ol li {
+        counter-increment: reason;
+        font-size: 20px;
+        line-height: 1.5;
+        color: var(--component-text-secondary);
+        padding: 10px 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        display: flex;
+        align-items: baseline;
+        gap: 0;
+      }
+      .challenge-reasons ol li:last-child {
+        border-bottom: none;
+      }
+      .challenge-reasons ol li::before {
+        content: counter(reason) ".";
+        color: var(--component-text-accent);
+        font-weight: 700;
+        font-size: 15px;
+        min-width: 28px;
+        flex-shrink: 0;
+      }
+
+      /* Right: consequence — emotional weight */
+      .challenge-consequence {
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+        background: rgba(244, 187, 48, 0.04);
+        border-color: rgba(244, 187, 48, 0.15);
+      }
+      .challenge-consequence p {
+        font-size: 20px;
+        line-height: 1.8;
+        font-weight: 400;
+        color: var(--component-text-primary);
+        font-style: italic;
+      }
+
+      /* Footnote */
+      .challenge-footnote {
+        font-size: 13px;
+        color: var(--component-text-muted);
+        margin-top: 14px;
+        text-align: start;
+        opacity: 0.7;
       }
 
       @media (max-width: 768px) {
         .challenge-columns {
           grid-template-columns: 1fr;
-          gap: 16px;
+          gap: 20px;
+        }
+        .challenge-consequence p {
+          font-size: 18px;
         }
       }
 
@@ -996,6 +1044,23 @@ export default function LandingPage() {
           -webkit-overflow-scrolling: touch;
         }
       }
+
+      /* ── Platform carousel tracks ── */
+      .platform-track {
+        position: relative;
+        overflow: hidden;
+        border-radius: 16px;
+        cursor: grab;
+        user-select: none;
+      }
+      .platform-track:active {
+        cursor: grabbing;
+      }
+
+      /* RTL: reverse carousel direction */
+      [dir="rtl"] .platform-track-inner {
+        direction: ltr; /* keep slides LTR even in RTL layout */
+      }
     `;
     const style = document.createElement('style');
     style.textContent = css;
@@ -1014,16 +1079,27 @@ export default function LandingPage() {
       <img id="background-image" src="/att/landing-screenshots/Vector.svg" alt="" />
 
       <div id="main-content">
-        <Platform content={content.platform} />
-        <Promise content={content.promise} />
+        {/* Section 2-3: Reality Check + The Approach (scroll crossfade) */}
+        <AItoIA language={language} />
+
+        {/* Section 4: Platform — 3 stacked carousels */}
+        <Platform />
+
+        {/* Section 5: Strategy House — architecture */}
         <StrategyHouse content={content.strategyHouse} />
-        
-        {/* Integrating AItoIA as an entry ramp to BetaForm */}
-        <AItoIA betaContent={content.beta} language={language} footerRights={t('footer.rights')} />
 
-        {/* Architecture hidden — twin engines moved to Platform, badges to Strategy House */}
+        {/* Section 6: Promise — persona carousel */}
+        <Promise content={content.promise} />
 
-
+        {/* Section 9: Beta CTA — standalone form */}
+        <section className="content-centered" id="beta" style={{ borderTop: '1px solid rgba(255,255,255,0.06)', background: 'radial-gradient(ellipse at 50% 20%, rgba(244,187,48,0.04) 0%, transparent 55%)' }}>
+          <div className="section-content-box" style={{ textAlign: 'center' }}>
+            <BetaForm content={content.beta} language={language} />
+            <footer style={{ padding: '24px 16px', textAlign: 'center', color: 'var(--component-text-muted)', fontSize: '14px', marginTop: '48px' }}>
+              <p style={{ margin: 0 }}>{t('footer.rights')}</p>
+            </footer>
+          </div>
+        </section>
       </div>
     </div>
   );

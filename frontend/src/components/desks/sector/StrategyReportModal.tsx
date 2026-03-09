@@ -204,8 +204,8 @@ const StrategyReportModal: React.FC<StrategyReportModalProps> = ({
                         {/* Content Scroll Area */}
                         <div className="josoor-modal-content custom-scrollbar">
                             <div className="josoor-report-content">
-                                {/* Render content with inline charts/tables */}
-                                {htmlContent.split(/(<ui-chart[^>]*>|<ui-table[^>]*>)/g).map((part, index) => {
+                                {/* Strip inline font/size styles from LLM output to let CSS control typography */}
+                                {(htmlContent.replace(/\s*font-family\s*:[^;"'}]+;?/gi, '').replace(/\s*font-size\s*:[^;"'}]+;?/gi, '')).split(/(<ui-chart[^>]*>|<ui-table[^>]*>)/g).map((part, index) => {
                                     // Check if this part is a chart or table tag
                                     const chartMatch = part.match(/<ui-chart[^>]*id=["']([^"']+)["'][^>]*>/);
                                     const tableMatch = part.match(/<ui-table[^>]*id=["']([^"']+)["'][^>]*>/);
@@ -246,20 +246,10 @@ const StrategyReportModal: React.FC<StrategyReportModalProps> = ({
                                         );
                                     }
 
-                                    // If part contains HTML tables, render directly as HTML
-                                    if (part.includes('<table')) {
-                                        return (
-                                            <div
-                                                key={`html-${index}`}
-                                                dir="auto"
-                                                dangerouslySetInnerHTML={{ __html: part }}
-                                            />
-                                        );
-                                    }
-
-                                    // Regular markdown content
+                                    // All content (including HTML tables) goes through ReactMarkdown
+                                    // rehypeRaw handles raw HTML safely
                                     return (
-                                        <div key={`content-${index}`} dir="auto">
+                                        <div key={`content-${index}`} className="josoor-report-content" dir="auto">
                                             <ReactMarkdown
                                                 rehypePlugins={[rehypeRaw]}
                                                 remarkPlugins={[remarkGfm]}

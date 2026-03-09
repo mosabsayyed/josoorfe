@@ -173,7 +173,7 @@ export default function Hero({ content, language }: HeroProps) {
         }}>
 
           {/* ── ROW 1: Title ── */}
-          <div>
+          <div style={{ marginTop: '50px' }}>
             <h2 style={{
               fontFamily: 'inherit',
               fontWeight: 800,
@@ -210,10 +210,18 @@ export default function Hero({ content, language }: HeroProps) {
             </p>
           </div>
 
-          {/* ROW 2 removed — the particle→graph morph IS the Sparkle background */}
-
-          {/* ── ROW 3: Stat boxes side by side ── */}
-          <div style={{ height: '50px', flexShrink: 0 }} />
+          {/* ── Middle tagline ── */}
+          <div style={{ height: '200px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <p style={{
+              fontSize: 'clamp(16px, 2.5vw, 22px)',
+              fontWeight: 500,
+              color: '#ffffff',
+              letterSpacing: '0.02em',
+              margin: 0,
+            }}>
+              {content.middleTagline || 'Building the bridges from Strategy to Execution, one bridge at a time.'}
+            </p>
+          </div>
           <div style={{
             display: 'flex',
             flexDirection: isMobile ? 'column' : 'row',

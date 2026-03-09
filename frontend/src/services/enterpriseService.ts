@@ -194,11 +194,14 @@ async function runChainOnce(chainName: string, args: Record<string, any> = {}): 
 
   for (const n of rawNodes) {
     const props = n.properties || {};
-    const nId = n.id || props.id || props.domain_id || '';
+    const id = n.id || '';
     const labels = n.labels || [];
-    if (nId && !seenNodeIds.has(nId)) {
-      seenNodeIds.add(nId);
-      nodes.push({ nId, nLabels: labels, nProps: props, id: nId, labels, properties: props });
+    const label = (labels as string[]).find((l: string) => l !== 'Resource') || labels[0] || '';
+    // Unique per node: label:id:year
+    const nodeKey = `${label}:${id}:${props.year ?? 'x'}`;
+    if (id && !seenNodeIds.has(nodeKey)) {
+      seenNodeIds.add(nodeKey);
+      nodes.push({ nId: id, nLabels: labels, nProps: props, id, labels, properties: props });
     }
   }
 
@@ -313,9 +316,8 @@ function extractEntitiesFromChains(chains: Array<{ nodes: any[]; links: any[] }>
       const nId = String(n.nId ?? n.id ?? '');
       const label = labels.find(l => l !== 'Resource') || labels[0] || '';
 
-      // Convert chain nProps (domain_id based) to the flat format filterAndBuildGraph expects
-      // Chain props have domain_id as business ID; Cypher rows had .id as business ID
-      const domainId = props.domain_id || nId.split(':')[1] || '';
+      // Chain props now use .id directly as business ID
+      const domainId = nId;
       const yearRaw = props.year;
       const year = typeof yearRaw === 'object' && yearRaw?.low != null ? yearRaw.low : Number(yearRaw) || 0;
       const quarterRaw = props.quarter;
@@ -682,12 +684,12 @@ function parseChain(chainData: { nodes: any[]; links: any[] }): ChainResult {
   for (const n of chainData.nodes) {
     const props = n.nProps || n.properties || {};
     const labels: string[] = n.nLabels || n.labels || [];
-    const compositeId = String(n.nId ?? n.id ?? '');
+    const id = String(n.nId ?? n.id ?? '');
     const label = labels.find(l => l !== 'Resource') || labels[0] || 'Unknown';
-    const domainId = props.domain_id || compositeId.split(':')[1] || '';
 
-    const cn: ChainNode = { compositeId, label, domainId, props };
-    nodeById.set(compositeId, cn);
+    // id is the short string (e.g. "1.0"). compositeId = id for backward compat.
+    const cn: ChainNode = { compositeId: id, label, domainId: id, props };
+    nodeById.set(id, cn);
     if (label === 'EntityCapability') capNodes.push(cn);
   }
 
@@ -797,12 +799,12 @@ function extractChainOverlays(chainData: { nodes: any[]; links: any[] }): Map<st
     const riskIds = neighbors(capId, 'MONITORED_BY');
     for (const rid of riskIds) {
       const riskProps = getNodeIfLabel(chain, rid, 'EntityRisk');
-      if (riskProps && (riskProps.domain_id || '') === cap.domainId) {
+      if (riskProps && (riskProps.id || '') === cap.domainId) {
         overlay.risk = riskProps;
         break;
       }
     }
-    // Fallback: take first risk if domain_id didn't match
+    // Fallback: take first risk if id didn't match
     if (!overlay.risk && riskIds.length > 0) {
       const riskProps = getNodeIfLabel(chain, riskIds[0], 'EntityRisk');
       if (riskProps) overlay.risk = riskProps;
@@ -835,7 +837,7 @@ function extractChainOverlays(chainData: { nodes: any[]; links: any[] }): Map<st
     // ── 2-hop: OrgUnit → MONITORS_FOR → CultureHealth ──
     for (const org of orgs) {
       const orgCompositeId = Array.from(chain.nodeById.entries())
-        .find(([, n]) => n.label === 'EntityOrgUnit' && n.domainId === org.domain_id)?.[0];
+        .find(([, n]) => n.label === 'EntityOrgUnit' && n.domainId === org.id)?.[0];
       if (!orgCompositeId) continue;
       const chIds = neighbors(orgCompositeId, 'MONITORS_FOR');
       for (const chId of chIds) {
@@ -850,7 +852,7 @@ function extractChainOverlays(chainData: { nodes: any[]; links: any[] }): Map<st
     // ── 2-hop: ITSystem → DEPENDS_ON → Vendor ──
     for (const it of its) {
       const itCompositeId = Array.from(chain.nodeById.entries())
-        .find(([, n]) => n.label === 'EntityITSystem' && n.domainId === it.domain_id)?.[0];
+        .find(([, n]) => n.label === 'EntityITSystem' && n.domainId === it.id)?.[0];
       if (!itCompositeId) continue;
       const vIds = neighbors(itCompositeId, 'DEPENDS_ON');
       for (const vid of vIds) {
@@ -897,12 +899,12 @@ function extractChainOverlays(chainData: { nodes: any[]; links: any[] }): Map<st
         const perfProps = getNodeIfLabel(chain, iid, 'SectorPerformance');
         if (perfProps) {
           if (!overlay.performanceTargets) overlay.performanceTargets = [];
-          if (!overlay.performanceTargets.find((p: any) => p.domain_id === perfProps.domain_id)) {
+          if (!overlay.performanceTargets.find((p: any) => p.id === perfProps.id)) {
             overlay.performanceTargets.push(perfProps);
           }
         }
         const polProps = getNodeIfLabel(chain, iid, 'SectorPolicyTool');
-        if (polProps && !policyTools.find((p: any) => p.domain_id === polProps.domain_id)) {
+        if (polProps && !policyTools.find((p: any) => p.id === polProps.id)) {
           policyTools.push(polProps);
         }
       }
@@ -919,7 +921,7 @@ function extractChainOverlays(chainData: { nodes: any[]; links: any[] }): Map<st
         const closeGapsIds = neighbors(eid, 'CLOSE_GAPS');
         for (const pid of closeGapsIds) {
           const projProps = getNodeIfLabel(chain, pid, 'EntityProject');
-          if (projProps && !projects.find((p: any) => p.domain_id === projProps.domain_id && p._pillar === pillar)) {
+          if (projProps && !projects.find((p: any) => p.id === projProps.id && p._pillar === pillar)) {
             projects.push({ ...projProps, _pillar: pillar });
           }
         }
@@ -934,14 +936,14 @@ function extractChainOverlays(chainData: { nodes: any[]; links: any[] }): Map<st
     const objectives: any[] = [];
     for (const pol of policyTools) {
       const polNode = Array.from(chain.nodeById.values()).find(
-        n => n.label === 'SectorPolicyTool' && n.domainId === pol.domain_id
+        n => n.label === 'SectorPolicyTool' && n.domainId === pol.id
       );
       if (!polNode) continue;
 
       const govIds = neighbors(polNode.compositeId, 'GOVERNED_BY');
       for (const gid of govIds) {
         const objProps = getNodeIfLabel(chain, gid, 'SectorObjective');
-        if (objProps && !objectives.find((o: any) => o.domain_id === objProps.domain_id)) {
+        if (objProps && !objectives.find((o: any) => o.id === objProps.id)) {
           objectives.push(objProps);
         }
       }
@@ -952,7 +954,7 @@ function extractChainOverlays(chainData: { nodes: any[]; links: any[] }): Map<st
       for (const perf of overlay.performanceTargets) {
         // Find the composite ID of this performance node
         const perfNode = Array.from(chain.nodeById.values()).find(
-          n => n.label === 'SectorPerformance' && n.domainId === perf.domain_id
+          n => n.label === 'SectorPerformance' && n.domainId === perf.id
         );
         if (!perfNode) continue;
 
@@ -968,7 +970,7 @@ function extractChainOverlays(chainData: { nodes: any[]; links: any[] }): Map<st
           const aggIds = neighbors(pid, 'AGGREGATES_TO');
           for (const aid of aggIds) {
             const objProps = getNodeIfLabel(chain, aid, 'SectorObjective');
-            if (objProps && !objectives.find((o: any) => o.domain_id === objProps.domain_id)) {
+            if (objProps && !objectives.find((o: any) => o.id === objProps.id)) {
               objectives.push(objProps);
             }
           }
@@ -1093,7 +1095,7 @@ function filterAndBuildGraph(raw: RawEnterpriseData, year: number | 'all', quart
         for (const p of overlay.linkedProjects) {
           // Only attach projects matching the capability's year (or if no year set)
           if (p.year && node.year && p.year !== node.year) continue;
-          if (!(node as any).linkedProjects.find((x: any) => x.domain_id === p.domain_id)) {
+          if (!(node as any).linkedProjects.find((x: any) => x.id === p.id)) {
             (node as any).linkedProjects.push(p);
           }
         }
@@ -1103,7 +1105,7 @@ function filterAndBuildGraph(raw: RawEnterpriseData, year: number | 'all', quart
       if (overlay.operatingEntities) {
         if (!(node as any).operatingEntities) (node as any).operatingEntities = [];
         for (const e of overlay.operatingEntities) {
-          if (!(node as any).operatingEntities.find((x: any) => x.domain_id === e.domain_id && x.type === e.type)) {
+          if (!(node as any).operatingEntities.find((x: any) => x.id === e.id && x.type === e.type)) {
             (node as any).operatingEntities.push(e);
           }
         }
@@ -1113,7 +1115,7 @@ function filterAndBuildGraph(raw: RawEnterpriseData, year: number | 'all', quart
       if (overlay.performanceTargets) {
         if (!(node as any).performanceTargets) (node as any).performanceTargets = [];
         for (const p of overlay.performanceTargets) {
-          if (!(node as any).performanceTargets.find((x: any) => x.domain_id === p.domain_id)) {
+          if (!(node as any).performanceTargets.find((x: any) => x.id === p.id)) {
             (node as any).performanceTargets.push(p);
           }
         }
@@ -1123,7 +1125,7 @@ function filterAndBuildGraph(raw: RawEnterpriseData, year: number | 'all', quart
       if (overlay.policyTools) {
         if (!(node as any).policyTools) (node as any).policyTools = [];
         for (const p of overlay.policyTools) {
-          if (!(node as any).policyTools.find((x: any) => x.domain_id === p.domain_id)) {
+          if (!(node as any).policyTools.find((x: any) => x.id === p.id)) {
             (node as any).policyTools.push(p);
           }
         }
@@ -1133,7 +1135,7 @@ function filterAndBuildGraph(raw: RawEnterpriseData, year: number | 'all', quart
       if (overlay.objectives) {
         if (!(node as any).objectives) (node as any).objectives = [];
         for (const o of overlay.objectives) {
-          if (!(node as any).objectives.find((x: any) => x.domain_id === o.domain_id)) {
+          if (!(node as any).objectives.find((x: any) => x.id === o.id)) {
             (node as any).objectives.push(o);
           }
         }
@@ -1440,18 +1442,18 @@ function buildL2(l2Node: NeoGraphNode, l3Nodes: NeoGraphNode[]): L2Capability {
   // Aggregate overlay data from L3 children (chain overlays attach to L3, not L2)
   for (const l3 of l3Children) {
     for (const pt of ((l3 as any).policyTools || [])) {
-      if (pt && !policyTools.find((p: any) => p.domain_id === pt.domain_id)) policyTools.push(pt);
+      if (pt && !policyTools.find((p: any) => p.id === pt.id)) policyTools.push(pt);
     }
     for (const perf of ((l3 as any).performanceTargets || [])) {
-      if (perf && !performanceTargets.find((p: any) => p.domain_id === perf.domain_id)) performanceTargets.push(perf);
+      if (perf && !performanceTargets.find((p: any) => p.id === perf.id)) performanceTargets.push(perf);
     }
     for (const obj of ((l3 as any).objectives || [])) {
-      if (obj && !objectives.find((o: any) => o.domain_id === obj.domain_id)) objectives.push(obj);
+      if (obj && !objectives.find((o: any) => o.id === obj.id)) objectives.push(obj);
     }
   }
 
   // Deduplicate objectives by id
-  const uniqueObjectives = objectives.filter((o: any, i: number, arr: any[]) => arr.findIndex((x: any) => x.id === o.id || x.domain_id === o.domain_id) === i);
+  const uniqueObjectives = objectives.filter((o: any, i: number, arr: any[]) => arr.findIndex((x: any) => x.id === o.id) === i);
 
   const l3Caps = l3Children.map(l3Node => buildL3(l3Node));
 

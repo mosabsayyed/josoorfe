@@ -28,6 +28,7 @@ const ProviderManagement = React.lazy(() => import('../../pages/admin/ProviderMa
 const ABTesting = React.lazy(() => import('../../pages/admin/ABTesting').then(m => ({ default: m.ABTesting })));
 const MonitoringDashboard = React.lazy(() => import('../../pages/admin/MonitoringDashboard').then(m => ({ default: m.MonitoringDashboard })));
 const OntologyHome = React.lazy(() => import('../../components/desks/OntologyHome'));
+const DevChatPanel = React.lazy(() => import('../../components/devchat/DevChatPanel'));
 
 const MemoizedSidebar = memo(Sidebar);
 const MemoizedCanvasManager = memo(CanvasManager);
@@ -315,6 +316,7 @@ export default function JosoorShell() {
     const displaySubtitle = subtitle;
 
     return (
+        <>
         <div className="josoor-shell" style={{ display: 'flex', width: '100vw', height: '100vh', overflow: 'hidden', backgroundColor: 'var(--bg-primary)' }}>
             {/* 1. SIDEBAR (Left) - Using original Sidebar component */}
             <div
@@ -430,5 +432,7 @@ export default function JosoorShell() {
                 )
             }
         </div >
+        <Suspense fallback={null}><DevChatPanel /></Suspense>
+        </>
     );
 }

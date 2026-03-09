@@ -148,17 +148,15 @@ const normalizeGraphData = (data: { nodes: any[], links: any[] }) => {
         };
     });
 
-    const nodeSet = new Set(nodes.map((n: any) => n.id));
     const seen = new Set<string>();
     const links: any[] = [];
 
     for (const l of data.links) {
         const relType = l.type || '';
-        const parts = l.id ? String(l.id).split(`-${relType}-`) : [];
-        const src = parts.length === 2 ? parts[0] : l.source;
-        const tgt = parts.length === 2 ? parts[1] : l.target;
+        const src = l.source || '';
+        const tgt = l.target || '';
         const key = `${src}-${relType}-${tgt}`;
-        if (!seen.has(key) && nodeSet.has(src) && nodeSet.has(tgt)) {
+        if (!seen.has(key)) {
             seen.add(key);
             links.push({ source: src, sourceId: src, target: tgt, targetId: tgt, type: relType, rType: relType, value: 1 });
         }
@@ -314,15 +312,12 @@ export function ExplorerDesk({ year = '2025', quarter = 'All' }: ExplorerDeskPro
 
         console.log(`[ExplorerDesk] Building URL: year=${pYear}, quarter=${pQuarter}, chain=${chain}, analyzeGaps=${analyzeGaps}`);
 
-        // If it's a chain call, use the v1 chains endpoint
+        // If it's a chain call, use the v1 chains endpoint (match preload pattern)
         if (chain) {
-            const params = new URLSearchParams();
             const yearNum = Number.parseInt(String(pYear), 10);
             const yearParam = Number.isNaN(yearNum) ? '0' : String(yearNum);
-            params.append('year', yearParam);
-            params.append('analyzeGaps', analyzeGaps.toString());
-            params.append('row_limit', limit.toString());
-            const url = `${baseUrl}/api/v1/chains/${chain}?${params.toString()}`;
+            let url = `${baseUrl}/api/v1/chains/${chain}?year=${yearParam}&row_limit=${limit}`;
+            if (pQuarter && pQuarter !== 'All') url += `&quarter=${pQuarter.replace(/\D/g, '')}`;
             console.log(`[ExplorerDesk] Chain URL: ${url}`);
             return url;
         }
@@ -334,7 +329,7 @@ export function ExplorerDesk({ year = '2025', quarter = 'All' }: ExplorerDeskPro
         params.append('limit', limit.toString());
         // Catalog v1.3 specifies 'years' (plural) for generic graph
         params.append('years', pYear);
-        if (pQuarter && pQuarter !== 'All') params.append('quarter', pQuarter);
+        if (pQuarter && pQuarter !== 'All') params.append('quarter', pQuarter.replace(/\D/g, ''));
         params.append('analyzeGaps', analyzeGaps.toString());
         params.append('excludeEmbeddings', 'true');
         const url = `${baseUrl}/api/graph?${params.toString()}`;
@@ -360,29 +355,52 @@ export function ExplorerDesk({ year = '2025', quarter = 'All' }: ExplorerDeskPro
             }
             const raw = await response.json();
 
-            // Normalize v1 chain response: {results:[{nodes, relationships}]} → {nodes, links}
-            // Generic graph endpoint returns {nodes, links} directly — handle both.
+            // Normalize chain/graph response into {nodes: [...], links: [...]}
+            // New chain format: {nodes: {"Label": [{id,name,...}]}, edges: [{source_label,source_id,target_label,target_id,type,props}]}
+            // Generic graph endpoint: {nodes: [...], links: [...]}
+            // Legacy format: {results: [{nodes, relationships}]}
             let data: { nodes: any[]; links: any[] };
-            if (raw.results && Array.isArray(raw.results)) {
+            if (raw.nodes && !Array.isArray(raw.nodes) && typeof raw.nodes === 'object') {
+                // New chain format — aligned with chainsService.fetchChainCached
+                const nodesDict: Record<string, any[]> = raw.nodes;
+                const edgesArr: any[] = raw.edges || [];
+                const flatNodes: any[] = [];
+                for (const [label, nodeArr] of Object.entries(nodesDict)) {
+                    for (const nodeObj of nodeArr) {
+                        const id = String(nodeObj.id ?? '');
+                        flatNodes.push({
+                            nId: id, nLabels: [label], nProps: nodeObj,
+                            id, labels: [label], properties: nodeObj,
+                        });
+                    }
+                }
+                const links = edgesArr.map((e: any) => ({
+                    type: e.type,
+                    source: String(e.source_id),
+                    target: String(e.target_id),
+                    start: String(e.source_id),
+                    end: String(e.target_id),
+                    properties: e.props || {},
+                }));
+                data = { nodes: flatNodes, links };
+                console.log(`[ExplorerDesk] Parsed chain: ${flatNodes.length} nodes, ${links.length} edges`);
+            } else if (raw.results && Array.isArray(raw.results)) {
+                // Legacy format: {results: [{nodes, relationships}]}
                 const r0 = raw.results[0] || {};
                 data = {
                     nodes: (r0.nodes || []).map((n: any) => ({
-                        elementId: n.id,
-                        id: n.id,
-                        labels: n.labels || [],
-                        label: (n.labels || [])[0] || '',
+                        elementId: n.id, id: n.id,
+                        labels: n.labels || [], label: (n.labels || [])[0] || '',
                         group: (n.labels || [])[0] || '',
-                        properties: n.properties || {},
-                        ...n.properties,
+                        properties: n.properties || {}, ...n.properties,
                     })),
                     links: (r0.relationships || []).map((r: any) => ({
                         id: `${r.start}-${r.type}-${r.end}`,
-                        type: r.type,
-                        source: r.start,
-                        target: r.end,
+                        type: r.type, source: r.start, target: r.end,
                     }))
                 };
-            } else if (raw.nodes) {
+            } else if (raw.nodes && Array.isArray(raw.nodes)) {
+                // Generic graph endpoint: already flat
                 data = raw;
             } else {
                 console.warn(`[ExplorerDesk] Unexpected response shape`, Object.keys(raw));

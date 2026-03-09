@@ -18,6 +18,7 @@ export interface HeroContent {
   trustTitle?: string;
   trustDesc?: string;
   figures?: string[];
+  middleTagline?: string;
 }
 
 export interface NoNoiseContent {

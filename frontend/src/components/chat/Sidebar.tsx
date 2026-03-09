@@ -468,6 +468,7 @@ export function Sidebar({
           <div className="conversations-card" style={{ marginRight: '-0', padding: '5px 10px 5px 0' }}>
             <button onClick={() => setShowConversations(!showConversations)} className="conversations-header clickable">
               <span className="conversations-title">{translations.conversations}</span>
+              <span style={{ fontSize: 10, lineHeight: 1, opacity: 0.6 }}>{showConversations ? '▾' : '▸'}</span>
             </button>
             {showConversations && (
               <div style={{ marginTop: '4px', display: 'flex', flexDirection: 'column', gap: '4px', overflowY: 'auto' }}>

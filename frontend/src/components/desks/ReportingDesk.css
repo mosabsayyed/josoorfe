@@ -16,7 +16,7 @@
     top: 0;
     z-index: 100;
     border-bottom: 1px solid var(--component-panel-border);
-    background-color: rgba(15, 23, 42, 0.98);
+    background-color: var(--component-bg-primary);
     backdrop-filter: blur(12px);
     padding: 1rem 1.5rem;
 }
@@ -396,12 +396,12 @@
     background-color: var(--component-color-warning);
 }
 
-.bg-blue {
-    background-color: var(--component-color-info);
-}
-
 .bg-red {
     background-color: var(--component-color-danger);
+}
+
+.bg-accent {
+    background-color: var(--component-text-accent);
 }
 
 .node-label {
@@ -416,10 +416,6 @@
 
 .text-amber {
     color: var(--component-color-warning);
-}
-
-.text-blue {
-    color: var(--component-color-info);
 }
 
 .text-red {
@@ -468,8 +464,8 @@
     border-bottom: 1px solid var(--component-panel-border);
 }
 
-.header-green {
-    color: var(--component-color-success);
+.header-accent {
+    color: var(--component-text-accent);
 }
 
 .metrics-grid {
@@ -485,9 +481,7 @@
     padding: 0.5rem;
 }
 
-.metric-card-green-border {
-    border-color: var(--component-color-success);
-}
+/* metric-card-accent-border removed — cards use neutral borders only */
 
 .metric-label {
     color: var(--component-text-muted);
@@ -528,11 +522,6 @@
     color: var(--component-text-on-accent);
 }
 
-.badge-bg-blue {
-    background-color: var(--component-color-info);
-    color: var(--component-text-primary);
-}
-
 .badge-active-override {
     background-color: var(--component-text-accent);
     color: var(--component-text-on-accent);
@@ -558,8 +547,8 @@
     align-items: center;
     justify-content: center;
     gap: 0.75rem;
-    background-color: rgba(16, 185, 129, 0.08);
-    border: 1px solid var(--component-color-success);
+    background-color: var(--component-bg-secondary);
+    border: 1px solid var(--component-panel-border);
     border-radius: 0;
     padding: 0.5rem;
 }
@@ -584,9 +573,7 @@
     padding: 0.75rem;
 }
 
-.border-red-2 {
-    border: 2px solid var(--component-color-danger);
-}
+/* border-accent-2 removed — blocks use neutral borders only */
 
 .residual-list {
     display: flex;
@@ -631,14 +618,14 @@
 }
 
 .block-header-amber {
-    color: var(--component-color-warning);
+    color: var(--component-text-primary);
     font-size: 0.75rem;
     font-weight: 700;
     margin-bottom: 0.5rem;
 }
 
 .block-header-red {
-    color: var(--component-color-danger);
+    color: var(--component-text-primary);
     font-size: 0.75rem;
     font-weight: 700;
     margin-bottom: 0.5rem;

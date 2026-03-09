@@ -108,66 +108,68 @@ export default function TwinKnowledge({ onNavigate }: TwinKnowledgeProps) {
   };
 
   return (
-    <div style={{ ...containerStyle, display: 'flex', gap: '40px', alignItems: 'flex-start', flexDirection: isRTL ? 'row-reverse' : 'row' }} dir={isRTL ? 'rtl' : 'ltr'}>
-      
-      {/* LEFT COLUMN: ONTOLOGY SIDEBAR (Expanded Width, Reduced Padding) - MOVED TO LEFT */}
-      <div style={{ flex: 1, minWidth: '400px', position: 'sticky', top: '20px' }}>
-        <div style={{
-          background: 'var(--component-bg-secondary)',
-          border: '1px solid var(--component-panel-border)',
-          borderRadius: '16px',
-          padding: '16px', // Reduced padding
-          boxShadow: '0 4px 20px rgba(0,0,0,0.2)'
-        }}>
-          <h3 style={{ 
-            color: 'var(--color-primary)', 
-            marginTop: 0, 
-            fontSize: '18px', 
-            borderBottom: '1px solid var(--component-panel-border)',
-            paddingBottom: '8px',
-            marginBottom: '12px'
-          }}>
-            {language === 'ar' ? 'أنطولوجيا القطاع العام' : 'Public Sector Ontology'}
-          </h3>
-          
-          <p style={{ 
-            fontSize: '15px', // Slightly larger for readability
-            lineHeight: '1.6', 
-            color: 'var(--component-text-secondary)',
-            marginBottom: '12px' // Added margin bottom for spacing before image
-          }}>
-            {language === 'ar' 
-              ? 'تعمل المنظمات، وخاصة في القطاع العام، كأنظمة متكاملة تتكون من مكونات مترابطة تولد القيمة بشكل جماعي عبر سلسلة قيمة القطاع. يتم تمثيل ذلك في هذه الأنطولوجيا التي تلتقط العناصر الأساسية وعلاقاتها عبر عمليات القطاع وعمليات الكيان.'
-              : 'In the public sector, organizations function as integrated systems composed of interdependent components that collectively generate value across a Sector’s value chain as represented in the above Ontology of the essential elements and their relationships. This Ontology is the core of the Digital Twin. To be able to utilize JOSOOR properly, it is critical to understand the Ontology and the logic the AI applies to provide answers.'
-            }
-          </p>
+    <div style={{ ...containerStyle, display: 'flex', flexDirection: 'column', gap: '32px' }} dir={isRTL ? 'rtl' : 'ltr'}>
 
-          <img 
-            src={language === 'ar' ? "knowledge/images/1.1_1_ar.png" : "knowledge/images/1.1_1.png"}
-            alt={language === 'ar' ? "أنطولوجيا القطاع العام" : "Public Sector Ontology"}
-            style={{ 
-              width: '100%', 
-              height: 'auto', 
-              borderRadius: '8px',
-              border: '1px solid var(--component-panel-border)',
-              marginBottom: 0
-            }} 
-          />
-        </div>
+      {/* TOP: Ontology text + image full width */}
+      <div style={{
+        background: 'var(--component-bg-secondary)',
+        border: '1px solid var(--component-panel-border)',
+        borderRadius: '16px',
+        padding: '24px',
+        boxShadow: '0 4px 20px rgba(0,0,0,0.2)'
+      }}>
+        <h3 style={{
+          color: 'var(--color-primary)',
+          marginTop: 0,
+          fontSize: '18px',
+          borderBottom: '1px solid var(--component-panel-border)',
+          paddingBottom: '8px',
+          marginBottom: '12px'
+        }}>
+          {language === 'ar' ? 'أنطولوجيا القطاع العام' : 'Public Sector Ontology'}
+        </h3>
+
+        <p style={{
+          fontSize: '15px',
+          lineHeight: '1.6',
+          color: 'var(--component-text-secondary)',
+          marginBottom: '16px'
+        }}>
+          {language === 'ar'
+            ? 'تعمل المنظمات، وخاصة في القطاع العام، كأنظمة متكاملة تتكون من مكونات مترابطة تولد القيمة بشكل جماعي عبر سلسلة قيمة القطاع. يتم تمثيل ذلك في هذه الأنطولوجيا التي تلتقط العناصر الأساسية وعلاقاتها عبر عمليات القطاع وعمليات الكيان.'
+            : 'In the public sector, organizations function as integrated systems composed of interdependent components that collectively generate value across a Sector\'s value chain as represented in the above Ontology of the essential elements and their relationships. This Ontology is the core of the Digital Twin. To be able to utilize JOSOOR properly, it is critical to understand the Ontology and the logic the AI applies to provide answers.'
+          }
+        </p>
+
+        <img
+          src={language === 'ar' ? "/icons/ontologyar.jpg" : "/icons/ontologyen.jpg"}
+          alt={language === 'ar' ? "أنطولوجيا القطاع العام" : "Public Sector Ontology"}
+          style={{
+            width: '100%',
+            height: 'auto',
+            borderRadius: '8px',
+            border: '1px solid var(--component-panel-border)'
+          }}
+        />
       </div>
 
-      {/* RIGHT COLUMN: CHAPTERS TOC (Reduced Width) - MOVED TO RIGHT */}
-      <div style={{ width: '40%', minWidth: '350px' }}>
+      {/* BOTTOM: Chapters in 2x2 grid */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(2, 1fr)',
+        gap: '20px'
+      }}>
         {knowledgeData.chapters.map((chapter) => {
           const isExpanded = expandedChapter === chapter.id;
           if (!chapter.episodes || chapter.episodes.length === 0) return null;
 
           return (
-            <div 
-              key={chapter.id} 
+            <div
+              key={chapter.id}
               style={{
                 ...sectionStyle,
-                border: '1px solid var(--component-text-accent)', // GOLD BORDER (Fixed: usage of correct variable)
+                marginBottom: 0,
+                border: '1px solid var(--component-text-accent)',
                 background: isExpanded ? 'var(--component-panel-bg)' : 'transparent'
               }}
               onClick={() => setExpandedChapter(isExpanded ? null : chapter.id)}
@@ -178,7 +180,6 @@ export default function TwinKnowledge({ onNavigate }: TwinKnowledgeProps) {
                   {language === 'ar' ? chapter.id.replace('chapter-', 'الفصل ') : chapter.id.replace('chapter-', 'Chapter ')}
                 </div>
                 <h2 style={chapterTitleStyle}>
-                  {/* Robust regex to strip "Chapter 1 - " or "Chapter 1: " or "Chapter 1 — " */}
                   {((chapter.title as any)[language] || '').replace(/^(Chapter|الفصل) \d+\s*[-—:]\s*/, '')}
                 </h2>
                 <p style={paragraphStyle}>
@@ -189,7 +190,7 @@ export default function TwinKnowledge({ onNavigate }: TwinKnowledgeProps) {
               {isExpanded && (
                 <div style={episodeListStyle} onClick={(e) => e.stopPropagation()}>
                   {chapter.episodes.map((episode) => (
-                    <div 
+                    <div
                       key={episode.id}
                       className="episode-card clickable"
                       onClick={() => onNavigate?.(chapter.id, episode.id)}
@@ -205,10 +206,10 @@ export default function TwinKnowledge({ onNavigate }: TwinKnowledgeProps) {
                         e.currentTarget.style.borderColor = 'var(--component-panel-border)';
                       }}
                     >
-                      <span style={{ 
-                        fontWeight: 600, 
+                      <span style={{
+                        fontWeight: 600,
                         color: 'var(--component-text-primary, #F9FAFB)',
-                        fontSize: '15px' 
+                        fontSize: '15px'
                       }}>
                         <span style={{ opacity: 0.7, marginRight: '8px', color: 'var(--color-primary)' }}>{episode.id.replace('-', '.')}</span>
                         {(episode.title as any)[language]}

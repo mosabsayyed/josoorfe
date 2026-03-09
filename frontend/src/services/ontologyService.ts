@@ -165,6 +165,7 @@ type VisualLegSpec = {
   fromLevels?: string[];
   toLevels?: string[];
   patterns: VisualLegPattern[];
+  buildModeOnly?: 'from' | 'to';  // restrict this side to nodes in CLOSE_GAPS/GAPS_SCOPE rels
 };
 
 const SECTOR_STAKEHOLDER_KEYS = ['businessUp', 'citizen', 'govEntity'];
@@ -438,6 +439,7 @@ const VISUAL_LEG_SPECS: VisualLegSpec[] = [
     to: 'projects',
     fromLevels: ['L3'],
     toLevels: ['L3'],
+    buildModeOnly: 'from',
     patterns: [
       { startSide: 'from', steps: [{ relationTypes: ['GAPS_SCOPE'], fromTypes: ['orgUnits'], toTypes: ['projects'], fromLevels: ['L3'], toLevels: ['L3'] }] },
       { startSide: 'to', steps: [{ relationTypes: ['CLOSE_GAPS'], fromTypes: ['projects'], toTypes: ['orgUnits'], fromLevels: ['L3'], toLevels: ['L3'] }] },
@@ -448,6 +450,7 @@ const VISUAL_LEG_SPECS: VisualLegSpec[] = [
     to: 'projects',
     fromLevels: ['L3'],
     toLevels: ['L3'],
+    buildModeOnly: 'from',
     patterns: [
       { startSide: 'from', steps: [{ relationTypes: ['GAPS_SCOPE'], fromTypes: ['processes'], toTypes: ['projects'], fromLevels: ['L3'], toLevels: ['L3'] }] },
       { startSide: 'to', steps: [{ relationTypes: ['CLOSE_GAPS'], fromTypes: ['projects'], toTypes: ['processes'], fromLevels: ['L3'], toLevels: ['L3'] }] },
@@ -458,6 +461,7 @@ const VISUAL_LEG_SPECS: VisualLegSpec[] = [
     to: 'projects',
     fromLevels: ['L3'],
     toLevels: ['L3'],
+    buildModeOnly: 'from',
     patterns: [
       { startSide: 'from', steps: [{ relationTypes: ['GAPS_SCOPE'], fromTypes: ['itSystems'], toTypes: ['projects'], fromLevels: ['L3'], toLevels: ['L3'] }] },
       { startSide: 'to', steps: [{ relationTypes: ['CLOSE_GAPS'], fromTypes: ['projects'], toTypes: ['itSystems'], fromLevels: ['L3'], toLevels: ['L3'] }] },
@@ -500,18 +504,10 @@ function parseChainEnvelope(envelope: any): ChainData {
   const rawNodes: any[] = envelope.nodes || [];
   const rawLinks: any[] = envelope.relationships || envelope.links || [];
 
-  // ID FORMAT DIAGNOSTIC — log first node + first link to verify they match
-  if (rawNodes.length > 0 && rawLinks.length > 0) {
-    const sn = rawNodes[0];
-    const sl = rawLinks[0];
-    console.log('[PARSE-ID] node raw:', { id: sn.id, 'props.id': sn.properties?.id, 'props.domain_id': sn.properties?.domain_id });
-    console.log('[PARSE-ID] link raw:', { start: sl.start, source: sl.source, sourceId: sl.sourceId, end: sl.end, target: sl.target, targetId: sl.targetId });
-  }
-
   const nodes = rawNodes.map((n: any) => {
     const { embedding, ...props } = n.properties || {};
     return {
-      id: String(n.id ?? props.id ?? props.domain_id ?? ''),
+      id: String(n.id ?? ''),
       labels: n.labels || [],
       properties: props,
     };
@@ -519,23 +515,9 @@ function parseChainEnvelope(envelope: any): ChainData {
 
   const links = rawLinks.map((r: any) => ({
     type: r.type || '',
-    start: String(r.start ?? r.source ?? r.sourceId ?? ''),
-    end: String(r.end ?? r.target ?? r.targetId ?? ''),
+    start: String(r.start ?? r.source ?? ''),
+    end: String(r.end ?? r.target ?? ''),
   }));
-
-  // Verify ID intersection — if no node IDs appear in link endpoints, there's a format mismatch
-  if (nodes.length > 0 && links.length > 0) {
-    const nodeIds = new Set(nodes.map(n => n.id));
-    const linkEndpoints = new Set(links.flatMap(l => [l.start, l.end]));
-    const overlap = [...linkEndpoints].filter(id => nodeIds.has(id)).length;
-    if (overlap === 0) {
-      console.error('[PARSE-ID] MISMATCH: zero node IDs found in link endpoints!');
-      console.error('[PARSE-ID] Sample node IDs:', [...nodeIds].slice(0, 3));
-      console.error('[PARSE-ID] Sample link endpoints:', [...linkEndpoints].slice(0, 3));
-    } else {
-      console.log(`[PARSE-ID] OK: ${overlap}/${linkEndpoints.size} link endpoints match node IDs`);
-    }
-  }
 
   return { nodes, links };
 }
@@ -1091,18 +1073,21 @@ function computeLineFlowHealth(
   // Build nodeIdToLevel from ALL chain nodes (not year-filtered).
   // Level lookup must cover nodes that may be filtered out of nodesByType by year,
   // because their IDs still appear as link endpoints in relAdj.
+  // Key includes label because id alone is NOT unique across types.
   const nodeIdToLevel = new Map<string, string | null>();
   for (const chain of chains) {
     for (const n of chain.nodes) {
-      if (nodeIdToLevel.has(n.id)) continue;
+      const label = n.labels[0] || '';
+      const levelKey = `${label}:${n.id}`;
+      if (nodeIdToLevel.has(levelKey)) continue;
       const p = n.properties;
       const raw = p?.level ?? p?.ontology_level ?? p?.node_level ?? p?.layer;
-      nodeIdToLevel.set(n.id, typeof raw === 'string' && raw.trim() ? raw.trim().toUpperCase() : null);
+      nodeIdToLevel.set(levelKey, typeof raw === 'string' && raw.trim() ? raw.trim().toUpperCase() : null);
     }
   }
 
   // Build relation adjacency from ALL chain links.
-  // relAdj[relType][sourceId] = Set<targetIds>
+  // relAdj[relType][label:sourceId] = Set<label:targetIds>
   const relAdj = new Map<string, Map<string, Set<string>>>();
   for (const chain of chains) {
     for (const link of chain.links) {
@@ -1113,9 +1098,10 @@ function computeLineFlowHealth(
     }
   }
 
-  const matchLevel = (nodeId: string, levels?: string[]): boolean => {
+  const matchLevel = (node: { id: string; labels: string[] }, levels?: string[]): boolean => {
     if (!levels || levels.length === 0) return true;
-    const lv = nodeIdToLevel.get(nodeId);
+    const label = node.labels[0] || '';
+    const lv = nodeIdToLevel.get(`${label}:${node.id}`);
     return !!lv && levels.includes(lv);
   };
 
@@ -1138,10 +1124,32 @@ function computeLineFlowHealth(
     }
   }
 
+  // policyTool IDs >= 16.0 are physical assets (industrial cities, power plants, giga projects)
+  // not policy instruments — exclude them from line RAG computations
+  const isAssetPolicyTool = (type: string, n: { id: string }) =>
+    type === 'policyTools' && parseFloat(n.id) >= 16.0;
+
+  // Build mode: IT/Process/Org nodes that are targets of CLOSE_GAPS from projects
+  // Only these should be counted in project-related line RAGs
+  const buildModeIds = new Set<string>();
+  const closeGaps = relAdj.get('CLOSE_GAPS');
+  if (closeGaps) {
+    for (const targets of closeGaps.values()) {
+      for (const t of targets) buildModeIds.add(t);
+    }
+  }
+
   for (const spec of VISUAL_LEG_SPECS) {
-    // fromNodes and toNodes: year-filtered nodes of correct type and level
-    const fromNodes = (nodesByType.get(spec.from) || []).filter(n => matchLevel(n.id, spec.fromLevels));
-    const toNodes   = (nodesByType.get(spec.to)   || []).filter(n => matchLevel(n.id, spec.toLevels));
+    // fromNodes and toNodes: year-filtered nodes of correct type and level, excluding asset policyTools
+    let fromNodes = (nodesByType.get(spec.from) || []).filter(n => matchLevel(n, spec.fromLevels) && !isAssetPolicyTool(spec.from, n));
+    let toNodes   = (nodesByType.get(spec.to)   || []).filter(n => matchLevel(n, spec.toLevels) && !isAssetPolicyTool(spec.to, n));
+
+    // For build-mode specs: restrict the flagged side to only nodes in CLOSE_GAPS relationships
+    if (spec.buildModeOnly === 'from') {
+      fromNodes = fromNodes.filter(n => buildModeIds.has(n.id));
+    } else if (spec.buildModeOnly === 'to') {
+      toNodes = toNodes.filter(n => buildModeIds.has(n.id));
+    }
 
     const key = `${spec.from}->${spec.to}`;
     const totalNodes = fromNodes.length + toNodes.length;
@@ -1150,26 +1158,25 @@ function computeLineFlowHealth(
       const rawFrom = nodesByType.get(spec.from) || [];
       const rawTo = nodesByType.get(spec.to) || [];
       console.log(`[LINE-SKIP] ${key}: 0 nodes after level filter. raw ${spec.from}=${rawFrom.length}, raw ${spec.to}=${rawTo.length}, fromLevels=${spec.fromLevels}, toLevels=${spec.toLevels}`);
-      if (rawFrom.length > 0) console.log(`[LINE-SKIP] ${key}: sample ${spec.from} level=`, nodeIdToLevel.get(rawFrom[0].id));
-      if (rawTo.length > 0) console.log(`[LINE-SKIP] ${key}: sample ${spec.to} level=`, nodeIdToLevel.get(rawTo[0].id));
+      if (rawFrom.length > 0) console.log(`[LINE-SKIP] ${key}: sample ${spec.from} level=`, nodeIdToLevel.get(`${rawFrom[0].labels[0] || ''}:${rawFrom[0].id}`));
+      if (rawTo.length > 0) console.log(`[LINE-SKIP] ${key}: sample ${spec.to} level=`, nodeIdToLevel.get(`${rawTo[0].labels[0] || ''}:${rawTo[0].id}`));
       lineRag[key] = 'default';
       lineDetails[key] = { from: spec.from, to: spec.to, rag: 'default', connectivity: 0, fromTotal: 0, fromConnected: 0, toTotal: 0, toConnected: 0, linkCount: 0, orphanCount: 0, bastardCount: 0, hasLinks: false, disconnectedFrom: [], disconnectedTo: [] };
       continue;
     }
 
+    // node.id is the short string id (e.g. "1.0"). Unique within a type+year bucket.
     const fromIds = new Set(fromNodes.map(n => n.id));
     const toIds   = new Set(toNodes.map(n => n.id));
 
     const connectedFrom = new Set<string>();
     const connectedTo   = new Set<string>();
 
-    // All specs are single-hop. For each pattern follow exactly one relation.
     for (const pattern of spec.patterns) {
       const step = pattern.steps[0];
       if (!step) continue;
 
       if (pattern.startSide === 'from') {
-        // fromId -[relType]-> targetId must be in toIds
         for (const fromId of fromIds) {
           for (const relType of step.relationTypes) {
             for (const targetId of (relAdj.get(relType)?.get(fromId) ?? [])) {
@@ -1181,7 +1188,6 @@ function computeLineFlowHealth(
           }
         }
       } else {
-        // toId -[relType]-> targetId must be in fromIds
         for (const toId of toIds) {
           for (const relType of step.relationTypes) {
             for (const targetId of (relAdj.get(relType)?.get(toId) ?? [])) {
@@ -1202,7 +1208,7 @@ function computeLineFlowHealth(
     const brokenCount  = orphanCount + bastardCount;
     const brokenPct    = brokenCount / totalNodes;
 
-    const rag: RagStatus = brokenPct === 0 ? 'green' : brokenPct <= 0.15 ? 'amber' : 'red';
+    const rag: RagStatus = brokenPct === 0 ? 'green' : brokenPct <= 0.25 ? 'amber' : 'red';
 
     console.log(`[LINE] ${key}: from=${fromNodes.length} unlinked=${orphanCount}, to=${toNodes.length} unlinked=${bastardCount} (${(brokenPct * 100).toFixed(1)}%) → ${rag}`);
 
@@ -1220,8 +1226,8 @@ function computeLineFlowHealth(
       orphanCount,
       bastardCount,
       hasLinks: connectedFrom.size > 0,
-      disconnectedFrom: disFrom.map(n => ({ id: n.props.domain_id || n.id, name: n.props.name || '' })),
-      disconnectedTo: disTo.map(n => ({ id: n.props.domain_id || n.id, name: n.props.name || '' })),
+      disconnectedFrom: disFrom.map(n => ({ id: n.id, name: n.props.name || '' })),
+      disconnectedTo: disTo.map(n => ({ id: n.id, name: n.props.name || '' })),
     };
   }
 
@@ -1248,12 +1254,9 @@ const COLUMN_NARRATIVES_AR: Record<string, { good: string; bad: (n: number) => s
 
 // ── Helpers ──
 
-function extractLogicalId(chainId: string): string {
-  const parts = chainId.split(':');
-  if (parts.length >= 3 && /^\d{4}$/.test(parts[parts.length - 1])) {
-    return parts.slice(1, -1).join(':');
-  }
-  return chainId;
+function extractLogicalId(id: string): string {
+  // node.id is already the short string (e.g. "1.0") — no splitting needed
+  return id;
 }
 
 // ── RiskPlan Helpers ──
@@ -1283,11 +1286,13 @@ export type LoadingStep = { label: string; status: 'loading' | 'done' | 'error';
 
 export async function fetchOntologyRagState(
   onProgress?: (steps: LoadingStep[]) => void,
+  overrideYear?: number | string,
+  overrideQuarter?: string,
 ): Promise<OntologyRagState> {
   const storedYear = typeof window !== 'undefined' ? localStorage.getItem('jos-year') : null;
   const storedQuarter = typeof window !== 'undefined' ? localStorage.getItem('jos-quarter') : null;
-  const year = storedYear ? parseInt(storedYear, 10) : new Date().getFullYear();
-  const quarter = storedQuarter && storedQuarter !== 'all' ? storedQuarter : null;
+  const year = overrideYear ? parseInt(String(overrideYear), 10) : (storedYear ? parseInt(storedYear, 10) : new Date().getFullYear());
+  const quarter = overrideQuarter && overrideQuarter !== 'all' ? overrideQuarter : (storedQuarter && storedQuarter !== 'all' ? storedQuarter : null);
 
   // Track loading steps for real-time UI feedback
   const steps: LoadingStep[] = [
@@ -1372,12 +1377,14 @@ export async function fetchOntologyRagState(
 
   for (const chain of chains) {
     for (const n of chain.nodes) {
-      if (seenIds.has(n.id)) continue;
-      seenIds.add(n.id);
-
       const label = n.labels.find(l => LABEL_TO_NODE_KEY[l]);
       if (!label) continue;
       const key = LABEL_TO_NODE_KEY[label];
+
+      // Key by label+id+year — id alone is NOT unique across types (e.g. cap "1.0" vs risk "1.0")
+      const yearKey = `${label}:${n.id}:${n.properties.year ?? 'x'}`;
+      if (seenIds.has(yearKey)) continue;
+      seenIds.add(yearKey);
       if (!allNodesByType.has(key)) allNodesByType.set(key, []);
 
       const enriched = { ...n.properties };
@@ -1400,18 +1407,90 @@ export async function fetchOntologyRagState(
   // Normalize quarter: localStorage stores 'Q1', nodes store 4 (numeric)
   const quarterNum = quarter ? parseInt(quarter.replace(/\D/g, ''), 10) || null : null;
 
+  // Cumulative node types: once a node appears in year X, it persists in all future years
+  // unless a newer version (same base ID) exists. Dedup by base ID keeping most recent.
+  // Measurement nodes: exact year/quarter match only.
+  const CUMULATIVE_TYPES = new Set(['capabilities', 'risks', 'policyTools', 'orgUnits', 'itSystems', 'processes', 'performance', 'vendors', 'projects']);
+
+  // node.id is the short string id (e.g. "1.0"). Dedup key for cumulative = n.id (within type bucket).
   const nodesByType = new Map<string, { props: Record<string, any>; labels: string[]; id: string }[]>();
   for (const [key, nodes] of allNodesByType) {
-    const filtered = nodes.filter(n => {
-      const nodeYear = typeof n.props.year === 'object' ? n.props.year?.low : n.props.year;
-      const nq = n.props.quarter ?? null;
-      const nodeQ = typeof nq === 'number' ? nq : (typeof nq === 'string' ? parseInt(nq.replace(/\D/g, ''), 10) || null : null);
-      const yearOk = !nodeYear || !year || Number(nodeYear) <= year;
-      // Cumulative: include if (same year, quarter <= selected) OR (prior year)
-      const quarterOk = !quarterNum || !nodeQ || Number(nodeYear) < year || nodeQ <= quarterNum;
-      return yearOk && quarterOk;
-    });
-    if (filtered.length > 0) nodesByType.set(key, filtered);
+    const isCumulative = CUMULATIVE_TYPES.has(key);
+
+    if (isCumulative) {
+      // Step 1: include all nodes with year <= selected (and quarter within same year)
+      const inWindow = nodes.filter(n => {
+        const nodeYear = typeof n.props.year === 'object' ? n.props.year?.low : n.props.year;
+        const nq = n.props.quarter ?? null;
+        const nodeQ = typeof nq === 'number' ? nq : (typeof nq === 'string' ? parseInt(nq.replace(/\D/g, ''), 10) || null : null);
+        if (!nodeYear || !year) return true;
+        if (Number(nodeYear) < year) return true;
+        if (Number(nodeYear) === year) {
+          if (!quarterNum || !nodeQ) return true;
+          return nodeQ <= quarterNum;
+        }
+        return false;
+      });
+      // Step 2: dedup by id — keep the most recent year/quarter version (id is already short, unique within type)
+      const byBaseId = new Map<string, { props: Record<string, any>; labels: string[]; id: string }>();
+      for (const n of inWindow) {
+        const existing = byBaseId.get(n.id);
+        if (!existing) {
+          byBaseId.set(n.id, n);
+        } else {
+          const nYear = typeof n.props.year === 'object' ? n.props.year?.low : (n.props.year ?? 0);
+          const eYear = typeof existing.props.year === 'object' ? existing.props.year?.low : (existing.props.year ?? 0);
+          const nQ = typeof n.props.quarter === 'number' ? n.props.quarter : parseInt(String(n.props.quarter ?? '0').replace(/\D/g, ''), 10) || 0;
+          const eQ = typeof existing.props.quarter === 'number' ? existing.props.quarter : parseInt(String(existing.props.quarter ?? '0').replace(/\D/g, ''), 10) || 0;
+          if (Number(nYear) > Number(eYear) || (Number(nYear) === Number(eYear) && nQ > eQ)) {
+            byBaseId.set(n.id, n);
+          }
+        }
+      }
+      const deduped = Array.from(byBaseId.values());
+      if (deduped.length > 0) nodesByType.set(key, deduped);
+    } else {
+      // Exact year/quarter match for measurement nodes
+      const filtered = nodes.filter(n => {
+        const nodeYear = typeof n.props.year === 'object' ? n.props.year?.low : n.props.year;
+        const nq = n.props.quarter ?? null;
+        const nodeQ = typeof nq === 'number' ? nq : (typeof nq === 'string' ? parseInt(nq.replace(/\D/g, ''), 10) || null : null);
+        const yearOk = !nodeYear || !year || Number(nodeYear) === year;
+        const quarterOk = !quarterNum || !nodeQ || nodeQ === quarterNum;
+        return yearOk && quarterOk;
+      });
+      if (filtered.length > 0) nodesByType.set(key, filtered);
+    }
+  }
+
+  // DIAGNOSTIC: cap vs risk mismatch check
+  {
+    const capNodes = nodesByType.get('capabilities') || [];
+    const riskNodes = nodesByType.get('risks') || [];
+    const capIds = new Set(capNodes.map(n => n.id));
+    const riskIds = new Set(riskNodes.map(n => n.id));
+    const capsWithoutRisk = [...capIds].filter(id => !riskIds.has(id));
+    const risksWithoutCap = [...riskIds].filter(id => !capIds.has(id));
+    console.log(`[DIAG] caps=${capIds.size} risks=${riskIds.size} capsWithoutRisk=${capsWithoutRisk.length}:`, capsWithoutRisk, `risksWithoutCap=${risksWithoutCap.length}:`, risksWithoutCap);
+    // Show levels for missing
+    const capLevels = capsWithoutRisk.map(id => { const n = capNodes.find(c => c.id === id); return `${id}(${n?.props?.level || '?'})`; });
+    const riskLevels = risksWithoutCap.map(id => { const n = riskNodes.find(r => r.id === id); return `${id}(${n?.props?.level || '?'})`; });
+    console.log(`[DIAG] capsWithoutRisk levels:`, capLevels, 'risksWithoutCap levels:', riskLevels);
+    // Check allNodesByType before filtering
+    const allCapIds = new Set((allNodesByType.get('capabilities') || []).map(n => n.id));
+    const allRiskIds = new Set((allNodesByType.get('risks') || []).map(n => n.id));
+    const allCapsNoRisk = [...allCapIds].filter(id => !allRiskIds.has(id));
+    console.log(`[DIAG] ALL (pre-filter) caps=${allCapIds.size} risks=${allRiskIds.size} capsWithoutRisk=${allCapsNoRisk.length}:`, allCapsNoRisk);
+    // Show risk level distribution
+    const riskByLevel: Record<string, number> = {};
+    for (const n of riskNodes) { const lv = n.props?.level || 'none'; riskByLevel[lv] = (riskByLevel[lv] || 0) + 1; }
+    console.log(`[DIAG] risk level distribution:`, riskByLevel);
+    // Show ALL policyTool nodes with id, name, level
+    const ptNodes = nodesByType.get('policyTools') || [];
+    console.log(`[DIAG] policyTools count=${ptNodes.length}`);
+    for (const pt of ptNodes) {
+      console.log(`[DIAG] policyTool id=${pt.id} level=${pt.props?.level} name=${pt.props?.name}`);
+    }
   }
 
   // 3. Downstream exposure: which nodes have upstream reds cascading into them

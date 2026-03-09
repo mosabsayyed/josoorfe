@@ -1,8 +1,8 @@
 {
   "hero": {
     "title": "JOSOOR",
-    "subtitle": "Decision Intelligence",
-    "subtitleEn": "Decision Intelligence",
+    "subtitle": "Transformation Intelligence",
+    "subtitleEn": "Transformation Intelligence",
     "sectors": "Operating System for the Public Sector",
     "badge": "Delivery at the Speed of Ambition\nVision 2030",
     "pitchLabel": "The Challenge:",
@@ -30,7 +30,7 @@
         "label": "Entities for\nDependencies"
       }
     ],
-    "intelligenceTitle": "Decision Bridge",
+    "intelligenceTitle": "Data to Decisions Bridge",
     "intelligenceDesc": "Rapid analysis of complex relations, enriched with context",
     "trust": [
       {
@@ -46,8 +46,9 @@
         "label": "Auditability &\nExplainability"
       }
     ],
-    "trustTitle": "Trust Bridge",
-    "trustDesc": "Consistent outputs you can depend on and trace in full"
+    "trustTitle": "Intent to Trust Bridge",
+    "trustDesc": "Consistent outputs you can depend on and trace in full",
+    "middleTagline": "Building the bridges from Strategy to Execution, one bridge at a time."
   },
   "nav": {
     "links": [
@@ -61,28 +62,25 @@
     "logo": "JOSOOR"
   },
   "aitoia": {
-    "tag": "The Reality Check",
-    "title": "90% of GenAI Pilots Fail",
+    "tag": "The Challenge",
+    "title": "Over 50% of Enterprises fail in AI adoption",
     "subtitle": "Don't start your AI project before establishing the success factors",
-    "challengeSubtitle": "You've seen the destination. But how do you get there when the odds are not favorable?",
+    "challengeSubtitle": "How can AI adoption in Enterprises scale with such unfavorable odds?",
     "aiTitle": "Artificial Intelligence Solo ...",
     "aiSubtitle": "Unreliable Decision Inputs",
-    "aiItems": [
-      {
-        "strong": "Why They Fail",
-        "desc": "Old data silos combined with probabilistic models lead to hallucinations and dead-ends."
-      },
-      {
-        "strong": "The Hesitation",
-        "desc": "Highly regulated sectors are right to be cautious. A wrong move at scale is costly."
-      },
-      {
-        "strong": "The Need for Architecture",
-        "desc": "Without structural groundwork, AI is just a feature, not a foundation."
-      }
+    "reasonsTitle": "Why AI Projects Fail¹",
+    "reasons": [
+      "Data is not ready - Years of silos, both structured and unstructured",
+      "Lack of business value - Chasing the hype vs solving business problems",
+      "Escalating total cost of ownership - Underestimating running investments",
+      "Poor change management - AI is still viewed as a replacement tool",
+      "Responsible AI is an afterthought - causing incidents that erode credibility"
     ],
-    "innovationTag": "The Approach",
-    "innovationTitle": "Writing the Book on AI Transformations in the Saudi Public Sector",
+    "consequenceTitle": "The Dilemma",
+    "consequence": "Ignoring AI means falling behind. Adopting it without structure means unmanaged risk. The question isn't whether to act — but how.",
+    "footnote": "¹ Gartner, 2026",
+    "innovationTag": "Our Approach",
+    "innovationTitle": "Writing the Book for Public Sector AI",
     "innovationSubtitle": "We architect solutions tailored to your reality. Your first step is to contact us below to define the most suited plan for your situation.",
     "phaseTag": "JOSOOR Phase 1",
     "iaTitle": "Intelligent Systems Architecture ...",
@@ -191,23 +189,60 @@
       }
     ]
   },
+  "nonoise": {
+    "title": "No Noise.. One Continuous Signal",
+    "subtitle": "Future Enterprises will be defined per how strong their Operating System."
+  },
   "platform": {
     "tag": "The Platform",
-    "title": "No Noise.. One Continuous Signal",
-    "subtitle": "One Reference Loop. The key to integrating enterprise governance with agent workflows",
+    "title": "Observe · Decide · Deliver",
+    "subtitle": "Three modes. One continuous loop. The operating system for your enterprise.",
     "dashboard": "Dashboard",
     "modes": [
       {
-        "title": "Observe — Are our priorities on track?",
+        "title": "Observe — What is the % of priorities aligned to strategy?",
         "desc": ""
       },
       {
-        "title": "Decide — Are we highly efficient in addressing foreseen obstacles?",
+        "title": "Decide — What % of addressed obstacles were foreseen?",
         "desc": ""
       },
       {
-        "title": "Deliver — Are decisions applied with discipline?",
+        "title": "Deliver — What % of our executive decisions are impactful?",
         "desc": ""
+      }
+    ]
+  },
+  "platformCarousel": {
+    "osTag": "The OS",
+    "osTitle": "One Desktop. Every Capability.",
+    "osSubtitle": "Boot into a unified command center — ontology, sectors, and intelligence at your fingertips.",
+    "cycleTag": "Integrated Decision Making",
+    "cycleTitle": "Observe · Decide · Deliver",
+    "cycleSubtitle": "One Reference Loop. The key to integrating enterprise governance with agent workflows",
+    "diffTag": "Beyond Expectations",
+    "diffTitle": "Built Different. Built Here.",
+    "diffSubtitle": "Four unchallengeable advantages no competitor can claim.",
+    "differentiators": [
+      {
+        "title": "Public Sector Arabic",
+        "desc": "Built for Arabic-first government. Beyond RTL, with JOSOOR's KSA Glossary of terms your reports are ready to ship.",
+        "stat": "100% Arabic"
+      },
+      {
+        "title": "Sovereign",
+        "desc": "JOSOOR is modular and can work across any spectrum of sovereignty from full local to hybrid remotes. You decide.",
+        "stat": "On-Soil"
+      },
+      {
+        "title": "Vision Database",
+        "desc": "Our AIs have access to all PA Vision Data — beyond sourcing data, navigate cross-sector dependencies and opportunities.",
+        "stat": "285+ Nodes"
+      },
+      {
+        "title": "AI-In-The-Loop",
+        "desc": "JOSOOR ensures AIs are surgically used, equipped with a rich set of tools, and is always Human-Gated.",
+        "stat": "Human-First"
       }
     ]
   },
@@ -342,6 +377,34 @@
       "sigHealth": "Health",
       "sigHealthDesc": "Culture Pulse"
     }
+  },
+  "saudiMap": {
+    "tag": "Why Josoor",
+    "title": "Built Different. Built Here.",
+    "subtitle": "Three unchallengeable advantages no competitor can claim.",
+    "block1Title": "Arabic-Native",
+    "block1Desc": "Built for Arabic-first government. RTL by design, not by patch.",
+    "block1Stat": "100% Arabic",
+    "block2Title": "Sovereign",
+    "block2Desc": "Your data stays in KSA. On-premise or local cloud. Zero foreign dependency.",
+    "block2Stat": "On-Soil",
+    "block3Title": "Vision Database",
+    "block3Desc": "KSA's first public-sector ontology — a living model of Vision 2030.",
+    "block3Stat": "285+ Nodes"
+  },
+  "phasedApproach": {
+    "tag": "The Journey",
+    "title": "From Assessment to Impact in 90 Days",
+    "subtitle": "A proven, tailorable engagement model. No 18-month integration.",
+    "phase1Label": "Assess",
+    "phase1Desc": "Assess Data Landscape, tailor Ontology, define UC-001",
+    "phase2Label": "Ingest",
+    "phase2Desc": "Ingest Data, build Prompts, publish to closed group",
+    "phase3Label": "Launch",
+    "phase3Desc": "Launch to broader audience, collect feedback",
+    "phase4Label": "Recommend",
+    "phase4Desc": "Recommendations on Roadmap — High Impact Use Cases",
+    "closingLine": "Starts in weeks, not months."
   },
   "beta": {
     "tag": "Beta Launch",
@@ -1552,10 +1615,10 @@
       "welcomeTitle": "Welcome, I am Noor",
       "welcomeSubtitle": "Your AI guide to cognitive transformation",
       "tryExamples": "Try these examples:",
-      "exampleTransformation": "How is the transformation progressing to date?",
-      "exampleCapabilities": "List the most mature capabilities by organisational units",
-      "exampleReport": "Generate Q3 Projects Report for 2025",
-      "exampleGovernance": "What is the governance framework for the agency?",
+      "exampleTransformation": "Which active projects are behind schedule and by how many days?",
+      "exampleCapabilities": "What capabilities have the lowest maturity levels and who owns them?",
+      "exampleReport": "Show me all risks currently in red status with their mitigation strategies",
+      "exampleGovernance": "Which strategic goals are off track based on current performance data?",
       "exportReport": "Export Report",
       "shareView": "Share View",
       "replayTour": "Replay Tour",
@@ -1782,5 +1845,147 @@
         "columnAnalysisTitle": "Column Analysis"
       }
     }
-  }
+  },
+  "ont_node_sectorObjectives": "Sector Objectives",
+  "ont_node_policyTools": "Policy Execution Tools",
+  "ont_node_adminRecords": "Admin Records",
+  "ont_node_dataTransactions": "Data Transactions",
+  "ont_node_performance": "Performance",
+  "ont_node_risks": "Risks",
+  "ont_node_riskPlans": "Risk Plans",
+  "ont_node_cultureHealth": "Culture Health",
+  "ont_node_capabilities": "Capabilities",
+  "ont_node_orgUnits": "Org Units",
+  "ont_node_processes": "Processes",
+  "ont_node_itSystems": "IT Systems",
+  "ont_node_vendors": "Vendors",
+  "ont_node_projects": "Projects",
+  "ont_node_changeAdoption": "Change Adoption",
+  "ont_col_goals": "Strategic Goals",
+  "ont_col_sector": "Sector Outputs",
+  "ont_col_health": "Risk & Compliance",
+  "ont_col_capacity": "Organizational Capacity",
+  "ont_col_velocity": "Transformation Progress",
+  "ont_header_goals": "Goals",
+  "ont_header_sector": "Sector Outputs",
+  "ont_header_health": "Health",
+  "ont_header_capacity": "Capacity",
+  "ont_header_velocity": "Velocity",
+  "ont_line_role_gaps": "ROLE_GAPS",
+  "ont_line_operates": "OPERATES",
+  "ont_line_knowledge_gaps": "KNOWLEDGE_GAPS",
+  "ont_line_operates_2": "OPERATES",
+  "ont_line_automation_gaps": "AUTOMATION_GAPS",
+  "ont_line_operates_3": "OPERATES",
+  "ont_line_monitored_by": "MONITORED_BY",
+  "ont_line_gaps_scope": "GAPS_SCOPE",
+  "ont_line_close_gaps": "CLOSE_GAPS",
+  "ont_line_depends_on": "DEPENDS_ON",
+  "ont_line_apply": "APPLY",
+  "ont_line_refers_to": "REFERS_TO",
+  "ont_line_applied_on": "APPLIED_ON",
+  "ont_line_informs": "INFORMS",
+  "ont_line_adoption_risks": "ADOPTION_RISKS",
+  "ont_line_increase_adoption": "INCREASE_ADOPTION",
+  "ont_line_cascaded_via": "CASCADED_VIA",
+  "ont_line_aggregates_to": "AGGREGATES_TO",
+  "ont_line_realized_via": "REALIZED_VIA",
+  "ont_line_governed_by": "GOVERNED_BY",
+  "ont_line_triggers_event": "TRIGGERS_EVENT",
+  "ont_line_measured_by": "MEASURED_BY",
+  "ont_line_sets_priorities": "SETS_PRIORITIES",
+  "ont_line_sets_targets": "SETS_TARGETS",
+  "ont_line_monitors_for": "MONITORS_FOR",
+  "ont_line_automation": "AUTOMATION",
+  "ont_line_has_plan": "HAS_PLAN",
+  "ont_loading_data": "Loading data...",
+  "ont_found": "found",
+  "ont_failed": "failed",
+  "ont_analyze": "Analyze",
+  "ont_ai_report": "AI Report",
+  "ont_sector_dashboard_overview": "SECTOR DASHBOARD — OVERVIEW",
+  "ont_period": "Period: {{period}}",
+  "ont_status_summary_by_domain": "STATUS SUMMARY BY DOMAIN:",
+  "ont_domain_status": "  {{colName}}: {{green}} on track | {{amber}} at risk | {{red}} critical",
+  "ont_summary": "Summary",
+  "ont_critical_items": "CRITICAL ITEMS:",
+  "ont_at_risk_items": "AT-RISK ITEMS:",
+  "ont_none": "  None",
+  "ont_value_chain_integrity": "VALUE CHAIN INTEGRITY:",
+  "ont_chain_health": "  {{key}}: {{status}} ({{orphans}} disconnected, {{bastards}} broken links)",
+  "ont_executive_prompt": "Based on this data, produce a comprehensive executive report on sector health: where are the biggest exposures? What are the top 3 urgent priorities this quarter? And what is the minister-level summary?",
+  "ont_sector_analysis": "{{colName}} — SECTOR ANALYSIS",
+  "ont_status_distribution": "STATUS DISTRIBUTION:",
+  "ont_distribution_detail": "  On Track: {{green}} | At Risk: {{amber}} | Critical: {{red}}",
+  "ont_status_critical": "CRITICAL",
+  "ont_status_at_risk": "AT RISK",
+  "ont_status_on_track": "ON TRACK",
+  "ont_items_total": "ITEMS ({{count}} total):",
+  "ont_and_more": "  ... and {{count}} more",
+  "ont_column_prompt": "Based on this data, analyze \"{{colName}}\": what is its current standing? What are the key issues? What dependencies affect it? And what are the actionable recommendations?",
+  "ont_micro_category": "Category: {{label}} | Status: {{status}} | Total: {{count}} | Critical: {{redCount}} | At Risk: {{amberCount}}",
+  "ont_micro_top_issues": "Top issues in {{label}}: {{items}}",
+  "ont_micro_item": "Item: {{target}}",
+  "ont_micro_item_detail": "Item: {{name}} | ID: {{id}} | Status: {{rag}} | Depends on: {{upLinks}} | Affects: {{downLinks}}",
+  "ont_micro_none": "none",
+  "ont_top_issues": "Top Issues",
+  "ont_analyzing": "Analyzing...",
+  "ont_sector_status_report": "Sector Status Report",
+  "ont_analysis_failed": "Analysis failed",
+  "ont_micro_failed": "Failed",
+  "ont_view_risks": "→ View Risks",
+  "ont_affected": "Affected",
+  "ont_clear": "clear",
+  "ont_affected_lower": "affected",
+  "ont_health_rate": "Health rate",
+  "ont_healthy": "healthy",
+  "ont_watch": "watch",
+  "ont_critical": "critical",
+  "ont_operate_risks": "operate risks",
+  "ont_build_risks": "build risks",
+  "ont_no_data_available": "No data available",
+  "ont_status_caused_by": "Status caused by {{riskType}}",
+  "ont_needs_attention": "{{count}} of {{total}} need immediate attention",
+  "ont_items_at_risk": "{{count}} items at risk — monitor closely",
+  "ont_operating_normally": "{{green}} of {{total}} operating normally",
+  "ont_impact_cascade": "\"{{name}}\" impacts {{impact}} downstream KPIs — unresolved, this will cascade across sector outputs",
+  "ont_urgent_review": "\"{{name}}\" requires urgent review",
+  "ont_operations_disrupted": "Operations disrupted",
+  "ont_performance_declining": "Performance declining",
+  "ont_delivery_delayed": "Delivery delayed",
+  "ont_timeline_at_risk": "Timeline at risk",
+  "ont_pct_of_target": "{{pct}}% of target",
+  "ont_pct_progress": "{{pct}}% progress",
+  "ont_needs_intervention": "Needs intervention",
+  "ont_monitor": "Monitor",
+  "ont_affected_by": "Affected by",
+  "ont_items_affected_operate": "Items affected by operate risks",
+  "ont_items_affected_build": "Items affected by build risks",
+  "ont_priority_list": "Priority List",
+  "ont_analyze_top_priorities": "Analyze top priorities",
+  "ont_hide": "Hide",
+  "ont_more_items": "+{{count}} more items",
+  "ont_build_risks_label": "Build Risks",
+  "ont_operate_risks_label": "Operate Risks",
+  "ont_no_data": "No data",
+  "ont_all_items": "All Items ({{count}})",
+  "ont_total": "Total",
+  "ont_ok": "OK",
+  "ont_attention": "Attention",
+  "ont_investigate_enterprise": "Investigate in Enterprise Desk",
+  "ont_ask_ai_advisor": "Ask AI Advisor",
+  "ont_no_data_for_node": "No data available for this node",
+  "ont_connection_health": "Connection Health",
+  "ont_calculation": "Calculation",
+  "ont_unlinked": "unlinked",
+  "ont_from_no_dest": "{{count}} {{fromLbl}} with no destination + {{bastards}} {{toLbl}} with no source",
+  "ont_threshold_rule": "0% = green · ≤15% = amber · >15% = red",
+  "ont_from_not_reaching": "{{fromLbl}} not reaching {{toLbl}} ({{count}})",
+  "ont_to_not_fed": "{{toLbl}} not fed by {{fromLbl}} ({{count}})",
+  "ont_all_connected": "All elements are properly connected",
+  "ont_top_3_priorities": "Top 3 Priorities",
+  "ont_item_detail": "Item Detail",
+  "ont_micro_landscape_prompt": "In 3-4 short bullets: Why is {{label}} in this state? What is the single biggest risk right now? What should be done first?",
+  "ont_micro_block1_prompt": "In 3-4 short bullets: What connects these top issues? Which one, if fixed, would improve the others? What is the recommended sequence of action?",
+  "ont_micro_item_prompt": "In 3-4 short bullets: Why is \"{{name}}\" flagged? What upstream dependencies are causing this? What is the downstream impact if left unresolved? What is the one action to take now?"
 }
