@@ -296,7 +296,7 @@ export default function LandingPage() {
 
       #background-image {
         position: absolute;
-        top: 85vh; /* Push vector down below hero */
+        top: 0;
         left: 50%;
         transform: translateX(-50%) scaleY(0.5); /* Keep full width, reduce height by 50% */
         width: 1278px;
@@ -310,6 +310,7 @@ export default function LandingPage() {
         position: relative;
         z-index: 1;
         padding-top: 0;
+        overflow: hidden;
       }
 
       /* ── AI → IA scroll animation section ── */
@@ -347,7 +348,7 @@ export default function LandingPage() {
         box-shadow: 0 30px 60px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.2);
         display: flex;
         flex-direction: column;
-        padding: clamp(20px, 4vw, 50px) clamp(16px, 4vw, 60px);
+        padding: clamp(12px, 2vw, 24px) clamp(16px, 4vw, 60px);
       }
 
       .aitoia-glass * { margin: 0; padding: 0; }
@@ -486,7 +487,7 @@ export default function LandingPage() {
       }
       .challenge-reasons ol li {
         counter-increment: reason;
-        font-size: 20px;
+        font-size: 16px;
         line-height: 1.5;
         color: var(--component-text-secondary);
         padding: 10px 0;
@@ -534,10 +535,21 @@ export default function LandingPage() {
       @media (max-width: 768px) {
         .challenge-columns {
           grid-template-columns: 1fr;
-          gap: 20px;
+          gap: 16px;
+        }
+        .challenge-col {
+          padding: 20px 16px;
+        }
+        .challenge-col h3 {
+          font-size: 18px;
+          margin-bottom: 12px;
+        }
+        .challenge-reasons ol li {
+          font-size: 14px;
+          padding: 8px 0;
         }
         .challenge-consequence p {
-          font-size: 18px;
+          font-size: 16px;
         }
       }
 
@@ -875,6 +887,14 @@ export default function LandingPage() {
           padding: 0.75rem 0.5rem;
         }
 
+        .hero-box-title {
+          font-size: 13px;
+        }
+
+        .hero-box-desc {
+          font-size: 10px;
+        }
+
         .landing-page h1 {
           font-size: 24px;
         }
@@ -940,6 +960,31 @@ export default function LandingPage() {
         .architecture-callouts {
           grid-template-columns: 1fr;
           gap: 20px;
+        }
+
+        .aitoia-glass {
+          width: 95vw;
+          padding: 14px 10px;
+        }
+
+        .aitoia-header h2 {
+          font-size: 22px;
+        }
+
+        .challenge-col {
+          padding: 14px 12px;
+        }
+
+        .challenge-col h3 {
+          font-size: 16px;
+        }
+
+        .challenge-reasons ol li {
+          font-size: 13px;
+        }
+
+        .challenge-consequence p {
+          font-size: 15px;
         }
       }
 
@@ -1079,9 +1124,8 @@ export default function LandingPage() {
 
       <Hero content={content.hero} language={language} />
 
-      <img id="background-image" src="/att/landing-screenshots/Vector.svg" alt="" />
-
       <div id="main-content">
+        <img id="background-image" src="/att/landing-screenshots/Vector.svg" alt="" />
         {/* Section 2-3: Reality Check + The Approach (scroll crossfade) */}
         <AItoIA language={language} />
 

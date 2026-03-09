@@ -183,7 +183,7 @@ function ControlOutcomes({ archiveCollapsed, setArchiveCollapsed }: { archiveCol
                   <div className="text-center">
                     <div className="node-label text-green">Intervention Decision</div>
                     <div className="metric-label">2025-12-15</div>
-                    <div className="text-slate-300 text-8px mt-0.5">Pause Project X</div>
+                    <div className="text-gray text-8px mt-0.5">Pause Project X</div>
                   </div>
                 </div>
 
@@ -388,8 +388,8 @@ function ControlOutcomes({ archiveCollapsed, setArchiveCollapsed }: { archiveCol
               <div className="text-gray text-8px leading-relaxed">
                 Distribution requires executive review
               </div>
-              <div className="mt-2 pt-2 border-t border-[rgba(148,163,184,0.2)]">
-                <div className="text-slate-500 text-7px normal">
+              <div className="mt-2 pt-2 border-t" style={{ borderColor: 'var(--component-panel-border)' }}>
+                <div className="text-label text-7px normal">
                   Feeds to Control Signals
                 </div>
               </div>
@@ -678,18 +678,18 @@ function StandardReports({ archiveCollapsed, setArchiveCollapsed }: { archiveCol
                 </div>
                 <div className="narrative-box">
                   <p>
-                    <strong className="text-slate-200">Performance Trend:</strong> Plant Operations
+                    <strong style={{ color: 'var(--component-text-primary)' }}>Performance Trend:</strong> Plant Operations
                     capability demonstrated significant improvement following the Q4 2025 intervention
                     to pause Project X. Risk exposure decreased from 62% to 38%, and operational load
                     reduced from 5 to 3 active projects.
                   </p>
                   <p>
-                    <strong className="text-slate-200">Areas of Concern:</strong> Distribution
+                    <strong style={{ color: 'var(--component-text-primary)' }}>Areas of Concern:</strong> Distribution
                     Management remains overloaded with persistent process gaps. This structural issue
                     requires strategic reset consideration in the annual planning cycle.
                   </p>
                   <p>
-                    <strong className="text-slate-200">Recommendations:</strong> Continue monitoring
+                    <strong style={{ color: 'var(--component-text-primary)' }}>Recommendations:</strong> Continue monitoring
                     Plant Operations in OPERATE mode. Initiate intervention planning for Distribution
                     capability before Q2 2026. Escalate Policy Tool PT-03 effectiveness to ministerial
                     review.

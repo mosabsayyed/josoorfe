@@ -561,29 +561,66 @@ export default function StrategyHouse({ content }: StrategyHouseProps) {
           }
 
           .sh-temple {
-            min-height: 380px;
-            padding: 1.5rem 1rem 1rem;
+            min-height: 300px;
+            padding: 1.25rem 0.75rem 0.75rem;
+          }
+
+          .sh-pediment-wrap {
+            width: 90%;
+          }
+
+          .sh-entablature {
+            width: 92%;
+          }
+
+          .sh-pillars {
+            width: 90%;
+            gap: 8px;
           }
 
           .sh-pillar-shaft {
-            height: 100px;
+            height: 80px;
           }
 
           .sh-pillar-label {
             font-size: 9px;
+            padding: 6px 2px 0;
+          }
+
+          .sh-detail {
+            padding: 1rem;
           }
 
           .sh-detail-content {
-            padding: 1.5rem;
+            padding: 1rem;
+          }
+
+          .sh-layer-number {
+            font-size: 36px;
           }
 
           .sh-detail-title {
-            font-size: 22px;
+            font-size: 20px;
           }
 
           .sh-detail-desc {
-            font-size: 16px;
-            line-height: 1.8;
+            font-size: 15px;
+            line-height: 1.7;
+          }
+
+          .sh-compat {
+            flex-direction: column;
+            gap: 8px;
+            padding: 10px 12px;
+          }
+
+          .sh-compat-logos {
+            gap: 12px;
+            padding: 6px 12px;
+          }
+
+          .sh-compat-logos img {
+            height: 20px;
           }
         }
       `}</style>

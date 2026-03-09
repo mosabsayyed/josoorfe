@@ -100,7 +100,7 @@ export default function BetaForm({ content, language }: BetaFormProps) {
                 required
                 style={{
                   width: '100%',
-                  padding: '11px 14px',
+                  padding: '14px 14px',
                   border: '1px solid rgba(255, 255, 255, 0.06)',
                   borderRadius: '8px',
                   background: 'var(--bg-primary, #111827)',
@@ -126,7 +126,7 @@ export default function BetaForm({ content, language }: BetaFormProps) {
                 required
                 style={{
                   width: '100%',
-                  padding: '11px 14px',
+                  padding: '14px 14px',
                   border: '1px solid rgba(255, 255, 255, 0.06)',
                   borderRadius: '8px',
                   background: 'var(--bg-primary, #111827)',
@@ -161,7 +161,7 @@ export default function BetaForm({ content, language }: BetaFormProps) {
                 onChange={handleInputChange}
                 style={{
                   width: '100%',
-                  padding: '11px 14px',
+                  padding: '14px 14px',
                   border: '1px solid rgba(255, 255, 255, 0.06)',
                   borderRadius: '8px',
                   background: 'var(--bg-primary, #111827)',
@@ -184,7 +184,7 @@ export default function BetaForm({ content, language }: BetaFormProps) {
                 onChange={handleInputChange}
               style={{
                 width: '100%',
-                padding: '11px 14px',
+                padding: '14px 14px',
                 border: '1px solid rgba(255, 255, 255, 0.06)',
                 borderRadius: '8px',
                 background: 'var(--bg-primary, #111827)',

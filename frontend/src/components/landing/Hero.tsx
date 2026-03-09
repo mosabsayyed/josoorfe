@@ -67,7 +67,7 @@ function HeroBox({ item, boxSize, isMobile, shimmer }: { item: { figure: string;
         alignItems: 'center',
         justifyContent: 'center',
         textAlign: 'center',
-        fontSize: isMobile ? '13px' : 'clamp(13px, 1.5vw, 16px)',
+        fontSize: isMobile ? '11px' : 'clamp(13px, 1.5vw, 16px)',
         fontWeight: 600,
         lineHeight: 1.3,
         color: 'rgba(244, 187, 48, 0.85)',
@@ -93,7 +93,7 @@ function HeroBox({ item, boxSize, isMobile, shimmer }: { item: { figure: string;
         transition: 'opacity 0.3s ease, transform 0.3s ease',
       }}>
         <span style={{
-          fontSize: isMobile ? '28px' : 'clamp(28px, 4vw, 42px)',
+          fontSize: isMobile ? '24px' : 'clamp(28px, 4vw, 42px)',
           fontWeight: 800,
           color: '#F4BB30',
           lineHeight: 1,
@@ -191,7 +191,7 @@ export default function Hero({ content, language }: HeroProps) {
             </h2>
             <h1 style={{
               fontFamily: 'inherit',
-              fontSize: 'clamp(26px, 5vw, 60px)',
+              fontSize: isMobile ? 'clamp(22px, 6vw, 32px)' : 'clamp(26px, 5vw, 60px)',
               fontWeight: 800,
               color: 'var(--text-primary, #f8f8f8)',
               lineHeight: '1.1',
@@ -211,7 +211,7 @@ export default function Hero({ content, language }: HeroProps) {
           </div>
 
           {/* ── Middle tagline ── */}
-          <div style={{ height: '200px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ height: isMobile ? '100px' : '200px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <p style={{
               fontSize: 'clamp(16px, 2.5vw, 22px)',
               fontWeight: 500,
@@ -233,7 +233,7 @@ export default function Hero({ content, language }: HeroProps) {
               { items: content.intelligence ?? [], startIdx: 0, title: content.intelligenceTitle, desc: content.intelligenceDesc },
               { items: content.trust ?? [], startIdx: content.intelligence?.length || 0, title: content.trustTitle, desc: content.trustDesc },
             ].map((group, gi) => {
-              const boxSize = isMobile ? '96px' : 'clamp(96px, 10vw, 130px)';
+              const boxSize = isMobile ? 'clamp(76px, 22vw, 96px)' : 'clamp(96px, 10vw, 130px)';
               return (
                 <div key={gi} style={{
                   border: '1px solid rgba(244, 187, 48, 0.2)',
@@ -295,13 +295,13 @@ export default function Hero({ content, language }: HeroProps) {
                   width: '1px',
                   height: '18px',
                   background: 'rgba(255, 255, 255, 0.2)',
-                  margin: '0 20px',
+                  margin: isMobile ? '0 10px' : '0 20px',
                   display: 'inline-block',
                   verticalAlign: 'middle',
                 }} />
               )}
               <span style={{
-                fontSize: 'clamp(12px, 1.5vw, 14px)',
+                fontSize: isMobile ? '11px' : 'clamp(12px, 1.5vw, 14px)',
                 fontWeight: 600,
                 color: 'rgba(244, 187, 48, 0.8)',
                 letterSpacing: '0.06em',

@@ -12,8 +12,8 @@
       --h1-line-height: 84px;
       --h2-font-size: 48px;
       --h2-line-height: 54px;
-      --p-font-size: 28px;
-      --p-line-height: 44px;
+      --p-font-size: 32px;
+      --p-line-height: 50px;
       --intro1-h1-font-size: 58px;
       --intro1-h1-line-height: 66px;
     }
@@ -67,7 +67,11 @@
     .phase-overlay .phase-text-block[data-key="intro-1"] h1 { font: 400 58px/66px "Allerta Stencil", sans-serif; color: #ffffff; text-shadow: 0 0 3px rgba(255,255,255,0.544), 0 0 18px rgba(76,201,255,0.544), 0 0 40px rgba(76,201,255,0.52), 0 0 84px rgba(30,144,255,0.488), 0 0 140px rgba(14,110,253,0.462); }
     .phase-overlay .phase-text-block[data-key="p89-future"] h1 { font: 400 72px/84px "Allerta Stencil", sans-serif; color: #ffffff; text-shadow: 0 0 3px rgba(255,255,255,0.544), 0 0 18px rgba(76,201,255,0.544), 0 0 40px rgba(76,201,255,0.52), 0 0 84px rgba(30,144,255,0.488), 0 0 140px rgba(14,110,253,0.462); }
     .phase-overlay .phase-text-block h2 { font: 400 44px/52px "Allerta Stencil", sans-serif; margin: 0 0 24px; text-transform: uppercase; letter-spacing: 1.3px; color: #F4BB30; text-shadow: 0 0 2px rgba(244,187,48,0.5), 0 0 12px rgba(244,187,48,0.3), 0 0 28px rgba(244,187,48,0.15); }
-    .phase-overlay .phase-text-block p  { font-weight: 300; margin: 0; font-size: 24px; line-height: 40px; }
+    .phase-overlay .phase-text-block p  { font-weight: 300; margin: 0; font-size: var(--p-font-size, 28px); line-height: var(--p-line-height, 44px); }
+    .phase-overlay .phase-text-block p em { font-style: normal; color: #F4BB30; font-weight: 500; }
+    .phase-overlay .phase-text-block ul { list-style: none; padding: 0; margin: 16px 0 0; }
+    .phase-overlay .phase-text-block ul li { position: relative; padding-left: 24px; margin-bottom: 12px; font-size: var(--p-font-size, 28px); line-height: var(--p-line-height, 44px); font-weight: 300; }
+    .phase-overlay .phase-text-block ul li::before { content: "—"; position: absolute; left: 0; color: #F4BB30; font-weight: 700; }
     .phase-text-block.active { z-index: 2; visibility: visible; }
     .phase-viewport { position: relative; overflow: visible; height: 600px; }
   @media (prefers-reduced-motion: reduce) { .phase-text-block { transition: none !important; } .phase-text-block.leaving { transition: none !important; } }
@@ -266,23 +270,30 @@
       <div class="overlay-inner">
         <div class="phase-text-block" data-key="intro-1">
           <h2>The Invisible Problem</h2>
-          <p>Every entity I worked with across KSA’s public sector faced the same invisible problem. Strategy lived in one system. Operations in another. Risks in a third. Projects in a fourth. And between them — nothing. No connections. No shared language. Decisions made in isolation, consequences discovered too late.</p>
+          <p>Every entity I worked with across KSA’s public sector faced the same invisible problem. Strategy lived in one system. Operations in another. Risks in a third. Projects in a fourth. And between them — <em>nothing</em>. No connections. No shared language. Decisions made in isolation, consequences discovered too late.</p>
         </div>
         <div class="phase-text-block" data-key="intro-3">
           <h2>Complexity Is Not the Enemy</h2>
-          <p>The usual answer is to simplify. Strip it down. Build a dashboard. Summarize it into a slide. But simplification destroys the very signals you need. Complexity is not the problem — it is the richest source of institutional intelligence in the Kingdom. The real question was never how to escape it, but how to navigate it with confidence.</p>
+          <p>The usual answer is to simplify. Strip it down. Build a dashboard. Summarize it into a slide. But simplification destroys the very signals you need. <em>Complexity is not the problem</em> — it is the richest source of institutional intelligence in the Kingdom. The real question was never how to escape it, but how to <em>navigate it with confidence</em>.</p>
         </div>
         <div class="phase-text-block" data-key="p4-hidden">
           <h2>Two Years of Patterns</h2>
-          <p>For two years across KSA’s public sector, I kept observing the same structural gaps causing the same failures. A KPI target disconnected from the capability meant to deliver it. A risk no one owned because it fell between two departments. A project green on every report but silently draining the wrong resources. Patterns that recurred across entities, sectors, and mandates — hiding in plain sight.</p>
+          <p>For two years across KSA’s public sector, I kept observing the same structural gaps causing the same failures:</p>
+          <ul>
+            <li>A KPI target <em>disconnected</em> from the capability meant to deliver it</li>
+            <li>A risk <em>no one owned</em> because it fell between two departments</li>
+            <li>A project green on every report but silently <em>draining the wrong resources</em></li>
+          </ul>
+          <p>Patterns that recurred across entities, sectors, and mandates — <em>hiding in plain sight</em>.</p>
         </div>
         <div class="phase-text-block" data-key="p56-where">
           <h2>The Moment Everything Converged</h2>
-          <p>Six months ago, I stepped away to make this real. GenAI had leaped. Cloud hosting was government-certified. The technology finally caught up to the problem. And when you build, things crystallize — what was abstract becomes operational, connections you theorized prove real. A valid use case anchored the foundations, and from there, everything grew.</p>
+          <p>Around the summer of 2025, I stepped away to make this real. GenAI had leaped. Cloud hosting was government-certified. <em>The technology finally caught up to the problem.</em> And when you build, things crystallize — what was abstract becomes operational, connections you theorized prove real.</p>
         </div>
         <div class="phase-text-block" data-key="p7-two-years">
           <h2>Why "Bridges"</h2>
-          <p>The first instinct was to build one bridge — strategy to execution. But every bridge revealed another gap. KPIs disconnected from the capabilities meant to deliver them. Risks with no owner because they fell between two departments. Projects green on paper, quietly draining the wrong resources. Not one bridge — many. Micro-bridges. What we now call relations. Hundreds of them, connecting every objective, capability, risk, and project into one living structure. That is JOSOOR — the Arabic word for bridges. A Decision Intelligence Operating System where nothing floats in isolation, and complexity becomes your most valuable institutional asset.</p>
+          <p>The first instinct was to build one bridge — strategy to execution. But every bridge revealed another gap. Not one bridge — <em>many</em>. Micro-bridges. What we now call <em>relations</em>. Hundreds of them, connecting every objective, capability, risk, and project into one living structure.</p>
+          <p style="margin-top: 20px;">That is <em>JOSOOR</em> — the Arabic word for bridges. A <em>Transformation Intelligence</em> Operating System where nothing floats in isolation, and complexity becomes your most valuable institutional asset.</p>
         </div>
         <div class="phase-text-block" data-key="p89-future">
           <h2>Phase 1: Intelligent Architectures</h2>

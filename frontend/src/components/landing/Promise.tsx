@@ -207,7 +207,7 @@ export default function Promise({ content }: PromiseProps) {
               alignItems: 'center',
               justifyContent: 'center',
               position: 'relative',
-              height: isMobile ? '520px' : '580px',
+              height: isMobile ? '440px' : '580px',
               perspective: '900px',
             }}
             onMouseEnter={() => setIsPaused(true)}
@@ -232,7 +232,7 @@ export default function Promise({ content }: PromiseProps) {
                     alt={persona.role}
                     style={{
                       width: '100%',
-                      height: isMobile ? '240px' : '260px',
+                      height: isMobile ? '180px' : '260px',
                       objectFit: 'cover',
                       objectPosition: 'center 20%',
                       filter: pos === 0 ? 'brightness(0.95) saturate(1)' : 'brightness(0.85) saturate(0.9)',
