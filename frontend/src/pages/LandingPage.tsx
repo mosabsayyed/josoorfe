@@ -445,6 +445,10 @@ export default function LandingPage() {
         border-right-color: var(--component-text-accent);
       }
 
+      [dir="rtl"] .challenge-reasons ol li {
+        font-size: 16px;
+      }
+
       /* ── Challenge 2-column layout ── */
       .challenge-columns {
         display: grid;
@@ -516,7 +520,6 @@ export default function LandingPage() {
         line-height: 1.8;
         font-weight: 400;
         color: var(--component-text-primary);
-        font-style: italic;
       }
 
       /* Footnote */
