@@ -90,6 +90,7 @@ verify_*.py
 !.agent/workflows/*.md
 !.agent/skills/**/SKILL.md
 !.agents/skills/**/SKILL.md
+!.claude/skills/**/*.md
 !.github/*.md
 
 # Files containing conversation history with embedded credentials

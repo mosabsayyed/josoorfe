@@ -428,7 +428,10 @@
     },
     "submitSuccess": "Application submitted",
     "errorSubmit": "Error submitting request. Please try again or contact support.",
-    "alertSuccess": "Application submitted! We will review and contact you within 48 hours."
+    "alertSuccess": "Application submitted! We will review and contact you within 48 hours.",
+    "errorDuplicate": "This email is already registered. We'll be in touch soon.",
+    "errorGeneric": "Something went wrong. Please try again or contact us directly.",
+    "submitting": "Submitting..."
   },
   "header": {
     "betaText": "Welcome to JOSOOR — Exclusively available to invited public sector entities",

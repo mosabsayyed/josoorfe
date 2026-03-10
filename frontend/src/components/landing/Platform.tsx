@@ -21,7 +21,7 @@ const WHEEL_SCREENSHOTS: string[][] = [
   ],
   /* Beyond Expectations */
   [
-    '/att/landing-screenshots/3_carousel/ar1.png',
+    '/att/landing-screenshots/3_carousel/ontologyar.jpg',
     '/att/landing-screenshots/3_carousel/ar2.png',
     '/att/landing-screenshots/3_carousel/ar3.png',
     '/att/landing-screenshots/3_carousel/ar4.png',

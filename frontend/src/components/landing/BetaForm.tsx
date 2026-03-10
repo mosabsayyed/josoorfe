@@ -17,14 +17,20 @@ export default function BetaForm({ content, language }: BetaFormProps) {
     role: ''
   });
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [error, setError] = useState<string>('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+    if (error) setError('');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    setError('');
+    setIsSubmitting(true);
 
     try {
       const richFullName = `${formData.name} | Org: ${formData.organization} | Role: ${formData.role}`;
@@ -48,7 +54,13 @@ export default function BetaForm({ content, language }: BetaFormProps) {
 
     } catch (err: any) {
       console.error('Registration error:', err);
-      alert(t('beta.errorSubmit'));
+      if (err?.code === '23505' || err?.message?.toLowerCase().includes('duplicate')) {
+        setError(t('beta.errorDuplicate'));
+      } else {
+        setError(t('beta.errorGeneric'));
+      }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -215,7 +227,7 @@ export default function BetaForm({ content, language }: BetaFormProps) {
           {/* Submit Button - matching v10 exactly */}
           <button
             type="submit"
-            disabled={isSubmitted}
+            disabled={isSubmitting || isSubmitted}
             style={{
               padding: '13px 32px',
               border: `2px solid ${isSubmitted ? 'var(--success, #2DD4A8)' : 'var(--gold-primary, #F4BB30)'}`,
@@ -224,7 +236,8 @@ export default function BetaForm({ content, language }: BetaFormProps) {
               color: isSubmitted ? 'var(--success, #2DD4A8)' : 'var(--gold-primary, #F4BB30)',
               fontSize: '16px',
               fontWeight: 700,
-              cursor: isSubmitted ? 'default' : 'pointer',
+              cursor: (isSubmitting || isSubmitted) ? 'default' : 'pointer',
+              opacity: isSubmitting ? 0.7 : 1,
               transition: 'all 0.25s',
               fontFamily: 'inherit',
               position: 'relative',
@@ -233,20 +246,36 @@ export default function BetaForm({ content, language }: BetaFormProps) {
               touchAction: 'manipulation',
             }}
             onMouseEnter={(e) => {
-              if (!isSubmitted) {
+              if (!isSubmitted && !isSubmitting) {
                 e.currentTarget.style.background = 'rgba(244, 187, 48, 0.10)';
                 e.currentTarget.style.boxShadow = '0 0 30px rgba(244, 187, 48, 0.12)';
               }
             }}
             onMouseLeave={(e) => {
-              if (!isSubmitted) {
+              if (!isSubmitted && !isSubmitting) {
                 e.currentTarget.style.background = 'transparent';
                 e.currentTarget.style.boxShadow = 'none';
               }
             }}
           >
-            {isSubmitted ? t('beta.submitSuccess') : content.form.submit}
+            {isSubmitting ? t('beta.submitting', 'Submitting...') : isSubmitted ? t('beta.submitSuccess') : content.form.submit}
           </button>
+
+          {error && (
+            <div style={{
+              marginTop: '12px',
+              padding: '10px 16px',
+              borderRadius: '8px',
+              background: 'rgba(239, 68, 68, 0.1)',
+              border: '1px solid rgba(239, 68, 68, 0.3)',
+              color: '#EF4444',
+              fontSize: '14px',
+              fontWeight: 500,
+              textAlign: 'center',
+            }}>
+              {error}
+            </div>
+          )}
         </form>
 
         {/* Note */}
