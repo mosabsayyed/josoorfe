@@ -10,10 +10,10 @@
     :root {
       --h1-font-size: 76px;
       --h1-line-height: 84px;
-      --h2-font-size: 52px;
-      --h2-line-height: 54px;
-      --p-font-size: 28px;
-      --p-line-height: 44px;
+      --h2-font-size: 38px;
+      --h2-line-height: 46px;
+      --p-font-size: 24px;
+      --p-line-height: 40px;
       --intro1-h1-font-size: 62px;
       --intro1-h1-line-height: 84px;
     }
@@ -67,11 +67,11 @@
     .phase-overlay .phase-text-block h1 { margin: 20px 0 12px; font: 400 72px/84px "Allerta Stencil", sans-serif; color: #ffffff; text-shadow: 0 0 2px rgba(255,255,255,0.544), 0 0 12px rgba(76,201,255,0.531), 0 0 28px rgba(76,201,255,0.498), 0 0 56px rgba(30,144,255,0.476), 0 0 110px rgba(14,110,253,0.434); }
     .phase-overlay .phase-text-block[data-key="intro-1"] h1 { font: 400 62px/84px "Allerta Stencil", sans-serif; color: #ffffff; text-shadow: 0 0 3px rgba(255,255,255,0.544), 0 0 18px rgba(76,201,255,0.544), 0 0 40px rgba(76,201,255,0.52), 0 0 84px rgba(30,144,255,0.488), 0 0 140px rgba(14,110,253,0.462); }
     .phase-overlay .phase-text-block[data-key="p89-future"] h1 { font: 400 72px/84px "Allerta Stencil", sans-serif; color: #ffffff; text-shadow: 0 0 3px rgba(255,255,255,0.544), 0 0 18px rgba(76,201,255,0.544), 0 0 40px rgba(76,201,255,0.52), 0 0 84px rgba(30,144,255,0.488), 0 0 140px rgba(14,110,253,0.462); }
-    .phase-overlay .phase-text-block h2 { font-weight: 700; margin: 0 0 24px; letter-spacing: 1.3px; font-size: 44px; line-height: 52px; color: rgba(37, 128, 250, 1); }
-    .phase-overlay .phase-text-block p  { font-weight: 300; margin: 0; font-size: 32px; line-height: 50px; }
+    .phase-overlay .phase-text-block h2 { font-weight: 700; margin: 0 0 24px; letter-spacing: 1.3px; font-size: var(--h2-font-size, 34px); line-height: var(--h2-line-height, 42px); color: rgba(37, 128, 250, 1); }
+    .phase-overlay .phase-text-block p  { font-weight: 300; margin: 0; font-size: var(--p-font-size, 22px); line-height: var(--p-line-height, 36px); }
     .phase-overlay .phase-text-block p em { font-style: normal; color: #F4BB30; font-weight: 500; }
     .phase-overlay .phase-text-block ul { list-style: none; padding: 0; margin: 16px 0 0; direction: rtl; text-align: right; }
-    .phase-overlay .phase-text-block ul li { position: relative; padding-right: 24px; margin-bottom: 12px; font-size: 32px; line-height: 50px; font-weight: 300; }
+    .phase-overlay .phase-text-block ul li { position: relative; padding-right: 24px; margin-bottom: 12px; font-size: var(--p-font-size, 22px); line-height: var(--p-line-height, 36px); font-weight: 300; }
     .phase-overlay .phase-text-block ul li::before { content: "—"; position: absolute; right: 0; color: #F4BB30; font-weight: 700; }
     .phase-text-block.active { z-index: 2; visibility: visible; }
     .phase-viewport { position: relative; overflow: visible; height: 600px; }
@@ -274,41 +274,39 @@
   <div class="overlay-inner">
 
     <div class="phase-text-block" dir="rtl" data-key="intro-1">
-      <h2>المشكلة الخفيّة</h2>
-      <p>في كل جهة حكومية عملت فيها، وجدت نفس المشكلة تتكرر. الاستراتيجية في نظام. التشغيل في نظام آخر. المخاطر في ثالث. المشاريع في رابع. وبين هذه الأنظمة — <em>فراغ</em>. لا روابط ولا لغة مشتركة. قرارات تُتّخذ منعزلة، ونتائجها لا تُكتشف إلا بعد فوات الأوان.</p>
+      <h2>نمط لا يتغيّر</h2>
+      <p>طوال فترة عملي الاستشاري على مدى ١٠ سنوات، كنت أجد النمط ذاته يتكرّر في كل جهة. الاستراتيجية في عزلة ضيّقة. العمليات لا تتذكّر الاستراتيجية إلا وقت تقرير الأداء. المخاطر انحصرت في سجلّ مفقود لا يتابعه أحد. المشاريع تعمل لتسليم مخرجاتها كما طُلب — وبدون نقاش.</p>
+      <p style="margin-top: 16px;">أنظمة متمكّنة في مجالها، لكن لا ترابط بينها ولا لغة مشتركة. فقط <em>فراغ</em>. وقرارات تُتّخذ في هذا الفراغ، لا تُكتشف عواقبها إلا بعد فوات الأوان.</p>
     </div>
 
     <div class="phase-text-block" dir="rtl" data-key="intro-3">
-      <h2>التعقيد ليس العدو</h2>
-      <p>الجواب المعتاد: بسّطها. اختصرها في لوحة متابعة. لخّصها في شريحة عرض. لكن التبسيط يُهدر الإشارات التي هي أصل الفائدة. <em>التعقيد ليس المشكلة</em> — بل هو أغنى مصدر للذكاء المؤسسي في المملكة. السؤال الحقيقي لم يكن يومًا كيف نتجنّب التعقيد، بل كيف <em>نُبحر فيه بثقة</em>.</p>
+      <h2>لقاء غيّر كل شيء</h2>
+      <p>قبل عامين، طلبت من ChatGPT تصميم برنامج تدريبي ليعلّمني الذكاء الاصطناعي. استمرّ الحوار عطلة نهاية الأسبوع كاملة، وانتهى بسؤال لم أتوقّعه: إطلاق الإمكانات البشرية لا يكمن في ملاحقة الإجابات — بل في <em>صياغة الأسئلة الصحيحة</em>.</p>
+      <p style="margin-top: 16px;">في تلك اللحظة أدركت: التعقيد المؤسسي الذي طالما اعتبرناه عدوًّا — هو في الحقيقة <em>أغنى مصدر للذكاء</em>. المشكلة لم تكن يومًا التعقيد ذاته، بل أننا لم نملك الأداة التي تُبحر فيه.</p>
     </div>
 
     <div class="phase-text-block" dir="rtl" data-key="p4-hidden">
-      <h2>عامان من الملاحظة</h2>
-      <p>على مدار عامين في القطاع العام، لاحظت تكرار نفس الفجوات وراء نفس الإخفاقات:</p>
-      <ul>
-        <li>مؤشر أداء <em>منفصل</em> عن القدرة المُكلّفة بتحقيقه</li>
-        <li>خطر <em>بلا مالك</em> لأنه يقع بين إدارتين</li>
-        <li>مشروع أخضر في كل تقرير لكنه <em>يستنزف الموارد الخطأ</em> بصمت</li>
-      </ul>
-      <p>أنماط تتكرر عبر الجهات والقطاعات — <em>مكشوفة لمن يُدقّق</em>، لكن لا أحد يراها.</p>
+      <h2>ستة أشهر ونار هادئة</h2>
+      <p>بدأت بتصميم نموذج يلتقط كل هذا التعقيد. بعد ستة أشهر، كان النموذج محكمًا — قاعدة بيانات علائقية تربط كل هدف وقدرة وخطر ومشروع. لكن التقنية لم تكن جاهزة. الحلّ حينها كان يعني استثمارًا تقليديًا: تراخيص، وبنية تحتية، وفِرَق تطوير.</p>
+      <p style="margin-top: 16px;">فأبقيته على <em>نار هادئة</em>. أصقله وأطوّره من واقع المشاريع التي أعمل عليها مع العملاء. كل مشروع يكشف فجوة جديدة، وكل فجوة تؤكّد أن النمط <em>أعمق ممّا ظننت</em>.</p>
     </div>
 
     <div class="phase-text-block" dir="rtl" data-key="p56-where">
-      <h2>لحظة التحوّل</h2>
-      <p>في صيف ٢٠٢٥، تفرّغت لتحويل ما رأيته إلى واقع. الذكاء التوليدي حقّق قفزات نوعية. الحوسبة السحابية نالت الاعتماد الحكومي. <em>التقنية أخيرًا لحقت بحجم المشكلة.</em> وحين بدأت البناء، تبلورت الأمور — ما كان نظريًا صار تشغيليًا، وروابط كانت مجرد فرضيات أثبتت صحتها.</p>
+      <h2>اللحظة التي تغيّر فيها كل شيء</h2>
+      <p>ثم جاء صيف ٢٠٢٥. الذكاء التوليدي حقّق قفزات لم يتخيّلها أحد. أدوات التطوير أصبحت في متناول الجميع. القدرة الحاسوبية اللازمة للتنقّل في متاهة العلاقات المعقّدة — لم تعد متاحة فحسب، بل <em>بتكلفة معقولة</em>. والاستضافة السحابية نالت أخيرًا الاعتماد الحكومي بعد سنوات من التحفّظ.</p>
+      <p style="margin-top: 16px;">لم يبقَ لديّ عذر. ولا خيار. <em>تفرّغت بالكامل.</em></p>
     </div>
 
     <div class="phase-text-block" dir="rtl" data-key="p7-two-years">
       <h2>لماذا "جسور"؟</h2>
-      <p>البداية كانت جسرًا واحدًا — من الاستراتيجية إلى التنفيذ. لكن كل جسر كشف فجوة أخرى. ليس جسرًا واحدًا — بل <em>عشرات</em>. جسور صغيرة. ما نسمّيه الآن <em>"علاقات"</em>. مئات منها، تربط كل هدف وقدرة وخطر ومشروع في بنية حيّة واحدة.</p>
-      <p style="margin-top: 20px;">هذا هو <em>جسور</em> — نظام تشغيل <em>للتحوّل المعرفي</em>، حيث لا شيء يطفو منعزلًا، والتعقيد يتحوّل إلى أثمن أصولكم المؤسسية.</p>
+      <p>البداية كانت جسرًا واحدًا — من الاستراتيجية إلى التنفيذ. لكن كل جسر كشف فجوة أخرى. ليس جسرًا واحدًا — بل <em>عشرات</em>. جسور صغيرة دقيقة. ما نسمّيها الآن <em>"علاقات"</em>. مئات منها، تربط كل هدف وقدرة وخطر ومشروع في بنية حيّة واحدة.</p>
+      <p style="margin-top: 20px;">هذا هو <em>جسور</em> — نظام تشغيل <em>الذكاء التحوّلي</em>. حيث لا شيء يعمل منعزلًا، والتعقيد الذي أرهقكم يتحوّل إلى أثمن أصولكم المؤسسية.</p>
     </div>
 
     <div class="phase-text-block" dir="rtl" data-key="p89-future">
-      <h2>المرحلة الأولى: بُنى ذكية</h2>
-      <p>هذه المرحلة الأولى: بُنى ذكية صُمّمت لتفوز. الأساس في مكانه. وما يُبنى فوقه يتوقف على من ينضم، وما نتعلّمه معًا.</p>
-      <p style="margin-top: 24px;">يسعدني أن أسمع رأيكم بقدر ما يسعدني أن أشارككم تجربة جسور. إن وجدتم في هذا ما يستحق الحوار — سؤالًا أو تحديًا أو فرصة — أدعوكم للتواصل.</p>
+      <h2>بلا قيود</h2>
+      <p>طوال مسيرتي كنت رائدًا — لكن لمصلحة الآخرين. هذه المرّة مختلفة. كل الإحباط المتراكم من البيروقراطية تحوّل إلى وقود. لا عذر، لا تردّد، ولا ندم إن شاء الله.</p>
+      <p style="margin-top: 16px;">هذه المرحلة الأولى: بُنى ذكية صُمّمت لتفوز. الأساس في مكانه. وما يُبنى فوقه يتوقّف على من ينضمّ وما نتعلّمه معًا. إن وجدتم في هذا ما يستحقّ الحوار — أدعوكم للتواصل.</p>
       <div style="margin-top: 40px; display: flex; flex-direction: column; align-items: right; gap: 18px;">
         <button id="enterPortalBtn" class="finale-enter-btn" style="margin-top:0; display:flex; align-items:center; gap:8px; justify-content:center;">تواصل معنا — سجّل في النسخة التجريبية</button>
       </div>

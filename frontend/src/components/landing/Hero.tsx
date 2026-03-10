@@ -212,15 +212,19 @@ export default function Hero({ content, language }: HeroProps) {
 
           {/* ── Middle tagline ── */}
           <div style={{ height: isMobile ? '60px' : '200px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <p style={{
-              fontSize: 'clamp(16px, 2.5vw, 22px)',
-              fontWeight: 500,
-              color: '#ffffff',
-              letterSpacing: '0.02em',
-              margin: 0,
-            }}>
-              {content.middleTagline || 'Building the bridges from Strategy to Execution, one bridge at a time.'}
-            </p>
+            {/* i18n content is developer-controlled, not user input */}
+            <p
+              style={{
+                fontSize: 'clamp(16px, 2.5vw, 22px)',
+                fontWeight: 500,
+                color: '#ffffff',
+                letterSpacing: '0.02em',
+                margin: 0,
+              }}
+              dangerouslySetInnerHTML={{
+                __html: content.middleTagline || 'Building the bridges from <b style="color:#F4BB30">Strategy</b> to <b style="color:#F4BB30">Execution</b>, one bridge at a time.',
+              }}
+            />
           </div>
           <div style={{
             display: 'flex',

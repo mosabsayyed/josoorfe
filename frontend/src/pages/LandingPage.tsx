@@ -5,8 +5,8 @@ import Header from '../components/layout/Header';
 
 // Landing page section components
 import Hero from '../components/landing/Hero';
-import AItoIA from '../components/landing/AItoIA';
-import Platform from '../components/landing/Platform';
+import SolutionBlocks from '../components/landing/SolutionBlocks';
+import VisionMemory from '../components/landing/VisionMemory';
 import Promise from '../components/landing/Promise';
 import StrategyHouse from '../components/landing/StrategyHouse';
 import BetaForm from '../components/landing/BetaForm';
@@ -1134,11 +1134,11 @@ export default function LandingPage() {
 
       <div id="main-content">
         <img id="background-image" src="/att/landing-screenshots/Vector.svg" alt="" />
-        {/* Section 2-3: Reality Check + The Approach (scroll crossfade) */}
-        <AItoIA language={language} />
+        {/* Section 2: Solution — 5 business-language blocks (replaces AItoIA + Platform) */}
+        <SolutionBlocks />
 
-        {/* Section 4: Platform — 3 stacked carousels */}
-        <Platform />
+        {/* Section 3: Vision Memory — standalone feature highlight */}
+        <VisionMemory />
 
         {/* Section 5: Strategy House — architecture */}
         <StrategyHouse content={content.strategyHouse} />

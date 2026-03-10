@@ -10,10 +10,10 @@
     :root {
       --h1-font-size: 72px;
       --h1-line-height: 84px;
-      --h2-font-size: 48px;
-      --h2-line-height: 54px;
-      --p-font-size: 32px;
-      --p-line-height: 50px;
+      --h2-font-size: 38px;
+      --h2-line-height: 46px;
+      --p-font-size: 24px;
+      --p-line-height: 40px;
       --intro1-h1-font-size: 58px;
       --intro1-h1-line-height: 66px;
     }
@@ -66,11 +66,11 @@
     .phase-overlay .phase-text-block h1 { margin: 20px 0 12px; font: 400 72px/84px "Allerta Stencil", sans-serif; color: #ffffff; text-shadow: 0 0 2px rgba(255,255,255,0.544), 0 0 12px rgba(76,201,255,0.531), 0 0 28px rgba(76,201,255,0.498), 0 0 56px rgba(30,144,255,0.476), 0 0 110px rgba(14,110,253,0.434); }
     .phase-overlay .phase-text-block[data-key="intro-1"] h1 { font: 400 58px/66px "Allerta Stencil", sans-serif; color: #ffffff; text-shadow: 0 0 3px rgba(255,255,255,0.544), 0 0 18px rgba(76,201,255,0.544), 0 0 40px rgba(76,201,255,0.52), 0 0 84px rgba(30,144,255,0.488), 0 0 140px rgba(14,110,253,0.462); }
     .phase-overlay .phase-text-block[data-key="p89-future"] h1 { font: 400 72px/84px "Allerta Stencil", sans-serif; color: #ffffff; text-shadow: 0 0 3px rgba(255,255,255,0.544), 0 0 18px rgba(76,201,255,0.544), 0 0 40px rgba(76,201,255,0.52), 0 0 84px rgba(30,144,255,0.488), 0 0 140px rgba(14,110,253,0.462); }
-    .phase-overlay .phase-text-block h2 { font: 400 44px/52px "Allerta Stencil", sans-serif; margin: 0 0 24px; text-transform: uppercase; letter-spacing: 1.3px; color: #F4BB30; text-shadow: 0 0 2px rgba(244,187,48,0.5), 0 0 12px rgba(244,187,48,0.3), 0 0 28px rgba(244,187,48,0.15); }
-    .phase-overlay .phase-text-block p  { font-weight: 300; margin: 0; font-size: var(--p-font-size, 28px); line-height: var(--p-line-height, 44px); }
+    .phase-overlay .phase-text-block h2 { font-family: "Allerta Stencil", sans-serif; font-weight: 400; font-size: var(--h2-font-size, 34px); line-height: var(--h2-line-height, 42px); margin: 0 0 24px; text-transform: uppercase; letter-spacing: 1.3px; color: #F4BB30; text-shadow: 0 0 2px rgba(244,187,48,0.5), 0 0 12px rgba(244,187,48,0.3), 0 0 28px rgba(244,187,48,0.15); }
+    .phase-overlay .phase-text-block p  { font-weight: 300; margin: 0; font-size: var(--p-font-size, 22px); line-height: var(--p-line-height, 36px); }
     .phase-overlay .phase-text-block p em { font-style: normal; color: #F4BB30; font-weight: 500; }
     .phase-overlay .phase-text-block ul { list-style: none; padding: 0; margin: 16px 0 0; }
-    .phase-overlay .phase-text-block ul li { position: relative; padding-left: 24px; margin-bottom: 12px; font-size: var(--p-font-size, 28px); line-height: var(--p-line-height, 44px); font-weight: 300; }
+    .phase-overlay .phase-text-block ul li { position: relative; padding-left: 24px; margin-bottom: 12px; font-size: var(--p-font-size, 22px); line-height: var(--p-line-height, 36px); font-weight: 300; }
     .phase-overlay .phase-text-block ul li::before { content: "—"; position: absolute; left: 0; color: #F4BB30; font-weight: 700; }
     .phase-text-block.active { z-index: 2; visibility: visible; }
     .phase-viewport { position: relative; overflow: visible; height: 600px; }
@@ -269,36 +269,34 @@
     <div id="phaseOverlay" class="phase-overlay">
       <div class="overlay-inner">
         <div class="phase-text-block" data-key="intro-1">
-          <h2>The Invisible Problem</h2>
-          <p>Every entity I worked with across KSA’s public sector faced the same invisible problem. Strategy lived in one system. Operations in another. Risks in a third. Projects in a fourth. And between them — <em>nothing</em>. No connections. No shared language. Decisions made in isolation, consequences discovered too late.</p>
+          <h2>A Pattern That Never Changed</h2>
+          <p>Across ten years of consulting in the public sector, I kept finding the same pattern in every entity. Strategy locked in its own silo. Operations forgot strategy existed — until the performance report was due. Risks confined to a neglected register no one tracked. Projects delivering outputs as requested — no questions asked.</p>
+          <p style="margin-top: 16px;">Capable systems in their own domains, but no connections between them. No shared language. Just a <em>void</em>. And decisions made in that void, their consequences discovered only when it was too late.</p>
         </div>
         <div class="phase-text-block" data-key="intro-3">
-          <h2>Complexity Is Not the Enemy</h2>
-          <p>The usual answer is to simplify. Strip it down. Build a dashboard. Summarize it into a slide. But simplification destroys the very signals you need. <em>Complexity is not the problem</em> — it is the richest source of institutional intelligence in the Kingdom. The real question was never how to escape it, but how to <em>navigate it with confidence</em>.</p>
+          <h2>The Encounter That Changed Everything</h2>
+          <p>Two years ago, I asked ChatGPT to design a training program to teach me AI. The conversation consumed an entire weekend and ended with an unexpected insight: unlocking human potential isn’t about chasing answers — it’s about <em>articulating the right questions</em>.</p>
+          <p style="margin-top: 16px;">That’s when I realized: the institutional complexity we’d always treated as an enemy is actually the <em>richest source of intelligence</em>. The problem was never complexity itself — it was that we never had the tool to navigate it.</p>
         </div>
         <div class="phase-text-block" data-key="p4-hidden">
-          <h2>Two Years of Patterns</h2>
-          <p>For two years across KSA’s public sector, I kept observing the same structural gaps causing the same failures:</p>
-          <ul>
-            <li>A KPI target <em>disconnected</em> from the capability meant to deliver it</li>
-            <li>A risk <em>no one owned</em> because it fell between two departments</li>
-            <li>A project green on every report but silently <em>draining the wrong resources</em></li>
-          </ul>
-          <p>Patterns that recurred across entities, sectors, and mandates — <em>hiding in plain sight</em>.</p>
+          <h2>Six Months, Then a Slow Burner</h2>
+          <p>I started building a model to capture all that complexity. After six months, it was sound — a relational database linking every objective, capability, risk, and project. But the technology wasn’t ready. A solution then meant investing the old way: licenses, infrastructure, development teams.</p>
+          <p style="margin-top: 16px;">So I kept it on a <em>slow burner</em>. Refining and evolving from real client engagements. Every project revealed a new gap, and every gap confirmed the pattern ran <em>deeper than I’d thought</em>.</p>
         </div>
         <div class="phase-text-block" data-key="p56-where">
           <h2>The Moment Everything Converged</h2>
-          <p>Around the summer of 2025, I stepped away to make this real. GenAI had leaped. Cloud hosting was government-certified. <em>The technology finally caught up to the problem.</em> And when you build, things crystallize — what was abstract becomes operational, connections you theorized prove real.</p>
+          <p>Then came the summer of 2025. GenAI made leaps no one had anticipated. Development tools became accessible to everyone. The computing power needed to navigate the complex maze of relations wasn’t just available — it was <em>remarkably affordable</em>. And cloud hosting finally earned government certification after years of resistance.</p>
+          <p style="margin-top: 16px;">No more excuses. No more waiting. <em>I went all in.</em></p>
         </div>
         <div class="phase-text-block" data-key="p7-two-years">
-          <h2>Why "Bridges"</h2>
-          <p>The first instinct was to build one bridge — strategy to execution. But every bridge revealed another gap. Not one bridge — <em>many</em>. Micro-bridges. What we now call <em>relations</em>. Hundreds of them, connecting every objective, capability, risk, and project into one living structure.</p>
-          <p style="margin-top: 20px;">That is <em>JOSOOR</em> — the Arabic word for bridges. A <em>Transformation Intelligence</em> Operating System where nothing floats in isolation, and complexity becomes your most valuable institutional asset.</p>
+          <h2>Why "JOSOOR"</h2>
+          <p>The first instinct was one bridge — strategy to execution. But every bridge revealed another gap. Not one bridge — <em>many</em>. Precise micro-bridges. What we now call <em>relations</em>. Hundreds of them, connecting every objective, capability, risk, and project into one living structure.</p>
+          <p style="margin-top: 20px;">That is <em>JOSOOR</em> — Arabic for "bridges." A <em>Transformation Intelligence</em> Operating System where nothing operates in isolation, and the complexity that exhausted you becomes your most valuable institutional asset.</p>
         </div>
         <div class="phase-text-block" data-key="p89-future">
-          <h2>Phase 1: Intelligent Architectures</h2>
-          <p>This is Phase 1: Intelligent Architectures built to win. The foundations are in place. What grows on top of them depends on who joins and what we learn together.</p>
-          <p style="margin-top: 24px;">I would love to hear your thoughts as much as I would love to share the JOSOOR experience. If any of this resonates — whether as a question, a challenge, or an opportunity — I invite you to reach out.</p>
+          <h2>No Constraints</h2>
+          <p>All my career I was a pioneer — but for others’ benefit. This time is different. All the bottled-up frustration from bureaucracy became fuel. No excuse, no hesitation, no regrets Inshallah.</p>
+          <p style="margin-top: 16px;">This is Phase 1: Intelligent Architectures built to win. The foundations are in place. What grows on top depends on who joins and what we learn together. If any of this resonates — I invite you to reach out.</p>
           <div style="margin-top: 40px; display: flex; flex-direction: column; align-items: left; gap: 18px;">
             <button id="enterPortalBtn" class="finale-enter-btn" style="margin-top:0; display:flex; align-items:center; gap:8px; justify-content:center;">Reach Out — Apply for Beta</button>
           </div>
