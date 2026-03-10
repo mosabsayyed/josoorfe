@@ -138,8 +138,8 @@ export default function Hero({ content, language }: HeroProps) {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'flex-start',
-      paddingTop: isMobile ? '100px' : 'clamp(100px, 12vh, 160px)',
-      paddingBottom: isMobile ? '100px' : '72px',
+      paddingTop: isMobile ? '72px' : 'clamp(100px, 12vh, 160px)',
+      paddingBottom: isMobile ? '40px' : '72px',
       position: 'relative',
       overflow: 'hidden'
     }}>
@@ -211,7 +211,7 @@ export default function Hero({ content, language }: HeroProps) {
           </div>
 
           {/* ── Middle tagline ── */}
-          <div style={{ height: isMobile ? '100px' : '200px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ height: isMobile ? '60px' : '200px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <p style={{
               fontSize: 'clamp(16px, 2.5vw, 22px)',
               fontWeight: 500,
@@ -279,10 +279,11 @@ export default function Hero({ content, language }: HeroProps) {
           right: 0,
           zIndex: 3,
           display: 'flex',
+          flexWrap: 'wrap',
           alignItems: 'center',
           justifyContent: 'center',
-          gap: '0',
-          padding: '14px 24px',
+          gap: isMobile ? '4px 0' : '0',
+          padding: isMobile ? '10px 12px' : '14px 24px',
           borderTop: '1px solid rgba(255, 255, 255, 0.07)',
           background: 'rgba(17, 24, 39, 0.6)',
           backdropFilter: 'blur(8px)',
@@ -306,7 +307,8 @@ export default function Hero({ content, language }: HeroProps) {
                 color: 'rgba(244, 187, 48, 0.8)',
                 letterSpacing: '0.06em',
                 textTransform: 'uppercase',
-                whiteSpace: 'nowrap',
+                whiteSpace: isMobile ? 'normal' : 'nowrap',
+                textAlign: 'center',
               }}>
                 {part}
               </span>

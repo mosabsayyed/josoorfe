@@ -40,6 +40,7 @@ export default function StrategyHouse({ content }: StrategyHouseProps) {
                     key={idx}
                     className={`sh-ped-slice sh-ped-${sliceIdx} ${activeIndex === idx ? 'sh-active' : ''}`}
                     onMouseEnter={() => setActiveIndex(idx)}
+                    onClick={() => setActiveIndex(idx)}
                   >
                     <span className="sh-ped-slice-label">{pyramidLabels[sliceIdx] || elements[idx]}</span>
                   </div>
@@ -60,6 +61,7 @@ export default function StrategyHouse({ content }: StrategyHouseProps) {
                   key={idx}
                   className={`sh-pillar ${activeIndex === idx ? 'sh-active' : ''}`}
                   onMouseEnter={() => setActiveIndex(idx)}
+                  onClick={() => setActiveIndex(idx)}
                 >
                   <div className="sh-capital" />
                   <div className="sh-pillar-shaft">
@@ -77,6 +79,7 @@ export default function StrategyHouse({ content }: StrategyHouseProps) {
             <div
               className={`sh-foundation ${activeIndex === FOUNDATION_INDEX ? 'sh-active' : ''}`}
               onMouseEnter={() => setActiveIndex(FOUNDATION_INDEX)}
+              onClick={() => setActiveIndex(FOUNDATION_INDEX)}
             >
               <div className="sh-step sh-step-1" />
               <div className="sh-step sh-step-2">
@@ -112,6 +115,7 @@ export default function StrategyHouse({ content }: StrategyHouseProps) {
                     key={i}
                     className={`sh-dot ${activeIndex === i ? 'active' : ''}`}
                     onMouseEnter={() => setActiveIndex(i)}
+                    onClick={() => setActiveIndex(i)}
                   />
                 ))}
               </div>
@@ -558,11 +562,13 @@ export default function StrategyHouse({ content }: StrategyHouseProps) {
           .sh-row {
             flex-direction: column;
             height: auto;
+            gap: 10px;
           }
 
           .sh-temple {
-            min-height: 300px;
-            padding: 1.25rem 0.75rem 0.75rem;
+            flex: none;
+            min-height: auto;
+            padding: 1rem 0.75rem 0.5rem;
           }
 
           .sh-pediment-wrap {
@@ -575,52 +581,86 @@ export default function StrategyHouse({ content }: StrategyHouseProps) {
 
           .sh-pillars {
             width: 90%;
-            gap: 8px;
+            gap: 6px;
           }
 
           .sh-pillar-shaft {
-            height: 80px;
+            height: 50px;
           }
 
           .sh-pillar-label {
-            font-size: 9px;
-            padding: 6px 2px 0;
+            font-size: 10px;
+            padding: 4px 2px 0;
           }
 
           .sh-detail {
-            padding: 1rem;
+            flex: none;
+            padding: 0.5rem;
+            max-height: 240px;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
           }
 
           .sh-detail-content {
-            padding: 1rem;
+            padding: 0.5rem 0.6rem;
+            border-left-width: 2px;
+          }
+
+          [dir="rtl"] .sh-detail-content {
+            border-right-width: 2px;
           }
 
           .sh-layer-number {
-            font-size: 36px;
+            font-size: 24px;
+            margin-bottom: -2px;
           }
 
           .sh-detail-title {
-            font-size: 20px;
+            font-size: 14px;
+            margin-bottom: 4px;
           }
 
           .sh-detail-desc {
-            font-size: 15px;
-            line-height: 1.7;
+            font-size: 12px;
+            line-height: 1.45;
+          }
+
+          .sh-detail-desc p {
+            margin-bottom: 4px;
+          }
+
+          .sh-dots {
+            padding-top: 8px;
+            gap: 6px;
+          }
+
+          .sh-dot {
+            width: 6px;
+            height: 6px;
+          }
+
+          .sh-dot.active {
+            width: 18px;
           }
 
           .sh-compat {
             flex-direction: column;
-            gap: 8px;
-            padding: 10px 12px;
+            gap: 6px;
+            padding: 8px 10px;
+            margin-top: 6px;
+          }
+
+          .sh-compat-label {
+            font-size: 11px;
           }
 
           .sh-compat-logos {
-            gap: 12px;
-            padding: 6px 12px;
+            gap: 10px;
+            padding: 4px 10px;
           }
 
           .sh-compat-logos img {
-            height: 20px;
+            height: 18px;
           }
         }
       `}</style>

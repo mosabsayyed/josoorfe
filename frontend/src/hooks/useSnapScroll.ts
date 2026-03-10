@@ -193,7 +193,7 @@ export default function useSnapScroll({
   }, [recalc, snapTo, clearCooldown]);
 
   useEffect(() => {
-    if (!enabled || prefersReducedMotion()) return;
+    if (!enabled || prefersReducedMotion() || isMobile()) return;
 
     const container = findScrollContainer();
     containerRef.current = container;

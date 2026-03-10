@@ -69,7 +69,7 @@ function ScreenshotCarousel({ images, activePos }: { images: string[]; activePos
 /* ── Card wrapper for carousel ── */
 function WheelCard({ wheel, i, 'data-pos': dataPos, ...props }: any) {
   return (
-    <div className="cc-card" style={{ maxWidth: '90vw' }} data-pos={dataPos} {...props}>
+    <div className="cc-card" data-pos={dataPos} {...props}>
       <div className="mc-inner">
         <div className="mc-text">
           <h3 style={{ textAlign: 'center' }}>{wheel.title}</h3>

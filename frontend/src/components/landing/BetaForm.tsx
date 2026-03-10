@@ -226,7 +226,11 @@ export default function BetaForm({ content, language }: BetaFormProps) {
               fontWeight: 700,
               cursor: isSubmitted ? 'default' : 'pointer',
               transition: 'all 0.25s',
-              fontFamily: 'inherit'
+              fontFamily: 'inherit',
+              position: 'relative',
+              zIndex: 2,
+              WebkitTapHighlightColor: 'transparent',
+              touchAction: 'manipulation',
             }}
             onMouseEnter={(e) => {
               if (!isSubmitted) {

@@ -14,10 +14,13 @@ export default function Promise({ content }: PromiseProps) {
   const autoRotateRef = useRef<NodeJS.Timeout | null>(null);
   const totalCards = content.personas.length;
 
+  const [isSmallPhone, setIsSmallPhone] = useState(false);
+
   // Detect mobile screen size
   useEffect(() => {
     const checkMobile = () => {
       setIsMobile(window.innerWidth <= 700);
+      setIsSmallPhone(window.innerWidth <= 400);
     };
 
     checkMobile();
@@ -70,10 +73,11 @@ export default function Promise({ content }: PromiseProps) {
         case -1:
           return {
             ...baseStyles,
-            transform: 'translateX(-160px) rotateY(20deg) scale(0.75)',
-            opacity: 0.4,
+            transform: isSmallPhone ? 'translateX(0) scale(0)' : 'translateX(-160px) rotateY(20deg) scale(0.75)',
+            opacity: isSmallPhone ? 0 : 0.4,
             zIndex: 2,
             filter: 'brightness(0.7)',
+            pointerEvents: isSmallPhone ? 'none' as const : undefined,
           };
         case 0:
           return {
@@ -85,10 +89,11 @@ export default function Promise({ content }: PromiseProps) {
         case 1:
           return {
             ...baseStyles,
-            transform: 'translateX(160px) rotateY(-20deg) scale(0.75)',
-            opacity: 0.4,
+            transform: isSmallPhone ? 'translateX(0) scale(0)' : 'translateX(160px) rotateY(-20deg) scale(0.75)',
+            opacity: isSmallPhone ? 0 : 0.4,
             zIndex: 2,
             filter: 'brightness(0.7)',
+            pointerEvents: isSmallPhone ? 'none' as const : undefined,
           };
         case 'hidden':
           return {
@@ -207,7 +212,7 @@ export default function Promise({ content }: PromiseProps) {
               alignItems: 'center',
               justifyContent: 'center',
               position: 'relative',
-              height: isMobile ? '440px' : '580px',
+              height: isSmallPhone ? '380px' : isMobile ? '420px' : '580px',
               perspective: '900px',
             }}
             onMouseEnter={() => setIsPaused(true)}
@@ -232,7 +237,7 @@ export default function Promise({ content }: PromiseProps) {
                     alt={persona.role}
                     style={{
                       width: '100%',
-                      height: isMobile ? '180px' : '260px',
+                      height: isSmallPhone ? '140px' : isMobile ? '170px' : '260px',
                       objectFit: 'cover',
                       objectPosition: 'center 20%',
                       filter: pos === 0 ? 'brightness(0.95) saturate(1)' : 'brightness(0.85) saturate(0.9)',
@@ -241,7 +246,7 @@ export default function Promise({ content }: PromiseProps) {
                   />
 
                   {/* Card Body */}
-                  <div style={{ padding: isMobile ? '0.8rem 1rem' : '1.1rem 1.3rem' }}>
+                  <div style={{ padding: isMobile ? '0.6rem 0.8rem' : '1.1rem 1.3rem', overflow: 'hidden', flex: 1 }}>
                     <div
                       style={{
                         fontFamily: 'var(--font-mono, monospace)',
@@ -267,10 +272,10 @@ export default function Promise({ content }: PromiseProps) {
                     </div>
                     <div
                       style={{
-                        fontSize: '14px',
+                        fontSize: isMobile ? '12px' : '14px',
                         color: 'var(--text-muted, rgba(255, 255, 255, 0.6))',
-                        lineHeight: '1.45',
-                        margin: '0.15rem 0 0.4rem',
+                        lineHeight: '1.4',
+                        margin: '0.15rem 0 0.3rem',
                         wordWrap: 'break-word',
                         overflowWrap: 'break-word',
                       }}
@@ -299,10 +304,10 @@ export default function Promise({ content }: PromiseProps) {
                     </div>
                     <div
                       style={{
-                        fontSize: '14px',
+                        fontSize: isMobile ? '12px' : '14px',
                         color: 'var(--text-primary, #ffffff)',
                         fontWeight: 500,
-                        lineHeight: '1.45',
+                        lineHeight: '1.4',
                         marginTop: '0.15rem',
                         wordWrap: 'break-word',
                         overflowWrap: 'break-word',

@@ -656,8 +656,10 @@
   }
 
   .cc-dot {
-    min-height: 10px;
-    min-width: 10px;
+    min-height: 12px;
+    min-width: 12px;
+    padding: 8px;
+    background-clip: content-box;
   }
 
   /* Watch mockup */
@@ -696,21 +698,8 @@
 }
 
 @media (max-width: 375px) {
-  .cc-track {
-    height: 360px !important;
-  }
-
   .cc-card {
-    width: 90vw !important;
-  }
-
-  .cc-card[data-pos="-1"] {
-    transform: translateX(-120px) rotateY(15deg) scale(0.7) !important;
-    opacity: 0.3 !important;
-  }
-
-  .cc-card[data-pos="1"] {
-    transform: translateX(120px) rotateY(-15deg) scale(0.7) !important;
-    opacity: 0.3 !important;
+    width: 92vw !important;
+    height: 340px !important;
   }
 }

@@ -70,7 +70,7 @@ export default function ConcaveCarousel({
       <div
         className="cc-track"
         ref={trackRef}
-        style={{ height: isMobile ? '400px' : height }}
+        style={{ height: isMobile ? 'auto' : height, minHeight: isMobile ? '380px' : undefined }}
       >
         {React.Children.map(children, (child, index) => {
           const position = getPosition(index);

@@ -253,7 +253,7 @@ export default function LandingPage() {
         padding: 0 20px;
       }
 
-      @media (max-width: 768px) {
+      @media (max-width: 1024px) {
         .hero-content {
           margin-left: 0;
           text-align: center;
@@ -952,6 +952,14 @@ export default function LandingPage() {
 
       @media (max-width: 480px) {
         /* Small phones */
+        section.content-centered {
+          padding: 36px 0.75rem;
+        }
+
+        #arch, #beta {
+          padding-top: 36px;
+        }
+
         .three-panel-strip {
           grid-template-columns: 1fr;
           gap: 16px;
@@ -992,19 +1000,19 @@ export default function LandingPage() {
         /* Tablets and large phones */
         section.content-centered {
           max-width: 100%;
-          min-height: 100dvh;
+          min-height: auto;
           display: flex;
           flex-direction: column;
-          justify-content: center;
+          justify-content: flex-start;
           align-items: center;
-          padding: 70px 1rem 1rem;
+          padding: 48px 1rem;
           box-sizing: border-box;
           overflow: visible;
         }
 
         #arch, #beta {
           min-height: auto;
-          padding-top: 70px;
+          padding-top: 48px;
           overflow: visible;
         }
 
