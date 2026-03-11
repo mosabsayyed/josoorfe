@@ -7,7 +7,7 @@ interface GraphDataTableProps {
     onNodeClick?: (node: any) => void;
 }
 
-type SortKey = 'name' | 'type' | 'level' | 'year' | 'status';
+type SortKey = 'id' | 'name' | 'type' | 'level' | 'year' | 'status';
 type SortDir = 'asc' | 'desc';
 
 const LABEL_COLORS: Record<string, string> = {
@@ -38,6 +38,7 @@ export function GraphDataTable({ data, isDark, onNodeClick }: GraphDataTableProp
     const getField = (node: any, key: SortKey): string => {
         const props = node.properties || node.nProps || {};
         switch (key) {
+            case 'id': return String(props.id ?? '');
             case 'name': return node.name || props.name || '';
             case 'type': return node.labels?.[0] || node.label || '';
             case 'level': return props.level || '';
@@ -51,9 +52,11 @@ export function GraphDataTable({ data, isDark, onNodeClick }: GraphDataTableProp
         if (search) {
             const q = search.toLowerCase();
             result = result.filter(n => {
-                const name = (n.name || n.properties?.name || '').toLowerCase();
+                const props = n.properties || n.nProps || {};
+                const nodeId = String(props.id ?? '').toLowerCase();
+                const name = (n.name || props.name || '').toLowerCase();
                 const type = (n.labels?.[0] || n.label || '').toLowerCase();
-                return name.includes(q) || type.includes(q);
+                return nodeId.includes(q) || name.includes(q) || type.includes(q);
             });
         }
         return result.sort((a, b) => {
@@ -103,7 +106,7 @@ export function GraphDataTable({ data, isDark, onNodeClick }: GraphDataTableProp
                         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', color: isDark ? '#d1d5db' : '#374151' }}>
                             <thead>
                                 <tr>
-                                    {(['name', 'type', 'level', 'year', 'status'] as SortKey[]).map(key => (
+                                    {(['id', 'name', 'type', 'level', 'year', 'status'] as SortKey[]).map(key => (
                                         <th key={key} onClick={() => handleSort(key)} style={{
                                             textAlign: 'left', padding: '8px', cursor: 'pointer', userSelect: 'none',
                                             borderBottom: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`,
@@ -120,13 +123,16 @@ export function GraphDataTable({ data, isDark, onNodeClick }: GraphDataTableProp
                                     const type = n.labels?.[0] || n.label || '';
                                     const props = n.properties || n.nProps || {};
                                     return (
-                                        <tr key={n.id || i}
+                                        <tr key={`${n.labels?.[0] || n.label}:${n.id}`}
                                             onClick={() => onNodeClick?.(n)}
                                             style={{
                                                 cursor: onNodeClick ? 'pointer' : 'default',
                                                 backgroundColor: i % 2 === 0 ? 'transparent' : (isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)'),
                                             }}
                                         >
+                                            <td style={{ padding: '6px 8px', borderBottom: `1px solid ${isDark ? '#1f2937' : '#f3f4f6'}`, fontFamily: 'monospace', fontSize: '11px' }}>
+                                                {props.id ?? ''}
+                                            </td>
                                             <td style={{ padding: '6px 8px', borderBottom: `1px solid ${isDark ? '#1f2937' : '#f3f4f6'}` }}>
                                                 {n.name || props.name || n.id}
                                             </td>

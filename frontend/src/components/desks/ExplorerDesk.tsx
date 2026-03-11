@@ -78,8 +78,7 @@ interface ExplorerDeskProps {
 /**
  * Normalize API {nodes, links} into ForceGraph-compatible shape.
  * API node.id is non-unique (domain ID like "1.0" shared across types).
- * We use node.elementId (unique Neo4j internal ID) as the graph key.
- * Link.id = "srcElementId-RELTYPE-tgtElementId" — parsed to resolve source/target.
+ * We use composite Label:id as the unique graph key.
  */
 const NODE_COLOR_MAP: Record<string, string> = {
     'SectorObjective': '#F4BB30',
@@ -114,11 +113,11 @@ const getNodeColor = (labels: string[]): string => {
 };
 
 // Internal keys to exclude from the "properties" bag shown in tooltip
-const INTERNAL_KEYS = new Set(['id', 'elementId', 'color', 'val', 'value', 'group', 'label', 'x', 'y', 'z', 'vx', 'vy', 'vz', 'fx', 'fy', 'fz', 'index', '__indexColor']);
+const INTERNAL_KEYS = new Set(['color', 'val', 'value', 'group', 'label', 'x', 'y', 'z', 'vx', 'vy', 'vz', 'fx', 'fy', 'fz', 'index', '__indexColor']);
 
 const normalizeGraphData = (data: { nodes: any[], links: any[] }) => {
     const nodes = data.nodes.map((n: any) => {
-        const eid = n.elementId || n.id;
+        const eid = n.id;
 
         // Backend returns props FLAT on the node (label, group, year, level, etc.)
         // NOT nested in n.properties or n.labels
@@ -137,30 +136,17 @@ const normalizeGraphData = (data: { nodes: any[], links: any[] }) => {
             }
         }
 
-        const domainId = n.domain_id || props.domain_id || '';
-
         return {
-            id: eid, elementId: eid, labels, label: labels[0] || nodeGroup || 'Unknown',
-            domain_id: domainId,
+            id: eid, labels, label: labels[0] || nodeGroup || 'Unknown',
             name: nodeLabel || props.name || props.title || eid,
             color: n.color || getNodeColor(labels),
             properties: props, nProps: props, val: n.val || 1,
         };
     });
 
-    const seen = new Set<string>();
-    const links: any[] = [];
-
-    for (const l of data.links) {
-        const relType = l.type || '';
-        const src = l.source || '';
-        const tgt = l.target || '';
-        const key = `${src}-${relType}-${tgt}`;
-        if (!seen.has(key)) {
-            seen.add(key);
-            links.push({ source: src, sourceId: src, target: tgt, targetId: tgt, type: relType, rType: relType, value: 1 });
-        }
-    }
+    const links = data.links.map((l: any) => ({
+        source: l.source || '', target: l.target || '', type: l.type || '', value: 1,
+    }));
 
     return { nodes, links };
 };
@@ -367,19 +353,17 @@ export function ExplorerDesk({ year = '2025', quarter = 'All' }: ExplorerDeskPro
                 const flatNodes: any[] = [];
                 for (const [label, nodeArr] of Object.entries(nodesDict)) {
                     for (const nodeObj of nodeArr) {
-                        const id = String(nodeObj.id ?? '');
+                        const uid = `${label}:${String(nodeObj.id ?? '')}`;
                         flatNodes.push({
-                            nId: id, nLabels: [label], nProps: nodeObj,
-                            id, labels: [label], properties: nodeObj,
+                            nId: uid, nLabels: [label], nProps: nodeObj,
+                            id: uid, labels: [label], properties: nodeObj,
                         });
                     }
                 }
                 const links = edgesArr.map((e: any) => ({
                     type: e.type,
-                    source: String(e.source_id),
-                    target: String(e.target_id),
-                    start: String(e.source_id),
-                    end: String(e.target_id),
+                    source: `${e.source_label}:${String(e.source_id)}`,
+                    target: `${e.target_label}:${String(e.target_id)}`,
                     properties: e.props || {},
                 }));
                 data = { nodes: flatNodes, links };
@@ -389,7 +373,7 @@ export function ExplorerDesk({ year = '2025', quarter = 'All' }: ExplorerDeskPro
                 const r0 = raw.results[0] || {};
                 data = {
                     nodes: (r0.nodes || []).map((n: any) => ({
-                        elementId: n.id, id: n.id,
+                        id: n.id,
                         labels: n.labels || [], label: (n.labels || [])[0] || '',
                         group: (n.labels || [])[0] || '',
                         properties: n.properties || {}, ...n.properties,
@@ -437,10 +421,48 @@ export function ExplorerDesk({ year = '2025', quarter = 'All' }: ExplorerDeskPro
         }
     }, [graphData]);
 
-    // Inject canonical path metadata for Sankey rendering
-    const displayData = useMemo(() => {
+    // Year/quarter filter — keep nodes with year <= selected. No dedup — API returns unique data.
+    const filteredData = useMemo(() => {
         const baseData: GraphData | null = (graphData as unknown as GraphData);
         if (!baseData || !baseData.nodes) return null;
+
+        const selectedYear = parseInt(String(year), 10) || 0;
+        const quarterNum = quarter && quarter !== 'All'
+            ? parseInt(quarter.replace(/\D/g, ''), 10) || null
+            : null;
+
+        if (!selectedYear) return baseData; // no filter if year=0
+
+        const nodes = baseData.nodes.filter(n => {
+            const props = n.properties || n.nProps || {};
+            const nodeYear = typeof props.year === 'object' ? props.year?.low : props.year;
+            if (!nodeYear) return true;
+            if (Number(nodeYear) < selectedYear) return true;
+            if (Number(nodeYear) === selectedYear) {
+                if (!quarterNum) return true;
+                const nq = props.quarter ?? null;
+                const nodeQ = typeof nq === 'number' ? nq : (typeof nq === 'string' ? parseInt(nq.replace(/\D/g, ''), 10) || null : null);
+                if (!nodeQ) return true;
+                return nodeQ <= quarterNum;
+            }
+            return false;
+        });
+
+        // Prune links that reference nodes removed by the year filter
+        const nodeIds = new Set(nodes.map(n => n.id));
+        const links = (baseData.links || []).filter((l: any) => {
+            const src = typeof l.source === 'object' ? l.source.id : l.source;
+            const tgt = typeof l.target === 'object' ? l.target.id : l.target;
+            return nodeIds.has(src) && nodeIds.has(tgt);
+        });
+
+        console.log(`[ExplorerDesk] Year filter: ${baseData.nodes.length} → ${nodes.length} nodes, ${(baseData.links||[]).length} → ${links.length} links (year=${selectedYear}, Q=${quarterNum})`);
+        return { ...baseData, nodes, links };
+    }, [graphData, year, quarter]);
+
+    // Inject canonical path metadata for Sankey rendering
+    const displayData = useMemo(() => {
+        if (!filteredData || !filteredData.nodes) return null;
 
         if (selectedChain && CANONICAL_PATHS[selectedChain]) {
             const def = CANONICAL_PATHS[selectedChain];
@@ -453,16 +475,16 @@ export function ExplorerDesk({ year = '2025', quarter = 'All' }: ExplorerDeskPro
             });
 
             return {
-                ...baseData,
+                ...filteredData,
                 metadata: {
-                    ...(baseData.metadata || {}),
+                    ...(filteredData.metadata || {}),
                     canonicalPath
                 }
             };
         }
 
-        return { ...baseData, metadata: baseData.metadata || {} };
-    }, [graphData, selectedChain]);
+        return { ...filteredData, metadata: filteredData.metadata || {} };
+    }, [filteredData, selectedChain]);
 
     const hasCanonicalPath = selectedChain ? (CANONICAL_PATHS[selectedChain]?.steps?.length > 0) : false;
 

@@ -49,11 +49,8 @@ const getSafeId = (val: any): string => {
         else if (val.low !== undefined) s = String(val.low);
         else if (val.id !== undefined) s = String(val.id);
         else if (val.identity !== undefined) s = String(val.identity);
-        else if (val.elementId !== undefined) s = String(val.elementId);
     }
 
-    // Normalize Float Strings ('1.0' -> '1') to fix link mismatches common in Neo4j/JSON
-    if (s.endsWith('.0')) s = s.slice(0, -2);
     return s;
 };
 
@@ -110,7 +107,7 @@ export function GraphSankey({ data, isDark = true, chain, metadata, isDiagnostic
 
     const getLinkEndpointId = (val: any): string => {
         if (val && typeof val === 'object') {
-            return getSafeId(val.originalId ?? val.nId ?? val.id ?? val.identity ?? val.elementId ?? val);
+            return getSafeId(val.originalId ?? val.nId ?? val.id ?? val.identity ?? val);
         }
         return getSafeId(val);
     };
@@ -197,7 +194,7 @@ export function GraphSankey({ data, isDark = true, chain, metadata, isDiagnostic
         // Process Nodes
         let nodes: Node[] = data.nodes.map(n => {
             const props = n.nProps || n.properties || {};
-            const id = getSafeId(n.nId ?? n.id ?? n.identity ?? n.elementId);
+            const id = getSafeId(n.nId ?? n.id ?? n.identity);
             const labels = (n.nLabels || n.labels || []).filter((l: any) => l);
             const level = props.level as string | undefined;
             const displayId = getDisplayId(props);
