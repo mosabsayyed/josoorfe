@@ -695,13 +695,13 @@ export default function DesktopExperience({ language = 'ar' }: DesktopExperience
                     gap: '10px',
                   }}>
                     {pages.map((_, idx) => (
-                      <button
+                      <div
                         key={idx}
                         onClick={onPageChange ? (e) => { e.stopPropagation(); onPageChange(idx); } : undefined}
                         style={{
                           width: isLandscapeMobile ? 6 : (isMobile ? 8 : 12),
                           height: isLandscapeMobile ? 6 : (isMobile ? 8 : 12),
-                          borderRadius: '50%',
+                          borderRadius: '50%', padding: 0, boxSizing: 'border-box', WebkitAppearance: 'none',
                           border: '2px solid rgba(255,255,255,0.3)',
                           padding: 0,
                           background: idx === pageIndex ? '#F4BB30' : 'rgba(255,255,255,0.15)',
@@ -860,7 +860,7 @@ export default function DesktopExperience({ language = 'ar' }: DesktopExperience
                   width: 8,
                   height: 8,
                   marginLeft: -4,
-                  borderRadius: '50%',
+                  borderRadius: '50%', padding: 0, boxSizing: 'border-box', WebkitAppearance: 'none',
                   background: 'radial-gradient(circle, #fff 0%, #f4bb30 50%, rgba(244,187,48,0) 100%)',
                   boxShadow: '0 0 12px 4px rgba(244,187,48,0.8)',
                   animation: 'sparkTravel 2s ease-in-out forwards',
@@ -875,7 +875,7 @@ export default function DesktopExperience({ language = 'ar' }: DesktopExperience
                   width: 6,
                   height: 6,
                   marginLeft: -3,
-                  borderRadius: '50%',
+                  borderRadius: '50%', padding: 0, boxSizing: 'border-box', WebkitAppearance: 'none',
                   background: 'radial-gradient(circle, #fff 0%, #f4bb30 40%, rgba(244,187,48,0) 100%)',
                   boxShadow: '0 0 20px 8px rgba(244,187,48,0.9)',
                   animation: 'sparkFlash 0.4s ease-out forwards',
@@ -911,11 +911,12 @@ export default function DesktopExperience({ language = 'ar' }: DesktopExperience
             paddingTop: isMobile ? '12%' : '8%',
             paddingLeft: isMobile ? '8%' : '10%',
             paddingRight: isMobile ? '8%' : '10%',
-            display: 'grid',
-            gridTemplateColumns: `repeat(3, ${iconSize}px)`,
-            gridAutoRows: `${iconSize + 24}px`,
+            display: 'flex',
+            flexDirection: 'row',
+            flexWrap: 'wrap',
             gap: `${iconGap}px`,
-            alignContent: 'start',
+            alignContent: 'flex-start',
+            justifyContent: 'flex-start',
           }}>
             {ICONS.map((icon, i) => {
               const isHighlighted = highlightedId === icon.id;
@@ -934,7 +935,7 @@ export default function DesktopExperience({ language = 'ar' }: DesktopExperience
                   ref={el => { iconRefs.current[i] = el; }}
                   onClick={() => openFreeWindow(icon)}
                   style={{
-                    ...gridStyle,
+                    width: `${iconSize + 20}px`,
                     background: 'none',
                     border: 'none',
                     padding: 0,

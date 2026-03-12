@@ -47,9 +47,11 @@ export default function VisionMemory() {
           transition: 'opacity 0.7s ease, transform 0.7s ease',
         }}>
           {/* Sparkle map layer — above card bg, below text */}
+          {!isMobile && (
           <div style={{ position: 'absolute', inset: 0, zIndex: 0, borderRadius: '16px', overflow: 'hidden', pointerEvents: 'none' }}>
             <Sparkle imageSrc="/att/ksa_mpbackgd.png" dotCount={1000} />
           </div>
+          )}
 
           {/* Left: stat + tag */}
           <div style={{
