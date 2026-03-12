@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 
 const BASE = '/att/landing-screenshots/desktopexp';
+const AR_BASE = '/att/landing-screenshots/ar';
 
 interface PageTransition {
   // Click position as % within the WINDOW content area (not the full container)
@@ -14,7 +15,9 @@ interface DesktopIcon {
   label: string;
   icon: string;
   pages: string[];
-  caption: string;
+  arPages?: string[];              // Arabic screenshot equivalents (same length as pages)
+  caption: string | string[];
+  captionAr?: string | string[];
   transitions?: PageTransition[];  // how to go from page[i] to page[i+1]
 }
 
@@ -22,82 +25,204 @@ interface DesktopIcon {
 // Row 4 (3): Tutorial, Reporting, Documents | Row 5 (3): Calendar, Settings, Observability
 const ICONS: DesktopIcon[] = [
   // Row 1 — entry point
-  { id: 'ontology', label: 'Start Here', icon: `${BASE}/ontology.jpg`, pages: [`${BASE}/ontology1.jpg`], caption: "End-to-end strategy execution — our ontology unlocks it all, starting with everything in one view" },
+  {
+    id: 'ontology', label: 'Start Here', icon: `${BASE}/ontology.jpg`,
+    pages: [`${BASE}/ontology1.jpg`, `${BASE}/ontology2.jpg`, `${BASE}/ontology3.jpg`, `${BASE}/ontology4.jpg`],
+    arPages: [`${AR_BASE}/23.jpg`, `${AR_BASE}/24.jpg`, `${AR_BASE}/21.jpg`, `${AR_BASE}/22.jpg`],
+    caption: [
+      'End-to-end strategy execution — our ontology unlocks many possibilities, starting with seeing everything in one view',
+      'You don\'t just see it — risks with priorities surface right here, no deep dives needed. 66 of 131 need attention.',
+      'Generate a report on the overall sector or the health of any specific node — instant insights for your decision making',
+      'Now every node tells you what\'s wrong and what to do — STATUS, WHY, and ACTION — nothing stays hidden',
+    ],
+    captionAr: [
+      'تنفيذ استراتيجي شامل — الأنطولوجيا تفتح إمكانيات عديدة، بدءًا من رؤية كل شيء في عرض واحد',
+      'لا تكتفي بالمشاهدة — المخاطر والأولويات تظهر أمامك مباشرة، دون الحاجة لتعمّق. 66 من 131 تحتاج انتباهك.',
+      'أنشئ تقريرًا عن القطاع ككل أو صحة أي عنصر محدد — رؤى فورية لدعم قراراتك',
+      'الآن كل عنصر يخبرك بالمشكلة والحل — الحالة، السبب، والإجراء — لا شيء يبقى مخفيًا',
+    ],
+    transitions: [
+      { clickX: 78, clickY: 40 },  // ontology1 → 2: click risk indicator on map
+      { clickX: 8, clickY: 5 },    // ontology2 → 3: click AI report button
+      { clickX: 74, clickY: 8 },   // ontology3 → 4: close modal, see risk overlay
+    ],
+  },
   // Row 2 — the three steps
   {
     id: 'observe', label: 'Observe', icon: `${BASE}/observe.jpg`,
-    pages: [`${BASE}/observe1.png`, `${BASE}/observe2.jpg`],
-    caption: 'Sector-level monitoring — KPIs, assets, and operational footprint on the map',
-    transitions: [{ clickX: 20, clickY: 8 }],
+    pages: [`${BASE}/observe1.png`, `${BASE}/observe2.jpg`, `${BASE}/observe3.jpg`],
+    arPages: [`${AR_BASE}/20.jpg`, `${AR_BASE}/19.jpg`, `${AR_BASE}/18.jpg`],
+    caption: [
+      'Monitor the big picture — the cross-sector and Vision 2030 angle, with every KPI and operational footprint in one place',
+      'Capture any specific program and instantly initiate a deep dive into your internal house and capabilities',
+      'See delivery programs, linked capabilities, and progress — all connected, all in real time',
+    ],
+    captionAr: [
+      'راقب الصورة الكبرى — البُعد القطاعي ورؤية 2030، مع كل مؤشر أداء وبصمة تشغيلية في مكان واحد',
+      'التقط أي برنامج وابدأ فورًا بالغوص في تفاصيل منظومتك الداخلية وقدراتك',
+      'شاهد برامج التنفيذ والقدرات المرتبطة والتقدم — كل شيء مترابط، كل شيء لحظي',
+    ],
+    transitions: [
+      { clickX: 20, clickY: 8 },   // observe1 → 2
+      { clickX: 55, clickY: 40 },  // observe2 → 3: click Digital Transformation item
+    ],
   },
   {
     id: 'decide', label: 'Decide', icon: `${BASE}/decide.jpg`,
-    pages: [`${BASE}/decide1.jpg`, `${BASE}/decide2.jpg`],
-    caption: 'Capability health analysis with AI-powered risk advisory and intervention strategies',
-    transitions: [{ clickX: 87, clickY: 10 }],
+    pages: [`${BASE}/decide1.jpg`, `${BASE}/decide2.jpg`, `${BASE}/decide3.jpg`, `${BASE}/decide4.jpg`],
+    arPages: [`${AR_BASE}/11.jpg`, `${AR_BASE}/13.jpg`, `${AR_BASE}/14.jpg`, `${AR_BASE}/12.jpg`],
+    caption: [
+      'Find the risks — assess capability health, maturity levels, and the scores behind each one',
+      'Get an instant detailed analysis — the AI decomposes the risk with compliance trends and operational health',
+      'See how each strategic option shifts your risk profile across all drivers before you act',
+      'Receive options to action now — compare strategies and select the one that fits your context',
+    ],
+    captionAr: [
+      'اكتشف المخاطر — قيّم صحة القدرات ومستويات النضج والدرجات خلف كل واحدة',
+      'احصل على تحليل تفصيلي فوري — الذكاء الاصطناعي يفكك المخاطر مع اتجاهات الامتثال والصحة التشغيلية',
+      'شاهد كيف يغيّر كل خيار استراتيجي ملف المخاطر عبر جميع المحركات قبل أن تتخذ قرارك',
+      'استلم خيارات جاهزة للتنفيذ — قارن الاستراتيجيات واختر الأنسب لسياقك',
+    ],
+    transitions: [
+      { clickX: 87, clickY: 10 },            // decide1 → 2: click Risk Advisory
+      { clickX: 50, clickY: 50, auto: true }, // decide2 → 3: auto-scroll to radar chart
+      { clickX: 50, clickY: 50, auto: true }, // decide3 → 4: auto-scroll to strategies
+    ],
   },
   {
     id: 'deliver', label: 'Deliver', icon: `${BASE}/deliver.jpg`,
-    pages: [`${BASE}/deliver1.jpg`, `${BASE}/deliver2.jpg`, `${BASE}/deliver3.jpg`, `${BASE}/delliver4.png`, `${BASE}/deliver5.png`],
-    caption: 'Execute Desk — intervention planning, strategic reset, and scenario simulation',
+    pages: [`${BASE}/deliver1.jpg`, `${BASE}/deliver2.png`, `${BASE}/deliver4.jpg`, `${BASE}/deliver5.jpg`],
+    arPages: [`${AR_BASE}/10.jpg`, `${AR_BASE}/9.jpg`, `${AR_BASE}/8.jpg`, `${AR_BASE}/7.jpg`],
+    caption: [
+      'Convert your decision instantly into a plan — the AI generates a tailored intervention based on the risk context',
+      'Review every detail — objectives, milestones, timelines, and resources — before you commit',
+      'The plan becomes a timeline — every task, owner, and deadline mapped out, ready to push to the teams',
+      'Plan committed and pushed out — from objectives to tasks in one loop, all in minutes. Delivery at the speed of ambition.',
+    ],
+    captionAr: [
+      'حوّل قرارك فورًا إلى خطة — الذكاء الاصطناعي يولّد تدخلًا مخصصًا بناءً على سياق المخاطر',
+      'راجع كل التفاصيل — الأهداف، المراحل، الجداول الزمنية، والموارد — قبل الالتزام',
+      'الخطة تتحول لجدول زمني — كل مهمة ومسؤول وموعد محددين، جاهزة للدفع إلى الفرق',
+      'الخطة اعتُمدت ودُفعت — من الأهداف إلى المهام في دورة واحدة، في دقائق. تنفيذ بسرعة الطموح.',
+    ],
     transitions: [
-      { clickX: 50, clickY: 50, auto: true },
-      { clickX: 93, clickY: 33 },
-      { clickX: 50, clickY: 9 },
-      { clickX: 80, clickY: 9 },
+      { clickX: 50, clickY: 50, auto: true }, // deliver1 → 2: auto (loading → plan text)
+      { clickX: 93, clickY: 7 },              // deliver2 → 4: click "Create Plan"
+      { clickX: 93, clickY: 7 },              // deliver4 → 5: click "Commit Plan"
     ],
   },
   // Row 3 — two blocks
   {
     id: 'signal', label: 'Signals', icon: `${BASE}/signal.jpg`,
     pages: [`${BASE}/signal1.jpg`, `${BASE}/signal2.jpg`, `${BASE}/signal3.jpg`],
-    caption: 'Interactive knowledge graph — explore 468 nodes across sphere, sankey, and circular views',
+    arPages: [`${AR_BASE}/28.jpg`, `${AR_BASE}/26.jpg`, `${AR_BASE}/27.jpg`],
+    caption: [
+      'Ever wondered what "complex" looks like? This is your entire system as a living sphere',
+      'Sankey flows — trace how entities connect and influence each other across the chain',
+      'Multiple lenses to view the same data — discover patterns that tables and charts can\'t show',
+    ],
+    captionAr: [
+      'هل تساءلت يومًا كيف يبدو "التعقيد"؟ هذا نظامك بالكامل ككرة حية',
+      'تدفقات سانكي — تتبّع كيف تتصل الكيانات وتؤثر على بعضها عبر السلسلة',
+      'عدسات متعددة لعرض نفس البيانات — اكتشف أنماطًا لا تظهرها الجداول والرسوم البيانية',
+    ],
     transitions: [
       { clickX: 6, clickY: 39 },
       { clickX: 16, clickY: 33 },
     ],
   },
-  { id: 'chatexpert', label: 'Expert Chat', icon: `${BASE}/chatexpert.jpg`, pages: [`${BASE}/chatexpert1.jpg`], caption: 'Ask your AI expert anything — with full context of your data' },
+  { id: 'chatexpert', label: 'Expert Chat', icon: `${BASE}/chatexpert.jpg`, pages: [`${BASE}/chatexpert1.jpg`], arPages: [`${AR_BASE}/4.jpg`], caption: 'Ask your AI expert anything — with full context of your data', captionAr: 'اسأل خبيرك الذكي أي شيء — بسياق كامل من بياناتك' },
   // Row 4 — supporting tools
-  { id: 'tutorial', label: 'Tutorials', icon: `${BASE}/tutorial.jpg`, pages: [`${BASE}/tutorial1.jpg`], caption: 'Step-by-step guides for every workflow and feature' },
+  { id: 'tutorial', label: 'Tutorials', icon: `${BASE}/tutorial.jpg`, pages: [`${BASE}/tutorial1.jpg`], arPages: [`${AR_BASE}/3.jpg`], caption: 'Step-by-step guides for every workflow and feature', captionAr: 'أدلة خطوة بخطوة لكل سير عمل وميزة' },
   {
     id: 'reporting', label: 'Reporting', icon: `${BASE}/reporting.jpg`,
     pages: [`${BASE}/reporting1.png`, `${BASE}/reporting2.png`],
-    caption: 'Control outcome tracking and automated performance report generation',
+    arPages: [`${AR_BASE}/1.jpg`, `${AR_BASE}/2.jpg`],
+    caption: [
+      'Control outcome tracking — monitor progress against committed plans',
+      'Automated performance reports — standard reports generated from live data',
+    ],
+    captionAr: [
+      'تتبّع المخرجات — راقب التقدم مقارنة بالخطط المعتمدة',
+      'تقارير أداء آلية — تقارير معيارية تُولّد من البيانات الحية',
+    ],
     transitions: [{ clickX: 78, clickY: 10 }],
   },
   { id: 'documents', label: 'Documents', icon: `${BASE}/Object.png`, pages: [], caption: '' },
   // Row 5 — utilities
   { id: 'calendar', label: 'Calendar', icon: `${BASE}/calendar.jpg`, pages: [], caption: '' },
   { id: 'settings', label: 'Settings', icon: `${BASE}/Setting.jpg`, pages: [], caption: '' },
-  { id: 'observability', label: 'Observability', icon: `${BASE}/observability.jpg`, pages: [`${BASE}/observability1.jpg`], caption: 'Platform health, data quality monitoring, and system observability' },
+  { id: 'observability', label: 'Observability', icon: `${BASE}/observability.jpg`, pages: [`${BASE}/observability1.jpg`], caption: 'Platform health, data quality monitoring, and system observability', captionAr: 'صحة المنصة ومراقبة جودة البيانات وقابلية مراقبة النظام' },
 ];
 
 // Tour steps — manually defined, with decide+deliver merged into one seamless flow
 const TOUR_STEPS: DesktopIcon[] = [
-  ICONS[0], // ontology
-  ICONS[1], // observe
-  // Merged decide → deliver: continuous flow through all Execute Desk tabs
+  ICONS[0], // ontology (4 pages)
+  ICONS[1], // observe (3 pages)
+  // Merged decide → deliver: continuous flow from analysis to commitment
   {
     id: 'decide', label: 'Decide', icon: `${BASE}/decide.jpg`,
     pages: [
-      `${BASE}/decide1.jpg`, `${BASE}/decide2.jpg`,       // Decide screens
-      `${BASE}/deliver1.jpg`, `${BASE}/deliver2.jpg`, `${BASE}/deliver3.jpg`, // Deliver: plan → gantt → commit
-      `${BASE}/delliver4.png`, `${BASE}/deliver5.png`,     // Deliver: strategic reset → scenario simulation
+      `${BASE}/decide1.jpg`, `${BASE}/decide2.jpg`, `${BASE}/decide3.jpg`, `${BASE}/decide4.jpg`, // Decide: capability → risk advisory → radar → strategies
+      `${BASE}/deliver1.jpg`, `${BASE}/deliver2.png`, `${BASE}/deliver4.jpg`, `${BASE}/deliver5.jpg`, // Deliver: loading → plan → gantt → committed
     ],
-    caption: 'From risk analysis through intervention planning to strategic reset and scenario simulation',
+    arPages: [
+      `${AR_BASE}/11.jpg`, `${AR_BASE}/13.jpg`, `${AR_BASE}/14.jpg`, `${AR_BASE}/12.jpg`, // Decide AR
+      `${AR_BASE}/10.jpg`, `${AR_BASE}/9.jpg`, `${AR_BASE}/8.jpg`, `${AR_BASE}/7.jpg`, // Deliver AR
+    ],
+    caption: [
+      'Find the risks — assess capability health, maturity levels, and the scores behind each one',
+      'Get an instant detailed analysis — the AI decomposes the risk with compliance trends and operational health',
+      'See how each strategic option shifts your risk profile across all drivers before you act',
+      'Receive options to action now — compare strategies and select the one that fits your context',
+      'Convert your decision instantly into a plan — the AI generates a tailored intervention based on the risk context',
+      'Review every detail — objectives, milestones, timelines, and resources — before you commit',
+      'The plan becomes a timeline — every task, owner, and deadline mapped out, ready to push to the teams',
+      'Plan committed and pushed out — from objectives to tasks in one loop, all in minutes. Delivery at the speed of ambition.',
+    ],
+    captionAr: [
+      'اكتشف المخاطر — قيّم صحة القدرات ومستويات النضج والدرجات خلف كل واحدة',
+      'احصل على تحليل تفصيلي فوري — الذكاء الاصطناعي يفكك المخاطر مع اتجاهات الامتثال والصحة التشغيلية',
+      'شاهد كيف يغيّر كل خيار استراتيجي ملف المخاطر عبر جميع المحركات قبل أن تتخذ قرارك',
+      'استلم خيارات جاهزة للتنفيذ — قارن الاستراتيجيات واختر الأنسب لسياقك',
+      'حوّل قرارك فورًا إلى خطة — الذكاء الاصطناعي يولّد تدخلًا مخصصًا بناءً على سياق المخاطر',
+      'راجع كل التفاصيل — الأهداف، المراحل، الجداول الزمنية، والموارد — قبل الالتزام',
+      'الخطة تتحول لجدول زمني — كل مهمة ومسؤول وموعد محددين، جاهزة للدفع إلى الفرق',
+      'الخطة اعتُمدت ودُفعت — من الأهداف إلى المهام في دورة واحدة، في دقائق. تنفيذ بسرعة الطموح.',
+    ],
     transitions: [
-      { clickX: 87, clickY: 10 },            // decide1 → decide2: click "AI Risk Analysis" button
-      { clickX: 83, clickY: 41 },            // decide2 → deliver1: click "Select →" on first strategy
-      { clickX: 50, clickY: 50, auto: true }, // deliver1 → deliver2: auto (loading → Gantt plan)
-      { clickX: 93, clickY: 33 },            // deliver2 → deliver3: click "Commit Plan" button
-      { clickX: 50, clickY: 9 },             // deliver3 → delliver4: click "Strategic Reset" tab
-      { clickX: 80, clickY: 9 },             // delliver4 → deliver5: click "Scenario Simulation" tab
+      { clickX: 87, clickY: 10 },            // decide1 → decide2: click Risk Advisory
+      { clickX: 50, clickY: 50, auto: true }, // decide2 → decide3: auto-scroll to radar chart
+      { clickX: 50, clickY: 50, auto: true }, // decide3 → decide4: auto-scroll to strategies
+      { clickX: 90, clickY: 40 },            // decide4 → deliver1: click "Select →" on strategy
+      { clickX: 50, clickY: 50, auto: true }, // deliver1 → deliver2: auto (loading → plan text)
+      { clickX: 93, clickY: 7 },             // deliver2 → deliver4: click "Create Plan"
+      { clickX: 93, clickY: 7 },             // deliver4 → deliver5: click "Commit Plan"
     ],
   },
   ICONS[4], // signal
+  ICONS[5], // chatexpert
+  ICONS[6], // tutorial
   ICONS[7], // reporting
+  ICONS[11], // observability
 ];
+
+// Arabic labels for icons
+// Arabic labels — matching the app's i18n exactly
+const AR_LABELS: Record<string, string> = {
+  ontology: 'ابدأ هنا',
+  observe: 'رصد',
+  decide: 'قرار',
+  deliver: 'تنفيذ',
+  signal: 'إشارات',
+  chatexpert: 'محادثة الخبير',
+  tutorial: 'الدروس',
+  reporting: 'التقارير',
+  documents: 'المستندات',
+  calendar: 'التقويم',
+  settings: 'الإعدادات',
+  observability: 'المراقبة',
+};
 
 // All image paths for preloading
 const ALL_IMAGES = [
@@ -133,19 +258,24 @@ const CursorSVG = () => (
   </svg>
 );
 
+const SKIP_KEY = 'josoor_desktop_tour_seen';
+
 export default function DesktopExperience({ language = 'ar' }: DesktopExperienceProps) {
   const isRTL = language === 'ar';
 
-  const [phase, setPhase] = useState<Phase>('boot');
+  // Check if user has seen the animation before
+  const hasSeenTour = typeof window !== 'undefined' && localStorage.getItem(SKIP_KEY) === '1';
+
+  const [phase, setPhase] = useState<Phase>(hasSeenTour ? 'free' : 'boot');
   const [isMobile, setIsMobile] = useState(false);
-  const [iconsVisible, setIconsVisible] = useState(false);
+  const [iconsVisible, setIconsVisible] = useState(hasSeenTour);
 
   // Boot / logo state
-  const [biosOpacity, setBiosOpacity] = useState(1);
+  const [biosOpacity, setBiosOpacity] = useState(hasSeenTour ? 0 : 1);
   const [logoVisible, setLogoVisible] = useState(false);
   const [logoScale, setLogoScale] = useState(1);
   const [logoOpacity, setLogoOpacity] = useState(0);
-  const [desktopOpacity, setDesktopOpacity] = useState(0);
+  const [desktopOpacity, setDesktopOpacity] = useState(hasSeenTour ? 1 : 0);
   const [sparkRunning, setSparkRunning] = useState(false);
   const [sparkFlash, setSparkFlash] = useState(false);
 
@@ -168,6 +298,25 @@ export default function DesktopExperience({ language = 'ar' }: DesktopExperience
   const tourTimeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   const tourRunningRef = useRef(false);
 
+  // Skip animation → jump to free mode
+  const skipToFree = useCallback(() => {
+    skippedRef.current = true;
+    tourRunningRef.current = false;
+    tourTimeoutsRef.current.forEach(clearTimeout);
+    tourTimeoutsRef.current = [];
+    setBiosOpacity(0);
+    setLogoVisible(false);
+    setDesktopOpacity(1);
+    setIconsVisible(true);
+    setWindowVisible(false);
+    setWindow_(null);
+    setDimmedIcons(false);
+    setHighlightedId(null);
+    setCursor({ x: 50, y: 50, visible: false, clicking: false });
+    setPhase('free');
+    localStorage.setItem(SKIP_KEY, '1');
+  }, []);
+
   // Responsive
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth <= 768);
@@ -187,10 +336,15 @@ export default function DesktopExperience({ language = 'ar' }: DesktopExperience
   const iconSize = isMobile ? 52 : 68;
   const iconGap = isMobile ? 20 : 32;
 
+  // Track if skip was triggered — survives across renders
+  const skippedRef = useRef(hasSeenTour);
+
   // ── Phase machine ──────────────────────────────────────────────
   useEffect(() => {
+    if (skippedRef.current) return; // Already skipped, don't start boot sequence
     // Phase 1: boot (2s)
     const t1 = setTimeout(() => {
+      if (skippedRef.current) return;
       // Transition to logo phase
       setBiosOpacity(0);
       setLogoVisible(true);
@@ -238,10 +392,11 @@ export default function DesktopExperience({ language = 'ar' }: DesktopExperience
     return () => clearTimeout(t);
   }, [phase]);
 
-  // Start tour after icons are visible
+  // Start tour after icons are visible (only if not already skipped/free)
   useEffect(() => {
-    if (!iconsVisible) return;
+    if (!iconsVisible || skippedRef.current) return;
     const t = setTimeout(() => {
+      if (skippedRef.current) return;
       setPhase('tour');
     }, 1200);
     return () => clearTimeout(t);
@@ -414,6 +569,7 @@ export default function DesktopExperience({ language = 'ar' }: DesktopExperience
         setHighlightedId(null);
         setCursor({ x: 50, y: 50, visible: false, clicking: false });
         setPhase('free');
+        localStorage.setItem(SKIP_KEY, '1');
       }
     }, elapsed);
   }, [addTimeout, getIconCenter, getWindowClickPosition]);
@@ -465,6 +621,9 @@ export default function DesktopExperience({ language = 'ar' }: DesktopExperience
     origin = '50% 50%',
   ) => {
     const { icon, pageIndex } = win;
+    const captionSource = isRTL && icon.captionAr ? icon.captionAr : icon.caption;
+    const currentCaption = Array.isArray(captionSource) ? captionSource[pageIndex] : captionSource;
+    const pages = isRTL && icon.arPages ? icon.arPages : icon.pages;
     return (
       <div
         style={{
@@ -485,7 +644,7 @@ export default function DesktopExperience({ language = 'ar' }: DesktopExperience
           <div style={{ flex: 1, position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
             {/* Images with crossfade */}
             <div style={{ position: 'relative', flex: 1 }}>
-              {icon.pages.map((src, idx) => (
+              {pages.map((src, idx) => (
                 <img
                   key={src}
                   src={src}
@@ -506,7 +665,7 @@ export default function DesktopExperience({ language = 'ar' }: DesktopExperience
             </div>
 
             {/* Caption strip — solid black bar overlaid on screenshot */}
-            {icon.caption && (
+            {currentCaption && (
               <div
                 onClick={e => e.stopPropagation()}
                 style={{
@@ -524,13 +683,13 @@ export default function DesktopExperience({ language = 'ar' }: DesktopExperience
                 zIndex: 5,
               }}>
                 {/* Page dots */}
-                {icon.pages.length > 1 && (
+                {pages.length > 1 && (
                   <div style={{
                     display: 'flex',
                     justifyContent: 'center',
                     gap: '10px',
                   }}>
-                    {icon.pages.map((_, idx) => (
+                    {pages.map((_, idx) => (
                       <button
                         key={idx}
                         onClick={onPageChange ? (e) => { e.stopPropagation(); onPageChange(idx); } : undefined}
@@ -556,9 +715,10 @@ export default function DesktopExperience({ language = 'ar' }: DesktopExperience
                   fontWeight: 600,
                   textAlign: 'center',
                   lineHeight: 1.4,
-                  letterSpacing: '0.01em',
+                  letterSpacing: isRTL ? undefined : '0.01em',
+                  direction: isRTL ? 'rtl' : 'ltr',
                 }}>
-                  {icon.caption}
+                  {currentCaption}
                 </span>
               </div>
             )}
@@ -709,14 +869,18 @@ export default function DesktopExperience({ language = 'ar' }: DesktopExperience
           {/* Icon grid */}
           <div style={{
             position: 'absolute',
-            inset: 0,
-            padding: isMobile ? '12% 8% 0' : '8% 10% 0',
+            top: 0,
+            bottom: 0,
+            left: isRTL ? 0 : undefined,
+            right: isRTL ? undefined : 0,
+            paddingTop: isMobile ? '12%' : '8%',
+            paddingLeft: isMobile ? '8%' : '10%',
+            paddingRight: isMobile ? '8%' : '10%',
             display: 'grid',
             gridTemplateColumns: `repeat(3, ${iconSize}px)`,
             gridAutoRows: `${iconSize + 24}px`,
             gap: `${iconGap}px`,
             alignContent: 'start',
-            justifyContent: isRTL ? 'end' : 'start',
           }}>
             {ICONS.map((icon, i) => {
               const isHighlighted = highlightedId === icon.id;
@@ -750,7 +914,7 @@ export default function DesktopExperience({ language = 'ar' }: DesktopExperience
                     transform: iconsVisible ? 'translateY(0) scale(1)' : 'translateY(12px) scale(0.8)',
                     transition: `opacity 0.5s ease, transform 0.4s ease ${i * 0.06}s, box-shadow 0.3s ease`,
                   }}
-                  title={icon.label}
+                  title={isRTL ? (AR_LABELS[icon.id] || icon.label) : icon.label}
                 >
                   <div style={{
                     width: iconSize,
@@ -792,12 +956,50 @@ export default function DesktopExperience({ language = 'ar' }: DesktopExperience
                     lineHeight: 1.2,
                     maxWidth: iconSize + 8,
                   }}>
-                    {icon.label}
+                    {isRTL ? (AR_LABELS[icon.id] || icon.label) : icon.label}
                   </span>
                 </button>
               );
             })}
           </div>
+
+          {/* Replay tour button */}
+          {phase === 'free' && (
+            <button
+              onClick={() => {
+                tourRunningRef.current = false;
+                clearAllTimeouts();
+                setTourIconIndex(0);
+                setDimmedIcons(false);
+                setHighlightedId(null);
+                setCursor({ x: 50, y: 50, visible: false, clicking: false });
+                setPhase('tour');
+              }}
+              style={{
+                position: 'absolute',
+                top: isMobile ? 8 : 12,
+                left: isRTL ? (isMobile ? 8 : 12) : undefined,
+                right: isRTL ? undefined : (isMobile ? 8 : 12),
+                zIndex: 20,
+                background: 'rgba(0,0,0,0.5)',
+                border: '1px solid rgba(244,187,48,0.4)',
+                borderRadius: 6,
+                padding: isMobile ? '4px 8px' : '5px 10px',
+                color: 'rgba(255,255,255,0.7)',
+                fontSize: isMobile ? 9 : 11,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 4,
+                transition: 'all 0.2s',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(244,187,48,0.2)'; e.currentTarget.style.color = '#F4BB30'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(0,0,0,0.5)'; e.currentTarget.style.color = 'rgba(255,255,255,0.7)'; }}
+            >
+              <span style={{ fontSize: isMobile ? 10 : 12 }}>&#9654;</span>
+              {isRTL ? 'إعادة' : 'Replay'}
+            </button>
+          )}
         </div>
 
         {/* ── Tour cursor ── */}
@@ -824,6 +1026,39 @@ export default function DesktopExperience({ language = 'ar' }: DesktopExperience
 
         {/* ── Free mode window ── */}
         {freeWindow && renderWindow(freeWindow, freeWindowVisible, closeFreeWindow, setFreePage, false, freeWindowOrigin)}
+
+        {/* ── Skip button — visible during animation/tour ── */}
+        {phase !== 'free' && (
+          <button
+            onClick={skipToFree}
+            style={{
+              position: 'absolute',
+              bottom: isMobile ? 12 : 16,
+              ...(isRTL ? { left: isMobile ? 12 : 16 } : { right: isMobile ? 12 : 16 }),
+              zIndex: 70,
+              background: 'rgba(0,0,0,0.6)',
+              backdropFilter: 'blur(8px)',
+              border: '1px solid rgba(255,255,255,0.15)',
+              borderRadius: '8px',
+              padding: isMobile ? '6px 14px' : '8px 18px',
+              color: 'rgba(255,255,255,0.8)',
+              fontSize: isMobile ? 11 : 13,
+              fontWeight: 600,
+              cursor: 'pointer',
+              transition: 'background 0.2s ease, color 0.2s ease',
+            }}
+            onMouseEnter={e => {
+              e.currentTarget.style.background = 'rgba(244,187,48,0.3)';
+              e.currentTarget.style.color = '#fff';
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.background = 'rgba(0,0,0,0.6)';
+              e.currentTarget.style.color = 'rgba(255,255,255,0.8)';
+            }}
+          >
+            {isRTL ? 'تخطي' : 'Skip'}
+          </button>
+        )}
       </div>
     </>
   );

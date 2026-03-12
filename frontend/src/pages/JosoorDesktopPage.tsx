@@ -20,18 +20,18 @@ import type { ConversationSummary, Message as APIMessage } from '../types/api';
 import type { InterventionContext } from '../components/desks/PlanningDesk';
 import './JosoorDesktopPage.css';
 
-// Lazy desk components
-const SectorDesk = React.lazy(() => import('../components/desks/SectorDesk').then(m => ({ default: m.SectorDesk })));
-const ControlsDesk = React.lazy(() => import('../components/desks/ControlsDesk').then(m => ({ default: m.ControlsDesk })));
-const PlanningDesk = React.lazy(() => import('../components/desks/PlanningDesk').then(m => ({ default: m.PlanningDesk })));
-const EnterpriseDesk = React.lazy(() => import('../components/desks/EnterpriseDesk').then(m => ({ default: m.EnterpriseDesk })));
-const ReportingDesk = React.lazy(() => import('../components/desks/ReportingDesk').then(m => ({ default: m.ReportingDesk })));
-const TutorialsDesk = React.lazy(() => import('../components/desks/TutorialsDesk').then(m => ({ default: m.TutorialsDesk })));
-const ExplorerDesk = React.lazy(() => import('../components/desks/ExplorerDesk').then(m => ({ default: m.ExplorerDesk })));
+// Lazy desk components — aliases match desktop app IDs
+const ObserveApp = React.lazy(() => import('../components/desks/SectorDesk').then(m => ({ default: m.SectorDesk })));
+const ControlsApp = React.lazy(() => import('../components/desks/ControlsDesk').then(m => ({ default: m.ControlsDesk })));
+const DeliverApp = React.lazy(() => import('../components/desks/PlanningDesk').then(m => ({ default: m.PlanningDesk })));
+const DecideApp = React.lazy(() => import('../components/desks/EnterpriseDesk').then(m => ({ default: m.EnterpriseDesk })));
+const ReportApp = React.lazy(() => import('../components/desks/ReportingDesk').then(m => ({ default: m.ReportingDesk })));
+const TutorialsApp = React.lazy(() => import('../components/desks/TutorialsDesk').then(m => ({ default: m.TutorialsDesk })));
+const ExplorerApp = React.lazy(() => import('../components/desks/ExplorerDesk').then(m => ({ default: m.ExplorerDesk })));
 const OntologyHome = React.lazy(() => import('../components/desks/OntologyHome'));
-const SettingsDesk = React.lazy(() => import('../app/josoor/views/admin/Settings'));
-const ObservabilityDesk = React.lazy(() => import('../app/josoor/views/admin/Observability'));
-const CalendarDesk = React.lazy(() => import('../components/desks/CalendarDesk').then(m => ({ default: m.CalendarDesk })));
+const SettingsApp = React.lazy(() => import('../app/josoor/views/admin/Settings'));
+const ObservabilityApp = React.lazy(() => import('../app/josoor/views/admin/Observability'));
+const CalendarApp = React.lazy(() => import('../components/desks/CalendarDesk').then(m => ({ default: m.CalendarDesk })));
 
 // ── Boot sequence chains to preload ──
 const PRELOAD_CHAINS = [
@@ -151,6 +151,7 @@ export default function JosoorDesktopPage() {
   const [selectedPersona, setSelectedPersona] = useState<string | null>('vision_expert');
   const [isPersonaLocked, setIsPersonaLocked] = useState(false);
   const [interventionContext, setInterventionContext] = useState<InterventionContext | null>(null);
+  const [focusCapId, setFocusCapId] = useState<string | null>(null);
   const [helpMode, setHelpMode] = useState(false);
   const [showAbout, setShowAbout] = useState(false);
 
@@ -562,33 +563,34 @@ export default function JosoorDesktopPage() {
         return <OntologyHome helpMode={helpMode} onHelpToggle={() => setHelpMode(prev => !prev)} onContinueInChat={(id: number) => { setActiveConversationId(id); openApp('chat'); }} year={year} quarter={quarter} />;
       case 'observe':
         return (
-          <SectorDesk
+          <ObserveApp
             year={year} quarter={quarter}
-            onNavigateToCapability={() => openApp('decide')}
+            onNavigateToCapability={(capId: string) => { setFocusCapId(capId); openApp('decide'); }}
             onContinueInChat={(id: number) => { setActiveConversationId(id); openApp('chat'); }}
           />
         );
       case 'decide':
         return (
-          <EnterpriseDesk
+          <DecideApp
             year={year} quarter={quarter}
+            focusCapId={focusCapId}
             onIntervene={handleIntervene}
             onContinueInChat={(id: number) => { setActiveConversationId(id); openApp('chat'); }}
           />
         );
       case 'deliver':
         return (
-          <PlanningDesk
+          <DeliverApp
             interventionContext={interventionContext}
             onClearContext={() => setInterventionContext(null)}
           />
         );
       case 'reporting':
-        return <ReportingDesk />;
+        return <ReportApp />;
       case 'signals':
-        return <ExplorerDesk year={year} quarter={quarter} />;
+        return <ExplorerApp year={year} quarter={quarter} />;
       case 'tutorials':
-        return <TutorialsDesk />;
+        return <TutorialsApp />;
       case 'chat':
         return (
           <div style={{ display: 'flex', height: '100%', direction: isAr ? 'rtl' : 'ltr' }}>
@@ -712,12 +714,12 @@ export default function JosoorDesktopPage() {
           </div>
         );
       case 'settings':
-        return <SettingsDesk />;
+        return <SettingsApp />;
       case 'observability':
-        return <ObservabilityDesk />;
+        return <ObservabilityApp />;
       case 'calendar':
         return (
-          <CalendarDesk
+          <CalendarApp
             year={year}
             quarter={quarter}
             availableYears={availableYears}

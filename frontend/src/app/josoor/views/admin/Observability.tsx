@@ -27,6 +27,8 @@ import {
     Play,
     Braces
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { useLanguage } from '../../../../contexts/LanguageContext';
 import { chatService } from '../../../../services/chatService';
 import { useAuth } from '../../../../contexts/AuthContext';
 // Settings service imports removed
@@ -147,6 +149,8 @@ interface TraceDetail {
 // ============================================================================
 export default function AdminObservability() {
     const { token, user } = useAuth();
+    const { t } = useTranslation();
+    const { language } = useLanguage();
 
     // COMPACT STYLES & JSON FORMATTING
     const styles = `
@@ -643,9 +647,9 @@ export default function AdminObservability() {
                         {/* CACHE HIT RATE - MOST IMPORTANT */}
                         <div className="analytics-card highlight cache-highlight">
                             <div className="analytics-content">
-                                <div className="analytics-label cache-metric">Cache Hit Rate</div>
+                                <div className="analytics-label cache-metric">{t('josoor.observability.cacheHitRate')}</div>
                                 <div className="analytics-value cache-metric">
-                                    {analytics.cache_hit_rate}% <span className="analytics-subtext">({analytics.total_cached.toLocaleString()} tokens cached)</span>
+                                    {analytics.cache_hit_rate}% <span className="analytics-subtext">({t('josoor.observability.tokensCached', { count: analytics.total_cached.toLocaleString() })})</span>
                                 </div>
                             </div>
                         </div>
@@ -653,9 +657,9 @@ export default function AdminObservability() {
                         {/* TOTAL CACHED TOKENS */}
                         <div className="analytics-card cache-highlight">
                             <div className="analytics-content">
-                                <div className="analytics-label cache-metric">Total Cached Tokens</div>
+                                <div className="analytics-label cache-metric">{t('josoor.observability.totalCachedTokens')}</div>
                                 <div className="analytics-value cache-metric">
-                                    {analytics.total_cached.toLocaleString()} <span className="analytics-subtext">({Math.round((analytics.total_cached / analytics.total_tokens) * 100)}% of total)</span>
+                                    {analytics.total_cached.toLocaleString()} <span className="analytics-subtext">({t('josoor.observability.pctOfTotal', { pct: Math.round((analytics.total_cached / analytics.total_tokens) * 100) })})</span>
                                 </div>
                             </div>
                         </div>
@@ -663,9 +667,9 @@ export default function AdminObservability() {
                         {/* TOOL USAGE */}
                         <div className="analytics-card">
                             <div className="analytics-content">
-                                <div className="analytics-label">Tool Calls</div>
+                                <div className="analytics-label">{t('josoor.observability.toolCalls_label')}</div>
                                 <div className="analytics-value">
-                                    {analytics.tool_usage_count} <span className="analytics-subtext">({Math.round((analytics.tool_usage_count / analytics.total_requests) * 100)}% of reqs)</span>
+                                    {analytics.tool_usage_count} <span className="analytics-subtext">({t('josoor.observability.pctOfReqs', { pct: Math.round((analytics.tool_usage_count / analytics.total_requests) * 100) })})</span>
                                 </div>
                             </div>
                         </div>
@@ -673,7 +677,7 @@ export default function AdminObservability() {
                         {/* TOTAL REQUESTS */}
                         <div className="analytics-card">
                             <div className="analytics-content">
-                                <div className="analytics-label">Total Requests</div>
+                                <div className="analytics-label">{t('josoor.observability.totalRequests')}</div>
                                 <div className="analytics-value">{analytics.total_requests}</div>
                             </div>
                         </div>
@@ -681,9 +685,9 @@ export default function AdminObservability() {
                         {/* TOTAL TOKENS */}
                         <div className="analytics-card">
                             <div className="analytics-content">
-                                <div className="analytics-label">Total Tokens</div>
+                                <div className="analytics-label">{t('josoor.observability.totalTokens')}</div>
                                 <div className="analytics-value">
-                                    {analytics.total_tokens.toLocaleString()} <span className="analytics-subtext">(Avg: {analytics.avg_tokens_per_request})</span>
+                                    {analytics.total_tokens.toLocaleString()} <span className="analytics-subtext">({t('josoor.observability.avg', { value: analytics.avg_tokens_per_request })})</span>
                                 </div>
                             </div>
                         </div>
@@ -691,9 +695,9 @@ export default function AdminObservability() {
                         {/* LATENCY */}
                         <div className="analytics-card">
                             <div className="analytics-content">
-                                <div className="analytics-label">Avg Latency</div>
+                                <div className="analytics-label">{t('josoor.observability.avgLatency')}</div>
                                 <div className="analytics-value">
-                                    {analytics.avg_latency_ms}ms <span className="analytics-subtext">(P95: {analytics.p95_latency_ms}ms)</span>
+                                    {analytics.avg_latency_ms}ms <span className="analytics-subtext">({t('josoor.observability.p95', { value: analytics.p95_latency_ms })})</span>
                                 </div>
                             </div>
                         </div>
@@ -701,7 +705,7 @@ export default function AdminObservability() {
                         {/* ERROR RATE */}
                         <div className="analytics-card">
                             <div className="analytics-content">
-                                <div className="analytics-label">Errors</div>
+                                <div className="analytics-label">{t('josoor.observability.errorsLabel')}</div>
                                 <div className="analytics-value">
                                     {analytics.error_count} <span className="analytics-subtext">({analytics.error_rate}%)</span>
                                 </div>
@@ -711,7 +715,7 @@ export default function AdminObservability() {
                         {/* MODELS USED */}
                         <div className="analytics-card">
                             <div className="analytics-content">
-                                <div className="analytics-label">Models Used</div>
+                                <div className="analytics-label">{t('josoor.observability.modelsUsed')}</div>
                                 <div className="analytics-value">{analytics.models_used.length}</div>
                             </div>
                         </div>
@@ -727,7 +731,7 @@ export default function AdminObservability() {
                             onChange={(e) => setFilterModel(e.target.value)}
                             className="filter-select"
                         >
-                            <option value="">All Models</option>
+                            <option value="">{t('josoor.observability.allModels')}</option>
                             {uniqueModels.map((model) => (
                                 <option key={model as string} value={model as string}>
                                     {model}
@@ -740,7 +744,7 @@ export default function AdminObservability() {
                             onChange={(e) => setFilterPersona(e.target.value)}
                             className="filter-select"
                         >
-                            <option value="">All Personas</option>
+                            <option value="">{t('josoor.observability.allPersonas')}</option>
                             {uniquePersonas.map((persona) => (
                                 <option key={persona} value={persona}>
                                     {persona}
@@ -753,9 +757,9 @@ export default function AdminObservability() {
                             onChange={(e) => setFilterHasTools(e.target.value)}
                             className="filter-select"
                         >
-                            <option value="all">All Requests</option>
-                            <option value="yes">With Tools</option>
-                            <option value="no">Without Tools</option>
+                            <option value="all">{t('josoor.observability.allRequests')}</option>
+                            <option value="yes">{t('josoor.observability.withTools')}</option>
+                            <option value="no">{t('josoor.observability.withoutTools')}</option>
                         </select>
 
                         <select
@@ -763,7 +767,7 @@ export default function AdminObservability() {
                             onChange={(e) => setFilterStatus(e.target.value)}
                             className="filter-select"
                         >
-                            <option value="">All Statuses</option>
+                            <option value="">{t('josoor.observability.allStatuses')}</option>
                             {uniqueStatuses.map((status) => (
                                 <option key={status as string} value={status as string}>
                                     {status}
@@ -781,34 +785,34 @@ export default function AdminObservability() {
                                 }}
                                 className="btn-clear-filters"
                             >
-                                Clear Filters
+                                {t('josoor.observability.clearFilters')}
                             </button>
                         )}
                     </div>
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                         <div style={{ fontSize: '0.875rem', color: 'var(--component-text-secondary)' }}>
-                            Viewing <strong>{traces.length}</strong> recent traces
+                            {t('josoor.observability.viewingTraces')} <strong>{traces.length}</strong> {t('josoor.observability.recentTraces')}
                         </div>
                         <button
                             onClick={fetchTraces}
                             disabled={obsLoading}
                             className="btn-refresh"
-                            title="Refresh data"
+                            title={t('josoor.observability.refreshData')}
                         >
                             <RefreshCw className={obsLoading ? 'spinning' : ''} />
-                            {obsLoading ? 'Refreshing...' : 'Refresh'}
+                            {obsLoading ? t('josoor.observability.refreshing') : t('josoor.observability.refresh')}
                         </button>
                     </div>
                 </div>
 
                 {/* Trace List */}
                 <div className="obs-trace-list">
-                    <h2>Conversation Traces ({filteredTraces.length})</h2>
+                    <h2>{t('josoor.observability.conversationTracesCount', { count: filteredTraces.length })}</h2>
                     <div className="trace-items">
                         {filteredTraces.length === 0 ? (
                             <div className="trace-empty">
-                                <p>No traces match the selected filters</p>
+                                <p>{t('josoor.observability.noTracesMatch')}</p>
                             </div>
                         ) : (
                             filteredTraces.map((trace) => (
@@ -833,7 +837,7 @@ export default function AdminObservability() {
                                                 {(trace.tool_calls_count > 0 || trace.request_has_tools) ? (
                                                     <span className="badge tools" style={{ background: 'rgba(139, 92, 246, 0.2)', color: '#d8b4fe', border: '1px solid rgba(139, 92, 246, 0.3)' }}>
                                                         <Terminal size={12} style={{ marginRight: 4 }} />
-                                                        Tools: {trace.tool_calls_count}
+                                                        {t('josoor.observability.toolsBadge', { count: trace.tool_calls_count })}
                                                     </span>
                                                 ) : (
                                                     // Debug: Show 0 count just to prove we checked
@@ -845,26 +849,26 @@ export default function AdminObservability() {
                                                 {(trace.cached_tokens && trace.cached_tokens > 0) ? (
                                                     <span className="badge cache-hit" style={{ background: 'rgba(234, 179, 8, 0.2)', color: '#fde047', border: '1px solid rgba(234, 179, 8, 0.3)' }}>
                                                         <Zap size={12} style={{ marginRight: 4 }} />
-                                                        Cache: {trace.cached_tokens}
+                                                        {t('josoor.observability.cacheBadge', { count: trace.cached_tokens })}
                                                     </span>
                                                 ) : (
                                                     // Debug: Show 0 cache just to prove we checked
                                                     <span className="badge cache-hit faded" style={{ opacity: 0.4, fontSize: '0.6rem' }}>
-                                                        Cache: {trace.cached_tokens || 0}
+                                                        {t('josoor.observability.cacheBadge', { count: trace.cached_tokens || 0 })}
                                                     </span>
                                                 )}
 
                                                 {(trace.has_error || trace.last_status === 'error') && (
-                                                    <span className="badge error">Error</span>
+                                                    <span className="badge error">{t('josoor.observability.errorBadge')}</span>
                                                 )}
                                             </div>
                                         </div>
                                         <div className="trace-stats">
                                             <span className="stat latency">
-                                                {trace.last_latency_ms ? trace.last_latency_ms + 'ms' : 'N/A'}
+                                                {trace.last_latency_ms ? trace.last_latency_ms + t('josoor.observability.ms') : t('josoor.observability.na')}
                                             </span>
                                             <span className="stat tokens">
-                                                {trace.total_tokens ? trace.total_tokens.toLocaleString() + ' tokens' : 'N/A'}
+                                                {trace.total_tokens ? trace.total_tokens.toLocaleString() + ' ' + t('josoor.observability.tokens') : t('josoor.observability.na')}
                                             </span>
                                             <ChevronDown
                                                 className={`expand-icon ${expandedTrace === trace.conversation_id ? 'expanded' : ''
@@ -878,58 +882,58 @@ export default function AdminObservability() {
                                         <div className="trace-card-details">
                                             {/* REQUEST PARAMS */}
                                             <div className="detail-section">
-                                                <h4>Request Parameters</h4>
+                                                <h4>{t('josoor.observability.requestParameters')}</h4>
                                                 <div className="detail-grid">
                                                     <div className="detail-row">
-                                                        <span className="label">Model:</span>
-                                                        <span className="value">{trace.request_model || 'N/A'}</span>
+                                                        <span className="label">{t('josoor.observability.modelLabel')}</span>
+                                                        <span className="value">{trace.request_model || t('josoor.observability.na')}</span>
                                                     </div>
                                                     <div className="detail-row">
-                                                        <span className="label">Temperature:</span>
-                                                        <span className="value">{trace.request_temperature ?? 'N/A'}</span>
+                                                        <span className="label">{t('josoor.observability.temperatureLabel')}</span>
+                                                        <span className="value">{trace.request_temperature ?? t('josoor.observability.na')}</span>
                                                     </div>
                                                     <div className="detail-row">
-                                                        <span className="label">Top P:</span>
-                                                        <span className="value">{trace.request_top_p ?? 'N/A'}</span>
+                                                        <span className="label">{t('josoor.observability.topPLabel')}</span>
+                                                        <span className="value">{trace.request_top_p ?? t('josoor.observability.na')}</span>
                                                     </div>
                                                     <div className="detail-row">
-                                                        <span className="label">Max Tokens:</span>
-                                                        <span className="value">{trace.request_max_tokens || 'N/A'}</span>
+                                                        <span className="label">{t('josoor.observability.maxTokensLabel')}</span>
+                                                        <span className="value">{trace.request_max_tokens || t('josoor.observability.na')}</span>
                                                     </div>
                                                     <div className="detail-row">
-                                                        <span className="label">Messages Count:</span>
+                                                        <span className="label">{t('josoor.observability.messagesCountLabel')}</span>
                                                         <span className="value">{trace.request_messages_count}</span>
                                                     </div>
                                                     <div className="detail-row">
-                                                        <span className="label">Tool Choice:</span>
-                                                        <span className="value">{trace.request_tool_choice || 'auto'}</span>
+                                                        <span className="label">{t('josoor.observability.toolChoiceLabel')}</span>
+                                                        <span className="value">{trace.request_tool_choice || t('josoor.observability.auto')}</span>
                                                     </div>
                                                 </div>
                                             </div>
 
                                             {/* TOKEN USAGE (INCLUDING CACHE) */}
                                             <div className="detail-section highlight-section">
-                                                <h4>Token Usage & Performance (🔥 CACHE METRICS)</h4>
+                                                <h4>{t('josoor.observability.tokenUsagePerformance')}</h4>
                                                 <div className="detail-grid">
                                                     <div className="detail-row">
-                                                        <span className="label">Total Tokens:</span>
+                                                        <span className="label">{t('josoor.observability.totalTokensLabel')}</span>
                                                         <span className="value">{trace.total_tokens?.toLocaleString() || '0'}</span>
                                                     </div>
                                                     <div className="detail-row">
-                                                        <span className="label">Input Tokens:</span>
+                                                        <span className="label">{t('josoor.observability.inputTokensLabel')}</span>
                                                         <span className="value">{trace.input_tokens?.toLocaleString() || '0'}</span>
                                                     </div>
                                                     <div className="detail-row">
-                                                        <span className="label">Output Tokens:</span>
+                                                        <span className="label">{t('josoor.observability.outputTokensLabel')}</span>
                                                         <span className="value">{trace.output_tokens?.toLocaleString() || '0'}</span>
                                                     </div>
                                                     <div className="detail-row highlight cache-row">
-                                                        <span className="label">🔥 Cached Tokens:</span>
+                                                        <span className="label">🔥 {t('josoor.observability.cachedTokensLabel')}</span>
                                                         <span className="value cache-metric">{trace.cached_tokens?.toLocaleString() || '0'}</span>
                                                     </div>
                                                     {trace.cached_tokens && trace.cached_tokens > 0 && (
                                                         <div className="detail-row highlight cache-row">
-                                                            <span className="label">Cache Hit Rate:</span>
+                                                            <span className="label">{t('josoor.observability.cacheHitRateLabel')}</span>
                                                             <span className="value cache-metric">
                                                                 {Math.round((trace.cached_tokens / (trace.input_tokens || 1)) * 100)}%
                                                             </span>
@@ -937,12 +941,12 @@ export default function AdminObservability() {
                                                     )}
                                                     {trace.ttft_ms && (
                                                         <div className="detail-row">
-                                                            <span className="label">Time to First Token (TTFT):</span>
+                                                            <span className="label">{t('josoor.observability.ttftLabel')}</span>
                                                             <span className="value">{trace.ttft_ms}ms</span>
                                                         </div>
                                                     )}
                                                     <div className="detail-row">
-                                                        <span className="label">Total Latency:</span>
+                                                        <span className="label">{t('josoor.observability.totalLatencyLabel')}</span>
                                                         <span className="value">{trace.last_latency_ms}ms</span>
                                                     </div>
                                                 </div>
@@ -950,30 +954,30 @@ export default function AdminObservability() {
 
                                             {/* RESPONSE DETAILS */}
                                             <div className="detail-section">
-                                                <h4>Response Details</h4>
+                                                <h4>{t('josoor.observability.responseDetails')}</h4>
                                                 <div className="detail-grid">
                                                     <div className="detail-row">
-                                                        <span className="label">Response Model:</span>
-                                                        <span className="value">{trace.response_model || 'N/A'}</span>
+                                                        <span className="label">{t('josoor.observability.responseModelLabel')}</span>
+                                                        <span className="value">{trace.response_model || t('josoor.observability.na')}</span>
                                                     </div>
                                                     <div className="detail-row">
-                                                        <span className="label">Status:</span>
+                                                        <span className="label">{t('josoor.observability.statusLabel')}</span>
                                                         <span className={`value status-${trace.last_status}`}>{trace.last_status}</span>
                                                     </div>
                                                     <div className="detail-row">
-                                                        <span className="label">Stop Reason:</span>
-                                                        <span className="value">{trace.response_stop_reason || 'N/A'}</span>
+                                                        <span className="label">{t('josoor.observability.stopReasonLabel')}</span>
+                                                        <span className="value">{trace.response_stop_reason || t('josoor.observability.na')}</span>
                                                     </div>
                                                     <div className="detail-row">
-                                                        <span className="label">Finish Reason:</span>
-                                                        <span className="value">{trace.response_finish_reason || 'N/A'}</span>
+                                                        <span className="label">{t('josoor.observability.finishReasonLabel')}</span>
+                                                        <span className="value">{trace.response_finish_reason || t('josoor.observability.na')}</span>
                                                     </div>
                                                     <div className="detail-row">
-                                                        <span className="label">Choices Count:</span>
+                                                        <span className="label">{t('josoor.observability.choicesCountLabel')}</span>
                                                         <span className="value">{trace.response_choices_count}</span>
                                                     </div>
                                                     <div className="detail-row">
-                                                        <span className="label">Latency:</span>
+                                                        <span className="label">{t('josoor.observability.latencyLabel')}</span>
                                                         <span className="value">{trace.last_latency_ms}ms</span>
                                                     </div>
                                                 </div>
@@ -982,15 +986,15 @@ export default function AdminObservability() {
                                             {/* TOOL CALLS */}
                                             {trace.tool_calls_count > 0 && (
                                                 <div className="detail-section">
-                                                    <h4>Tool Calls</h4>
+                                                    <h4>{t('josoor.observability.toolCallsSection')}</h4>
                                                     <div className="detail-grid">
                                                         <div className="detail-row">
-                                                            <span className="label">Tools Count:</span>
+                                                            <span className="label">{t('josoor.observability.toolsCountLabel')}</span>
                                                             <span className="value">{trace.tool_calls_count}</span>
                                                         </div>
                                                         <div className="detail-row full-width">
-                                                            <span className="label">Tools Used:</span>
-                                                            <span className="value">{trace.tool_names_used || 'N/A'}</span>
+                                                            <span className="label">{t('josoor.observability.toolsUsedLabel')}</span>
+                                                            <span className="value">{trace.tool_names_used || t('josoor.observability.na')}</span>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -1008,7 +1012,7 @@ export default function AdminObservability() {
                                                         gap: '0.5rem'
                                                     }}>
                                                         <Terminal size={16} color="#8b5cf6" />
-                                                        MCP Tool Operations
+                                                        {t('josoor.observability.mcpToolOperations')}
                                                         <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 400 }}>
                                                             ({trace.mcp_operations.length})
                                                         </span>
@@ -1027,7 +1031,7 @@ export default function AdminObservability() {
                                                                     </div>
                                                                     <span className={`badge ${op.is_error ? 'error' : 'success'}`}
                                                                         style={{ fontSize: '0.7rem', padding: '2px 8px', borderRadius: '12px' }}>
-                                                                        {op.is_error ? 'Failed' : 'Success'}
+                                                                        {op.is_error ? t('josoor.observability.failed') : t('josoor.observability.success')}
                                                                     </span>
                                                                 </div>
 
@@ -1037,7 +1041,7 @@ export default function AdminObservability() {
                                                                     <div className="mcp-payload-block">
                                                                         <div className="mcp-payload-label" style={{ color: '#93c5fd' }}>
                                                                             <Braces size={12} />
-                                                                            INPUT PAYLOAD
+                                                                            {t('josoor.observability.inputPayload')}
                                                                         </div>
                                                                         <pre className="mcp-payload-pre" style={{
                                                                             color: '#bfdbfe',
@@ -1052,7 +1056,7 @@ export default function AdminObservability() {
                                                                     <div className="mcp-payload-block">
                                                                         <div className="mcp-payload-label" style={{ color: '#86efac' }}>
                                                                             <Terminal size={12} />
-                                                                            OUTPUT RESULT
+                                                                            {t('josoor.observability.outputResult')}
                                                                         </div>
                                                                         <pre className="mcp-payload-pre" style={{
                                                                             color: '#bbf7d0',
@@ -1060,9 +1064,9 @@ export default function AdminObservability() {
                                                                             border: '1px solid rgba(134, 239, 172, 0.1)'
                                                                         }}>
                                                                             {(() => {
-                                                                                if (op.result === undefined || op.result === null) return <span style={{ color: '#64748b' }}>(no output)</span>;
+                                                                                if (op.result === undefined || op.result === null) return <span style={{ color: '#64748b' }}>{t('josoor.observability.noOutput')}</span>;
                                                                                 const str = typeof op.result === 'string' ? op.result : JSON.stringify(op.result, null, 2);
-                                                                                return str.length > 5000 ? str.substring(0, 5000) + '... (truncated)' : str;
+                                                                                return str.length > 5000 ? str.substring(0, 5000) + t('josoor.observability.truncated') : str;
                                                                             })()}
                                                                         </pre>
                                                                     </div>
@@ -1079,13 +1083,13 @@ export default function AdminObservability() {
                                                 /* FALLBACK: NO MESSAGES LOADED, SHOW SNAPSHOT */
                                                 (trace.response_content || trace.response_reasoning) && (
                                                     <div className="detail-section">
-                                                        <h4>Last Response Snapshot</h4>
+                                                        <h4>{t('josoor.observability.lastResponseSnapshot')}</h4>
                                                         <div className="messages-list">
                                                             {/* Reasoning (if any) */}
                                                             {trace.response_reasoning && (
                                                                 <div className="message-item assistant">
                                                                     <div className="message-header">
-                                                                        <span className="message-role">assistant (reasoning)</span>
+                                                                        <span className="message-role">{t('josoor.observability.assistantReasoning')}</span>
                                                                     </div>
                                                                     <div className="reasoning-content">
                                                                         {(() => {
@@ -1108,7 +1112,7 @@ export default function AdminObservability() {
                                                             {trace.response_content && (
                                                                 <div className="message-item assistant">
                                                                     <div className="message-header">
-                                                                        <span className="message-role">assistant</span>
+                                                                        <span className="message-role">{t('josoor.observability.assistant')}</span>
                                                                     </div>
                                                                     <div className="message-content">
                                                                         {trace.response_content}
@@ -1121,7 +1125,7 @@ export default function AdminObservability() {
                                             ) : (
                                                 /* FULL CONVERSATION HISTORY */
                                                 <div className="detail-section">
-                                                    <h4>Conversation History</h4>
+                                                    <h4>{t('josoor.observability.conversationHistory')}</h4>
                                                     <div className="messages-list">
                                                         {trace.messages.map((msg, idx) => {
                                                             const isLastAssistantMessage = msg.role === 'assistant' && idx === trace.messages!.length - 1;
@@ -1137,7 +1141,7 @@ export default function AdminObservability() {
                                                                     {/* INJECT REASONING INTO LAST ASSISTANT MESSAGE */}
                                                                     {isLastAssistantMessage && trace.response_reasoning && (
                                                                         <div className="reasoning-content" style={{ marginBottom: '1rem', borderLeft: '3px solid #8b5cf6' }}>
-                                                                            <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#8b5cf6', marginBottom: '0.5rem', textTransform: 'uppercase' }}>Reasoning Process</div>
+                                                                            <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#8b5cf6', marginBottom: '0.5rem', textTransform: 'uppercase' }}>{t('josoor.observability.reasoningProcess')}</div>
                                                                             {(() => {
                                                                                 try {
                                                                                     const reasoning = typeof trace.response_reasoning === 'string'

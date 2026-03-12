@@ -7,37 +7,38 @@ interface SparkleProps {
 
 export default function Sparkle({ imageSrc, dotCount = 600 }: SparkleProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const animationRef = useRef<number | null>(null);
+  const imgRef = useRef<HTMLImageElement | null>(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    const updateCanvasSize = () => {
-      const parent = canvas.parentElement;
-      if (parent) {
-        canvas.width = parent.clientWidth;
-        canvas.height = parent.clientHeight;
-      } else {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-      }
-    };
-
-    updateCanvasSize();
+    const parent = canvas.parentElement;
+    if (!parent) return;
 
     const img = new Image();
     img.crossOrigin = 'anonymous';
+    imgRef.current = img;
 
-    img.onload = () => {
-      const W = canvas.width;
-      const H = canvas.height;
+    let currentW = 0;
+    let currentH = 0;
+
+    const initAnimation = (W: number, H: number) => {
+      const ctx = canvas.getContext('2d');
+      if (!ctx || !img.complete || img.naturalWidth === 0) return;
+
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
+
+      canvas.width = W;
+      canvas.height = H;
+
+      const isRTL = document.documentElement.dir === 'rtl';
       const scale = Math.min(W / img.width, H / img.height) * 0.52;
       const iw = img.width * scale;
       const ih = img.height * scale;
-      const ox = (W - iw) * 0.01;
+      const ox = isRTL ? (W - iw) * 0.99 : (W - iw) * 0.01;
       const oy = (H - ih) / 2;
 
       // Hidden canvas for pixel sampling
@@ -83,12 +84,12 @@ export default function Sparkle({ imageSrc, dotCount = 600 }: SparkleProps) {
       interface Dot {
         x: number;
         y: number;
-        homeX: number;  // original position inside map
+        homeX: number;
         homeY: number;
-        vx: number;     // velocity for scatter phase
+        vx: number;
         vy: number;
-        speed: number;  // twinkle speed
-        phase: number;  // twinkle phase offset
+        speed: number;
+        phase: number;
         radius: number;
       }
 
@@ -118,49 +119,38 @@ export default function Sparkle({ imageSrc, dotCount = 600 }: SparkleProps) {
         attempts++;
       }
 
-      // ── Morph cycle timing (ms) ──
-      const SCATTER_DUR = 3000;   // random drift
-      const MORPH_IN_DUR = 2000;  // forming graph
-      const GRAPH_DUR = 3000;     // hold as graph
-      const MORPH_OUT_DUR = 2000; // dissolving back
+      const SCATTER_DUR = 3000;
+      const MORPH_IN_DUR = 2000;
+      const GRAPH_DUR = 3000;
+      const MORPH_OUT_DUR = 2000;
       const CYCLE = SCATTER_DUR + MORPH_IN_DUR + GRAPH_DUR + MORPH_OUT_DUR;
 
-      // Connection config
       const maxConnections = isMobile ? 2 : 3;
       const connectionDistance = isMobile ? 60 : 90;
-
       const startTime = Date.now();
-      let animationId: number;
 
       const draw = () => {
         const t = Date.now() - startTime;
         const cycleT = t % CYCLE;
 
-        // ── Compute morph progress (0 = scattered, 1 = graph) ──
         let morphProgress: number;
         if (cycleT < SCATTER_DUR) {
-          // Scattered phase
           morphProgress = 0;
         } else if (cycleT < SCATTER_DUR + MORPH_IN_DUR) {
-          // Morphing in
           const p = (cycleT - SCATTER_DUR) / MORPH_IN_DUR;
-          morphProgress = p * p * (3 - 2 * p); // smoothstep
+          morphProgress = p * p * (3 - 2 * p);
         } else if (cycleT < SCATTER_DUR + MORPH_IN_DUR + GRAPH_DUR) {
-          // Holding as graph
           morphProgress = 1;
         } else {
-          // Morphing out
-          const p = (cycleT - SCATTER_DUR - MORPH_IN_DUR - GRAPH_DUR) / MORPH_OUT_DUR;
+          const p = (cycleT - (SCATTER_DUR + MORPH_IN_DUR + GRAPH_DUR)) / MORPH_OUT_DUR;
           const smooth = p * p * (3 - 2 * p);
           morphProgress = 1 - smooth;
         }
 
-        const sp = morphProgress; // shorthand
+        const sp = morphProgress;
 
-        // ── Clear (transparent so parent background shows) ──
         ctx.clearRect(0, 0, W, H);
 
-        // ── Draw KSA map image + contour ──
         ctx.save();
         ctx.globalAlpha = 0.55;
         ctx.drawImage(img, ox, oy, iw, ih);
@@ -192,24 +182,19 @@ export default function Sparkle({ imageSrc, dotCount = 600 }: SparkleProps) {
         }
         ctx.restore();
 
-        // ── Move particles ──
-        // Smooth cubic ease: drift strongest at sp=0, zero at sp=1
         const scatter = 1 - sp;
-        const speedFactor = scatter * scatter * scatter; // cubic ease-in for drift
-
+        const speedFactor = scatter * scatter * scatter;
+        
         for (const dot of dots) {
-          // Drift with velocity (smoothly fades out as graph forms)
           dot.x += dot.vx * speedFactor;
           dot.y += dot.vy * speedFactor;
 
-          // Lerp toward home — cubic ease so it ramps up/down symmetrically
           const homePull = sp * sp * 0.1;
           if (homePull > 0.001) {
             dot.x += (dot.homeX - dot.x) * homePull;
             dot.y += (dot.homeY - dot.y) * homePull;
           }
 
-          // Bounce off map bounds (keep well inside image area)
           const pad = 40;
           if (dot.x < ox + pad || dot.x > ox + iw - pad) dot.vx *= -1;
           if (dot.y < oy + pad || dot.y > oy + ih - pad) dot.vy *= -1;
@@ -217,12 +202,10 @@ export default function Sparkle({ imageSrc, dotCount = 600 }: SparkleProps) {
           dot.y = Math.max(oy + pad, Math.min(oy + ih - pad, dot.y));
         }
 
-        // ── Color: white → gold ──
         const r = Math.floor(255 + (244 - 255) * sp);
         const g = Math.floor(255 + (187 - 255) * sp);
         const b = Math.floor(255 + (48 - 255) * sp);
 
-        // ── Draw connections (when morphing in) ──
         if (sp > 0.1) {
           for (let i = 0; i < dots.length; i++) {
             let conn = 0;
@@ -245,10 +228,8 @@ export default function Sparkle({ imageSrc, dotCount = 600 }: SparkleProps) {
           }
         }
 
-        // ── Draw particles ──
         for (const dot of dots) {
-          const twinkle = (Math.sin(t * dot.speed + dot.phase) * 0.5 + 0.5);
-          // During scatter: twinkle opacity. During graph: full opacity.
+          const twinkle = Math.sin(t * dot.speed + dot.phase) * 0.5 + 0.5;
           const alpha = sp < 0.5
             ? twinkle * (0.5 + sp)
             : 0.7 + twinkle * 0.3;
@@ -262,7 +243,6 @@ export default function Sparkle({ imageSrc, dotCount = 600 }: SparkleProps) {
           ctx.fillStyle = `rgba(${r},${g},${b},${alpha})`;
           ctx.fill();
 
-          // Glow on bright scatter dots
           if (sp < 0.5 && alpha > 0.6) {
             ctx.beginPath();
             ctx.arc(dot.x, dot.y, nodeRadius + 1.5, 0, Math.PI * 2);
@@ -270,7 +250,6 @@ export default function Sparkle({ imageSrc, dotCount = 600 }: SparkleProps) {
             ctx.fill();
           }
 
-          // Inner ring on graph dots
           if (sp > 0.6) {
             ctx.beginPath();
             ctx.arc(dot.x, dot.y, nodeRadius * 0.35, 0, Math.PI * 2);
@@ -279,31 +258,44 @@ export default function Sparkle({ imageSrc, dotCount = 600 }: SparkleProps) {
           }
         }
 
-        animationId = requestAnimationFrame(draw);
+        animationRef.current = requestAnimationFrame(draw);
       };
 
       draw();
-
-      return () => {
-        if (animationId) cancelAnimationFrame(animationId);
-      };
     };
 
+    img.onload = () => {
+      // Re-init with latest recorded dimensions
+      if (currentW > 0 && currentH > 0) {
+        initAnimation(currentW, currentH);
+      }
+    };
     img.src = imageSrc;
 
     let resizeTimer: NodeJS.Timeout;
-    const handleResize = () => {
-      clearTimeout(resizeTimer);
-      resizeTimer = setTimeout(() => {
-        updateCanvasSize();
-      }, 100);
-    };
+    const resizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const { width, height } = entry.contentRect;
+        if (width === 0 || height === 0) continue;
+        
+        currentW = width;
+        currentH = height;
+        
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(() => {
+          initAnimation(width, height);
+        }, 150); // Debounce to prevent heavy recalculation on fast resize
+      }
+    });
 
-    window.addEventListener('resize', handleResize);
+    resizeObserver.observe(parent);
 
     return () => {
-      window.removeEventListener('resize', handleResize);
+      resizeObserver.disconnect();
       clearTimeout(resizeTimer);
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
     };
   }, [imageSrc, dotCount]);
 

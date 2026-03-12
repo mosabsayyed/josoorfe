@@ -36,6 +36,59 @@ interface ExplorerFiltersProps {
     selectedNode?: any;
 }
 
+// Arabic display labels for node types
+const AR_NODE_LABELS: Record<string, string> = {
+    'SectorObjective': 'الأهداف القطاعية',
+    'SectorPolicyTool': 'الأدوات التنفيذية',
+    'SectorPerformance': 'الأداء القطاعي',
+    'SectorAdminRecord': 'السجل الإداري',
+    'SectorGovEntity': 'جهة حكومية',
+    'SectorBusiness': 'أعمال',
+    'SectorCitizen': 'مواطن',
+    'SectorDataTransaction': 'معاملات البيانات',
+    'EntityProject': 'المشاريع',
+    'EntityCapability': 'القدرات',
+    'EntityRisk': 'المخاطر',
+    'EntityOrgUnit': 'الوحدات التنظيمية',
+    'EntityProcess': 'العمليات',
+    'EntityITSystem': 'الأنظمة التقنية',
+    'EntityChangeAdoption': 'تبنّي التغيير',
+    'EntityCultureHealth': 'صحة الثقافة',
+    'EntityVendor': 'المورّدين',
+};
+
+// Arabic display labels for relationship types
+const AR_RELATIONSHIP_LABELS: Record<string, string> = {
+    'REALIZED_VIA': 'يتحقق عبر',
+    'GOVERNED_BY': 'يُحكم بواسطة',
+    'CASCADED_VIA': 'يتسلسل عبر',
+    'REFERS_TO': 'يشير إلى',
+    'APPLIED_ON': 'يُطبّق على',
+    'TRIGGERS_EVENT': 'يُطلق حدثًا',
+    'MEASURED_BY': 'يُقاس بواسطة',
+    'AGGREGATES_TO': 'يُجمّع إلى',
+    'INFORMS': 'يُبلّغ',
+    'MONITORED_BY': 'يُراقب بواسطة',
+    'SETS_PRIORITIES': 'يحدد الأولويات',
+    'SETS_TARGETS': 'يحدد المستهدفات',
+    'EXECUTES': 'ينفّذ',
+    'REPORTS': 'يُبلّغ',
+    'ROLE_GAPS': 'فجوات الأدوار',
+    'KNOWLEDGE_GAPS': 'فجوات المعرفة',
+    'AUTOMATION_GAPS': 'فجوات الأتمتة',
+    'OPERATES': 'يُشغّل',
+    'MONITORS_FOR': 'يراقب لأجل',
+    'APPLY': 'يُطبّق',
+    'AUTOMATION': 'أتمتة',
+    'DEPENDS_ON': 'يعتمد على',
+    'GAPS_SCOPE': 'نطاق الفجوات',
+    'CLOSE_GAPS': 'إغلاق الفجوات',
+    'GAP_STATUS': 'حالة الفجوة',
+    'ADOPTION_RISKS': 'مخاطر التبنّي',
+    'INCREASE_ADOPTION': 'زيادة التبنّي',
+    'PARENT_OF': 'أب لـ',
+};
+
 // Authoritative Ontology Labels (SST v1.1)
 const SST_LABELS = [
     // Sector Layer
@@ -108,6 +161,7 @@ export function ExplorerFilters({
     selectedNode
 }: ExplorerFiltersProps) {
     const { t } = useTranslation();
+    const isRTL = document.documentElement.dir === 'rtl' || document.documentElement.lang === 'ar';
     const [isExpanded, setIsExpanded] = useState(true);
     const [detailsOpen, setDetailsOpen] = useState(true);
 
@@ -330,7 +384,7 @@ export function ExplorerFilters({
                                                         onChange={() => toggleLabel(label)}
                                                         className="native-checkbox"
                                                     />
-                                                    <label htmlFor={`node-${label}`} className="checkbox-label">{label}</label>
+                                                    <label htmlFor={`node-${label}`} className="checkbox-label">{isRTL ? (AR_NODE_LABELS[label] ?? label) : label}</label>
                                                 </div>
                                             ))}
                                         </div>
@@ -358,7 +412,7 @@ export function ExplorerFilters({
                                                         onChange={() => toggleLabel(label)}
                                                         className="native-checkbox"
                                                     />
-                                                    <label htmlFor={`node-${label}`} className="checkbox-label">{label}</label>
+                                                    <label htmlFor={`node-${label}`} className="checkbox-label">{isRTL ? (AR_NODE_LABELS[label] ?? label) : label}</label>
                                                 </div>
                                             ))}
                                         </div>
@@ -386,7 +440,7 @@ export function ExplorerFilters({
                                                         onChange={() => toggleLabel(label)}
                                                         className="native-checkbox"
                                                     />
-                                                    <label htmlFor={`node-${label}`} className="checkbox-label">{label}</label>
+                                                    <label htmlFor={`node-${label}`} className="checkbox-label">{isRTL ? (AR_NODE_LABELS[label] ?? label) : label}</label>
                                                 </div>
                                             ))}
                                         </div>
@@ -416,7 +470,7 @@ export function ExplorerFilters({
                                             onChange={() => toggleRelationship(rel)}
                                             className="native-checkbox"
                                         />
-                                        <label htmlFor={`rel-${rel}`} className="checkbox-label">{rel}</label>
+                                        <label htmlFor={`rel-${rel}`} className="checkbox-label">{isRTL ? (AR_RELATIONSHIP_LABELS[rel] ?? rel) : rel}</label>
                                     </div>
                                 ))}
                             </div>

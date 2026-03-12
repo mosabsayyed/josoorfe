@@ -1244,10 +1244,10 @@ function transformNeo4jToMatrix(graphData: NeoGraphData, year: number | 'all', q
     return [];
   }
 
-  // Separate by level using business ID pattern
-  const l1Nodes = capabilityNodes.filter(n => n.level === 'L1' || /^\d+\.0$/.test(n.businessId || n.id));
-  const l2Nodes = capabilityNodes.filter(n => n.level === 'L2' || /^\d+\.\d+$/.test(n.businessId || n.id));
-  const l3Nodes = capabilityNodes.filter(n => n.level === 'L3' || /^\d+\.\d+\.\d+$/.test(n.businessId || n.id));
+  // Separate by level using the level property from Neo4j
+  const l1Nodes = capabilityNodes.filter(n => n.level === 'L1');
+  const l2Nodes = capabilityNodes.filter(n => n.level === 'L2');
+  const l3Nodes = capabilityNodes.filter(n => n.level === 'L3');
 
   console.log('[EnterpriseService] Hierarchy breakdown:', {
     total: capabilityNodes.length,
@@ -1300,10 +1300,11 @@ function transformNeo4jToMatrix(graphData: NeoGraphData, year: number | 'all', q
     }
   });
 
-  // Deduplicate L2s
+  // Deduplicate L2s — collect yearly scores as trend data
   // Key: ParentBusinessID + L2Name (Stable across years)
   // We strictly use parent_id from Cypher which is now the Business ID (e.g. 1.0)
   const l2ByIdentity = new Map<string, NeoGraphNode>();
+  const l2YearlyScores = new Map<string, Array<{ year: number; quarter: number; build_status?: string; execute_status?: string; kpi_achievement_pct?: number; maturity_level?: number }>>();
   l2Nodes.forEach(l2 => {
     if (!l2.parent_id) {
       console.warn('[EnterpriseService] Orphan L2 (no parent_id):', l2.name || l2.id);
@@ -1311,6 +1312,18 @@ function transformNeo4jToMatrix(graphData: NeoGraphData, year: number | 'all', q
     }
 
     const identityKey = `${l2.parent_id}_${l2.name} `;
+
+    // Collect this year's scores for trend
+    if (!l2YearlyScores.has(identityKey)) l2YearlyScores.set(identityKey, []);
+    l2YearlyScores.get(identityKey)!.push({
+      year: getNeo4jInt(l2.year),
+      quarter: getNeo4jInt(l2.quarter),
+      build_status: l2.build_status,
+      execute_status: l2.execute_status,
+      kpi_achievement_pct: l2.kpi_achievement_pct != null ? Number(l2.kpi_achievement_pct) : undefined,
+      maturity_level: getNeo4jInt(l2.maturity_level),
+    });
+
     const existing = l2ByIdentity.get(identityKey);
 
     if (!existing) {
@@ -1325,6 +1338,14 @@ function transformNeo4jToMatrix(graphData: NeoGraphData, year: number | 'all', q
 
     if (l2Year > existingYear || (l2Year === existingYear && l2Quarter > existingQuarter)) {
       l2ByIdentity.set(identityKey, l2);
+    }
+  });
+
+  // Attach sorted trend data to winning L2 nodes
+  l2ByIdentity.forEach((node, key) => {
+    const scores = l2YearlyScores.get(key);
+    if (scores && scores.length > 1) {
+      (node as any).yearlyTrend = scores.sort((a, b) => a.year - b.year || a.quarter - b.quarter);
     }
   });
 
@@ -1343,16 +1364,31 @@ function transformNeo4jToMatrix(graphData: NeoGraphData, year: number | 'all', q
     }
   });
 
-  // Deduplicate L3s
+  // Deduplicate L3s — collect yearly scores as trend data
   const l3ByIdentity = new Map<string, NeoGraphNode>();
+  const l3YearlyScores = new Map<string, Array<{ year: number; quarter: number; build_status?: string; execute_status?: string; kpi_achievement_pct?: number; build_exposure_pct?: number; people_score?: number; process_score?: number; tools_score?: number; maturity_level?: number }>>();
   l3Nodes.forEach(l3 => {
     if (!l3.parent_id) {
-      // console.warn('[EnterpriseService] Orphan L3 (no parent_id):', l3.name); 
-      // Optional: verbose logging off to avoid spam if purely data issue
       return;
     }
 
     const identityKey = `${l3.parent_id}_${l3.name} `;
+
+    // Collect this year's scores for trend
+    if (!l3YearlyScores.has(identityKey)) l3YearlyScores.set(identityKey, []);
+    l3YearlyScores.get(identityKey)!.push({
+      year: getNeo4jInt(l3.year),
+      quarter: getNeo4jInt(l3.quarter),
+      build_status: l3.build_status,
+      execute_status: l3.execute_status,
+      kpi_achievement_pct: l3.kpi_achievement_pct != null ? Number(l3.kpi_achievement_pct) : undefined,
+      build_exposure_pct: l3.build_exposure_pct != null ? Number(l3.build_exposure_pct) : undefined,
+      people_score: l3.risk?.people_score != null ? Number(l3.risk.people_score) : undefined,
+      process_score: l3.risk?.process_score != null ? Number(l3.risk.process_score) : undefined,
+      tools_score: l3.risk?.tools_score != null ? Number(l3.risk.tools_score) : undefined,
+      maturity_level: getNeo4jInt(l3.maturity_level),
+    });
+
     const existing = l3ByIdentity.get(identityKey);
 
     if (!existing) {
@@ -1361,11 +1397,20 @@ function transformNeo4jToMatrix(graphData: NeoGraphData, year: number | 'all', q
     }
 
     const l3Year = getNeo4jInt(l3.year);
-    const l3Quarter = getNeo4jInt(l3.quarter); const existingYear = getNeo4jInt(existing.year);
+    const l3Quarter = getNeo4jInt(l3.quarter);
+    const existingYear = getNeo4jInt(existing.year);
     const existingQuarter = getNeo4jInt(existing.quarter);
 
     if (l3Year > existingYear || (l3Year === existingYear && l3Quarter > existingQuarter)) {
       l3ByIdentity.set(identityKey, l3);
+    }
+  });
+
+  // Attach sorted trend data to winning nodes
+  l3ByIdentity.forEach((node, key) => {
+    const scores = l3YearlyScores.get(key);
+    if (scores && scores.length > 1) {
+      (node as any).yearlyTrend = scores.sort((a, b) => a.year - b.year || a.quarter - b.quarter);
     }
   });
 
@@ -1472,7 +1517,8 @@ function buildL2(l2Node: NeoGraphNode, l3Nodes: NeoGraphNode[]): L2Capability {
       performanceTargets,
       objectives: uniqueObjectives
     } : undefined,
-    rawL2Node: l2Node as any
+    rawL2Node: l2Node as any,
+    yearlyTrend: (l2Node as any).yearlyTrend,
   };
 }
 
@@ -1603,6 +1649,11 @@ function buildL3(l3Node: NeoGraphNode): L3Capability {
   l3Cap.exposure_percent = mode === 'build'
     ? getNeo4jInt((l3Node as any).build_exposure_pct)
     : getNeo4jInt((l3Node as any).regression_risk_pct);
+
+  // Yearly trend data (collected during dedup, attached to winning node)
+  if ((l3Node as any).yearlyTrend) {
+    (l3Cap as any).yearlyTrend = (l3Node as any).yearlyTrend;
+  }
 
   return l3Cap;
 }

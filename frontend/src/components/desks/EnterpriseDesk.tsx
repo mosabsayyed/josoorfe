@@ -40,7 +40,6 @@ export function EnterpriseDesk({ year = '2025', quarter = 'Q1', focusCapId, onIn
   const navigate = useNavigate();
 
   // AI Risk Analysis state
-  const [riskPromptTemplate, setRiskPromptTemplate] = useState<string | null>(null);
   const [isRiskModalOpen, setIsRiskModalOpen] = useState(false);
   const [riskReportHtml, setRiskReportHtml] = useState('');
   const [riskArtifacts, setRiskArtifacts] = useState<Artifact[]>([]);
@@ -73,29 +72,6 @@ export function EnterpriseDesk({ year = '2025', quarter = 'Q1', focusCapId, onIn
 
   const error = queryError ? (queryError instanceof Error ? queryError.message : 'Failed to load capabilities') : null;
 
-  // Fetch AI risk analysis prompt template on mount
-  useEffect(() => {
-    const fetchPromptTemplate = async () => {
-      try {
-        const VITE_ENV: any = (typeof import.meta !== 'undefined' && (import.meta as any).env) ? (import.meta as any).env : undefined;
-        const RAW_API_BASE = VITE_ENV?.VITE_API_URL || '';
-        const API_BASE_URL = RAW_API_BASE ? RAW_API_BASE.replace(/\/+$/g, '') : '';
-        const API_PATH_PREFIX = (API_BASE_URL && API_BASE_URL.endsWith('/api/v1')) ? '' : '/api/v1';
-        const baseUrl = API_BASE_URL || window.location.origin;
-
-        const response = await fetch(`${baseUrl}${API_PATH_PREFIX}/prompts/risk_advisory`);
-        if (response.ok) {
-          const data = await response.json();
-          setRiskPromptTemplate(data.content);
-        } else {
-          console.error('[EnterpriseDesk] Failed to fetch risk prompt template:', response.statusText);
-        }
-      } catch (error) {
-        console.error('[EnterpriseDesk] Error fetching risk prompt template:', error);
-      }
-    };
-    fetchPromptTemplate();
-  }, []);
 
   // Auto-select capability from cross-desk navigation (query param ?cap=X or focusCapId prop)
   const effectiveCapId = focusCapId || targetCapId;
@@ -185,18 +161,55 @@ export function EnterpriseDesk({ year = '2025', quarter = 'Q1', focusCapId, onIn
     const cap = selectedL3 || selectedL2;
     if (!cap) return;
 
+    const isL2 = !!cap.l3;
+    const capMode = cap.mode || (isL2 && cap.l3.some((c: any) => c.mode === 'execute') ? 'execute' : 'build');
+    const statusField = capMode === 'execute' ? cap.execute_status : cap.build_status;
+    const band = statusField || 'unknown';
+    // KPI: L3 direct, L2 from upwardChain (same as detail panel)
+    const kpiPct = cap.kpi_achievement_pct ?? (() => {
+      const pt = cap.upwardChain?.performanceTargets?.[0];
+      if (!pt) return undefined;
+      const actual = pt.actual_value != null ? Number(pt.actual_value) : null;
+      const target = pt.target != null ? Number(pt.target) : null;
+      if (actual == null || target == null || target <= 0) return undefined;
+      return Math.max(0, Math.min(100, Math.round((actual / target) * 100)));
+    })();
     const ctx = {
-      riskId: cap.rawRisk?.id || cap.id || '',
-      riskName: cap.rawRisk?.name || cap.name || '',
+      riskId: cap.rawRisk?.id || (isL2 ? cap.l3.find((c: any) => c.rawRisk)?.rawRisk?.id : '') || '',
+      riskName: cap.rawRisk?.name || (isL2 ? cap.l3.find((c: any) => c.rawRisk)?.rawRisk?.name : '') || '',
+      riskCategory: cap.rawRisk?.risk_category || (isL2 ? cap.l3.find((c: any) => c.rawRisk)?.rawRisk?.risk_category : '') || '',
+      mitigationStrategy: cap.rawRisk?.mitigation_strategy || (isL2 ? cap.l3.find((c: any) => c.rawRisk)?.rawRisk?.mitigation_strategy : '') || '',
       capabilityId: cap.id || '',
       capabilityName: cap.name || '',
-      band: cap.rawRisk?.band || '',
-      exposurePct: cap.exposure_percent || 0,
+      band,
+      mode: capMode,
+      maturityLevel: cap.maturity_level,
+      targetMaturityLevel: cap.target_maturity_level,
+      buildStatus: cap.build_status,
+      executeStatus: cap.execute_status,
+      kpiAchievementPct: kpiPct,
+      buildExposurePct: cap.build_exposure_pct,
+      peopleScore: cap.people_score,
+      processScore: cap.process_score,
+      toolsScore: cap.tools_score,
+      expectedDelayDays: cap.expected_delay_days,
+      operateTrendFlag: cap.rawRisk?.operate_trend_flag,
+      operationalHealthPct: cap.rawRisk?.operational_health_pct,
+      prevOperationalHealthPct: cap.rawRisk?.prev_operational_health_pct,
+      prev2OperationalHealthPct: cap.rawRisk?.prev2_operational_health_pct,
+      yearlyTrend: cap.yearlyTrend,
       selectedOption: {
         id: option.id,
         title: option.title,
         description: option.description,
+        impact: option.impact,
+        timeline: option.timeline,
+        confidence: option.confidence,
       },
+      riskAnalysisNarrative: riskReportHtml,
+      riskAnalysisArtifacts: riskArtifacts,
+      capDataYear: cap.year || selectedYear,
+      selectedYear,
     };
 
     setIsRiskModalOpen(false);
@@ -232,28 +245,81 @@ export function EnterpriseDesk({ year = '2025', quarter = 'Q1', focusCapId, onIn
     setRiskReportHtml(`<div style="display:flex;align-items:center;justify-content:center;height:100%;"><h3 style="color:#F4BB30">${t('josoor.enterprise.detailPanel.generatingAnalysis')}</h3></div>`);
     setRiskArtifacts([]);
 
-    if (!riskPromptTemplate) {
-      setRiskReportHtml(`<div style="display:flex;align-items:center;justify-content:center;height:100%;"><h3 style="color:#ef4444">Error: Prompt template not loaded</h3></div>`);
-      return;
-    }
-
     const capId = cap.id;
     const capName = cap.name || capId;
     const capYear = cap.year || selectedYear;
-    const riskId = cap.rawRisk?.id || cap.rawCapability?.risk?.id || '';
-    const capMode = cap.mode || 'build';
-    // Determine risk band: Red / Amber / Green / Planned / Not-Due
-    const riskBand = capMode === 'execute'
-      ? (cap.execute_status === 'issues' ? 'Red' : cap.execute_status === 'at-risk' ? 'Amber' : 'Green')
-      : (cap.build_status === 'not-due' ? 'Not-Due'
-        : cap.build_status === 'planned' ? 'Planned'
-        : cap.build_status?.includes('issues') ? 'Red'
-        : cap.build_status?.includes('atrisk') ? 'Amber'
-        : cap.build_status === 'in-progress-ontrack' ? 'Green' : 'Unknown');
-    const exposure = cap.exposure_percent != null ? `${cap.exposure_percent}%` : 'N/A';
+    const isL2 = !!cap.l3;
+    // Mode: L3 has cap.mode; L2 derives from children (CapabilityDetailPanel line 896)
+    const capMode = cap.mode || (isL2 && cap.l3.some((c: any) => c.mode === 'execute') ? 'execute' : 'build');
+    const statusField = capMode === 'execute' ? cap.execute_status : cap.build_status;
 
     const lang = document.documentElement.dir === 'rtl' ? 'Arabic' : 'English';
-    const prompt = `Please analyze capability ${capId} (year: ${capYear}).${riskId ? ` Risk ID: ${riskId}` : ''} Respond entirely in ${lang}.`;
+
+    // KPI: L3 direct, L2 from upwardChain (same derivation as CapabilityDetailPanel)
+    const kpiPct = cap.kpi_achievement_pct ?? (() => {
+      const pt = cap.upwardChain?.performanceTargets?.[0];
+      if (!pt) return undefined;
+      const actual = pt.actual_value != null ? Number(pt.actual_value) : null;
+      const target = pt.target != null ? Number(pt.target) : null;
+      if (actual == null || target == null || target <= 0) return undefined;
+      return Math.max(0, Math.min(100, Math.round((actual / target) * 100)));
+    })();
+
+    // Band: raw status value (issues, at-risk, ontrack, etc.)
+    const band = statusField || 'unknown';
+
+    // Build supplementary context lines (only include fields that have values)
+    const contextLines: string[] = [];
+    contextLines.push(`Capability Name: ${capName}`);
+    contextLines.push(`Mode: ${capMode}`);
+    contextLines.push(`Band: ${band}`);
+    if (cap.build_status) contextLines.push(`Build Status: ${cap.build_status}`);
+    if (cap.execute_status) contextLines.push(`Execute Status: ${cap.execute_status}`);
+    if (cap.maturity_level != null) contextLines.push(`Maturity Level: ${cap.maturity_level}`);
+    if (cap.target_maturity_level != null) contextLines.push(`Target Maturity Level: ${cap.target_maturity_level}`);
+    if (kpiPct != null) contextLines.push(`KPI Achievement: ${kpiPct}%`);
+    if (cap.build_exposure_pct != null) contextLines.push(`Build Exposure: ${cap.build_exposure_pct}%`);
+    if (cap.people_score != null) contextLines.push(`People Score: ${cap.people_score}`);
+    if (cap.process_score != null) contextLines.push(`Process Score: ${cap.process_score}`);
+    if (cap.tools_score != null) contextLines.push(`Tools Score: ${cap.tools_score}`);
+    // Trend / delay data
+    if (cap.expected_delay_days != null) contextLines.push(`Expected Delay Days: ${cap.expected_delay_days}`);
+    // Risk fields from rawRisk (L3 only)
+    const risk = cap.rawRisk;
+    if (risk) {
+      if (risk.id) contextLines.push(`Risk ID: ${risk.id}`);
+      if (risk.name) contextLines.push(`Risk Name: ${risk.name}`);
+      if (risk.risk_category) contextLines.push(`Risk Category: ${risk.risk_category}`);
+      if (risk.risk_status) contextLines.push(`Risk Status: ${risk.risk_status}`);
+      if (risk.mitigation_strategy) contextLines.push(`Mitigation Strategy: ${risk.mitigation_strategy}`);
+      if (risk.operate_trend_flag) contextLines.push(`Operate Trend Flag: ${risk.operate_trend_flag}`);
+      if (risk.operational_health_pct != null) contextLines.push(`Operational Health: ${risk.operational_health_pct}%`);
+      if (risk.prev_operational_health_pct != null) contextLines.push(`Previous Operational Health: ${risk.prev_operational_health_pct}%`);
+      if (risk.prev2_operational_health_pct != null) contextLines.push(`Previous-2 Operational Health: ${risk.prev2_operational_health_pct}%`);
+    }
+
+    // Yearly trend data (scores across past years)
+    if (cap.yearlyTrend?.length > 1) {
+      contextLines.push(`\nYearly Trend:`);
+      cap.yearlyTrend.forEach((yr: any) => {
+        const parts = [`${yr.year}/Q${yr.quarter}`];
+        if (yr.build_status) parts.push(`build:${yr.build_status}`);
+        if (yr.execute_status) parts.push(`execute:${yr.execute_status}`);
+        if (yr.kpi_achievement_pct != null) parts.push(`kpi:${yr.kpi_achievement_pct}%`);
+        if (yr.build_exposure_pct != null) parts.push(`exposure:${yr.build_exposure_pct}%`);
+        if (yr.people_score != null) parts.push(`people:${yr.people_score}`);
+        if (yr.process_score != null) parts.push(`process:${yr.process_score}`);
+        if (yr.tools_score != null) parts.push(`tools:${yr.tools_score}`);
+        if (yr.maturity_level != null) parts.push(`maturity:${yr.maturity_level}`);
+        contextLines.push(`  ${parts.join(' | ')}`);
+      });
+    }
+
+    // Cumulative data model explanation
+    contextLines.push(`\nData Model: Capabilities are cumulative across years. A capability created in 2025 with no 2026 entry remains the active version in 2026. When querying, retrieve all years (year=0) and select the latest entry where year <= ${selectedYear}.`);
+
+    // Template expects capability ID + year first, then supplementary context
+    const prompt = `Capability: ${capId}. Reporting Period: ${selectedYear} / Q1. Respond entirely in ${lang}.\n\nSupplementary context:\n${contextLines.join('\n')}`;
 
     try {
       const response = await chatService.sendMessage({

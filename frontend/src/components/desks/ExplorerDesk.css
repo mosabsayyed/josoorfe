@@ -505,6 +505,16 @@
     color: var(--studio-text);
 }
 
+[dir="rtl"] .node-count-badge {
+    /* Always keep on right instead of moving to left */
+    /* right: auto; left: 1rem; */
+}
+
+[dir="rtl"] .node-count-badge span {
+    margin-left: 0;
+    margin-right: 0.5rem;
+}
+
 @media (max-width: 1100px) {
     .explorer-container {
         grid-template-columns: 1fr;

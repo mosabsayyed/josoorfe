@@ -61,6 +61,26 @@ export function GraphSankey({ data, isDark = true, chain, metadata, isDiagnostic
     const tooltipTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
     const isRTL = document.documentElement.dir === 'rtl' || document.documentElement.lang === 'ar';
 
+    const AR_COLUMN_LABELS: Record<string, string> = {
+        'SectorObjective': 'الأهداف القطاعية',
+        'SectorPolicyTool': 'الأدوات التنفيذية',
+        'SectorPerformance': 'الأداء القطاعي',
+        'SectorAdminRecord': 'السجل الإداري',
+        'SectorGovEntity': 'جهة حكومية',
+        'SectorBusiness': 'أعمال',
+        'SectorCitizen': 'مواطن',
+        'SectorDataTransaction': 'معاملات البيانات',
+        'EntityProject': 'المشاريع',
+        'EntityCapability': 'القدرات',
+        'EntityRisk': 'المخاطر',
+        'EntityOrgUnit': 'الوحدات التنظيمية',
+        'EntityProcess': 'العمليات',
+        'EntityITSystem': 'الأنظمة التقنية',
+        'EntityChangeAdoption': 'تبنّي التغيير',
+        'EntityCultureHealth': 'صحة الثقافة',
+        'EntityVendor': 'المورّدين',
+    };
+
     const getColumnDisplayLabel = (labelRaw: any, level?: string) => {
         let labels: string[] = [];
         if (Array.isArray(labelRaw)) {
@@ -80,6 +100,14 @@ export function GraphSankey({ data, isDark = true, chain, metadata, isDiagnostic
             && labelSet.has('SectorCitizen')
             && labelSet.has('SectorGovEntity')
             && labelSet.has('SectorBusiness');
+
+        if (isRTL) {
+            let arLabel = isEntityOps ? 'العمليات المؤسسية'
+                : isSectorStakeholders ? 'أصحاب المصلحة'
+                : AR_COLUMN_LABELS[labels[0]] ?? labels.join(' & ');
+            if (level) arLabel = `${arLabel} (${level})`;
+            return arLabel;
+        }
 
         let rawLabel = labels.join(' & ');
         if (isEntityOps) rawLabel = 'Entity[operations]';
@@ -135,7 +163,7 @@ export function GraphSankey({ data, isDark = true, chain, metadata, isDiagnostic
         const padding = { top: 36, right: 16, bottom: 28, left: 16 };
         const availableWidth = width - padding.left - padding.right;
         const UNIT_HEIGHT = 4; // height per connection thread — thin for 1, visibly thicker for many
-        const NODE_GAP = 14; // vertical gap between nodes in a column
+        const NODE_GAP = 34; // vertical gap between nodes in a column (includes space for text above)
         const MIN_NODE_HEIGHT = 40; // minimum node rect height (ensures text fits)
 
         // Ping-pong: always 2 visual columns (LEFT / RIGHT), N rows
@@ -284,7 +312,9 @@ export function GraphSankey({ data, isDark = true, chain, metadata, isDiagnostic
                     const first = members[0];
                     const pLabel = first.labels[0] || 'Unknown';
                     const lvl = first.properties?.level || '';
-                    const displayName = pLabel.replace(/^(Sector|Entity)/, '').replace(/([A-Z])/g, ' $1').trim();
+                    const displayName = isRTL && AR_COLUMN_LABELS[pLabel]
+                        ? AR_COLUMN_LABELS[pLabel]
+                        : pLabel.replace(/^(Sector|Entity)/, '').replace(/([A-Z])/g, ' $1').trim();
                     const aggId = key; // e.g. "EntityRisk__L3__col4"
 
                     // Record mapping for each member
@@ -374,17 +404,17 @@ export function GraphSankey({ data, isDark = true, chain, metadata, isDiagnostic
 
             if (hasOrgUnit || hasProcess || hasITSystem) {
                 colNodes.forEach(node => {
-                    if (node.labels?.includes('EntityOrgUnit')) node.entityTypeSubHeader = 'Org';
-                    else if (node.labels?.includes('EntityProcess')) node.entityTypeSubHeader = 'Process';
-                    else if (node.labels?.includes('EntityITSystem')) node.entityTypeSubHeader = 'IT';
+                    if (node.labels?.includes('EntityOrgUnit')) node.entityTypeSubHeader = isRTL ? 'تنظيمي' : 'Org';
+                    else if (node.labels?.includes('EntityProcess')) node.entityTypeSubHeader = isRTL ? 'عمليات' : 'Process';
+                    else if (node.labels?.includes('EntityITSystem')) node.entityTypeSubHeader = isRTL ? 'تقنية' : 'IT';
                 });
             }
 
             if (hasCitizen || hasGovEntity || hasBusiness) {
                 colNodes.forEach(node => {
-                    if (node.labels?.includes('SectorCitizen')) node.entityTypeSubHeader = 'Citizen';
-                    else if (node.labels?.includes('SectorGovEntity')) node.entityTypeSubHeader = 'Gov Entity';
-                    else if (node.labels?.includes('SectorBusiness')) node.entityTypeSubHeader = 'Business';
+                    if (node.labels?.includes('SectorCitizen')) node.entityTypeSubHeader = isRTL ? 'مواطن' : 'Citizen';
+                    else if (node.labels?.includes('SectorGovEntity')) node.entityTypeSubHeader = isRTL ? 'جهة حكومية' : 'Gov Entity';
+                    else if (node.labels?.includes('SectorBusiness')) node.entityTypeSubHeader = isRTL ? 'أعمال' : 'Business';
                 });
             }
         });
@@ -397,7 +427,14 @@ export function GraphSankey({ data, isDark = true, chain, metadata, isDiagnostic
                 'IT': 2,
                 'Citizen': 0,
                 'Gov Entity': 1,
-                'Business': 2
+                'Business': 2,
+                // Arabic equivalents
+                'تنظيمي': 0,
+                'عمليات': 1,
+                'تقنية': 2,
+                'مواطن': 0,
+                'جهة حكومية': 1,
+                'أعمال': 2,
             };
             const aGroup = a.entityTypeSubHeader ? groupOrder[a.entityTypeSubHeader] ?? 99 : 99;
             const bGroup = b.entityTypeSubHeader ? groupOrder[b.entityTypeSubHeader] ?? 99 : 99;
@@ -572,7 +609,7 @@ export function GraphSankey({ data, isDark = true, chain, metadata, isDiagnostic
         });
 
         return { nodes, links, width, height, colWidth };
-    }, [data, columns, isDark, isDiagnostic, metadata?.canonicalPath]);
+    }, [data, columns, isDark, isDiagnostic, isRTL, metadata?.canonicalPath]);
 
     // Render a thick Sankey band — handles both L→R and R→L (ping pong)
     const getBandPath = (link: any) => {
@@ -619,16 +656,20 @@ export function GraphSankey({ data, isDark = true, chain, metadata, isDiagnostic
                         const hasSubs = firstNode.entityTypeSubHeader;
                         const groupTopY = firstNode.y! - (hasSubs ? 42 : 18);
 
-                        const displayText = `${i + 1}. ${getColumnDisplayLabel(col.label, col.level)}`.toUpperCase();
+                        const rawText = `${i + 1}. ${getColumnDisplayLabel(col.label, col.level)}`;
+                        const displayText = isRTL ? rawText : rawText.toUpperCase();
                         const isLeft = i % 2 === 0;
 
-                        // In RTL, flip anchor: left columns anchor end (right-align), right columns anchor start (left-align)
-                        const anchor = isRTL
-                            ? (isLeft ? 'end' : 'start')
-                            : (isLeft ? 'start' : 'end');
-                        const headX = isRTL
-                            ? (isLeft ? x + layout.colWidth : x)
-                            : (isLeft ? x : x + layout.colWidth);
+                        let anchor: string;
+                        let headX: number;
+
+                        if (isRTL) {
+                            anchor = isLeft ? 'start' : 'end';
+                            headX = isLeft ? x + layout.colWidth : x;
+                        } else {
+                            anchor = isLeft ? 'start' : 'end';
+                            headX = isLeft ? x : x + layout.colWidth;
+                        }
 
                         return (
                             <text
@@ -640,8 +681,7 @@ export function GraphSankey({ data, isDark = true, chain, metadata, isDiagnostic
                                 fontSize="16"
                                 fontWeight="700"
                                 fontFamily="Inter, sans-serif"
-                                letterSpacing="0.5px"
-                                direction={isRTL ? 'rtl' : 'ltr'}
+                                letterSpacing={isRTL ? '0' : '0.5px'}
                                 style={{ pointerEvents: 'none', dominantBaseline: 'auto' }}
                             >
                                 {displayText}
@@ -786,24 +826,34 @@ export function GraphSankey({ data, isDark = true, chain, metadata, isDiagnostic
                                     opacity="0.5"
                                 />
                             )}
-                            {node.entityTypeSubHeader && (i === 0 || layout.nodes[i - 1]?.entityTypeSubHeader !== node.entityTypeSubHeader) && (
-                                <text
-                                    x={isRTL
-                                        ? (node.column! % 2 === 0 ? node.x! + node.width! - 3 : node.x! + 3)
-                                        : (node.column! % 2 === 0 ? node.x! + 3 : node.x! + node.width! - 3)}
-                                    y={node.y! - 24}
-                                    fill={isDark ? '#9ca3af' : '#6b7280'}
-                                    fontSize="14"
-                                    fontWeight="600"
-                                    textAnchor={isRTL
-                                        ? (node.column! % 2 === 0 ? 'end' : 'start')
-                                        : (node.column! % 2 === 0 ? 'start' : 'end')}
-                                    direction={isRTL ? 'rtl' : 'ltr'}
-                                    style={{ pointerEvents: 'none', dominantBaseline: 'hanging' }}
-                                >
-                                    {node.entityTypeSubHeader}
-                                </text>
-                            )}
+                            {node.entityTypeSubHeader && (i === 0 || layout.nodes[i - 1]?.entityTypeSubHeader !== node.entityTypeSubHeader) && (() => {
+                                const isLeftCol = node.column! % 2 === 0;
+
+                                let subTextX: number;
+                                let subAnchor: string;
+
+                                if (isRTL) {
+                                    subTextX = isLeftCol ? node.x! + node.width! - 3 : node.x! + 3;
+                                    subAnchor = isLeftCol ? 'start' : 'end';
+                                } else {
+                                    subTextX = isLeftCol ? node.x! + 3 : node.x! + node.width! - 3;
+                                    subAnchor = isLeftCol ? 'start' : 'end';
+                                }
+
+                                return (
+                                    <text
+                                        x={subTextX}
+                                        y={node.y! - 24}
+                                        fill={isDark ? '#9ca3af' : '#6b7280'}
+                                        fontSize="14"
+                                        fontWeight="600"
+                                        textAnchor={subAnchor}
+                                        style={{ pointerEvents: 'none', dominantBaseline: 'hanging' }}
+                                    >
+                                        {node.entityTypeSubHeader}
+                                    </text>
+                                );
+                            })()}
                             <rect
                                 x={node.x}
                                 y={node.y}
@@ -815,59 +865,75 @@ export function GraphSankey({ data, isDark = true, chain, metadata, isDiagnostic
                                 strokeWidth={node.isBroken ? 1.5 : 0.5}
                                 className="transition-colors hover:brightness-125"
                             />
-                            <text
-                                x={isRTL ? node.x! + node.width! - 8 : node.x! + 8}
-                                y={node.y! + 8}
-                                fill={isDark ? '#F9FAFB' : '#1F2937'}
-                                fontSize="12"
-                                fontWeight="500"
-                                fontFamily="Inter, sans-serif"
-                                style={{ pointerEvents: 'none' }}
-                                textAnchor={isRTL ? 'end' : 'start'}
-                                dominantBaseline="hanging"
-                                direction={isRTL ? 'rtl' : 'ltr'}
-                            >
-                                {(() => {
-                                    const pad = 16;
-                                    const charWidth = isRTL ? 10 : 8;
-                                    const countSuffix = node.isAggregate && node.aggregateCount ? ` \u00D7${node.aggregateCount}` : '';
-                                    const reserveChars = countSuffix.length;
-                                    const maxChars = Math.max(4, Math.floor(((node.width ?? 80) - pad) / charWidth));
+                            {(() => {
+                                const nodeIsLeft = node.column! % 2 === 0;
 
-                                    const wrapText = (text: string, max: number): string[] => {
-                                        const words = text.split(' ');
-                                        const result: string[] = [];
-                                        let cur = '';
-                                        for (const w of words) {
-                                            if ((cur + ' ' + w).trim().length > max) {
+                                let textX: number;
+                                let anchor: string;
+
+                                if (isRTL) {
+                                    textX = nodeIsLeft ? node.x! + node.width! - 8 : node.x! + 8;
+                                    anchor = nodeIsLeft ? 'start' : 'end';
+                                } else {
+                                    textX = nodeIsLeft ? node.x! + 8 : node.x! + node.width! - 8;
+                                    anchor = nodeIsLeft ? 'start' : 'end';
+                                }
+
+                                return (
+                                    <text
+                                        x={textX}
+                                        y={node.y! + (node.height! / 2)}
+                                        fill={isDark ? '#F9FAFB' : '#1F2937'}
+                                        fontSize="12"
+                                        fontWeight="500"
+                                        fontFamily="Inter, sans-serif"
+                                        style={{ pointerEvents: 'none' }}
+                                        textAnchor={anchor}
+                                        dominantBaseline="middle"
+                                    >
+                                        {(() => {
+                                            const pad = 16;
+                                            const charWidth = isRTL ? 10 : 8;
+                                            const countSuffix = node.isAggregate && node.aggregateCount ? ` ×${node.aggregateCount}` : '';
+                                            const reserveChars = countSuffix.length;
+                                            const maxChars = Math.max(4, Math.floor(((node.width ?? 80) - pad) / charWidth));
+
+                                            const wrapText = (text: string, max: number): string[] => {
+                                                const words = text.split(' ');
+                                                const result: string[] = [];
+                                                let cur = '';
+                                                for (const w of words) {
+                                                    if ((cur + ' ' + w).trim().length > max) {
+                                                        if (cur) result.push(cur.trim());
+                                                        cur = w;
+                                                    } else { cur += ' ' + w; }
+                                                }
                                                 if (cur) result.push(cur.trim());
-                                                cur = w;
-                                            } else { cur += ' ' + w; }
-                                        }
-                                        if (cur) result.push(cur.trim());
-                                        return result;
-                                    };
+                                                return result;
+                                            };
 
-                                    const lines = wrapText(node.nameDisplay, maxChars - (countSuffix ? reserveChars : 0));
+                                            const lines = wrapText(node.nameDisplay, maxChars - (countSuffix ? reserveChars : 0));
+                                            const lineHeight = 14;
 
-                                    return lines.map((line, idx) => (
-                                        <tspan
-                                            key={idx}
-                                            x={isRTL ? node.x! + node.width! - 8 : node.x! + 8}
-                                            y={node.y! + 8 + idx * 16}
-                                            fontSize="12"
-                                            fontWeight="500"
-                                            dominantBaseline="hanging"
-                                        >
-                                            {line}
-                                            {/* Count inline on the last line */}
-                                            {idx === lines.length - 1 && countSuffix && (
-                                                <tspan fill="#F4BB30" fontWeight="700" dx={isRTL ? '-6' : '6'}>{countSuffix.trim()}</tspan>
-                                            )}
-                                        </tspan>
-                                    ));
-                                })()}
-                            </text>
+                                            return lines.map((line, idx) => (
+                                                <tspan
+                                                    key={idx}
+                                                    x={textX}
+                                                    dy={idx === 0 ? (-((lines.length - 1) * lineHeight) / 2) : lineHeight}
+                                                    fontSize="12"
+                                                    fontWeight="500"
+                                                    dominantBaseline="middle"
+                                                >
+                                                    {line}
+                                                    {idx === lines.length - 1 && countSuffix && (
+                                                        <tspan fill="#F4BB30" fontWeight="700" dx={isRTL ? (nodeIsLeft ? '-12' : '-16') : (nodeIsLeft ? '6' : '-16')}>{countSuffix.trim()}</tspan>
+                                                    )}
+                                                </tspan>
+                                            ));
+                                        })()}
+                                    </text>
+                                );
+                            })()}
                             {node.isBroken && (
                                 <circle cx={node.x! + node.width!} cy={node.y!} r={6} fill="#ef4444" stroke="#fff" />
                             )}

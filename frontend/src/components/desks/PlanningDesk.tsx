@@ -14,15 +14,35 @@ type PlanningMode = 'intervention' | 'strategic-reset' | 'scenario';
 export interface InterventionContext {
   riskId: string;
   riskName: string;
+  riskCategory?: string;
+  mitigationStrategy?: string;
   capabilityId: string;
   capabilityName: string;
   band: string;
-  exposurePct: number;
+  mode: string;
+  maturityLevel?: number;
+  targetMaturityLevel?: number;
+  buildStatus?: string;
+  executeStatus?: string;
+  kpiAchievementPct?: number;
+  buildExposurePct?: number;
+  peopleScore?: number;
+  processScore?: number;
+  toolsScore?: number;
+  dependencyCount?: number;
+  exposurePercent?: number;
   selectedOption: {
     id: string;
     title: string;
     description: string;
+    impact?: string;
+    timeline?: string;
+    confidence?: string;
   };
+  riskAnalysisNarrative?: string;
+  riskAnalysisArtifacts?: any[];
+  capDataYear?: number | string;
+  selectedYear?: string;
 }
 
 interface PlanningDeskProps {
@@ -120,9 +140,40 @@ function InterventionPlanning({ context, onClearContext }: InterventionPlanningP
       setIsCommitted(false);
 
       try {
+        // Build rich context for the planner LLM
+        const capFields = [
+          `Capability: "${context.capabilityName}" (ID: ${context.capabilityId})`,
+          `Risk: "${context.riskName}" (ID: ${context.riskId})`,
+          context.riskCategory ? `Risk category: ${context.riskCategory}` : '',
+          context.mitigationStrategy ? `Current mitigation: ${context.mitigationStrategy}` : '',
+          `Year viewed: ${context.selectedYear || '—'}, data year: ${context.capDataYear || '—'}`,
+          `Mode: ${context.mode}, band: ${context.band}`,
+          context.buildStatus ? `Build status: ${context.buildStatus}` : '',
+          context.executeStatus ? `Execute status: ${context.executeStatus}` : '',
+          context.maturityLevel != null ? `Maturity: ${context.maturityLevel}/${context.targetMaturityLevel || '?'}` : '',
+          context.kpiAchievementPct != null ? `KPI achievement: ${context.kpiAchievementPct}%` : '',
+          context.buildExposurePct != null ? `Build exposure: ${context.buildExposurePct}%` : '',
+          context.peopleScore != null ? `People score: ${context.peopleScore}` : '',
+          context.processScore != null ? `Process score: ${context.processScore}` : '',
+          context.toolsScore != null ? `Tools score: ${context.toolsScore}` : '',
+          context.dependencyCount != null ? `Dependencies: ${context.dependencyCount}` : '',
+        ].filter(Boolean).join('. ');
+
+        const optionDetail = [
+          `Selected strategy: "${context.selectedOption.title}" — ${context.selectedOption.description}`,
+          context.selectedOption.impact ? `Expected impact: ${context.selectedOption.impact}` : '',
+          context.selectedOption.timeline ? `Timeline: ${context.selectedOption.timeline}` : '',
+          context.selectedOption.confidence ? `Confidence: ${context.selectedOption.confidence}` : '',
+        ].filter(Boolean).join('. ');
+
+        // Strip HTML tags from analysis narrative for the prompt
+        const analysisText = context.riskAnalysisNarrative
+          ? context.riskAnalysisNarrative.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
+          : '';
+
         const userPrompt = language === 'ar'
-          ? `أريد خطة تدخل للمخاطر "${context.riskName}" التي تؤثر على القدرة "${context.capabilityName}". نطاق المخاطر ${context.band} ونسبة التعرض ${context.exposurePct}%. اخترت استراتيجية "${context.selectedOption.title}": ${context.selectedOption.description}. أنشئ خطة منظمة تتضمن المخرجات الرئيسية والمهام التفصيلية لكل مخرج.`
-          : `I need an intervention plan for risk "${context.riskName}" affecting capability "${context.capabilityName}". Risk band is ${context.band}, exposure is ${context.exposurePct}%. The chosen strategy is "${context.selectedOption.title}": ${context.selectedOption.description}. Create a structured plan with key deliverables and detailed tasks for each deliverable.`;
+          ? `أريد خطة تدخل.\n\n${capFields}\n\n${optionDetail}\n\n${analysisText ? `تحليل المخاطر السابق:\n${analysisText}\n\n` : ''}أنشئ خطة منظمة تتضمن المخرجات الرئيسية والمهام التفصيلية لكل مخرج.`
+          : `I need an intervention plan.\n\n${capFields}\n\n${optionDetail}\n\n${analysisText ? `Previous risk analysis:\n${analysisText}\n\n` : ''}Create a structured plan with key deliverables and detailed tasks for each deliverable.`;
 
         const response = await chatService.sendMessage({
           query: userPrompt,
@@ -582,38 +633,57 @@ function SavedPlansList() {
 function RiskContextHeader({ context }: { context: InterventionContext }) {
   const { t } = useTranslation();
 
-  const bandColor = context.band === 'Red' ? 'var(--component-color-danger)'
-    : context.band === 'Amber' ? 'var(--component-color-warning)'
-    : context.band === 'Yellow' ? 'var(--component-color-warning)'
-    : 'var(--component-text-accent)';
+  const bandColor = (context.band === 'issues' || context.band?.includes('issues'))
+    ? 'var(--component-color-danger)'
+    : (context.band === 'at-risk' || context.band?.includes('atrisk'))
+    ? 'var(--component-color-warning)'
+    : (context.band === 'ontrack' || context.band?.includes('ontrack'))
+    ? 'var(--component-color-success)'
+    : 'var(--component-text-muted)';
+
+  const statusLabel = context.mode === 'execute'
+    ? (context.executeStatus || '—')
+    : (context.buildStatus || '—');
 
   return (
     <div className="risk-context-header" style={{ borderColor: bandColor }}>
-      <div className="risk-context-label" style={{ color: bandColor }}>
-        {t('josoor.planning.riskContext')}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0', flexWrap: 'wrap', fontSize: '13px' }}>
+        <span className="risk-context-label" style={{ color: bandColor, margin: 0, fontSize: '13px' }}>
+          {t('josoor.planning.riskContext')}
+        </span>
+        <span style={{ opacity: 0.3, margin: '0 8px' }}>|</span>
+        {context.riskId && (<>
+          <span><span className="field-label" style={{ marginInlineEnd: '4px' }}>{t('josoor.planning.risk')}</span><span className="field-value">{context.riskId} — {context.riskName}</span></span>
+          <span style={{ opacity: 0.3, margin: '0 8px' }}>|</span>
+        </>)}
+        <span><span className="field-label" style={{ marginInlineEnd: '4px' }}>{t('josoor.planning.capability')}</span><span className="field-value">{context.capabilityId} — {context.capabilityName}</span></span>
+        <span style={{ opacity: 0.3, margin: '0 8px' }}>|</span>
+        <span style={{ color: bandColor, fontWeight: 600 }}>{context.band}</span>
+        <span style={{ opacity: 0.3, margin: '0 8px' }}>|</span>
+        <span><span className="field-label" style={{ marginInlineEnd: '4px' }}>{context.mode === 'execute' ? 'Status' : 'Build'}</span><span className="field-value">{statusLabel}</span></span>
+        {context.maturityLevel != null && (<>
+          <span style={{ opacity: 0.3, margin: '0 8px' }}>|</span>
+          <span><span className="field-label" style={{ marginInlineEnd: '4px' }}>Maturity</span><span className="field-value">{context.maturityLevel}/{context.targetMaturityLevel || '?'}</span></span>
+        </>)}
+        {context.peopleScore != null && (<>
+          <span style={{ opacity: 0.3, margin: '0 8px' }}>|</span>
+          <span><span className="field-label" style={{ marginInlineEnd: '4px' }}>P/Pr/T</span><span className="field-value">{context.peopleScore}/{context.processScore}/{context.toolsScore}</span></span>
+        </>)}
+        {context.mode === 'execute' && context.kpiAchievementPct != null && (<>
+          <span style={{ opacity: 0.3, margin: '0 8px' }}>|</span>
+          <span><span className="field-label" style={{ marginInlineEnd: '4px' }}>KPI</span><span className="field-value">{context.kpiAchievementPct}%</span></span>
+        </>)}
+        {context.mode === 'build' && context.buildExposurePct != null && (<>
+          <span style={{ opacity: 0.3, margin: '0 8px' }}>|</span>
+          <span><span className="field-label" style={{ marginInlineEnd: '4px' }}>Exposure</span><span className="field-value">{context.buildExposurePct}%</span></span>
+        </>)}
       </div>
-      <div className="risk-context-grid">
-        <div>
-          <div className="field-label">{t('josoor.planning.risk')}</div>
-          <div className="field-value">{context.riskName}</div>
-        </div>
-        <div>
-          <div className="field-label">{t('josoor.planning.capability')}</div>
-          <div className="field-value">{context.capabilityName}</div>
-        </div>
-        <div>
-          <div className="field-label">{t('josoor.planning.riskBand') || 'Band'}</div>
-          <div className="field-value" style={{ color: bandColor }}>{context.band}</div>
-        </div>
-        <div>
-          <div className="field-label">{t('josoor.planning.exposure') || 'Exposure'}</div>
-          <div className="field-value">{context.exposurePct}%</div>
-        </div>
-      </div>
-      <div className="risk-context-strategy">
-        <div className="field-label">{t('josoor.planning.selectedStrategy')}</div>
-        <div className="strategy-value">{context.selectedOption.title}</div>
-        <div className="strategy-desc">{context.selectedOption.description}</div>
+      <div className="risk-context-strategy" style={{ marginTop: '6px' }}>
+        <span className="field-label" style={{ marginInlineEnd: '4px' }}>{t('josoor.planning.selectedStrategy')}</span>
+        <span className="strategy-value">{context.selectedOption.title}</span>
+        {context.selectedOption.description && (
+          <span className="strategy-desc" style={{ marginInlineStart: '6px', opacity: 0.7 }}>{context.selectedOption.description}</span>
+        )}
       </div>
     </div>
   );

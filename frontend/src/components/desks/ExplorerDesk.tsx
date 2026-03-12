@@ -70,6 +70,15 @@ const CHAIN_MAPPINGS: Record<string, { name: string, labels: string[], relations
     }
 };
 
+const AR_CHAIN_NAMES: Record<string, string> = {
+    'sector_value_chain': 'سلسلة القيمة القطاعية',
+    'setting_strategic_initiatives': 'المبادرات الاستراتيجية',
+    'setting_strategic_priorities': 'الأولويات الاستراتيجية',
+    'change_to_capability': 'التغيير إلى القدرات',
+    'capability_to_policy': 'القدرات إلى السياسات',
+    'capability_to_performance': 'القدرات إلى الأداء',
+};
+
 interface ExplorerDeskProps {
     year?: string;
     quarter?: string;
@@ -185,6 +194,7 @@ function HealthOverlay({ stats, isLoading }: { stats: any, isLoading: boolean })
 export function ExplorerDesk({ year = '2025', quarter = 'All' }: ExplorerDeskProps) {
     const { t } = useTranslation();
     const { token } = useAuth();
+    const isRTL = document.documentElement.dir === 'rtl' || document.documentElement.lang === 'ar';
     const contentRef = useRef<HTMLDivElement>(null);
     const [selectedLabels, setSelectedLabels] = useState<string[]>([]);
     const [selectedRelationships, setSelectedRelationships] = useState<string[]>([]);
@@ -625,7 +635,7 @@ export function ExplorerDesk({ year = '2025', quarter = 'All' }: ExplorerDeskPro
                     {displayData && (
                         <div className="node-count-badge">
                             {displayData.nodes.length} {t('josoor.common.nodes')}, {displayData.links.length} {t('josoor.common.edges')}
-                            {selectedChain && <span className="chain-label">[{selectedChain}]</span>}
+                            {selectedChain && <span className="chain-label">[{isRTL ? (AR_CHAIN_NAMES[selectedChain] ?? selectedChain) : selectedChain}]</span>}
                         </div>
                     )}
                 </div>
