@@ -16,8 +16,14 @@ export default function Sparkle({ imageSrc, dotCount = 600 }: SparkleProps) {
     if (!ctx) return;
 
     const updateCanvasSize = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
+      const parent = canvas.parentElement;
+      if (parent) {
+        canvas.width = parent.clientWidth;
+        canvas.height = parent.clientHeight;
+      } else {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+      }
     };
 
     updateCanvasSize();
@@ -28,10 +34,10 @@ export default function Sparkle({ imageSrc, dotCount = 600 }: SparkleProps) {
     img.onload = () => {
       const W = canvas.width;
       const H = canvas.height;
-      const scale = Math.min(W / img.width, H / img.height) * 0.85;
+      const scale = Math.min(W / img.width, H / img.height) * 0.52;
       const iw = img.width * scale;
       const ih = img.height * scale;
-      const ox = (W - iw) / 2;
+      const ox = (W - iw) * 0.01;
       const oy = (H - ih) / 2;
 
       // Hidden canvas for pixel sampling
@@ -151,9 +157,8 @@ export default function Sparkle({ imageSrc, dotCount = 600 }: SparkleProps) {
 
         const sp = morphProgress; // shorthand
 
-        // ── Clear ──
-        ctx.fillStyle = '#06080f';
-        ctx.fillRect(0, 0, W, H);
+        // ── Clear (transparent so parent background shows) ──
+        ctx.clearRect(0, 0, W, H);
 
         // ── Draw KSA map image + contour ──
         ctx.save();
@@ -269,7 +274,7 @@ export default function Sparkle({ imageSrc, dotCount = 600 }: SparkleProps) {
           if (sp > 0.6) {
             ctx.beginPath();
             ctx.arc(dot.x, dot.y, nodeRadius * 0.35, 0, Math.PI * 2);
-            ctx.fillStyle = '#06080f';
+            ctx.fillStyle = 'rgba(6, 8, 15, 0.8)';
             ctx.fill();
           }
         }

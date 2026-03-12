@@ -108,56 +108,77 @@ export default function TwinKnowledge({ onNavigate }: TwinKnowledgeProps) {
   };
 
   return (
-    <div style={{ ...containerStyle, display: 'flex', flexDirection: 'column', gap: '32px' }} dir={isRTL ? 'rtl' : 'ltr'}>
+    <div style={{ ...containerStyle, display: 'flex', flexDirection: 'row', gap: '28px', alignItems: 'flex-start' }} dir={isRTL ? 'rtl' : 'ltr'}>
 
-      {/* TOP: Ontology text + image full width */}
+      {/* LEFT: Ontology image — 50% */}
       <div style={{
-        background: 'var(--component-bg-secondary)',
-        border: '1px solid var(--component-panel-border)',
-        borderRadius: '16px',
-        padding: '24px',
-        boxShadow: '0 4px 20px rgba(0,0,0,0.2)'
+        flex: '0 0 50%',
+        maxWidth: '50%',
+        position: 'sticky',
+        top: '20px',
       }}>
-        <h3 style={{
-          color: 'var(--color-primary)',
-          marginTop: 0,
-          fontSize: '18px',
-          borderBottom: '1px solid var(--component-panel-border)',
-          paddingBottom: '8px',
-          marginBottom: '12px'
+        <div style={{
+          background: 'var(--component-bg-secondary)',
+          border: '1px solid var(--component-panel-border)',
+          borderRadius: '16px',
+          padding: '20px',
+          boxShadow: '0 4px 20px rgba(0,0,0,0.2)'
         }}>
-          {language === 'ar' ? 'أنطولوجيا القطاع العام' : 'Public Sector Ontology'}
-        </h3>
+          <h3 style={{
+            color: 'var(--color-primary)',
+            marginTop: 0,
+            fontSize: '32px',
+            borderBottom: '1px solid var(--component-panel-border)',
+            paddingBottom: '12px',
+            marginBottom: '20px'
+          }}>
+            {language === 'ar' ? 'أنطولوجيا القطاع العام' : 'Public Sector Ontology'}
+          </h3>
 
-        <p style={{
-          fontSize: '15px',
-          lineHeight: '1.6',
-          color: 'var(--component-text-secondary)',
-          marginBottom: '16px'
-        }}>
-          {language === 'ar'
-            ? 'تعمل المنظمات، وخاصة في القطاع العام، كأنظمة متكاملة تتكون من مكونات مترابطة تولد القيمة بشكل جماعي عبر سلسلة قيمة القطاع. يتم تمثيل ذلك في هذه الأنطولوجيا التي تلتقط العناصر الأساسية وعلاقاتها عبر عمليات القطاع وعمليات الكيان.'
-            : 'In the public sector, organizations function as integrated systems composed of interdependent components that collectively generate value across a Sector\'s value chain as represented in the above Ontology of the essential elements and their relationships. This Ontology is the core of the Digital Twin. To be able to utilize JOSOOR properly, it is critical to understand the Ontology and the logic the AI applies to provide answers.'
-          }
-        </p>
+          <p style={{
+            fontSize: '20px',
+            lineHeight: '1.7',
+            color: 'var(--component-text-secondary)',
+            marginBottom: '12px'
+          }}>
+            {language === 'ar'
+              ? 'تعمل المنظمات، وخاصة في القطاع العام، كأنظمة متكاملة تتكون من مكونات مترابطة تولد القيمة بشكل جماعي عبر سلسلة قيمة القطاع. يتم تمثيل ذلك في هذه الأنطولوجيا التي تلتقط العناصر الأساسية وعلاقاتها عبر عمليات القطاع وعمليات الكيان.'
+              : 'In the public sector, organizations function as integrated systems composed of interdependent components that collectively generate value across a Sector\'s value chain as represented in the below Ontology of the essential elements and their relationships.'
+            }
+          </p>
 
-        <img
-          src={language === 'ar' ? "/icons/ontologyar.jpg" : "/icons/ontologyen.jpg"}
-          alt={language === 'ar' ? "أنطولوجيا القطاع العام" : "Public Sector Ontology"}
-          style={{
-            width: '100%',
-            height: 'auto',
-            borderRadius: '8px',
-            border: '1px solid var(--component-panel-border)'
-          }}
-        />
+          <p style={{
+            fontSize: '20px',
+            lineHeight: '1.7',
+            color: 'var(--component-text-secondary)',
+            marginBottom: '16px'
+          }}>
+            {language === 'ar'
+              ? 'هذه الأنطولوجيا هي جوهر التوأم الرقمي. للاستفادة من جسور بشكل صحيح، من الضروري فهم الأنطولوجيا والمنطق الذي يطبقه الذكاء الاصطناعي لتقديم الإجابات.'
+              : 'This Ontology is the core of the Digital Twin. To be able to utilize JOSOOR properly, it is critical to understand the Ontology and the logic the AI applies to provide answers.'
+            }
+          </p>
+
+          <img
+            src={language === 'ar' ? "/att/landing-screenshots/3_carousel/ontologar.jpg" : "/att/landing-screenshots/3_carousel/ontologen.jpg"}
+            alt={language === 'ar' ? "أنطولوجيا القطاع العام" : "Public Sector Ontology"}
+            style={{
+              width: '100%',
+              height: 'auto',
+              borderRadius: '8px',
+              border: '1px solid var(--component-panel-border)'
+            }}
+          />
+        </div>
       </div>
 
-      {/* BOTTOM: Chapters in 2x2 grid */}
+      {/* RIGHT: Chapters in single column — 50% */}
       <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(2, 1fr)',
-        gap: '20px'
+        flex: '0 0 50%',
+        maxWidth: '50%',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '16px'
       }}>
         {knowledgeData.chapters.map((chapter) => {
           const isExpanded = expandedChapter === chapter.id;

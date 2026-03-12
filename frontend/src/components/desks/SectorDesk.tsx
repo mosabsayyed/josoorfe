@@ -138,13 +138,24 @@ export const SectorDesk: React.FC<SectorDeskProps> = ({ year: propYear, quarter:
             const allRows = appendDirectPolicyCapRows(chainRows, policyCapLinks, allSectorPolicyToolNodes);
             const l1RiskMap = aggregatePolicyRiskByL1(allRows);
 
+            // Build L1 name lookup
+            const l1NameById = new Map<string, string>();
+            for (const node of allSectorPolicyToolNodes) {
+                if (node.level === 'L1') {
+                    const id = String(node.domain_id || node.id).includes('.') ? String(node.domain_id || node.id) : parseFloat(node.domain_id || node.id).toFixed(1);
+                    if (!l1NameById.has(id)) l1NameById.set(id, node.name || '');
+                }
+            }
+
             // Fill in missing L2s with null band (grey strip, "Not Started" label)
             for (const node of allSectorPolicyToolNodes) {
                 if (node.level !== 'L2' || !node.parent_id) continue;
                 const l1Id = String(node.parent_id).includes('.') ? String(node.parent_id) : parseFloat(node.parent_id).toFixed(1);
                 const l2Id = String(node.domain_id || node.id).includes('.') ? String(node.domain_id || node.id) : parseFloat(node.domain_id || node.id).toFixed(1);
-                // Only add L2 entry — do NOT create or alter L1 worstBand
-                if (!l1RiskMap.has(l1Id)) continue;
+                // Create L1 entry if it doesn't exist yet (L2 children should always show)
+                if (!l1RiskMap.has(l1Id)) {
+                    l1RiskMap.set(l1Id, { l1Id, l1Name: l1NameById.get(l1Id) || '', worstBand: null, l2Details: [] });
+                }
                 const agg = l1RiskMap.get(l1Id)!;
                 const existing = agg.l2Details.find((d: any) => d.l2Id === l2Id);
                 if (!existing) {

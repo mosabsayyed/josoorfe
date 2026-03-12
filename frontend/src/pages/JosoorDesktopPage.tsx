@@ -148,8 +148,7 @@ export default function JosoorDesktopPage() {
   const [canvasArtifacts, setCanvasArtifacts] = useState<any[]>([]);
   const [isCanvasOpen, setIsCanvasOpen] = useState(false);
   const [streamingMessage] = useState<APIMessage | null>(null);
-  const [selectedPersona, setSelectedPersona] = useState<string | null>('general_analysis');
-  const [selectedTools, setSelectedTools] = useState<string[]>(['recall_memory', 'recall_vision_memory']);
+  const [selectedPersona, setSelectedPersona] = useState<string | null>('vision_expert');
   const [isPersonaLocked, setIsPersonaLocked] = useState(false);
   const [interventionContext, setInterventionContext] = useState<InterventionContext | null>(null);
   const [helpMode, setHelpMode] = useState(false);
@@ -456,9 +455,8 @@ export default function JosoorDesktopPage() {
     setMessages(prev => [...prev, tempMsg]);
     setIsLoading(true);
     try {
-      const toolSuffix = selectedTools.length > 0 ? `\n\nTools: ${selectedTools.join(', ')}. Use them if relevant.` : '';
       const response = await chatService.sendMessage({
-        query: messageText + toolSuffix,
+        query: messageText,
         conversation_id: activeConversationId && activeConversationId > 0 ? activeConversationId : undefined,
         ...(selectedPersona && { prompt_key: selectedPersona }), language,
       });
@@ -472,11 +470,11 @@ export default function JosoorDesktopPage() {
       console.error(err);
       setMessages(prev => [...prev, { id: Date.now(), role: 'assistant', content: isAr ? 'خطأ في الحصول على الرد' : 'Error getting response', created_at: new Date().toISOString() }]);
     } finally { setIsLoading(false); }
-  }, [activeConversationId, selectedTools, selectedPersona, isPersonaLocked, loadConversations, language, isAr]);
+  }, [activeConversationId, selectedPersona, isPersonaLocked, loadConversations, language, isAr]);
 
   const handleOpenArtifact = useCallback((artifact: any) => { setCanvasArtifacts([artifact]); setIsCanvasOpen(true); }, []);
 
-  useEffect(() => { setSelectedPersona(null); setIsPersonaLocked(false); setSelectedTools(['recall_memory', 'recall_vision_memory']); }, [activeConversationId]);
+  useEffect(() => { if (activeConversationId === null) { setSelectedPersona('vision_expert'); setIsPersonaLocked(false); } }, [activeConversationId]);
 
   // ── Window Management ──
   const openApp = useCallback((appId: string) => {
@@ -692,8 +690,6 @@ export default function JosoorDesktopPage() {
                 selectedPersona={selectedPersona}
                 onPersonaChange={setSelectedPersona}
                 isPersonaLocked={isPersonaLocked}
-                selectedTools={selectedTools}
-                onToolsChange={setSelectedTools}
               />
             </div>
           </div>
@@ -732,7 +728,7 @@ export default function JosoorDesktopPage() {
       default:
         return null;
     }
-  }, [year, quarter, isAr, handleIntervene, interventionContext, openApp, conversations, activeConversationId, messages, handleSendMessage, isLoading, language, isCanvasOpen, streamingMessage, handleOpenArtifact, availableYears, selectedPersona, isPersonaLocked, selectedTools, showChatHistory]);
+  }, [year, quarter, isAr, handleIntervene, interventionContext, openApp, conversations, activeConversationId, messages, handleSendMessage, isLoading, language, isCanvasOpen, streamingMessage, handleOpenArtifact, availableYears, selectedPersona, isPersonaLocked, showChatHistory]);
 
   // ── Boot screen ──
   if (isBooting) {

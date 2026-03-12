@@ -785,14 +785,14 @@ const SectorDetailsPanel: React.FC<SectorDetailsPanelProps> = ({
                         <h3 style={{ fontSize: '14px', textTransform: 'uppercase', color: 'var(--component-text-muted)', marginBottom: '12px' }}>
                             {t('josoor.sector.policy.l2Children')} ({l2Details.length})
                         </h3>
-                        {l2Details.map((l2: any) => {
+                        {l2Details.map((l2: any, l2Idx: number) => {
                             const l2Band = l2.worstBand?.toLowerCase() || 'none';
                             const l2Color = ragColor(l2Band);
                             const capsForThisL2 = Array.from(new Map(
                                 (l2.caps || []).map((cap: any) => [String(cap.capId), cap])
                             ).values());
                             return (
-                                <details key={l2.l2Id} style={{ marginBottom: '16px' }}>
+                                <details key={`${l2.l2Id}-${l2Idx}`} style={{ marginBottom: '16px' }}>
                                     <summary style={{ cursor: 'pointer', marginBottom: '6px', color: 'var(--component-text-muted)', fontSize: '11px' }}>
                                         {t('josoor.sector.policy.drilldownHint', 'Open to drill down')}
                                     </summary>

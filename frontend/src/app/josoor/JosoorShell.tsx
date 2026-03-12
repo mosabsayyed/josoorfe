@@ -59,8 +59,7 @@ export default function JosoorShell() {
     const [isCanvasOpen, setIsCanvasOpen] = useState(false);
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
     const [streamingMessage, setStreamingMessage] = useState<APIMessage | null>(null);
-    const [selectedPersona, setSelectedPersona] = useState<string | null>('general_analysis');
-    const [selectedTools, setSelectedTools] = useState<string[]>(['recall_memory', 'recall_vision_memory']);
+    const [selectedPersona, setSelectedPersona] = useState<string | null>('vision_expert');
     const [isPersonaLocked, setIsPersonaLocked] = useState(false);
 
     // Active View State
@@ -209,12 +208,8 @@ export default function JosoorShell() {
         setIsLoading(true);
 
         try {
-            // Append tool instructions at the end of the query if tools are selected
-            const toolSuffix = selectedTools.length > 0
-                ? `\n\nTools: ${selectedTools.join(', ')}. Use them if relevant.`
-                : '';
             const basics: any = {
-                query: messageText + toolSuffix,
+                query: messageText,
                 conversation_id: activeConversationId && activeConversationId > 0 ? activeConversationId : undefined,
                 ...(selectedPersona && { prompt_key: selectedPersona }),
                 language,
@@ -243,7 +238,7 @@ export default function JosoorShell() {
         } finally {
             setIsLoading(false);
         }
-    }, [activeConversationId, selectedTools, selectedPersona, isPersonaLocked, loadConversations, t]);
+    }, [activeConversationId, selectedPersona, isPersonaLocked, loadConversations, t]);
 
     const handleNewChat = useCallback(() => {
         setActiveConversationId(null);
@@ -284,9 +279,10 @@ export default function JosoorShell() {
     }, [activeView]);
 
     useEffect(() => {
-        setSelectedPersona(null);
-        setIsPersonaLocked(false);
-        setSelectedTools(['recall_memory', 'recall_vision_memory']);
+        if (activeConversationId === null) {
+            setSelectedPersona('vision_expert');
+            setIsPersonaLocked(false);
+        }
     }, [activeConversationId]);
 
     // Sync title/subtitle based on activeView
@@ -370,8 +366,6 @@ export default function JosoorShell() {
                     selectedPersona={selectedPersona}
                     onPersonaChange={setSelectedPersona}
                     isPersonaLocked={isPersonaLocked}
-                    selectedTools={selectedTools}
-                    onToolsChange={setSelectedTools}
                 >
                     {activeView !== 'chat' && (
                         <div style={{ flex: 1, height: '100%', overflow: ['home', 'settings', 'providers', 'ab-testing', 'monitoring', 'observability', 'reporting-desk'].includes(activeView) ? 'auto' : 'hidden' }}>

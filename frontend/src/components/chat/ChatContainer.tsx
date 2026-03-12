@@ -49,8 +49,6 @@ interface ChatContainerProps {
   selectedPersona?: string | null;
   onPersonaChange?: (persona: string) => void;
   isPersonaLocked?: boolean;
-  selectedTools?: string[];
-  onToolsChange?: (tools: string[]) => void;
 }
 
 export const ChatContainer = memo(function ChatContainer({
@@ -75,8 +73,6 @@ export const ChatContainer = memo(function ChatContainer({
   selectedPersona,
   onPersonaChange,
   isPersonaLocked = false,
-  selectedTools = [],
-  onToolsChange,
 }: ChatContainerProps) {
   const { t } = useTranslation();
   const [showCondensationDetails, setShowCondensationDetails] = useState(false);
@@ -294,13 +290,11 @@ export const ChatContainer = memo(function ChatContainer({
 
             {/* Toolbar + Chat Input - Only show in chat mode */}
             <div>
-              {onPersonaChange && onToolsChange && (
+              {onPersonaChange && (
                 <ChatToolbar
                   selectedPersona={selectedPersona ?? null}
                   onPersonaChange={onPersonaChange}
                   isPersonaLocked={isPersonaLocked}
-                  selectedTools={selectedTools}
-                  onToolsChange={onToolsChange}
                 />
               )}
               <ChatInput

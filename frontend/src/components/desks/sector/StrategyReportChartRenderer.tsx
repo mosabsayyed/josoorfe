@@ -223,9 +223,20 @@ export const StrategyReportChartRenderer: React.FC<StrategyReportChartRendererPr
           pointFormat: '<span style="color: {point.color};">●</span> {series.name}: <strong>{point.y}</strong><br/>'
         },
         series: content.series?.map((s, index) => {
+          const isPie = chartType === 'pie' || chartType === 'donut';
+          // Pie charts need [{name, y}] data — map flat numbers using xAxis.categories if present
+          let seriesData = s.data;
+          if (isPie && Array.isArray(s.data) && s.data.length > 0 && typeof s.data[0] !== 'object') {
+            const cats: string[] = content.xAxis?.categories || [];
+            seriesData = (s.data as number[]).map((val, i) => ({
+              name: cats[i] ?? `Item ${i + 1}`,
+              y: val,
+              color: getSeriesColor(i)
+            }));
+          }
           const baseConfig = {
             name: s.name,
-            data: s.data,
+            data: seriesData,
             color: s.color || getSeriesColor(index),
             type: isRadar ? 'line' : chartType,
             ...(isRadar ? {
