@@ -10,9 +10,13 @@ import { useState, useRef, useEffect } from 'react';
 export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [isLandscape, setIsLandscape] = useState(false);
 
   useEffect(() => {
-    const check = () => setIsMobile(window.innerWidth <= 768);
+    const check = () => {
+      setIsMobile(window.innerWidth <= 1024 || window.innerHeight <= 450);
+      setIsLandscape(window.innerWidth > window.innerHeight && window.innerHeight <= 500);
+    };
     check();
     window.addEventListener('resize', check);
     return () => window.removeEventListener('resize', check);
@@ -39,12 +43,12 @@ export default function Header() {
 
   return (
     <header style={{
+      display: isLandscape ? 'none' : 'flex',
       position: 'fixed',
       top: 0,
       left: 0,
       right: 0,
       zIndex: 1000,
-      display: 'flex',
       alignItems: 'center',
       justifyContent: 'space-between',
       padding: isMobile ? '12px 16px' : '16px 40px',
@@ -93,7 +97,6 @@ export default function Header() {
             color: 'var(--component-text-accent, #F4BB30)',
             cursor: 'pointer',
             padding: '8px',
-            display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             width: '44px',
@@ -220,7 +223,6 @@ export default function Header() {
               <button
                 onClick={() => setShowUserMenu(!showUserMenu)}
                 style={{
-                  display: 'flex',
                   alignItems: 'center',
                   gap: '8px',
                   background: 'rgba(255, 255, 255, 0.05)',
@@ -239,7 +241,6 @@ export default function Header() {
                   height: '28px',
                   borderRadius: '50%',
                   background: 'linear-gradient(135deg, var(--component-text-accent) 0%, var(--component-text-accent) 100%)',
-                  display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   color: 'var(--component-text-on-accent)'

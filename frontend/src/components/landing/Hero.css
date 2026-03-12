@@ -17,15 +17,14 @@
 
 .hero-desktop-container {
   position: relative;
-  height: calc(100dvh - 120px);
+  width: 100%;
+  height: 60vh;
   min-height: 400px;
   max-width: 100%;
   margin: 0 auto;
   border-radius: 12px;
   overflow: hidden;
-  /* Ensure it has a minimum height so it never collapses to 0 */
-  display: flex;
-  flex: 1;
+  display: block;
 }
 
 @media (min-width: 768px) {
