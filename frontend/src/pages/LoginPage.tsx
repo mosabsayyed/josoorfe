@@ -460,18 +460,7 @@ export function LoginPage({ language: propLanguage, onLanguageChange, onSkip, on
             </div>
           </div>
 
-          <div style={{ marginTop: '32px', textAlign: 'center', fontSize: '14px' }}>
-            <span style={{ color: '#4B5563' }}>
-              {isRegistering ? t.haveAccount : t.noAccount}
-            </span>
-            <button
-              type="button"
-              onClick={() => setIsRegistering(!isRegistering)}
-              style={{ background: 'none', border: 'none', color: 'var(--component-text-accent)', fontWeight: 600, cursor: 'pointer', marginLeft: '8px' }}
-            >
-              {isRegistering ? t.switchToLogin : t.switchToRegister}
-            </button>
-          </div>
+          {/* Register link disabled */}
         </div>
       </motion.div>
     </div>
