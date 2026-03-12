@@ -400,9 +400,7 @@ function BlockCard({
           </p>
 
           {/* Evidence screenshot links */}
-          {def.evidence && def.evidence.length > 0 && (
-            <EvidenceLinks evidence={def.evidence} t={t} onOpen={onOpenLightbox} />
-          )}
+          
         </div>
 
         {/* Accent panel */}

@@ -212,8 +212,8 @@ export default function LandingPage() {
         font-weight: 400;
         justify-content: center;
         overflow-y: auto;
-        padding-bottom: 60px;
-        flex-direction: row;
+        padding-bottom: 0px;
+        flex-direction: column;
         margin-bottom: 0px;
       }
 
@@ -246,7 +246,7 @@ export default function LandingPage() {
         text-align: left;
         margin-left: 40px;
         display: flex;
-        flex-direction: row;
+        flex-direction: column;
         flex-wrap: wrap;
         justify-content: flex-start;
         align-items: flex-start;
@@ -616,7 +616,7 @@ export default function LandingPage() {
         padding: 12px;
         border-radius: 16px;
         border: 1px solid var(--component-panel-border);
-        display: inline-block;
+        display: block;
         width: 100%;
         transition: transform 0.3s ease;
       }
@@ -814,6 +814,10 @@ export default function LandingPage() {
         margin-right: auto;
       }
 
+      .bf-r {
+        grid-template-columns: 1fr 1fr;
+      }
+
       .form-group {
         display: flex;
         flex-direction: column;
@@ -952,6 +956,10 @@ export default function LandingPage() {
 
       @media (max-width: 480px) {
         /* Small phones */
+        .bf-r {
+          grid-template-columns: 1fr;
+        }
+
         section.content-centered {
           padding: 36px 0.75rem;
         }

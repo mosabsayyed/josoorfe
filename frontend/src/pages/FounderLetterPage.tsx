@@ -59,10 +59,10 @@ export default function FounderLetterPage() {
         title="Founder's Letter"
         style={{
           position: 'fixed',
-          top: 0,
+          top: '60px',
           left: 0,
           width: '100vw',
-          height: '100vh',
+          height: 'calc(100vh - 60px)',
           border: 'none',
           display: 'block',
           margin: 0,

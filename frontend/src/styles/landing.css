@@ -703,3 +703,23 @@
     height: 340px !important;
   }
 }
+
+@media (max-width: 768px) {
+  .cc-card[data-pos="-1"],
+  .cc-card[data-pos="1"],
+  .cc-card[data-pos="-2"],
+  .cc-card[data-pos="2"] {
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .cc-card[data-pos="-1"],
+  .cc-card[data-pos="1"],
+  .cc-card[data-pos="-2"],
+  .cc-card[data-pos="2"] {
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+}

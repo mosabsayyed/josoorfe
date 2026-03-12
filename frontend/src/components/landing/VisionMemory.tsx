@@ -51,116 +51,114 @@ export default function VisionMemory() {
             <Sparkle imageSrc="/att/ksa_mpbackgd.png" dotCount={1000} />
           </div>
 
-        {/* Layer 3 (top): Text content */}
-        {/* Left: stat + tag */}
-        <div style={{
-          flex: isMobile ? 'none' : '0 0 280px',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: '12px',
-          textAlign: 'center',
-          position: 'relative',
-          zIndex: 2,
-        }}>
-          <img
-            src="/att/vision2030-logo.png"
-            alt="Vision 2030"
-            style={{
-              width: isMobile ? '80px' : '100px',
-              height: 'auto',
-              opacity: 0.9,
-              marginBottom: '4px',
-            }}
-          />
-          <div className="section-tag" style={{ margin: 0, color: '#fff' }}>
-            {t('visionMemory.tag')}
-          </div>
-          <span style={{
-            fontSize: isMobile ? '56px' : '72px',
-            fontWeight: 800,
-            color: '#F4BB30',
-            lineHeight: 1,
+          {/* Left: stat + tag */}
+          <div style={{
+            flex: isMobile ? 'none' : '0 0 280px',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '12px',
+            textAlign: 'center',
+            position: 'relative',
+            zIndex: 2,
           }}>
-            {t('visionMemory.statValue')}
-          </span>
-          <span style={{
-            fontSize: isMobile ? '14px' : '15px',
-            fontWeight: 600,
-            color: 'rgba(255, 255, 255, 0.8)',
-            letterSpacing: '0.03em',
-            maxWidth: '220px',
-          }}>
-            {t('visionMemory.statLabel')}
-          </span>
-        </div>
-
-        {/* Right: title + description + highlights */}
-        <div style={{
-          flex: 1,
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '1rem',
-          position: 'relative',
-          zIndex: 2,
-        }}>
-          <h2 style={{
-            fontSize: isMobile ? '24px' : '30px',
-            fontWeight: 700,
-            color: '#fff',
-            lineHeight: 1.25,
-            margin: 0,
-          }}>
-            {t('visionMemory.title')}
-          </h2>
-
-          <p style={{
-            fontSize: isMobile ? '16px' : '18px',
-            color: 'var(--component-text-secondary, #D1D5DB)',
-            lineHeight: 1.7,
-            margin: 0,
-          }}>
-            {t('visionMemory.description')}
-          </p>
-
-          {/* Highlight chips */}
-          {Array.isArray(highlights) && (
-            <div style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '10px',
-              marginTop: '4px',
-            }}>
-              {highlights.map((item, i) => (
-                <div key={i} style={{
-                  display: 'flex',
-                  gap: '10px',
-                  alignItems: 'flex-start',
-                }}>
-                  <span style={{
-                    flexShrink: 0,
-                    width: '8px',
-                    height: '8px',
-                    borderRadius: '50%',
-                    background: '#F4BB30',
-                    marginTop: '8px',
-                  }} />
-                  <span style={{
-                    fontSize: isMobile ? '14px' : '15px',
-                    color: 'var(--component-text-secondary, #D1D5DB)',
-                    lineHeight: 1.6,
-                  }}>
-                    <strong style={{ color: 'var(--component-text-primary, #F9FAFB)', fontWeight: 600 }}>
-                      {item.bold}
-                    </strong>{' '}
-                    {item.text}
-                  </span>
-                </div>
-              ))}
+            <img
+              src="/att/vision2030-logo.png"
+              alt="Vision 2030"
+              style={{
+                width: isMobile ? '80px' : '100px',
+                height: 'auto',
+                opacity: 0.9,
+                marginBottom: '4px',
+              }}
+            />
+            <div className="section-tag" style={{ margin: 0, color: '#fff' }}>
+              {t('visionMemory.tag')}
             </div>
-          )}
+            <span style={{
+              fontSize: isMobile ? '56px' : '72px',
+              fontWeight: 800,
+              color: '#F4BB30',
+              lineHeight: 1,
+            }}>
+              {t('visionMemory.statValue')}
+            </span>
+            <span style={{
+              fontSize: isMobile ? '14px' : '15px',
+              fontWeight: 600,
+              color: 'rgba(255, 255, 255, 0.8)',
+              letterSpacing: '0.03em',
+              maxWidth: '220px',
+            }}>
+              {t('visionMemory.statLabel')}
+            </span>
+          </div>
 
-        </div>
+          {/* Right: title + description + highlights */}
+          <div style={{
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '1rem',
+            position: 'relative',
+            zIndex: 2,
+          }}>
+            <h2 style={{
+              fontSize: isMobile ? '24px' : '30px',
+              fontWeight: 700,
+              color: '#fff',
+              lineHeight: 1.25,
+              margin: 0,
+            }}>
+              {t('visionMemory.title')}
+            </h2>
+
+            <p style={{
+              fontSize: isMobile ? '16px' : '18px',
+              color: 'var(--component-text-secondary, #D1D5DB)',
+              lineHeight: 1.7,
+              margin: 0,
+            }}>
+              {t('visionMemory.description')}
+            </p>
+
+            {/* Highlight chips */}
+            {Array.isArray(highlights) && (
+              <div style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '10px',
+                marginTop: '4px',
+              }}>
+                {highlights.map((item, i) => (
+                  <div key={i} style={{
+                    display: 'flex',
+                    gap: '10px',
+                    alignItems: 'flex-start',
+                  }}>
+                    <span style={{
+                      flexShrink: 0,
+                      width: '8px',
+                      height: '8px',
+                      borderRadius: '50%',
+                      background: '#F4BB30',
+                      marginTop: '8px',
+                    }} />
+                    <span style={{
+                      fontSize: isMobile ? '14px' : '15px',
+                      color: 'var(--component-text-secondary, #D1D5DB)',
+                      lineHeight: 1.6,
+                    }}>
+                      <strong style={{ color: 'var(--component-text-primary, #F9FAFB)', fontWeight: 600 }}>
+                        {item.bold}
+                      </strong>{' '}
+                      {item.text}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
