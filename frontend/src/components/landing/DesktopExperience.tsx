@@ -337,8 +337,9 @@ export default function DesktopExperience({ language = 'ar' }: DesktopExperience
     });
   }, []);
 
-  const iconSize = isMobile ? 52 : 68;
-  const iconGap = isMobile ? 20 : 32;
+  const isLandscapeMobile = isMobile && !isPortrait;
+  const iconSize = isLandscapeMobile ? 40 : (isMobile ? 48 : 68);
+  const iconGap = isLandscapeMobile ? 12 : (isMobile ? 16 : 32);
 
   // Track if skip was triggered — survives across renders
   const skippedRef = useRef(hasSeenTour);
@@ -647,7 +648,7 @@ export default function DesktopExperience({ language = 'ar' }: DesktopExperience
           {/* Screenshot area — screenshots already include their own title bar */}
           <div style={{ flex: 1, position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
             {/* Images with crossfade */}
-            <div style={{ position: 'relative', flex: 1 }}>
+            <div style={{ position: 'relative', flex: 1, backgroundColor: '#000' }}>
               {pages.map((src, idx) => (
                 <img
                   key={src}
@@ -658,7 +659,7 @@ export default function DesktopExperience({ language = 'ar' }: DesktopExperience
                     inset: 0,
                     width: '100%',
                     height: '100%',
-                    objectFit: 'cover',
+                    objectFit: 'contain',
                     opacity: idx === pageIndex ? 1 : 0,
                     transition: 'opacity 0.4s ease',
                     display: 'block',
@@ -698,8 +699,8 @@ export default function DesktopExperience({ language = 'ar' }: DesktopExperience
                         key={idx}
                         onClick={onPageChange ? (e) => { e.stopPropagation(); onPageChange(idx); } : undefined}
                         style={{
-                          width: isMobile ? 10 : 14,
-                          height: isMobile ? 10 : 14,
+                          width: isLandscapeMobile ? 6 : (isMobile ? 8 : 12),
+                          height: isLandscapeMobile ? 6 : (isMobile ? 8 : 12),
                           borderRadius: '50%',
                           border: '2px solid rgba(255,255,255,0.3)',
                           padding: 0,
