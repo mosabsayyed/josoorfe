@@ -1,0 +1,130 @@
+.vision-memory-container {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  align-items: center;
+  padding: 2rem 1.25rem;
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.7s ease, transform 0.7s ease;
+}
+
+.vision-memory-container.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (min-width: 768px) {
+  .vision-memory-container {
+    flex-direction: row;
+    gap: 3rem;
+    padding: 3rem;
+  }
+}
+
+.vision-memory-left {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+  position: relative;
+  z-index: 2;
+}
+
+@media (min-width: 768px) {
+  .vision-memory-left {
+    flex: 0 0 280px;
+  }
+}
+
+.vision-memory-logo {
+  width: 80px;
+  height: auto;
+  opacity: 0.9;
+  margin-bottom: 4px;
+}
+
+@media (min-width: 768px) {
+  .vision-memory-logo {
+    width: 100px;
+  }
+}
+
+.vision-memory-stat {
+  font-size: min(15vw, 56px); /* Mobile-friendly fluid scalar for large text */
+  font-weight: 800;
+  color: #F4BB30;
+  line-height: 1;
+}
+
+@media (min-width: 768px) {
+  .vision-memory-stat {
+    font-size: clamp(56px, 5vw, 72px);
+  }
+}
+
+.vision-memory-stat-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.8);
+  letter-spacing: 0.03em;
+  max-width: 220px;
+}
+
+@media (min-width: 768px) {
+  .vision-memory-stat-label {
+    font-size: 15px;
+  }
+}
+
+.vision-memory-right {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  position: relative;
+  z-index: 2;
+}
+
+.vision-memory-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1.25;
+  margin: 0;
+}
+
+@media (min-width: 768px) {
+  .vision-memory-title {
+    font-size: 30px;
+  }
+}
+
+.vision-memory-desc {
+  font-size: 16px;
+  color: var(--component-text-secondary, #D1D5DB);
+  line-height: 1.7;
+  margin: 0;
+}
+
+@media (min-width: 768px) {
+  .vision-memory-desc {
+    font-size: 18px;
+  }
+}
+
+.vision-memory-highlight {
+  font-size: 14px;
+  color: var(--component-text-secondary, #D1D5DB);
+  line-height: 1.6;
+}
+
+@media (min-width: 768px) {
+  .vision-memory-highlight {
+    font-size: 15px;
+  }
+}
