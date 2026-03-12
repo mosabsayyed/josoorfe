@@ -219,6 +219,281 @@
     .coords-panel { position: fixed; right: 12px; top: 80px; width: 300px; max-height: calc(100vh - 160px); overflow: auto; background: rgba(0,0,0,0.5); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); border: 1px solid #374151; border-radius: 8px; padding: 8px 10px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size: 11px; line-height: 1.45; color: #e5e7eb; z-index: 9; }
     /* Hide UI overlays for clean animation */
     header, footer, .coords-panel, .phase-indicator, .metrics { display: none !important; }
+
+    .mobile-story { display: none; }
+
+    @media (max-width: 768px) {
+      :root {
+        --h1-font-size: 32px;
+        --h1-line-height: 40px;
+        --h2-font-size: 22px;
+        --h2-line-height: 30px;
+        --p-font-size: 16px;
+        --p-line-height: 26px;
+        --intro1-h1-font-size: 28px;
+        --intro1-h1-line-height: 36px;
+      }
+
+      .text-col {
+        width: 100% !important;
+        max-width: 100% !important;
+        padding: 0 16px !important;
+        position: relative !important;
+        top: auto !important;
+      }
+
+      .text-section {
+        min-height: auto !important;
+        padding-top: 30px;
+      }
+
+      .text-col h1,
+      .hero-row section:nth-of-type(1) .text-col h1 {
+        font-size: 32px !important;
+        line-height: 40px !important;
+      }
+
+      .hero-row section:nth-of-type(2) .text-col h1,
+      .hero-row section:nth-of-type(3) .text-col h1 {
+        font-size: 28px !important;
+        line-height: 36px !important;
+      }
+
+      .text-col h2,
+      .hero-row section:nth-of-type(1) .text-col h2 {
+        font-size: 22px !important;
+        line-height: 30px !important;
+      }
+
+      .text-col p,
+      .hero-row section:nth-of-type(1) .text-col p {
+        font-size: 16px !important;
+        line-height: 26px !important;
+      }
+
+      .phase-text-block,
+      .phase-overlay .phase-text-block,
+      .phase-overlay .phase-text-block[data-key="intro-1"],
+      .phase-overlay .phase-text-block[data-key="intro-3"],
+      .phase-overlay .phase-text-block[data-key="p4-hidden"],
+      .phase-overlay .phase-text-block[data-key="p56-where"],
+      .phase-overlay .phase-text-block[data-key="p7-two-years"],
+      .phase-overlay .phase-text-block[data-key="p89-future"] {
+        width: calc(100vw - 32px) !important;
+        max-width: calc(100vw - 32px) !important;
+        padding: 0 16px !important;
+        box-sizing: border-box !important;
+      }
+
+      .phase-overlay .phase-text-block h1,
+      .phase-overlay .phase-text-block[data-key="intro-1"] h1,
+      .phase-overlay .phase-text-block[data-key="p89-future"] h1 {
+        font-size: 32px !important;
+        line-height: 40px !important;
+      }
+
+      .phase-overlay .phase-text-block h2 {
+        font-size: 22px !important;
+        line-height: 30px !important;
+        margin-bottom: 16px !important;
+      }
+
+      .phase-overlay .phase-text-block p {
+        font-size: 16px !important;
+        line-height: 26px !important;
+      }
+
+      .phase-overlay .phase-text-block ul li {
+        font-size: 14px !important;
+        line-height: 22px !important;
+        padding-left: 20px !important;
+        margin-bottom: 8px !important;
+      }
+
+      .phase-overlay .overlay-inner {
+        top: 40% !important;
+      }
+
+      .finale-columns {
+        flex-direction: column !important;
+        gap: 24px !important;
+        padding: 16px !important;
+        top: 30px !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+        align-items: center !important;
+      }
+
+      .finale-left-column,
+      .finale-right-column {
+        width: 100% !important;
+        max-width: calc(100vw - 32px) !important;
+        padding: 20px 16px 30px !important;
+        box-sizing: border-box !important;
+      }
+
+      .finale-columns h1 {
+        font-size: 32px !important;
+        line-height: 40px !important;
+      }
+
+      .finale-columns h2 {
+        font-size: 24px !important;
+        line-height: 30px !important;
+      }
+
+      .finale-columns p {
+        font-size: 16px !important;
+        line-height: 26px !important;
+      }
+
+      .finale-columns li {
+        font-size: 14px !important;
+        line-height: 22px !important;
+      }
+
+      .finale-enter-btn {
+        font-size: 16px !important;
+        padding: 12px 32px !important;
+        margin-top: 24px !important;
+      }
+
+      .finale-logo {
+        width: 48px !important;
+        height: 48px !important;
+      }
+
+      /* Mobile story layout */
+      .mobile-story {
+        display: block !important;
+        padding: 20px 0;
+        direction: rtl;
+      }
+
+      .wrap,
+      .sticky-canvas,
+      .spacer,
+      .hero-row,
+      #phaseOverlay,
+      #scroll-hint,
+      .bg-tint,
+      #rubiks-header,
+      #rubiks-top-controls {
+        display: none !important;
+      }
+
+      .ms-section {
+        margin-bottom: 0;
+      }
+
+      .ms-visual {
+        position: relative;
+        width: 100%;
+        aspect-ratio: 16 / 9;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .ms-img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        opacity: 0.85;
+      }
+
+      .ms-phase-label {
+        position: absolute;
+        top: 16px;
+        left: 16px;
+        font-size: 14px;
+        font-weight: 700;
+        color: rgba(244, 187, 48, 0.6);
+        letter-spacing: 0.1em;
+        font-family: 'Allerta Stencil', serif;
+      }
+
+      .ms-text {
+        padding: 28px 20px 36px;
+        background: #111827;
+        text-align: right;
+      }
+
+      .ms-text h2 {
+        font-size: 24px !important;
+        line-height: 36px !important;
+        font-weight: 700;
+        color: #F4BB30;
+        margin: 0 0 16px 0;
+        font-family: 'Tajawal', sans-serif;
+      }
+
+      .ms-text p {
+        font-size: 16px !important;
+        line-height: 28px !important;
+        color: rgba(255, 255, 255, 0.88);
+        margin: 0 0 14px 0;
+        font-family: 'Tajawal', sans-serif;
+      }
+
+      .ms-text p:last-of-type {
+        margin-bottom: 0;
+      }
+
+      .ms-text em {
+        color: #F4BB30;
+        font-style: normal;
+      }
+
+      .ms-cta {
+        margin-top: 32px;
+        display: flex;
+        justify-content: center;
+      }
+
+      .ms-cta .finale-enter-btn {
+        font-size: 16px !important;
+        padding: 14px 36px !important;
+        border-radius: 999px;
+        border: none;
+        cursor: pointer;
+        font-family: 'Tajawal', sans-serif;
+        font-weight: 700;
+        background: linear-gradient(135deg, #F4BB30 0%, #D4AF37 100%);
+        color: #111827;
+        box-shadow: 0 4px 16px rgba(244, 187, 48, 0.3);
+      }
+
+      .ms-signature {
+        margin-top: 24px !important;
+        font-size: 18px !important;
+        font-weight: 500;
+        color: rgba(244, 187, 48, 0.9) !important;
+        text-align: center;
+        font-family: 'Tajawal', sans-serif;
+      }
+    }
+
+    @media (max-width: 375px) {
+      .phase-overlay .phase-text-block h1,
+      .phase-overlay .phase-text-block[data-key="intro-1"] h1,
+      .phase-overlay .phase-text-block[data-key="p89-future"] h1,
+      .text-col h1 {
+        font-size: 26px !important;
+        line-height: 34px !important;
+      }
+
+      .finale-columns h1 {
+        font-size: 26px !important;
+        line-height: 34px !important;
+      }
+
+      .finale-columns h2 {
+        font-size: 20px !important;
+        line-height: 26px !important;
+      }
+    }
   </style>
   <!-- Import required fonts -->
    <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -368,6 +643,85 @@ FLOW</h2>
     <div class="spacer"></div>
 
 
+  </div>
+
+  <!-- Mobile Story: vertical scroll narrative - Arabic RTL (shown ≤768px, replaces 3D cube) -->
+  <div class="mobile-story" dir="rtl">
+    <div class="ms-section">
+      <div class="ms-visual" style="background: linear-gradient(135deg, #1a1f2e 0%, #0f1318 100%);">
+        <img src="./mobile/1.jpg" alt="المكعّب المكتمل — كل شيء في عزلة" class="ms-img" onerror="this.style.display='none'" />
+        <div class="ms-phase-label">I</div>
+      </div>
+      <div class="ms-text">
+        <h2>نمط لا يتغيّر</h2>
+        <p>طوال فترة عملي الاستشاري على مدى ١٠ سنوات، كنت أجد النمط ذاته يتكرّر في كل جهة. الاستراتيجية في عزلة ضيّقة. العمليات لا تتذكّر الاستراتيجية إلا وقت تقرير الأداء. المخاطر انحصرت في سجلّ مفقود لا يتابعه أحد. المشاريع تعمل لتسليم مخرجاتها كما طُلب — وبدون نقاش.</p>
+        <p>أنظمة متمكّنة في مجالها، لكن لا ترابط بينها ولا لغة مشتركة. فقط <em>فراغ</em>. وقرارات تُتّخذ في هذا الفراغ، لا تُكتشف عواقبها إلا بعد فوات الأوان.</p>
+      </div>
+    </div>
+
+    <div class="ms-section">
+      <div class="ms-visual" style="background: linear-gradient(135deg, #1e1428 0%, #0f1318 100%);">
+        <img src="./mobile/2.jpg" alt="المكعّب يتفكّك — كسر الافتراضات" class="ms-img" onerror="this.style.display='none'" />
+        <div class="ms-phase-label">II</div>
+      </div>
+      <div class="ms-text">
+        <h2>لقاء غيّر كل شيء</h2>
+        <p>قبل عامين، طلبت من ChatGPT تصميم برنامج تدريبي ليعلّمني الذكاء الاصطناعي. استمرّ الحوار عطلة نهاية الأسبوع كاملة، وانتهى بسؤال لم أتوقّعه: إطلاق الإمكانات البشرية لا يكمن في ملاحقة الإجابات — بل في <em>صياغة الأسئلة الصحيحة</em>.</p>
+        <p>في تلك اللحظة أدركت: التعقيد المؤسسي الذي طالما اعتبرناه عدوًّا — هو في الحقيقة <em>أغنى مصدر للذكاء</em>. المشكلة لم تكن يومًا التعقيد ذاته، بل أننا لم نملك الأداة التي تُبحر فيه.</p>
+      </div>
+    </div>
+
+    <div class="ms-section">
+      <div class="ms-visual" style="background: linear-gradient(135deg, #14201e 0%, #0f1318 100%);">
+        <img src="./mobile/3.jpg" alt="التحوّل — القطع الكبيرة تنقسم إلى ٧٢٩ مكعّبًا صغيرًا" class="ms-img" onerror="this.style.display='none'" />
+        <div class="ms-phase-label">III</div>
+      </div>
+      <div class="ms-text">
+        <h2>ستة أشهر ونار هادئة</h2>
+        <p>بدأت بتصميم نموذج يلتقط كل هذا التعقيد. بعد ستة أشهر، كان النموذج محكمًا — قاعدة بيانات علائقية تربط كل هدف وقدرة وخطر ومشروع. لكن التقنية لم تكن جاهزة. الحلّ حينها كان يعني استثمارًا تقليديًا: تراخيص، وبنية تحتية، وفِرَق تطوير.</p>
+        <p>فأبقيته على <em>نار هادئة</em>. أصقله وأطوّره من واقع المشاريع التي أعمل عليها مع العملاء. كل مشروع يكشف فجوة جديدة، وكل فجوة تؤكّد أن النمط <em>أعمق ممّا ظننت</em>.</p>
+      </div>
+    </div>
+
+    <div class="ms-section">
+      <div class="ms-visual" style="background: linear-gradient(135deg, #1a1428 0%, #0f1318 100%);">
+        <img src="./mobile/4.jpg" alt="المكعّبات تتوسّع وتتلوّن — لحظة التقاء" class="ms-img" onerror="this.style.display='none'" />
+        <div class="ms-phase-label">IV</div>
+      </div>
+      <div class="ms-text">
+        <h2>اللحظة التي تغيّر فيها كل شيء</h2>
+        <p>ثم جاء صيف ٢٠٢٥. الذكاء التوليدي حقّق قفزات لم يتخيّلها أحد. أدوات التطوير أصبحت في متناول الجميع. القدرة الحاسوبية اللازمة للتنقّل في متاهة العلاقات المعقّدة — لم تعد متاحة فحسب، بل <em>بتكلفة معقولة</em>. والاستضافة السحابية نالت أخيرًا الاعتماد الحكومي بعد سنوات من التحفّظ.</p>
+        <p>لم يبقَ لديّ عذر. ولا خيار. <em>تفرّغت بالكامل.</em></p>
+      </div>
+    </div>
+
+    <div class="ms-section">
+      <div class="ms-visual" style="background: linear-gradient(135deg, #1e1a14 0%, #0f1318 100%);">
+        <img src="./mobile/5.jpg" alt="المكعّبات تدور وتتراقص — الجسور تتشكّل" class="ms-img" onerror="this.style.display='none'" />
+        <div class="ms-phase-label">V</div>
+      </div>
+      <div class="ms-text">
+        <h2>لماذا "جسور"؟</h2>
+        <p>البداية كانت جسرًا واحدًا — من الاستراتيجية إلى التنفيذ. لكن كل جسر كشف فجوة أخرى. ليس جسرًا واحدًا — بل <em>عشرات</em>. جسور صغيرة دقيقة. ما نسمّيها الآن <em>"علاقات"</em>. مئات منها، تربط كل هدف وقدرة وخطر ومشروع في بنية حيّة واحدة.</p>
+        <p>هذا هو <em>جسور</em> — نظام تشغيل <em>الذكاء التحوّلي</em>. حيث لا شيء يعمل منعزلًا، والتعقيد الذي أرهقكم يتحوّل إلى أثمن أصولكم المؤسسية.</p>
+      </div>
+    </div>
+
+    <div class="ms-section ms-section-final">
+      <div class="ms-visual" style="background: linear-gradient(135deg, #1a1e28 0%, #0f1318 100%);">
+        <img src="./mobile/6.jpg" alt="التشكيل النهائي — جسور، التعقيد كأصل" class="ms-img" onerror="this.style.display='none'" />
+        <div class="ms-phase-label">VI</div>
+      </div>
+      <div class="ms-text">
+        <h2>بلا قيود</h2>
+        <p>طوال مسيرتي كنت رائدًا — لكن لمصلحة الآخرين. هذه المرّة مختلفة. كل الإحباط المتراكم من البيروقراطية تحوّل إلى وقود. لا عذر، لا تردّد، ولا ندم إن شاء الله.</p>
+        <p>هذه المرحلة الأولى: بُنى ذكية صُمّمت لتفوز. الأساس في مكانه. وما يُبنى فوقه يتوقّف على من ينضمّ وما نتعلّمه معًا. إن وجدتم في هذا ما يستحقّ الحوار — أدعوكم للتواصل.</p>
+        <div class="ms-cta">
+          <button class="finale-enter-btn" onclick="document.getElementById('enterPortalBtn')?.click(); window.location.href='/';">تواصل معنا — سجّل في النسخة التجريبية</button>
+        </div>
+        <p class="ms-signature">— مصعب سيد، المؤسس والرئيس التنفيذي</p>
+      </div>
+    </div>
   </div>
 
   <script type="module">

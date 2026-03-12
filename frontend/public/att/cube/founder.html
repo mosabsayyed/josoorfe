@@ -218,6 +218,277 @@
     .coords-panel { position: fixed; right: 12px; top: 80px; width: 300px; max-height: calc(100vh - 160px); overflow: auto; background: rgba(0,0,0,0.5); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); border: 1px solid #374151; border-radius: 8px; padding: 8px 10px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size: 11px; line-height: 1.45; color: #e5e7eb; z-index: 9; }
     /* Hide UI overlays for clean animation */
     header, footer, .coords-panel, .phase-indicator, .metrics { display: none !important; }
+
+    /* Mobile story — hidden on desktop */
+    .mobile-story { display: none; }
+
+    @media (max-width: 768px) {
+      :root {
+        --h1-font-size: 32px;
+        --h1-line-height: 40px;
+        --h2-font-size: 22px;
+        --h2-line-height: 30px;
+        --p-font-size: 16px;
+        --p-line-height: 26px;
+        --intro1-h1-font-size: 28px;
+        --intro1-h1-line-height: 36px;
+      }
+
+      .text-col {
+        width: 100% !important;
+        max-width: 100% !important;
+        padding: 0 16px !important;
+        position: relative !important;
+        top: auto !important;
+      }
+
+      .text-section {
+        min-height: auto !important;
+        padding-top: 30px;
+      }
+
+      .text-col h1,
+      .hero-row section:nth-of-type(1) .text-col h1 {
+        font-size: 32px !important;
+        line-height: 40px !important;
+      }
+
+      .hero-row section:nth-of-type(2) .text-col h1,
+      .hero-row section:nth-of-type(3) .text-col h1 {
+        font-size: 28px !important;
+        line-height: 36px !important;
+      }
+
+      .text-col h2,
+      .hero-row section:nth-of-type(1) .text-col h2 {
+        font-size: 22px !important;
+        line-height: 30px !important;
+      }
+
+      .text-col p,
+      .hero-row section:nth-of-type(1) .text-col p {
+        font-size: 16px !important;
+        line-height: 26px !important;
+      }
+
+      .phase-text-block,
+      .phase-overlay .phase-text-block,
+      .phase-overlay .phase-text-block[data-key="intro-1"],
+      .phase-overlay .phase-text-block[data-key="intro-3"],
+      .phase-overlay .phase-text-block[data-key="p4-hidden"],
+      .phase-overlay .phase-text-block[data-key="p56-where"],
+      .phase-overlay .phase-text-block[data-key="p7-two-years"],
+      .phase-overlay .phase-text-block[data-key="p89-future"] {
+        width: calc(100vw - 32px) !important;
+        max-width: calc(100vw - 32px) !important;
+        padding: 0 16px !important;
+        box-sizing: border-box !important;
+      }
+
+      .phase-overlay .phase-text-block h1,
+      .phase-overlay .phase-text-block[data-key="intro-1"] h1,
+      .phase-overlay .phase-text-block[data-key="p89-future"] h1 {
+        font-size: 32px !important;
+        line-height: 40px !important;
+      }
+
+      .phase-overlay .phase-text-block h2 {
+        font-size: 22px !important;
+        line-height: 30px !important;
+        margin-bottom: 16px !important;
+      }
+
+      .phase-overlay .phase-text-block p {
+        font-size: 16px !important;
+        line-height: 26px !important;
+      }
+
+      .phase-overlay .phase-text-block ul li {
+        font-size: 14px !important;
+        line-height: 22px !important;
+        padding-left: 20px !important;
+        margin-bottom: 8px !important;
+      }
+
+      .phase-overlay .overlay-inner {
+        top: 40% !important;
+      }
+
+      .finale-columns {
+        flex-direction: column !important;
+        gap: 24px !important;
+        padding: 16px !important;
+        top: 30px !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+        align-items: center !important;
+      }
+
+      .finale-left-column,
+      .finale-right-column {
+        width: 100% !important;
+        max-width: calc(100vw - 32px) !important;
+        padding: 20px 16px 30px !important;
+        box-sizing: border-box !important;
+      }
+
+      .finale-columns h1 {
+        font-size: 32px !important;
+        line-height: 40px !important;
+      }
+
+      .finale-columns h2 {
+        font-size: 24px !important;
+        line-height: 30px !important;
+      }
+
+      .finale-columns p {
+        font-size: 16px !important;
+        line-height: 26px !important;
+      }
+
+      .finale-columns li {
+        font-size: 14px !important;
+        line-height: 22px !important;
+      }
+
+      .finale-enter-btn {
+        font-size: 16px !important;
+        padding: 12px 32px !important;
+        margin-top: 24px !important;
+      }
+
+      .finale-logo {
+        width: 48px !important;
+        height: 48px !important;
+      }
+
+      /* Mobile story layout */
+      .mobile-story {
+        display: block !important;
+        padding: 20px 0;
+      }
+
+      .wrap,
+      .sticky-canvas,
+      .spacer,
+      .hero-row,
+      #phaseOverlay,
+      #scroll-hint,
+      .bg-tint,
+      #rubiks-header,
+      #rubiks-top-controls {
+        display: none !important;
+      }
+
+      .ms-section {
+        margin-bottom: 0;
+      }
+
+      .ms-visual {
+        position: relative;
+        width: 100%;
+        aspect-ratio: 16 / 9;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .ms-img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        opacity: 0.85;
+      }
+
+      .ms-phase-label {
+        position: absolute;
+        top: 16px;
+        right: 16px;
+        font-size: 14px;
+        font-weight: 700;
+        color: rgba(244, 187, 48, 0.6);
+        letter-spacing: 0.1em;
+        font-family: 'Allerta Stencil', serif;
+      }
+
+      .ms-text {
+        padding: 28px 20px 36px;
+        background: #111827;
+      }
+
+      .ms-text h2 {
+        font-size: 24px !important;
+        line-height: 32px !important;
+        font-weight: 700;
+        color: #F4BB30;
+        margin: 0 0 16px 0;
+      }
+
+      .ms-text p {
+        font-size: 16px !important;
+        line-height: 26px !important;
+        color: rgba(255, 255, 255, 0.88);
+        margin: 0 0 14px 0;
+      }
+
+      .ms-text p:last-of-type {
+        margin-bottom: 0;
+      }
+
+      .ms-text em {
+        color: #F4BB30;
+        font-style: italic;
+      }
+
+      .ms-cta {
+        margin-top: 32px;
+        display: flex;
+        justify-content: center;
+      }
+
+      .ms-cta .finale-enter-btn {
+        font-size: 16px !important;
+        padding: 14px 36px !important;
+        border-radius: 999px;
+        border: none;
+        cursor: pointer;
+        font-family: inherit;
+        font-weight: 700;
+        background: linear-gradient(135deg, #F4BB30 0%, #D4AF37 100%);
+        color: #111827;
+        box-shadow: 0 4px 16px rgba(244, 187, 48, 0.3);
+      }
+
+      .ms-signature {
+        margin-top: 24px !important;
+        font-size: 18px !important;
+        font-weight: 500;
+        color: rgba(244, 187, 48, 0.9) !important;
+        text-align: center;
+      }
+    }
+
+    @media (max-width: 375px) {
+      .phase-overlay .phase-text-block h1,
+      .phase-overlay .phase-text-block[data-key="intro-1"] h1,
+      .phase-overlay .phase-text-block[data-key="p89-future"] h1,
+      .text-col h1 {
+        font-size: 26px !important;
+        line-height: 34px !important;
+      }
+
+      .finale-columns h1 {
+        font-size: 26px !important;
+        line-height: 34px !important;
+      }
+
+      .finale-columns h2 {
+        font-size: 20px !important;
+        line-height: 26px !important;
+      }
+    }
   </style>
   <!-- Import required fonts -->
    <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -303,6 +574,85 @@
           <p style="margin-top: 24px; font-size: 18px; font-weight: 500; color: rgba(244, 187, 48, 0.9);">— Mosab Sayyed, Founder & CEO</p>
         </div>
 
+        </div>
+      </div>
+    </div>
+
+    <!-- Mobile Story: vertical scroll narrative (shown ≤768px, replaces 3D cube) -->
+    <div class="mobile-story">
+      <div class="ms-section">
+        <div class="ms-visual" style="background: linear-gradient(135deg, #1a1f2e 0%, #0f1318 100%);">
+          <img src="./mobile/1.jpg" alt="The intact cube — everything in silos" class="ms-img" onerror="this.style.display='none'" />
+          <div class="ms-phase-label">I</div>
+        </div>
+        <div class="ms-text">
+          <h2>A Pattern That Never Changed</h2>
+          <p>Across ten years of consulting in the public sector, I kept finding the same pattern in every entity. Strategy locked in its own silo. Operations forgot strategy existed — until the performance report was due. Risks confined to a neglected register no one tracked. Projects delivering outputs as requested — no questions asked.</p>
+          <p>Capable systems in their own domains, but no connections between them. No shared language. Just a <em>void</em>. And decisions made in that void, their consequences discovered only when it was too late.</p>
+        </div>
+      </div>
+
+      <div class="ms-section">
+        <div class="ms-visual" style="background: linear-gradient(135deg, #1e1428 0%, #0f1318 100%);">
+          <img src="./mobile/2.jpg" alt="The cube dismantling — breaking apart" class="ms-img" onerror="this.style.display='none'" />
+          <div class="ms-phase-label">II</div>
+        </div>
+        <div class="ms-text">
+          <h2>The Encounter That Changed Everything</h2>
+          <p>Two years ago, I asked ChatGPT to design a training program to teach me AI. The conversation consumed an entire weekend and ended with an unexpected insight: unlocking human potential isn't about chasing answers — it's about <em>articulating the right questions</em>.</p>
+          <p>That's when I realized: the institutional complexity we'd always treated as an enemy is actually the <em>richest source of intelligence</em>. The problem was never complexity itself — it was that we never had the tool to navigate it.</p>
+        </div>
+      </div>
+
+      <div class="ms-section">
+        <div class="ms-visual" style="background: linear-gradient(135deg, #14201e 0%, #0f1318 100%);">
+          <img src="./mobile/3.jpg" alt="Large pieces transform into 729 mini-cubes" class="ms-img" onerror="this.style.display='none'" />
+          <div class="ms-phase-label">III</div>
+        </div>
+        <div class="ms-text">
+          <h2>Six Months, Then a Slow Burner</h2>
+          <p>I started building a model to capture all that complexity. After six months, it was sound — a relational database linking every objective, capability, risk, and project. But the technology wasn't ready. A solution then meant investing the old way: licenses, infrastructure, development teams.</p>
+          <p>So I kept it on a <em>slow burner</em>. Refining and evolving from real client engagements. Every project revealed a new gap, and every gap confirmed the pattern ran <em>deeper than I'd thought</em>.</p>
+        </div>
+      </div>
+
+      <div class="ms-section">
+        <div class="ms-visual" style="background: linear-gradient(135deg, #1a1428 0%, #0f1318 100%);">
+          <img src="./mobile/4.jpg" alt="Mini-cubes expand and recolor — convergence" class="ms-img" onerror="this.style.display='none'" />
+          <div class="ms-phase-label">IV</div>
+        </div>
+        <div class="ms-text">
+          <h2>The Moment Everything Converged</h2>
+          <p>Then came the summer of 2025. GenAI made leaps no one had anticipated. Development tools became accessible to everyone. The computing power needed to navigate the complex maze of relations wasn't just available — it was <em>remarkably affordable</em>. And cloud hosting finally earned government certification after years of resistance.</p>
+          <p>No more excuses. No more waiting. <em>I went all in.</em></p>
+        </div>
+      </div>
+
+      <div class="ms-section">
+        <div class="ms-visual" style="background: linear-gradient(135deg, #1e1a14 0%, #0f1318 100%);">
+          <img src="./mobile/5.jpg" alt="Cubes dance and swirl — many bridges forming" class="ms-img" onerror="this.style.display='none'" />
+          <div class="ms-phase-label">V</div>
+        </div>
+        <div class="ms-text">
+          <h2>Why "JOSOOR"</h2>
+          <p>The first instinct was one bridge — strategy to execution. But every bridge revealed another gap. Not one bridge — <em>many</em>. Precise micro-bridges. What we now call <em>relations</em>. Hundreds of them, connecting every objective, capability, risk, and project into one living structure.</p>
+          <p>That is <em>JOSOOR</em> — Arabic for "bridges." A <em>Transformation Intelligence</em> Operating System where nothing operates in isolation, and the complexity that exhausted you becomes your most valuable institutional asset.</p>
+        </div>
+      </div>
+
+      <div class="ms-section ms-section-final">
+        <div class="ms-visual" style="background: linear-gradient(135deg, #1a1e28 0%, #0f1318 100%);">
+          <img src="./mobile/6.jpg" alt="The final Josoor sculpture — complexity as asset" class="ms-img" onerror="this.style.display='none'" />
+          <div class="ms-phase-label">VI</div>
+        </div>
+        <div class="ms-text">
+          <h2>No Constraints</h2>
+          <p>All my career I was a pioneer — but for others' benefit. This time is different. All the bottled-up frustration from bureaucracy became fuel. No excuse, no hesitation, no regrets Inshallah.</p>
+          <p>This is Phase 1: Intelligent Architectures built to win. The foundations are in place. What grows on top depends on who joins and what we learn together. If any of this resonates — I invite you to reach out.</p>
+          <div class="ms-cta">
+            <button class="finale-enter-btn" onclick="document.getElementById('enterPortalBtn')?.click(); window.location.href='/';">Reach Out — Apply for Beta</button>
+          </div>
+          <p class="ms-signature">— Mosab Sayyed, Founder & CEO</p>
         </div>
       </div>
     </div>
