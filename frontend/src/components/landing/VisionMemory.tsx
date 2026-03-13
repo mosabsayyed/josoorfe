@@ -151,7 +151,7 @@ export default function VisionMemory() {
                       color: 'var(--component-text-secondary, #D1D5DB)',
                       lineHeight: 1.6,
                     }}>
-                      <strong style={{ color: 'var(--component-text-primary, #F9FAFB)', fontWeight: 600 }}>
+                      <strong style={{ color: '#F4BB30', fontWeight: 600 }}>
                         {item.bold}
                       </strong>{' '}
                       {item.text}

@@ -149,7 +149,12 @@
 
     "block2Num": "02 — The Trust Problem",
     "block2Question": "AI guesses. Government decisions cannot. How do you solve this?",
-    "block2Answer": "Traditional AI generates the most probable answer. In public sector work, probable is not acceptable — decisions must be traceable, explainable, and auditable. Intelligence should never operate in a vacuum. Every recommendation must be grounded in a rigorous methodology mapping your sector: goals, capabilities, risks, and projects. The AI reasons over this verified, structured reality, eliminating the risk of unconstrained hallucination.",
+    "block2Answer": "Traditional AI generates the most probable answer. In public sector work, probable is not acceptable. Intelligence should never operate in a vacuum — it must be grounded in a verified, structured reality.",
+    "block2List": [
+      { "bold": "Traceable decisions.", "text": "Every recommendation is backed by the detailed analysis behind it. Not just the What but the Why too." },
+      { "bold": "Constrained reasoning.", "text": "The AI reasons strictly over this verified reality, eliminating the risk of unconstrained hallucinations." },
+      { "bold": "Human oversight.", "text": "Every decision is reviewed and approved by an authorized and accountable human." }
+    ],
     "block2Quote": "Every output traces to a source. Every recommendation is explainable. No black boxes.",
     "block2Ev1Label": "See AI Observability",
     "block2Ev1Caption": "Full trace of every AI conversation — model used, tokens consumed, tool calls made, sources consulted, and response details. Nothing is hidden. Every decision the AI makes is logged and auditable.",
@@ -160,7 +165,7 @@
     "block3List": [
       { "bold": "Data is not ready.", "text": "And probably will never be. Instead of forcing change, we build a knowledge interface through our Ontology, creating a bridge to unify them all." },
       { "bold": "Unclear application benefits.", "text": "Every AI capability maps to a real operational need, not a technology showcase." },
-      { "bold": "Costs escalate.", "text": "Modular architecture. Scale what works, stop what doesn't." },
+      { "bold": "Costs escalate.", "text": "The architecture is distinguished by its flexibility, enabling you to scale what works and stop what doesn't for full cost control." },
       { "bold": "Resistance to change.", "text": "The architecture emphasizes a human-first principle with AI as a supporter. We deliver this alongside other principles through awareness workshops that address misconceptions." },
       { "bold": "Responsible AI is an afterthought.", "text": "Transparency, accountability, and explainability are not features we add later — they are enforced by the architecture. Humans gate every AI action." }
     ],

@@ -41,6 +41,29 @@ Create a new RiskPlan with deliverables and tasks.
         ]
       }
     ]
+  },
+  "riskAnalysis": {
+    "risk_id": "RISK_water_supply_disruption",
+    "risk_name": "Water Supply Disruption",
+    "risk_category": "Operational",
+    "capability_id": "CAP_plant_operations",
+    "capability_name": "Plant Operations",
+    "band": "issues",
+    "mode": "execute",
+    "selected_strategy": "Implement redundant supply lines",
+    "strategy_description": "Add backup water sources to reduce single-point failure risk",
+    "narrative_html": "<p>Risk analysis narrative from the AI advisor...</p>",
+    "people_score": 2.5,
+    "process_score": 3.0,
+    "tools_score": 1.5,
+    "maturity_level": 2,
+    "target_maturity_level": 4,
+    "kpi_achievement_pct": 45,
+    "build_exposure_pct": null,
+    "dependency_count": 8,
+    "build_status": null,
+    "execute_status": "red",
+    "snapshot_date": "2026-03-13T10:30:00.000Z"
   }
 }
 ```
@@ -61,6 +84,21 @@ Fetch existing plan for a risk. Returns 404 if none exists.
   "plan": {
     "name": "...",
     "sponsor": "...",
+    "risk_analysis": {
+      "risk_id": "...",
+      "risk_name": "...",
+      "capability_id": "...",
+      "capability_name": "...",
+      "band": "...",
+      "mode": "...",
+      "selected_strategy": "...",
+      "strategy_description": "...",
+      "narrative_html": "...",
+      "people_score": 2.5,
+      "process_score": 3.0,
+      "tools_score": 1.5,
+      "snapshot_date": "2026-03-13T10:30:00.000Z"
+    },
     "deliverables": [...]
   }
 }
@@ -82,14 +120,15 @@ Fetch existing plan for a risk. Returns 404 if none exists.
 ### Cypher — Create
 
 ```cypher
-// 1. Match the risk, create L1
+// 1. Match the risk, create L1 with immutable risk analysis snapshot
 MATCH (r {id: $riskId})
 CREATE (p:RiskPlan:L1 {
   id: 'RP_' + $riskId + '_' + toString(datetime()),
   name: $planName,
   sponsor: $planSponsor,
   status: 'Draft',
-  created_at: datetime()
+  created_at: datetime(),
+  risk_analysis_json: $riskAnalysisJson
 })
 CREATE (r)-[:HAS_PLAN]->(p)
 WITH p
@@ -133,7 +172,19 @@ OPTIONAL MATCH (dep:RiskPlan:L3)-[:BLOCKS]->(t)
 RETURN p, collect(DISTINCT d) AS deliverables, collect(DISTINCT {task: t, dep: dep.id}) AS tasks
 ```
 
+## Risk Analysis Snapshot — Integrity Rules
+
+The `riskAnalysis` object is an **immutable audit trail**. It captures the exact state of the risk and capability data at the moment the plan was committed.
+
+1. **Store as-is**: Backend must store the entire `riskAnalysis` JSON as a single `risk_analysis_json` TEXT property on the L1 node. Do NOT decompose into separate properties.
+2. **Never modify**: Once written, `risk_analysis_json` must NEVER be updated, even if the underlying risk/capability data changes later. This is a point-in-time snapshot.
+3. **Return on read**: When returning a plan via GET, parse `risk_analysis_json` back into the `risk_analysis` field inside the `plan` object.
+4. **Optional field**: `riskAnalysis` may be absent in older plans created before this feature. Backend must handle `null`/missing gracefully.
+5. **`$riskAnalysisJson` parameter**: Backend should `JSON.stringify(riskAnalysis)` before passing to Cypher. On read, `JSON.parse(p.risk_analysis_json)`.
+
 ## Frontend
-- `planningService.ts` already calls `POST /api/neo4j/risk-plan` and `GET /api/neo4j/risk-plan/:riskId`
+- `planningService.ts` calls `POST /api/neo4j/risk-plan` and `GET /api/neo4j/risk-plan/:riskId`
+- On commit, frontend builds a `RiskAnalysisSnapshot` from the current `InterventionContext` and sends it alongside the plan
 - On success, plan stays visible with a green "Plan committed" banner
+- Saved plan detail view shows the risk analysis snapshot header with expandable full narrative
 - On failure, error is shown to the user

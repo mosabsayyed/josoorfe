@@ -20,12 +20,37 @@ export interface PlanDeliverable {
   tasks: PlanTask[];
 }
 
+export interface RiskAnalysisSnapshot {
+  risk_id: string;
+  risk_name: string;
+  risk_category?: string;
+  capability_id: string;
+  capability_name: string;
+  band: string;
+  mode: string;
+  selected_strategy: string;
+  strategy_description?: string;
+  narrative_html?: string;
+  people_score?: number;
+  process_score?: number;
+  tools_score?: number;
+  maturity_level?: number;
+  target_maturity_level?: number;
+  kpi_achievement_pct?: number;
+  build_exposure_pct?: number;
+  dependency_count?: number;
+  build_status?: string;
+  execute_status?: string;
+  snapshot_date: string;
+}
+
 export interface InterventionPlan {
   name: string;
   sponsor: string;
   narrative?: string;
   risk_id?: string;
   capability_id?: string;
+  risk_analysis?: RiskAnalysisSnapshot;
   deliverables: PlanDeliverable[];
 }
 

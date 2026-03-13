@@ -229,6 +229,7 @@ const ALL_IMAGES = [
   `${BASE}/biosboot.jpg`,
   `${BASE}/josoor_art.png`,
   `${BASE}/desktop.jpg`,
+  `${AR_BASE}/desktop.jpg`,
   ...ICONS.map(i => i.icon),
   ...ICONS.flatMap(i => i.pages),
 ];
@@ -659,7 +660,8 @@ export default function DesktopExperience({ language = 'ar' }: DesktopExperience
                     inset: 0,
                     width: '100%',
                     height: '100%',
-                    objectFit: 'contain',
+                    objectFit: 'cover',
+                    objectPosition: 'left bottom',
                     opacity: idx === pageIndex ? 1 : 0,
                     transition: 'opacity 0.4s ease',
                     display: 'block',
@@ -895,9 +897,9 @@ export default function DesktopExperience({ language = 'ar' }: DesktopExperience
           transition: 'opacity 0.8s ease',
         }}>
           <img
-            src={`${BASE}/desktop.jpg`}
+            src={isRTL ? `${AR_BASE}/desktop.jpg` : `${BASE}/desktop.jpg`}
             alt="Josoor Desktop"
-            style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'absolute', inset: 0 }}
+            style={{ height: '100%', width: '100%', objectFit: 'cover', objectPosition: 'left bottom', position: 'absolute', inset: 0 }}
             draggable={false}
           />
 
@@ -908,7 +910,7 @@ export default function DesktopExperience({ language = 'ar' }: DesktopExperience
             bottom: 0,
             left: isRTL ? 0 : undefined,
             right: isRTL ? undefined : 0,
-            paddingTop: isMobile ? '12%' : '8%',
+            paddingTop: isLandscapeMobile ? '20%' : (isMobile ? '28%' : '15%'),
             paddingLeft: isMobile ? '8%' : '10%',
             paddingRight: isMobile ? '8%' : '10%',
             display: 'flex',

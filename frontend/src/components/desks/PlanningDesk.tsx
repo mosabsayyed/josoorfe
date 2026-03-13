@@ -6,7 +6,7 @@ import { Gantt } from 'wx-react-gantt';
 import 'wx-react-gantt/dist/gantt.css';
 import { chatService } from '../../services/chatService';
 import { createRiskPlan, fetchAllRiskPlans, fetchRiskPlan, RiskPlanSummary } from '../../services/planningService';
-import { parsePlanResponse, InterventionPlan, PlanDeliverable, PlanTask } from '../../utils/planParser';
+import { parsePlanResponse, InterventionPlan, PlanDeliverable, PlanTask, RiskAnalysisSnapshot } from '../../utils/planParser';
 import './PlanningDesk.css';
 
 type PlanningMode = 'intervention' | 'strategic-reset' | 'scenario';
@@ -270,7 +270,31 @@ function InterventionPlanning({ context, onClearContext }: InterventionPlanningP
     if (!plan || !context) return;
 
     try {
-      await createRiskPlan(context.riskId, plan);
+      const snapshot: RiskAnalysisSnapshot = {
+        risk_id: context.riskId,
+        risk_name: context.riskName,
+        risk_category: context.riskCategory,
+        capability_id: context.capabilityId,
+        capability_name: context.capabilityName,
+        band: context.band,
+        mode: context.mode,
+        selected_strategy: context.selectedOption.title,
+        strategy_description: context.selectedOption.description,
+        narrative_html: context.riskAnalysisNarrative,
+        people_score: context.peopleScore,
+        process_score: context.processScore,
+        tools_score: context.toolsScore,
+        maturity_level: context.maturityLevel,
+        target_maturity_level: context.targetMaturityLevel,
+        kpi_achievement_pct: context.kpiAchievementPct,
+        build_exposure_pct: context.buildExposurePct,
+        dependency_count: context.dependencyCount,
+        build_status: context.buildStatus,
+        execute_status: context.executeStatus,
+        snapshot_date: new Date().toISOString(),
+      };
+
+      await createRiskPlan(context.riskId, plan, snapshot);
       setIsCommitted(true);
     } catch (err: any) {
       console.error('[InterventionPlanning] Commit failed:', err);
@@ -497,6 +521,51 @@ function SavedPlansList() {
         <div style={{ fontSize: '12px', color: 'var(--component-text-muted)', marginBottom: '16px' }}>
           {plan.deliverables.length} {t('josoor.planning.deliverables') || 'deliverables'} · {plan.deliverables.reduce((sum, d) => sum + d.tasks.length, 0)} {t('josoor.planning.tasks') || 'tasks'}
         </div>
+
+        {plan.risk_analysis && (
+          <div className="risk-context-header" style={{ marginBottom: '16px', borderColor: 'var(--component-text-muted)' }}>
+            <div style={{ fontSize: '11px', color: 'var(--component-text-muted)', textTransform: 'uppercase', fontWeight: 600, marginBottom: '6px' }}>
+              {t('josoor.planning.riskAnalysisSnapshot') || 'Risk Analysis Snapshot'}
+              {plan.risk_analysis.snapshot_date && (
+                <span style={{ fontWeight: 400, textTransform: 'none', marginInlineStart: '8px' }}>
+                  {new Date(plan.risk_analysis.snapshot_date).toLocaleDateString()}
+                </span>
+              )}
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0', flexWrap: 'wrap', fontSize: '13px' }}>
+              <span><span className="field-label" style={{ marginInlineEnd: '4px' }}>{t('josoor.planning.risk')}</span><span className="field-value">{plan.risk_analysis.risk_id} — {plan.risk_analysis.risk_name}</span></span>
+              <span style={{ opacity: 0.3, margin: '0 8px' }}>|</span>
+              <span><span className="field-label" style={{ marginInlineEnd: '4px' }}>{t('josoor.planning.capability')}</span><span className="field-value">{plan.risk_analysis.capability_id} — {plan.risk_analysis.capability_name}</span></span>
+              <span style={{ opacity: 0.3, margin: '0 8px' }}>|</span>
+              <span style={{ fontWeight: 600 }}>{plan.risk_analysis.band}</span>
+              <span style={{ opacity: 0.3, margin: '0 8px' }}>|</span>
+              <span><span className="field-label" style={{ marginInlineEnd: '4px' }}>{plan.risk_analysis.mode === 'execute' ? 'Status' : 'Build'}</span><span className="field-value">{plan.risk_analysis.mode === 'execute' ? (plan.risk_analysis.execute_status || '—') : (plan.risk_analysis.build_status || '—')}</span></span>
+              {plan.risk_analysis.people_score != null && (<>
+                <span style={{ opacity: 0.3, margin: '0 8px' }}>|</span>
+                <span><span className="field-label" style={{ marginInlineEnd: '4px' }}>P/Pr/T</span><span className="field-value">{plan.risk_analysis.people_score}/{plan.risk_analysis.process_score}/{plan.risk_analysis.tools_score}</span></span>
+              </>)}
+            </div>
+            <div style={{ marginTop: '6px', fontSize: '13px' }}>
+              <span className="field-label" style={{ marginInlineEnd: '4px' }}>{t('josoor.planning.selectedStrategy')}</span>
+              <span className="strategy-value">{plan.risk_analysis.selected_strategy}</span>
+              {plan.risk_analysis.strategy_description && (
+                <span style={{ marginInlineStart: '6px', opacity: 0.7 }}>{plan.risk_analysis.strategy_description}</span>
+              )}
+            </div>
+            {plan.risk_analysis.narrative_html && (
+              <details style={{ marginTop: '8px' }}>
+                <summary style={{ cursor: 'pointer', fontSize: '12px', color: 'var(--component-text-accent)' }}>
+                  {t('josoor.planning.viewFullAnalysis') || 'View full risk analysis'}
+                </summary>
+                <div
+                  className="narrative-content"
+                  style={{ marginTop: '8px', fontSize: '12px', opacity: 0.85 }}
+                  dangerouslySetInnerHTML={{ __html: plan.risk_analysis.narrative_html }}
+                />
+              </details>
+            )}
+          </div>
+        )}
 
         {ganttTasks.length > 0 && (
           <div className="gantt-container">

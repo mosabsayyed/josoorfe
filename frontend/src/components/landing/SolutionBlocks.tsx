@@ -21,6 +21,7 @@ interface BlockDef {
   borderAlpha: number;
   footnoteKey?: string;
   evidence?: EvidenceLink[];
+  hasQuote?: boolean;
 }
 
 const BLOCK_DEFS: BlockDef[] = [
@@ -31,7 +32,8 @@ const BLOCK_DEFS: BlockDef[] = [
   },
   {
     id: 'block2',
-    accent: 'quote',
+    accent: 'list',
+    hasQuote: true,
     borderAlpha: 0.2,
   },
   { id: 'block3', accent: 'list',  borderAlpha: 0.15, footnoteKey: 'solution.block3Footnote' },
@@ -323,7 +325,7 @@ function BlockCard({
     ? (t(`${prefix}List`, { returnObjects: true }) as unknown as Array<{ bold: string; text: string }>)
     : null;
 
-  const quoteText = def.accent === 'quote' ? t(`${prefix}Quote`) : '';
+  const quoteText = (def.accent === 'quote' || def.hasQuote) ? t(`${prefix}Quote`) : '';
   const footnote = def.footnoteKey ? t(def.footnoteKey) : '';
 
   return (
@@ -412,8 +414,10 @@ function BlockCard({
           {def.accent === 'list' && listItems && Array.isArray(listItems) && (
             <ListAccent items={listItems} isMobile={isMobile} />
           )}
-          {def.accent === 'quote' && (
-            <QuoteAccent text={quoteText} isMobile={isMobile} />
+          {(def.accent === 'quote' || def.hasQuote) && quoteText && (
+            <div style={{ marginTop: def.accent === 'list' ? '2.5rem' : 0 }}>
+              <QuoteAccent text={quoteText} isMobile={isMobile} />
+            </div>
           )}
         </div>
       </div>

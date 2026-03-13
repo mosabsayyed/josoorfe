@@ -51,9 +51,9 @@ export default function Hero({ content, language }: HeroProps) {
                 backgroundClip: 'text',
               }}>
                 {content.title}
-              </span>{' '}
+              </span>
               <span style={{ color: 'var(--text-primary, #f8f8f8)' }}>
-                {content.subtitle}
+                {' '}{content.subtitle}
               </span>
             </h1>
             <p className="hero-sectors">
