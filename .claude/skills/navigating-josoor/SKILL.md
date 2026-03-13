@@ -56,14 +56,18 @@ See [./josoor-domain-knowledge.md](./josoor-domain-knowledge.md) for the full bu
 |---|---|
 | `arabic-perfection` | Any Arabic content: i18n files, HTML pages, founder letter |
 | `ux-writing-arabic` | Arabic UX copy, buttons, labels, error messages |
-| `landing-page-copywriter` | Landing page copy |
-| `marketing-psychology` | Conversion copy |
-| `positioning-and-messaging` | Brand positioning and messaging |
+| `landing-page-copywriter` | Any landing page content writing |
+| `marketing-psychology` | Persuasion, emotional triggers, conversion copy |
+| `positioning-and-messaging` | Brand positioning, value props, messaging hierarchy |
 | `superpowers:subagent-driven-development` | Delegating implementation tasks |
 | `superpowers:dispatching-parallel-agents` | Multiple independent tasks |
 | `superpowers:systematic-debugging` | Any bug or unexpected behavior |
 
-**Content writing rule:** Before writing ANY content, load relevant copy/persuasion/translation skills.
+**Content writing rule:** Before writing ANY content for the landing page or web app, load these skills first:
+1. `landing-page-copywriter` — for structure and copy
+2. `arabic-perfection` — for Arabic content
+3. `marketing-psychology` — for persuasion and emotional resonance
+4. `positioning-and-messaging` — for brand consistency and value props
 
 **Skills not found locally?** Use `find-skills` skill or run `npx skills find <name>` then `npx skills add -y <owner/repo@skill>` to install.
 
@@ -133,17 +137,29 @@ Default to these for task execution:
 4. **Stay in scope.** Do EXACTLY what was asked. No extras, no refactoring, no "improvements".
 5. **Never overwrite files** without checking if they exist first.
 6. **Never modify running services** without explicit approval.
-7. **Check neo4j-memory MCP first** at the start of every session. Use search_memories (semantic) first, NOT read_graph. read_graph dumps 100K+ chars and wastes context.
+7. **Check neo4j-memory MCP first** at the start of every session. Use `search_memories` (semantic search) with keywords relevant to the current task — NOT `read_graph`. The memory supports semantic matching, so descriptive queries like "landing page sections" or "enterprise overlay work" will find relevant context even if exact terms differ. Only fall back to `read_graph` if you need a full inventory.
 8. **No mock data.** No fallback data. Always real API responses.
 9. **No Tailwind.** CSS variables only from `frontend/src/styles/theme.css`.
 10. **Verification in running app.** Not just code review.
-11. **Check ClaudeMailbox** at session start via `search_memories`. Act on [pending] tasks, then mark [done].
+11. **Check ClaudeMailbox** at session start. Search `search_memories('ClaudeMailbox')` for pending messages from the other Claude. Act on them, then mark done.
 
 ## ClaudeMailbox Protocol
 
-A shared mailbox in noor-memory between Local Claude (Mosab's laptop) and VPS Claude (148.230.105.139).
-**Format:** `[source:local|vps] [date] [category] [status:pending|done] message`
-**Categories:** skill-sync, bug-fix, hook-sync, task-handoff, info.
+A shared mailbox in noor-memory between Local Claude (Mosab's laptop) and VPS Claude (148.230.105.139). Used for **any** cross-environment communication.
+
+**Entity:** `ClaudeMailbox` (type: `mailbox`) in noor-memory.
+
+**When to post:**
+- Skill updates that need replicating on the other side
+- Bug fixes that span FE + BE (you fix one, leave note for the other)
+- Hook changes that need syncing
+- Task handoffs ("I did X, you need to do Y")
+- Any info the other Claude needs
+
+**Message format (as observation):**
+```
+[source:local|vps] [date] [category] [status:pending|done] message
+```
 Categories: `skill-update`, `bug-fix`, `hook-sync`, `task-handoff`, `info`, `request`
 
 **On session start:**
@@ -279,10 +295,12 @@ See [./external-systems-access.md](./external-systems-access.md) for full connec
 - Schema: SST Ontology (EntityCapability, EntityRisk, SectorPolicyTool, etc.)
 
 ### Memory System (neo4j-memory MCP)
-- **Always check at session start** using `search_memories` — it supports semantic search.
-- **Do NOT default to `read_graph`** — it dumps 100K+ chars. Use only for full inventory.
-- **`add_observations` API:** takes `{instances: [{entityName, observations: [...]}]}`
-- **Auto-memory:** VS Code Copilot stores memories in `/memories/`. Use the native memory tool or check `/memories/user/`. Use `MEMORY.md` if present.
+- **Always check at session start** using `search_memories` — it supports **semantic search**, so use descriptive keywords about the current task (e.g. "landing page carousel", "enterprise risk overlays", "ontology line health")
+- **Do NOT default to `read_graph`** — it dumps the entire graph (100K+ chars) and wastes context. Use it only when you need a full inventory of everything stored.
+- **Order:** `search_memories` first → git log second → `read_graph` only if needed
+- **`add_observations` API:** takes `{entityName, observations}` — NOT `{entityName, contents}`. Example: `{"observations": [{"entityName": "ClaudeMailbox", "observations": ["[local] [2026-03-11] message"]}]}`
+- Stores: project context, architecture decisions, key lessons, VPS state, session work (even uncommitted)
+- Server: runs as MCP server, accessible via tool calls
 
 ### MCP Routers
 | Router | Port | Gateway | Purpose |
