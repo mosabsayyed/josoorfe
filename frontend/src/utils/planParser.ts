@@ -50,7 +50,7 @@ export interface InterventionPlan {
   narrative?: string;
   risk_id?: string;
   capability_id?: string;
-  risk_analysis?: RiskAnalysisSnapshot;
+  risk_analysis: RiskAnalysisSnapshot;
   deliverables: PlanDeliverable[];
 }
 

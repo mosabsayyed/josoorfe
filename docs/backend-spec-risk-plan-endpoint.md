@@ -179,12 +179,12 @@ The `riskAnalysis` object is an **immutable audit trail**. It captures the exact
 1. **Store as-is**: Backend must store the entire `riskAnalysis` JSON as a single `risk_analysis_json` TEXT property on the L1 node. Do NOT decompose into separate properties.
 2. **Never modify**: Once written, `risk_analysis_json` must NEVER be updated, even if the underlying risk/capability data changes later. This is a point-in-time snapshot.
 3. **Return on read**: When returning a plan via GET, parse `risk_analysis_json` back into the `risk_analysis` field inside the `plan` object.
-4. **Optional field**: `riskAnalysis` may be absent in older plans created before this feature. Backend must handle `null`/missing gracefully.
+4. **Required field**: `riskAnalysis` is always present — a plan cannot exist without the analysis that triggered it. Backend should reject requests missing `riskAnalysis`.
 5. **`$riskAnalysisJson` parameter**: Backend should `JSON.stringify(riskAnalysis)` before passing to Cypher. On read, `JSON.parse(p.risk_analysis_json)`.
 
 ## Frontend
 - `planningService.ts` calls `POST /api/neo4j/risk-plan` and `GET /api/neo4j/risk-plan/:riskId`
-- On commit, frontend builds a `RiskAnalysisSnapshot` from the current `InterventionContext` and sends it alongside the plan
+- The `riskAnalysis` snapshot is built once in the risk advisor step and flows through untouched — never rebuilt or manipulated
 - On success, plan stays visible with a green "Plan committed" banner
 - Saved plan detail view shows the risk analysis snapshot header with expandable full narrative
 - On failure, error is shown to the user

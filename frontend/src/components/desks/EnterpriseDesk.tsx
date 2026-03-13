@@ -8,6 +8,7 @@ import type { OverlayType } from '../../utils/enterpriseOverlayUtils';
 import { getCapabilityMatrix } from '../../services/enterpriseService';
 import { chatService } from '../../services/chatService';
 import { Artifact } from '../../types/api';
+import type { RiskAnalysisSnapshot } from '../../utils/planParser';
 import { EnterpriseHeader } from './enterprise/EnterpriseHeader';
 import { OverlayControls } from './enterprise/OverlayControls';
 import { DynamicInsightPanel } from './enterprise/DynamicInsightPanel';
@@ -208,6 +209,29 @@ export function EnterpriseDesk({ year = '2025', quarter = 'Q1', focusCapId, onIn
       },
       riskAnalysisNarrative: riskReportHtml,
       riskAnalysisArtifacts: riskArtifacts,
+      riskAnalysis: {
+        risk_id: cap.rawRisk?.id || (isL2 ? cap.l3.find((c: any) => c.rawRisk)?.rawRisk?.id : '') || '',
+        risk_name: cap.rawRisk?.name || (isL2 ? cap.l3.find((c: any) => c.rawRisk)?.rawRisk?.name : '') || '',
+        risk_category: cap.rawRisk?.risk_category || (isL2 ? cap.l3.find((c: any) => c.rawRisk)?.rawRisk?.risk_category : '') || '',
+        capability_id: cap.id || '',
+        capability_name: cap.name || '',
+        band,
+        mode: capMode,
+        selected_strategy: option.title,
+        strategy_description: option.description,
+        narrative_html: riskReportHtml,
+        people_score: cap.people_score,
+        process_score: cap.process_score,
+        tools_score: cap.tools_score,
+        maturity_level: cap.maturity_level,
+        target_maturity_level: cap.target_maturity_level,
+        kpi_achievement_pct: kpiPct,
+        build_exposure_pct: cap.build_exposure_pct,
+        dependency_count: cap.dependency_count,
+        build_status: cap.build_status,
+        execute_status: cap.execute_status,
+        snapshot_date: new Date().toISOString(),
+      } as RiskAnalysisSnapshot,
       capDataYear: cap.year || selectedYear,
       selectedYear,
     };

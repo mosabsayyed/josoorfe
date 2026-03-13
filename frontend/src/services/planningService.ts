@@ -1,4 +1,4 @@
-import { InterventionPlan, RiskAnalysisSnapshot } from '../utils/planParser';
+import { InterventionPlan } from '../utils/planParser';
 
 const MCP_ENDPOINT = '/1/mcp/'; // Noor MCP router (port 8201)
 
@@ -18,11 +18,8 @@ export interface RiskPlanSummary {
  * Create RiskPlan L1/L2/L3 nodes in Neo4j, attached to the given risk.
  * POST /api/risk-plan
  */
-export async function createRiskPlan(riskId: string, plan: InterventionPlan, riskAnalysis?: RiskAnalysisSnapshot): Promise<{ planId?: string }> {
-  const payload: Record<string, any> = { riskId, plan };
-  if (riskAnalysis) {
-    payload.riskAnalysis = riskAnalysis;
-  }
+export async function createRiskPlan(riskId: string, plan: InterventionPlan): Promise<{ planId?: string }> {
+  const payload = { riskId, plan, riskAnalysis: plan.risk_analysis };
   const response = await fetch('/api/neo4j/risk-plan', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

@@ -3,9 +3,10 @@ import React, { useEffect, useRef } from 'react';
 interface SparkleProps {
   imageSrc: string;
   dotCount?: number;
+  scaleFactor?: number;
 }
 
-export default function Sparkle({ imageSrc, dotCount = 600 }: SparkleProps) {
+export default function Sparkle({ imageSrc, dotCount = 600, scaleFactor = 0.52 }: SparkleProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number | null>(null);
   const imgRef = useRef<HTMLImageElement | null>(null);
@@ -35,7 +36,7 @@ export default function Sparkle({ imageSrc, dotCount = 600 }: SparkleProps) {
       canvas.height = H;
 
       const isRTL = document.documentElement.dir === 'rtl';
-      const scale = Math.min(W / img.width, H / img.height) * 0.52;
+      const scale = Math.min(W / img.width, H / img.height) * scaleFactor;
       const iw = img.width * scale;
       const ih = img.height * scale;
       const ox = isRTL ? (W - iw) * 0.99 : (W - iw) * 0.01;
@@ -297,7 +298,7 @@ export default function Sparkle({ imageSrc, dotCount = 600 }: SparkleProps) {
         cancelAnimationFrame(animationRef.current);
       }
     };
-  }, [imageSrc, dotCount]);
+  }, [imageSrc, dotCount, scaleFactor]);
 
   return (
     <canvas

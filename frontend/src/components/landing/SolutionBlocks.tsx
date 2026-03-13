@@ -414,13 +414,15 @@ function BlockCard({
           {def.accent === 'list' && listItems && Array.isArray(listItems) && (
             <ListAccent items={listItems} isMobile={isMobile} />
           )}
-          {(def.accent === 'quote' || def.hasQuote) && quoteText && (
-            <div style={{ marginTop: def.accent === 'list' ? '2.5rem' : 0 }}>
-              <QuoteAccent text={quoteText} isMobile={isMobile} />
-            </div>
-          )}
         </div>
       </div>
+
+      {/* Spanning Quote */}
+      {(def.accent === 'quote' || def.hasQuote) && quoteText && (
+        <div style={{ marginTop: '2.5rem' }}>
+          <QuoteAccent text={quoteText} isMobile={isMobile} />
+        </div>
+      )}
 
       {/* Footnote */}
       {footnote && (

@@ -41,6 +41,7 @@ export interface InterventionContext {
   };
   riskAnalysisNarrative?: string;
   riskAnalysisArtifacts?: any[];
+  riskAnalysis: RiskAnalysisSnapshot;
   capDataYear?: number | string;
   selectedYear?: string;
 }
@@ -187,6 +188,9 @@ function InterventionPlanning({ context, onClearContext }: InterventionPlanningP
         const parsed = parsePlanResponse(answer);
 
         setNarrative(parsed.narrative);
+        if (parsed.plan) {
+          parsed.plan.risk_analysis = context.riskAnalysis;
+        }
         setPlan(parsed.plan);
 
         if (!parsed.plan) {
@@ -270,31 +274,7 @@ function InterventionPlanning({ context, onClearContext }: InterventionPlanningP
     if (!plan || !context) return;
 
     try {
-      const snapshot: RiskAnalysisSnapshot = {
-        risk_id: context.riskId,
-        risk_name: context.riskName,
-        risk_category: context.riskCategory,
-        capability_id: context.capabilityId,
-        capability_name: context.capabilityName,
-        band: context.band,
-        mode: context.mode,
-        selected_strategy: context.selectedOption.title,
-        strategy_description: context.selectedOption.description,
-        narrative_html: context.riskAnalysisNarrative,
-        people_score: context.peopleScore,
-        process_score: context.processScore,
-        tools_score: context.toolsScore,
-        maturity_level: context.maturityLevel,
-        target_maturity_level: context.targetMaturityLevel,
-        kpi_achievement_pct: context.kpiAchievementPct,
-        build_exposure_pct: context.buildExposurePct,
-        dependency_count: context.dependencyCount,
-        build_status: context.buildStatus,
-        execute_status: context.executeStatus,
-        snapshot_date: new Date().toISOString(),
-      };
-
-      await createRiskPlan(context.riskId, plan, snapshot);
+      await createRiskPlan(context.riskId, plan);
       setIsCommitted(true);
     } catch (err: any) {
       console.error('[InterventionPlanning] Commit failed:', err);
