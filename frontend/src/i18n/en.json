@@ -1,7 +1,7 @@
 {
   "hero": {
     "title": "JOSOOR",
-    "subtitle": "Transformation Intelligence",
+    "subtitle": "— Transformation Intelligence",
     "subtitleEn": "Transformation Intelligence",
     "sectors": "Operating System for the Public Sector",
     "badge": "Delivery at the Speed of Ambition\nVision 2030",
@@ -158,13 +158,13 @@
     "block3Question": "Others tried and failed. Maybe the technology is not mature enough. Should I wait?",
     "block3Answer": "The technology is ready. The implementations were not. Over 50% of enterprise AI projects fail¹ — not because the AI is wrong, but because five foundational problems were never addressed. We solve them before writing a single line of AI.",
     "block3List": [
-      { "bold": "Data is not ready.", "text": "We build the knowledge structure first — before any AI touches it." },
-      { "bold": "No business alignment.", "text": "Every AI capability maps to a real operational need, not a technology showcase." },
+      { "bold": "Data is not ready.", "text": "And probably will never be. Instead of forcing change, we build a knowledge interface through our Ontology, creating a bridge to unify them all." },
+      { "bold": "Unclear application benefits.", "text": "Every AI capability maps to a real operational need, not a technology showcase." },
       { "bold": "Costs escalate.", "text": "Modular architecture. Scale what works, stop what doesn't." },
-      { "bold": "Teams resist.", "text": "Human-first, AI-in-the-loop. Your team controls the flow and gets AI support where and when it matters. Not autonomous." },
+      { "bold": "Resistance to change.", "text": "The architecture emphasizes a human-first principle with AI as a supporter. We deliver this alongside other principles through awareness workshops that address misconceptions." },
       { "bold": "Responsible AI is an afterthought.", "text": "Transparency, accountability, and explainability are not features we add later — they are enforced by the architecture. Humans gate every AI action." }
     ],
-    "block3Footnote": "¹ Gartner, 2024",
+    "block3Footnote": "¹ Gartner, 2026",
 
     "block4Num": "04 — Sovereignty & Independence",
     "block4Question": "Will my services stay online? Can anyone shut us down?",
@@ -172,12 +172,12 @@
     "block4StatValue": "100%",
     "block4StatLabel": "Digital Sovereignty",
 
-    "block5Num": "05 — Methodological Alignment",
-    "block5Question": "There are many AI vendors. How do we ensure strategic alignment?",
-    "block5Answer": "Two criteria that define successful integration:",
+    "block5Num": "05 — Choosing the Right Partner",
+    "block5Question": "There are many AI companies. How do we choose, and why you?",
+    "block5Answer": "Two criteria that matter:",
     "block5List": [
-      { "bold": "Adaptive methodology over rigid systems.", "text": "The initial phases require structural discovery—understanding actual operational needs. Large platforms force generic workflows upon you. You need an architecture that intimately adapts to your reality." },
-      { "bold": "Contextually native over internationally generic.", "text": "Institutional intelligence must understand its environment. Our approach is grounded in Vision 2030 knowledge architecture, seamlessly weaving strategy-to-execution in an Arabic-first paradigm." }
+      { "bold": "Flexibility first.", "text": "The initial phase involves experimenting with multiple models to understand actual needs and build organizational awareness. Large platforms struggle to modify their systems, making a partner's flexibility to adapt to your reality the decisive advantage." },
+      { "bold": "Localized context alignment.", "text": "The most critical pillar in AI solutions is how well the underlying architecture aligns with your operational reality. The closer the alignment, the higher the accuracy and validity of the outputs. For example, if Josoor were deployed in a Western public sector, its accuracy would drop significantly—and vice versa." }
     ]
   },
   "visionMemory": {
@@ -245,7 +245,7 @@
   "promise": {
     "tag": "The Ambition",
     "title": "Human-Centric change impacts real lives",
-    "subtitle": "What changes for each person on your team",
+    "subtitle": "The Transformation's Success Criteria Measured by the Team's Experience",
     "before": "BEFORE",
     "withJosoor": "WITH JOSOOR",
     "personas": [

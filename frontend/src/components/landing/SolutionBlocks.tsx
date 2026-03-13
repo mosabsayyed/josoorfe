@@ -28,19 +28,11 @@ const BLOCK_DEFS: BlockDef[] = [
     id: 'block1',
     accent: 'list',
     borderAlpha: 0.3,
-    evidence: [
-      { labelKey: 'solution.block1Ev1Label', captionKey: 'solution.block1Ev1Caption', image: '/att/landing-screenshots/3_carousel/2.png' },
-      { labelKey: 'solution.block1Ev2Label', captionKey: 'solution.block1Ev2Caption', image: '/att/landing-screenshots/3_carousel/3.png' },
-      { labelKey: 'solution.block1Ev3Label', captionKey: 'solution.block1Ev3Caption', image: '/att/landing-screenshots/3_carousel/G.png' },
-    ],
   },
   {
     id: 'block2',
     accent: 'quote',
     borderAlpha: 0.2,
-    evidence: [
-      { labelKey: 'solution.block2Ev1Label', captionKey: 'solution.block2Ev1Caption', image: '/att/landing-screenshots/3_carousel/observeability.png' },
-    ],
   },
   { id: 'block3', accent: 'list',  borderAlpha: 0.15, footnoteKey: 'solution.block3Footnote' },
   { id: 'block4', accent: 'stat',  borderAlpha: 0.25 },
@@ -266,7 +258,7 @@ function ListAccent({ items, isMobile }: { items: Array<{ bold: string; text: st
           </span>
           <div>
             <strong style={{
-              color: 'var(--component-text-primary, #F9FAFB)',
+              color: '#F4BB30',
               fontWeight: 600,
               fontSize: isMobile ? '14px' : '15px',
             }}>
