@@ -566,32 +566,6 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* ── Help Mode Cursor ── */
-.ont-help-mode { cursor: help; }
-.ont-help-mode * { cursor: help !important; }
-
-/* ── Help Mode Hover Highlights ── */
-.ont-help-mode .ont-micro-target {
-  transition: outline 0.15s, box-shadow 0.15s, background 0.15s;
-  border-radius: 8px;
-}
-.ont-help-mode .ont-micro-target:hover {
-  outline: 2px solid var(--component-text-accent, #f4bb30);
-  outline-offset: 2px;
-  box-shadow: 0 0 16px rgba(244, 187, 48, 0.25);
-  background: rgba(244, 187, 48, 0.06) !important;
-}
-/* SVG rect targets in landscape */
-.ont-help-mode rect.ont-micro-target {
-  transition: fill 0.15s, stroke 0.15s;
-}
-.ont-help-mode rect.ont-micro-target:hover {
-  fill: rgba(244, 187, 48, 0.12) !important;
-  stroke: var(--component-text-accent, #f4bb30);
-  stroke-width: 2;
-  outline: none;
-  box-shadow: none;
-}
 
 /* ── AI Report Button (Tier 1) ── */
 .ont-ai-report-btn {
@@ -652,39 +626,6 @@
   transform: translateY(-1px);
 }
 
-/* ── Help Mode Toggle (Tier 3) — sits in header strip ── */
-.ont-help-toggle {
-  flex-shrink: 0;
-  width: 28px;
-  height: 28px;
-  margin-left: auto;
-  margin-right: 4px;
-  border: 2px solid var(--component-panel-border);
-  border-radius: 50%;
-  background: var(--component-bg-secondary);
-  color: var(--component-text-secondary);
-  font-size: 14px;
-  font-weight: 700;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s;
-}
-.ont-help-toggle:hover {
-  border-color: var(--component-text-accent, #f4bb30);
-  color: var(--component-text-accent, #f4bb30);
-}
-.ont-help-toggle--active {
-  background: var(--component-text-accent, #f4bb30);
-  color: #000;
-  border-color: var(--component-text-accent, #f4bb30);
-  box-shadow: 0 0 12px rgba(244, 187, 48, 0.4);
-}
-[dir="rtl"] .ont-help-toggle {
-  margin-left: 4px;
-  margin-right: auto;
-}
 
 /* ── Micro Answer Tooltip (Tier 3) ── */
 .ont-micro-answer {

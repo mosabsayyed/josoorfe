@@ -118,6 +118,7 @@ export default defineConfig({
     include: ['react-map-gl/mapbox', 'mapbox-gl'],
   },
   build: {
+    target: 'es2019',
     outDir: 'build',
   },
 })
