@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useLanguage } from '../contexts/LanguageContext';
 import Header from '../components/layout/Header';
 import { Mail } from 'lucide-react';
+import PublicPageMeta from '../components/common/PublicPageMeta';
 
 export default function ContactUsPage() {
   const { language, isRTL } = useLanguage();
@@ -16,6 +17,7 @@ export default function ContactUsPage() {
       color: '#F9FAFB',
       paddingTop: '80px'
     }}>
+      <PublicPageMeta page="contact-us" />
       <Header />
       
       <main style={{ 

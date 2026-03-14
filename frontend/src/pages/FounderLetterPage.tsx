@@ -1,6 +1,7 @@
 import React, { useRef } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import Header from '../components/layout/Header';
+import PublicPageMeta from '../components/common/PublicPageMeta';
 
 export default function FounderLetterPage() {
   const { language } = useLanguage();
@@ -75,6 +76,7 @@ export default function FounderLetterPage() {
       backgroundColor: '#111827',
       overflow: 'hidden'
     }}>
+      <PublicPageMeta page="founder-letter" />
       <Header />
       {isPrerender ? (
         <main

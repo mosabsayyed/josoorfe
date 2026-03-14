@@ -9,7 +9,8 @@ import { register as apiRegister, signInWithProvider } from '../services/authSer
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import Header from '../components/layout/Header';
-const josoorLogo = '/icons/josoor.svg';
+import PublicPageMeta from '../components/common/PublicPageMeta';
+const josoorLogo = '/icons/josoor.png';
 
 
 interface LoginPageProps {
@@ -310,6 +311,7 @@ export function LoginPage({ language: propLanguage, onLanguageChange, onSkip, on
 
   return (
     <div dir={language === 'ar' ? 'rtl' : 'ltr'} className="login-container">
+      <PublicPageMeta page="login" />
       <Header />
 
       {/* Language Toggle - Fixed position top-right */}

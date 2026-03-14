@@ -11,6 +11,7 @@ import Promise from '../components/landing/Promise';
 import StrategyHouse from '../components/landing/StrategyHouse';
 import BetaForm from '../components/landing/BetaForm';
 import useSnapScroll from '../hooks/useSnapScroll';
+import PublicPageMeta from '../components/common/PublicPageMeta';
 
 const SNAP_SECTIONS = ['hero', 'aitoia', 'platform', 'strategy-house', 'promise', 'beta'];
 
@@ -1136,6 +1137,7 @@ export default function LandingPage() {
 
   return (
     <div className="landing-page" dir={isRTL ? 'rtl' : 'ltr'}>
+      <PublicPageMeta page="landing" />
       <Header />
 
       <Hero content={content.hero} language={language} />
