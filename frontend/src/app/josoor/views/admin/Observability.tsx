@@ -281,7 +281,10 @@ export default function AdminObservability() {
             const url = new URL(endpoint, window.location.origin);
             url.searchParams.set('limit', '50');
 
-            const response = await fetch(url.toString());
+            const token = localStorage.getItem('josoor_token') || '';
+            const response = await fetch(url.toString(), {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
             if (!response.ok) throw new Error('Failed to fetch traces');
 
             const data = await response.json();
@@ -373,7 +376,10 @@ export default function AdminObservability() {
                 // Fetch full trace detail from DEBUG endpoint (contains timeline/events)
                 console.log('[Obs] Fetching detail for trace:', trace.conversation_id);
                 const endpoint = `${API_BASE}/api/v1/debug/traces/${trace.conversation_id}`;
-                const response = await fetch(endpoint);
+                const traceToken = localStorage.getItem('josoor_token') || '';
+                const response = await fetch(endpoint, {
+                    headers: { 'Authorization': `Bearer ${traceToken}` }
+                });
 
                 if (!response.ok) {
                     throw new Error('Failed to fetch trace detail');
