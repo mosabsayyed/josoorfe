@@ -7,8 +7,8 @@ export const supabase = (() => {
     (import.meta as any).env?.VITE_SUPABASE_URL ||
     (import.meta as any).env?.REACT_APP_SUPABASE_URL ||
     winEnv.REACT_APP_SUPABASE_URL || 
-    winEnv.SUPABASE_URL || 
-    'https://ojlfhkrobyqmifqbgcyw.supabase.co';
+    winEnv.SUPABASE_URL ||
+    '';
     
   const SUPABASE_ANON = 
     (import.meta as any).env?.VITE_SUPABASE_ANON_KEY ||
@@ -26,9 +26,28 @@ export const supabase = (() => {
         signInWithOAuth: async () => ({ error: new Error('Supabase not configured') }),
         signOut: async () => ({ error: new Error('Supabase not configured') }),
         getSession: async () => ({ data: { session: null } }),
-        onAuthStateChange: () => ({ subscription: { unsubscribe: () => {} } }),
+        onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
       },
-      from: () => ({ select: async () => ({ data: null }), insert: async () => ({ data: null, error: null }) }),
+      from: () => ({
+        select: () => ({
+          eq: () => ({
+            order: () => ({
+              limit: async () => ({ data: [], error: null })
+            })
+          })
+        }),
+        insert: () => ({
+          select: () => ({
+            single: async () => ({ data: null, error: null })
+          })
+        })
+      }),
+      channel: () => ({
+        on: () => ({
+          subscribe: () => ({ unsubscribe: () => {} })
+        })
+      }),
+      removeChannel: () => {}
     } as any;
     return stub;
   }

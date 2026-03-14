@@ -198,10 +198,10 @@ export function NeoGraph({
           const nodeProps = hoverNode.properties || hoverNode.nProps || {};
           // domain_id comes from chains; for custom queries fall back to the node id
           const rawDomainId = hoverNode.domain_id || nodeProps.domain_id || '';
-          // If no domain_id, show the node's id (truncate long element IDs)
+          // If no domain_id, extract just the numeric part from the node id
           const rawId = String(hoverNode.id || '');
-          const shortId = rawId.length > 12 ? rawId.slice(-8) : rawId;
-          const domainId = rawDomainId || shortId;
+          const numericId = rawId.includes(':') ? rawId.split(':').pop() || rawId : rawId;
+          const domainId = rawDomainId || numericId;
           const namePart = hoverNode.name || nodeProps.name || nodeProps.title || hoverNode.label || String(hoverNode.id || 'Node');
           const nodeName = domainId ? `${domainId} ${namePart}` : namePart;
           const nodeType = (hoverNode.labels && hoverNode.labels.length > 0)

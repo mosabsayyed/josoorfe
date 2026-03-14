@@ -51,7 +51,7 @@ export async function register(email: string, password: string, full_name?: stri
   return resp.data;
 }
 
-export async function signInWithProvider(provider: 'google' | 'apple') {
+export async function signInWithProvider(provider: 'google' | 'apple' | 'linkedin_oidc') {
   const { error } = await supabase.auth.signInWithOAuth({ provider, options: { redirectTo: window.location.origin + '/josoor-desktop' } });
   if (error) throw error;
   return true;
