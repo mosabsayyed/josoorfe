@@ -231,6 +231,7 @@ export function EnterpriseDesk({ year = '2025', quarter = 'Q1', focusCapId, onIn
         build_status: cap.build_status,
         execute_status: cap.execute_status,
         snapshot_date: new Date().toISOString(),
+        artifacts: riskArtifacts,
       } as RiskAnalysisSnapshot,
       capDataYear: cap.year || selectedYear,
       selectedYear,

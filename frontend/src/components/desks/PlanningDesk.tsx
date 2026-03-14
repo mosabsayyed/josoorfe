@@ -4,9 +4,14 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { AlertTriangle, TrendingDown, TrendingUp, Plus, Pause, ArrowUpDown, Users, Zap, Loader2, CheckCircle, XCircle } from 'lucide-react';
 import { Gantt } from 'wx-react-gantt';
 import 'wx-react-gantt/dist/gantt.css';
+import ReactMarkdown from 'react-markdown';
+import rehypeRaw from 'rehype-raw';
+import remarkGfm from 'remark-gfm';
 import { chatService } from '../../services/chatService';
 import { createRiskPlan, fetchAllRiskPlans, fetchRiskPlan, RiskPlanSummary } from '../../services/planningService';
 import { parsePlanResponse, InterventionPlan, PlanDeliverable, PlanTask, RiskAnalysisSnapshot } from '../../utils/planParser';
+import { StrategyReportChartRenderer } from './sector/StrategyReportChartRenderer';
+import type { Artifact } from '../../types/api';
 import './PlanningDesk.css';
 
 type PlanningMode = 'intervention' | 'strategic-reset' | 'scenario';
@@ -533,15 +538,51 @@ function SavedPlansList() {
               )}
             </div>
             {plan.risk_analysis.narrative_html && (
-              <details style={{ marginTop: '8px' }}>
+              <details style={{ marginTop: '8px' }} open>
                 <summary style={{ cursor: 'pointer', fontSize: '12px', color: 'var(--component-text-accent)' }}>
                   {t('josoor.planning.viewFullAnalysis') || 'View full risk analysis'}
                 </summary>
-                <div
-                  className="narrative-content"
-                  style={{ marginTop: '8px', fontSize: '12px', opacity: 0.85 }}
-                  dangerouslySetInnerHTML={{ __html: plan.risk_analysis.narrative_html }}
-                />
+                <div className="josoor-report-content" style={{ marginTop: '8px', fontSize: '13px' }}>
+                  {(() => {
+                    const artifactMap: Record<string, Artifact> = {};
+                    (plan.risk_analysis.artifacts || []).forEach((a: any) => {
+                      const id = a.id || a.title;
+                      if (id) artifactMap[id] = a;
+                    });
+                    const html = plan.risk_analysis.narrative_html
+                      .replace(/\s*font-family\s*:[^;"'}]+;?/gi, '')
+                      .replace(/\s*font-size\s*:[^;"'}]+;?/gi, '');
+                    return html.split(/(<ui-chart[^>]*>|<ui-table[^>]*>)/g).map((part: string, index: number) => {
+                      const chartMatch = part.match(/<ui-chart[^>]*id=["']([^"']+)["'][^>]*>/);
+                      const tableMatch = part.match(/<ui-table[^>]*id=["']([^"']+)["'][^>]*>/);
+                      if (chartMatch) {
+                        const artifact = artifactMap[chartMatch[1]];
+                        if (!artifact) return null;
+                        return (
+                          <div key={`chart-${index}`} className="josoor-chart-container">
+                            <StrategyReportChartRenderer artifact={artifact} width="100%" height={artifact.artifact_type === 'TABLE' ? 'auto' : '420px'} />
+                          </div>
+                        );
+                      }
+                      if (tableMatch) {
+                        const artifact = artifactMap[tableMatch[1]];
+                        if (!artifact) return null;
+                        return (
+                          <div key={`table-${index}`} className="josoor-table-container">
+                            <StrategyReportChartRenderer artifact={artifact} width="100%" height="auto" />
+                          </div>
+                        );
+                      }
+                      return (
+                        <div key={`content-${index}`} dir="auto">
+                          <ReactMarkdown rehypePlugins={[rehypeRaw]} remarkPlugins={[remarkGfm]}>
+                            {part}
+                          </ReactMarkdown>
+                        </div>
+                      );
+                    });
+                  })()}
+                </div>
               </details>
             )}
           </div>

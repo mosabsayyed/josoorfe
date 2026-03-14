@@ -15,7 +15,7 @@ export const supabase = (() => {
     (import.meta as any).env?.REACT_APP_SUPABASE_ANON_KEY ||
     winEnv.REACT_APP_SUPABASE_ANON_KEY || 
     winEnv.SUPABASE_ANON_KEY || 
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9qbGZoa3JvYnlxbWlmcWJnY3l3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk1NTYwNTYsImV4cCI6MjA2NTEzMjA1Nn0.Y6swVK-tGI0lqpFJ4pgUGD6NaEj-sQIizTvYL2Cf4nY';
+    '';
 
   if (!SUPABASE_URL || !SUPABASE_ANON) {
     console.error('Supabase not configured for frontend.');

@@ -42,6 +42,7 @@ export interface RiskAnalysisSnapshot {
   build_status?: string;
   execute_status?: string;
   snapshot_date: string;
+  artifacts?: any[];
 }
 
 export interface InterventionPlan {

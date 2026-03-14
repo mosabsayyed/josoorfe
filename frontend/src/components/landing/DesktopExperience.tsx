@@ -705,7 +705,6 @@ export default function DesktopExperience({ language = 'ar' }: DesktopExperience
                           height: isLandscapeMobile ? 6 : (isMobile ? 8 : 12),
                           borderRadius: '50%', padding: 0, boxSizing: 'border-box', WebkitAppearance: 'none',
                           border: '2px solid rgba(255,255,255,0.3)',
-                          padding: 0,
                           background: idx === pageIndex ? '#F4BB30' : 'rgba(255,255,255,0.15)',
                           cursor: onPageChange ? 'pointer' : 'default',
                           transition: 'background 0.3s ease, border-color 0.3s ease',

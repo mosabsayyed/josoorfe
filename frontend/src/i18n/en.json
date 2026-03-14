@@ -819,7 +819,9 @@
       "recommendation": "Recommendation",
       "viable": "VIABLE",
       "scenarioReducesCriticalRisks": "This scenario reduces critical risks by 21% while introducing only 2 new chain breaks, all in non-critical paths.",
-      "noApproveButton": "Note: Scenarios are exploratory. No approve/commit button — return to Intervention Planning to act."
+      "noApproveButton": "Note: Scenarios are exploratory. No approve/commit button — return to Intervention Planning to act.",
+      "riskAnalysisSnapshot": "Risk Analysis Snapshot",
+      "viewFullAnalysis": "View full risk analysis"
     },
     "reporting": {
       "title": "Reporting Desk",
