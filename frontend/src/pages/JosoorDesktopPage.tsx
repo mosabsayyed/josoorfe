@@ -19,6 +19,7 @@ import { useAuth } from '../contexts/AuthContext';
 import type { ConversationSummary, Message as APIMessage } from '../types/api';
 import type { InterventionContext } from '../components/desks/PlanningDesk';
 import './JosoorDesktopPage.css';
+import { ConceptHelpPopover } from '../components/shared/ConceptHelpPopover';
 
 // Lazy desk components — aliases match desktop app IDs
 const ObserveApp = React.lazy(() => import('../components/desks/SectorDesk').then(m => ({ default: m.SectorDesk })));
@@ -152,7 +153,7 @@ export default function JosoorDesktopPage() {
   const [isPersonaLocked, setIsPersonaLocked] = useState(false);
   const [interventionContext, setInterventionContext] = useState<InterventionContext | null>(null);
   const [focusCapId, setFocusCapId] = useState<string | null>(null);
-  const [helpMode, setHelpMode] = useState(false);
+  const [conceptHelpWindowId, setConceptHelpWindowId] = useState<string | null>(null);
   const [showAbout, setShowAbout] = useState(false);
 
   // ── Desktop icon positions (draggable) ──
@@ -560,7 +561,7 @@ export default function JosoorDesktopPage() {
   const renderAppContent = useCallback((appId: string) => {
     switch (appId) {
       case 'home':
-        return <OntologyHome helpMode={helpMode} onHelpToggle={() => setHelpMode(prev => !prev)} onContinueInChat={(id: number) => { setActiveConversationId(id); openApp('chat'); }} year={year} quarter={quarter} />;
+        return <OntologyHome onContinueInChat={(id: number) => { setActiveConversationId(id); openApp('chat'); }} year={year} quarter={quarter} />;
       case 'observe':
         return (
           <ObserveApp
@@ -808,8 +809,8 @@ export default function JosoorDesktopPage() {
             onFocus={() => focusWindow(win.id)}
             onMove={(x, y) => setWindows(prev => prev.map(w => w.id === win.id ? { ...w, x, y } : w))}
             onResize={(width, height, x, y) => setWindows(prev => prev.map(w => w.id === win.id ? { ...w, width, height, x: x ?? w.x, y: y ?? w.y } : w))}
-            helpMode={helpMode}
-            onHelpToggle={() => setHelpMode(prev => !prev)}
+            conceptHelpOpen={conceptHelpWindowId === win.id}
+            onConceptHelpToggle={() => setConceptHelpWindowId(prev => prev === win.id ? null : win.id)}
           >
             <Suspense fallback={<div className="jos-app-loading"><div className="jos-spinner" />{isAr ? 'جاري التحميل...' : 'Loading...'}</div>}>
               {renderAppContent(win.appId)}
@@ -975,11 +976,11 @@ interface OSWindowProps {
   onResize: (w: number, h: number, x?: number, y?: number) => void;
   children: React.ReactNode;
   titleBarExtra?: React.ReactNode;
-  helpMode?: boolean;
-  onHelpToggle?: () => void;
+  conceptHelpOpen?: boolean;
+  onConceptHelpToggle?: () => void;
 }
 
-function OSWindow({ win, app, isAr, isFocused, onClose, onMinimize, onMaximize, onFocus, onMove, onResize, children, titleBarExtra, helpMode, onHelpToggle }: OSWindowProps) {
+function OSWindow({ win, app, isAr, isFocused, onClose, onMinimize, onMaximize, onFocus, onMove, onResize, children, titleBarExtra, conceptHelpOpen, onConceptHelpToggle }: OSWindowProps) {
   const { t } = useTranslation();
   const dragRef = useRef<{ startX: number; startY: number; origX: number; origY: number } | null>(null);
   const resizeRef = useRef<{ startX: number; startY: number; origW: number; origH: number; origX: number; origY: number; dir: string } | null>(null);
@@ -1061,15 +1062,20 @@ function OSWindow({ win, app, isAr, isFocused, onClose, onMinimize, onMaximize, 
           {t(`josoor.desktop.${app.i18nKey}`)}
         </span>
         {/* Extra title bar buttons */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginLeft: 'auto' }} onMouseDown={e => e.stopPropagation()}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginLeft: 'auto', position: 'relative' }} onMouseDown={e => e.stopPropagation()}>
           {titleBarExtra}
           <button
-            className={`jos-help-btn ${helpMode ? 'jos-help-btn--active' : ''}`}
-            onClick={onHelpToggle}
-            title={isAr ? 'مساعدة' : 'Help'}
+            className={`jos-help-btn ${conceptHelpOpen ? 'jos-help-btn--active' : ''}`}
+            onClick={onConceptHelpToggle}
+            title={isAr ? 'شرح مفهوم' : 'Explain concept'}
           >
             ?
           </button>
+          <ConceptHelpPopover
+            isOpen={!!conceptHelpOpen}
+            onClose={() => onConceptHelpToggle?.()}
+            deskType={app.id}
+          />
         </div>
       </div>
 

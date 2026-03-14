@@ -105,13 +105,11 @@ const NODE_LABEL_KEYS: Record<string, string> = {
 
 interface OntologyHomeProps {
   onContinueInChat?: (conversationId: number) => void;
-  helpMode?: boolean;
-  onHelpToggle?: () => void;
   year?: number | string;
   quarter?: string;
 }
 
-export default function OntologyHome({ onContinueInChat, helpMode: helpModeProp, onHelpToggle, year, quarter }: OntologyHomeProps) {
+export default function OntologyHome({ onContinueInChat, year, quarter }: OntologyHomeProps) {
   const { t, i18n } = useTranslation();
   const lang = i18n.language === 'ar' ? 'ar' : 'en';
   const rtl = lang === 'ar';
@@ -130,9 +128,6 @@ export default function OntologyHome({ onContinueInChat, helpMode: helpModeProp,
   const [aiConversationId, setAiConversationId] = useState<number | null>(null);
   const [aiTitle, setAiTitle] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
-  const [microHelpModeInternal, setMicroHelpModeInternal] = useState(false);
-  const microHelpMode = helpModeProp ?? microHelpModeInternal;
-  const setMicroHelpMode = onHelpToggle ?? (() => setMicroHelpModeInternal(prev => !prev));
   const [microAnswer, setMicroAnswer] = useState<{
     title: string;
     scope: 'landscape' | 'block1' | 'item';
@@ -145,12 +140,11 @@ export default function OntologyHome({ onContinueInChat, helpMode: helpModeProp,
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         if (microAnswer) { setMicroAnswer(null); return; }
-        if (microHelpMode) { if (onHelpToggle) onHelpToggle(); else setMicroHelpModeInternal(false); }
       }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [microHelpMode, onHelpToggle]);
+  }, [microAnswer]);
 
   useEffect(() => {
     setRagState(null);
@@ -491,7 +485,7 @@ export default function OntologyHome({ onContinueInChat, helpMode: helpModeProp,
         </div>
       )} */}
 
-      <div className={`ont-svg-stage ${microHelpMode ? 'ont-help-mode' : ''}`}>
+      <div className="ont-svg-stage">
 
         {/* ── Layer 0: Column Header Strip ── */}
         <div className="ont-header-strip">
@@ -838,10 +832,8 @@ export default function OntologyHome({ onContinueInChat, helpMode: helpModeProp,
                     x={pos.x} y={pos.y}
                     width={pos.w} height={pos.h}
                     fill="transparent"
-                    className={microHelpMode ? 'ont-micro-target' : ''}
                     style={{ cursor: 'pointer', pointerEvents: 'all' }}
                     onClick={() => {
-                      if (microHelpMode) { handleOntologyAI('micro', key, 'landscape'); return; }
                       setSelectedNode(key); setShowAllIssues(false); setTracePath([]);
                     }}
                   />
@@ -1105,11 +1097,10 @@ export default function OntologyHome({ onContinueInChat, helpMode: helpModeProp,
                   const renderStandardItem = (inst: NodeInstance, idx: number) => {
                     const upstream = getUpstreamIssues(inst);
                     return (
-                      <div key={inst.id} data-micro-target="item" data-micro-id={inst.id} className={microHelpMode ? 'ont-micro-target' : ''} onClick={(e) => { if (microHelpMode) { e.stopPropagation(); handleOntologyAI('micro', inst.id, 'item'); } }} style={{
+                      <div key={inst.id} style={{
                         padding: '10px 12px', borderRadius: 8,
                         background: `${ragColors[inst.rag]}08`,
                         border: `1px solid ${ragColors[inst.rag]}30`,
-                        cursor: microHelpMode ? 'help' : undefined,
                       }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                           <div style={{
@@ -1151,12 +1142,19 @@ export default function OntologyHome({ onContinueInChat, helpMode: helpModeProp,
                             </div>
                           </div>
                         )}
+                        <button
+                          className="ont-ai-strip-btn"
+                          style={{ fontSize: 9, padding: '2px 6px', marginTop: 6, alignSelf: 'flex-start', marginLeft: 32 }}
+                          onClick={(e) => { e.stopPropagation(); handleOntologyAI('micro', inst.id, 'item'); }}
+                          disabled={aiLoading}
+                          title={t('josoor.common.summarize')}
+                        >✦ {t('josoor.common.summarize')}</button>
                       </div>
                     );
                   };
 
                   return (
-                    <div data-micro-target="block1" className={microHelpMode ? 'ont-micro-target' : ''} onClick={() => { if (microHelpMode) { handleOntologyAI('micro', selectedNode, 'block1'); } }} style={{ marginBottom: 16, cursor: microHelpMode ? 'help' : undefined }}>
+                    <div style={{ marginBottom: 16 }}>
                       <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--component-text-secondary)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
                         <span>{sectionLabel} ({allIssues.length})</span>
                         <button
@@ -1236,15 +1234,10 @@ export default function OntologyHome({ onContinueInChat, helpMode: helpModeProp,
                       {instances.map(inst => (
                         <div
                           key={inst.id}
-                          data-micro-target="item"
-                          data-micro-id={inst.id}
-                          className={microHelpMode ? 'ont-micro-target' : ''}
-                          onClick={() => { if (microHelpMode) { handleOntologyAI('micro', inst.id, 'item'); } }}
                           style={{
                             padding: '6px 10px', borderRadius: 6, display: 'flex', alignItems: 'center', gap: 6,
                             background: `${ragColors[inst.rag]}08`,
                             border: `1px solid ${ragColors[inst.rag]}15`,
-                            cursor: microHelpMode ? 'help' : undefined,
                           }}
                         >
                           <span style={{ width: 6, height: 6, borderRadius: '50%', background: ragColors[inst.rag], flexShrink: 0 }} />
