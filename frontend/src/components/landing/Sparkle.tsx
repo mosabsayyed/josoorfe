@@ -63,6 +63,24 @@ export default function Sparkle({ imageSrc, dotCount = 600, scaleFactor = 0.52 }
         );
       };
 
+      // Map contour for gold border outline
+      const getMapContour = (): { x: number; y: number }[] => {
+        const contour: { x: number; y: number }[] = [];
+        const step = 4;
+        for (let y = Math.floor(oy); y < Math.floor(oy + ih); y += step) {
+          for (let x = Math.floor(ox); x < Math.floor(ox + iw); x += step) {
+            if (isDark(x, y)) {
+              const isEdge =
+                !isDark(x - step, y) || !isDark(x + step, y) ||
+                !isDark(x, y - step) || !isDark(x, y + step);
+              if (isEdge) contour.push({ x, y });
+            }
+          }
+        }
+        return contour;
+      };
+      const mapContour = getMapContour();
+
       interface Dot {
         x: number;
         y: number;
@@ -104,8 +122,34 @@ export default function Sparkle({ imageSrc, dotCount = 600, scaleFactor = 0.52 }
 
         // Draw map image
         ctx.save();
-        ctx.globalAlpha = 0.55;
+        ctx.globalAlpha = 0.7;
         ctx.drawImage(img, ox, oy, iw, ih);
+
+        // Gold contour outline
+        if (mapContour.length > 0) {
+          ctx.globalAlpha = 0.5;
+          ctx.strokeStyle = 'rgba(244, 187, 48, 0.6)';
+          ctx.lineWidth = 3;
+          ctx.lineCap = 'round';
+          ctx.lineJoin = 'round';
+          ctx.beginPath();
+          ctx.moveTo(mapContour[0].x, mapContour[0].y);
+          for (let ci = 1; ci < mapContour.length; ci++) {
+            ctx.lineTo(mapContour[ci].x, mapContour[ci].y);
+          }
+          ctx.stroke();
+
+          ctx.globalAlpha = 0.15;
+          ctx.lineWidth = 8;
+          ctx.filter = 'blur(6px)';
+          ctx.beginPath();
+          ctx.moveTo(mapContour[0].x, mapContour[0].y);
+          for (let ci = 1; ci < mapContour.length; ci++) {
+            ctx.lineTo(mapContour[ci].x, mapContour[ci].y);
+          }
+          ctx.stroke();
+          ctx.filter = 'none';
+        }
         ctx.restore();
 
         // Move and draw sparkle dots
