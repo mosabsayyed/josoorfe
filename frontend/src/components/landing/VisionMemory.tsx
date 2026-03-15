@@ -27,7 +27,6 @@ export default function VisionMemory() {
   }, []);
 
   const highlights = t('visionMemory.highlights', { returnObjects: true }) as Array<{ bold: string; text: string }>;
-  const mapScaleFactor = 0.42;
 
   return (
     <section className="content-centered" id="vision-memory" ref={sectionRef} style={{
@@ -50,7 +49,7 @@ export default function VisionMemory() {
           {/* Sparkle map layer — above card bg, below text */}
           {!isMobile && (
           <div style={{ position: 'absolute', inset: 0, zIndex: 0, borderRadius: '16px', overflow: 'hidden', pointerEvents: 'none' }}>
-            <Sparkle imageSrc="/att/ksa_mpbackgd.png" dotCount={1000} scaleFactor={mapScaleFactor} />
+            <Sparkle imageSrc="/att/ksa_mpbackgd.png" dotCount={1000} scaleFactor={0.42} />
           </div>
           )}
 
