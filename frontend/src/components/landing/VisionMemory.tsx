@@ -2,11 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import VisionConvergence from './VisionConvergence';
 import Sparkle from './Sparkle';
-import { useLanguage } from '../../contexts/LanguageContext';
 
 export default function VisionMemory() {
   const { t } = useTranslation();
-  const { isRTL } = useLanguage();
   const [isMobile, setIsMobile] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const [showConvergence, setShowConvergence] = useState(false);
@@ -29,7 +27,7 @@ export default function VisionMemory() {
   }, []);
 
   const highlights = t('visionMemory.highlights', { returnObjects: true }) as Array<{ bold: string; text: string }>;
-  const mapScaleFactor = isRTL ? 0.42 : 0.52;
+  const mapScaleFactor = 0.42;
 
   return (
     <section className="content-centered" id="vision-memory" ref={sectionRef} style={{
