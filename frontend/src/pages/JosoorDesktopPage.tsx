@@ -19,7 +19,7 @@ import { useAuth } from '../contexts/AuthContext';
 import type { ConversationSummary, Message as APIMessage } from '../types/api';
 import type { InterventionContext } from '../components/desks/PlanningDesk';
 import './JosoorDesktopPage.css';
-import { ConceptHelpPopover } from '../components/shared/ConceptHelpPopover';
+import { ConceptHelpOverlay } from '../components/shared/ConceptHelpPopover';
 
 // Lazy desk components — aliases match desktop app IDs
 const ObserveApp = React.lazy(() => import('../components/desks/SectorDesk').then(m => ({ default: m.SectorDesk })));
@@ -1062,7 +1062,7 @@ function OSWindow({ win, app, isAr, isFocused, onClose, onMinimize, onMaximize, 
           {t(`josoor.desktop.${app.i18nKey}`)}
         </span>
         {/* Extra title bar buttons */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginLeft: 'auto', position: 'relative' }} onMouseDown={e => e.stopPropagation()}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginLeft: 'auto' }} onMouseDown={e => e.stopPropagation()}>
           {titleBarExtra}
           <button
             className={`jos-help-btn ${conceptHelpOpen ? 'jos-help-btn--active' : ''}`}
@@ -1071,17 +1071,13 @@ function OSWindow({ win, app, isAr, isFocused, onClose, onMinimize, onMaximize, 
           >
             ?
           </button>
-          <ConceptHelpPopover
-            isOpen={!!conceptHelpOpen}
-            onClose={() => onConceptHelpToggle?.()}
-            deskType={app.id}
-          />
         </div>
       </div>
 
       {/* Content */}
-      <div className="jos-window-body">
+      <div className="jos-window-body" style={{ position: 'relative' }}>
         {children}
+        <ConceptHelpOverlay active={!!conceptHelpOpen} deskType={app.id} />
       </div>
 
       {/* Resize handles (only when not maximized) */}

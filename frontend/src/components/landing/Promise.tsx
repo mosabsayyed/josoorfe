@@ -12,7 +12,8 @@ export default function Promise({ content }: PromiseProps) {
   const [isPaused, setIsPaused] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const autoRotateRef = useRef<NodeJS.Timeout | null>(null);
-  const totalCards = content.personas.length;
+  const personas = Array.isArray(content.personas) ? content.personas : [];
+  const totalCards = personas.length;
 
   const [isSmallPhone, setIsSmallPhone] = useState(false);
 
@@ -218,7 +219,7 @@ export default function Promise({ content }: PromiseProps) {
             onMouseEnter={() => setIsPaused(true)}
             onMouseLeave={() => setIsPaused(false)}
           >
-            {content.personas.map((persona, i) => {
+            {personas.map((persona, i) => {
               const pos = calculatePosition(i);
               return (
                 <div
@@ -363,13 +364,13 @@ export default function Promise({ content }: PromiseProps) {
 
             {/* Dots */}
             <div style={{ display: 'flex', gap: '0.5rem' }} role="tablist" aria-label="Persona cards">
-              {content.personas.map((p, i) => (
+              {personas.map((p, i) => (
                 <button
                   key={i}
                   onClick={() => setCurrentIndex(i)}
                   role="tab"
                   aria-selected={i === currentIndex}
-                  aria-label={`${p.role} — card ${i + 1} of ${content.personas.length}`}
+                  aria-label={`${p.role} — card ${i + 1} of ${personas.length}`}
                   style={{
                     width: i === currentIndex ? '24px' : '8px',
                     height: '8px',

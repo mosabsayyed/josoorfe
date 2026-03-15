@@ -215,7 +215,7 @@ export default function BetaForm({ content, language }: BetaFormProps) {
               <option value="" disabled>
                 {content.form.role}
               </option>
-              {content.form.roleOptions.map((option: string, i: number) => (
+              {(Array.isArray(content.form.roleOptions) ? content.form.roleOptions : []).map((option: string, i: number) => (
                 <option key={i} value={option}>
                   {option}
                 </option>

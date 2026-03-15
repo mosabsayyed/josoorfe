@@ -312,7 +312,7 @@ export function ExplorerDesk({ year = '2025', quarter = 'All' }: ExplorerDeskPro
         if (chain) {
             const yearNum = Number.parseInt(String(pYear), 10);
             const yearParam = Number.isNaN(yearNum) ? '0' : String(yearNum);
-            let url = `${baseUrl}/api/v1/chains/${chain}?year=${yearParam}&row_limit=${limit}`;
+            let url = `${baseUrl}/api/v1/chains/${chain}?year=${yearParam}&row_limit=${limit}&analyzeGaps=${analyzeGaps}`;
             if (pQuarter && pQuarter !== 'All') url += `&quarter=${pQuarter.replace(/\D/g, '')}`;
             console.log(`[ExplorerDesk] Chain URL: ${url}`);
             return url;
@@ -361,9 +361,12 @@ export function ExplorerDesk({ year = '2025', quarter = 'All' }: ExplorerDeskPro
                 const nodesDict: Record<string, any[]> = raw.nodes;
                 const edgesArr: any[] = raw.edges || [];
                 const flatNodes: any[] = [];
+                const seenNodeIds = new Set<string>();
                 for (const [label, nodeArr] of Object.entries(nodesDict)) {
                     for (const nodeObj of nodeArr) {
                         const uid = `${label}:${String(nodeObj.id ?? '')}`;
+                        if (seenNodeIds.has(uid)) continue; // skip duplicates from diagnostic UNWIND
+                        seenNodeIds.add(uid);
                         flatNodes.push({
                             nId: uid, nLabels: [label], nProps: nodeObj,
                             id: uid, labels: [label], properties: nodeObj,
@@ -403,6 +406,103 @@ export function ExplorerDesk({ year = '2025', quarter = 'All' }: ExplorerDeskPro
 
             const result = normalizeGraphData(data);
             console.log(`[ExplorerDesk] ${result.nodes.length} nodes, ${result.links.length} links`);
+
+            // Tag orphan/bastard when in diagnostic mode — chain-aware per-column detection
+            if (activeFetchParams.queryType === 'diagnostic' && result.nodes.length > 0) {
+                const chainKey = activeFetchParams.chain;
+                const chainDef = chainKey ? CANONICAL_PATHS[chainKey] : null;
+
+                if (chainDef) {
+                    // Build column sequence from canonical path (same logic as Sankey)
+                    const colSequence: Array<{ labels: string[]; level?: string }> = [];
+                    const colMap = new Map<string, number[]>();
+                    const normalizeLabels = (raw: string | string[]) =>
+                        Array.isArray(raw) ? raw : typeof raw === 'string' && raw.includes('|') ? raw.split('|').map(l => l.trim()) : [String(raw)];
+
+                    chainDef.steps.forEach((step, idx) => {
+                        if (idx === 0) {
+                            const labels = normalizeLabels(step.sourceLabel);
+                            labels.forEach(l => { if (!colMap.has(l)) colMap.set(l, []); colMap.get(l)!.push(colSequence.length); });
+                            colSequence.push({ labels, level: step.sourceLevel });
+                        }
+                        const tgtLabels = normalizeLabels(step.targetLabel);
+                        tgtLabels.forEach(l => { if (!colMap.has(l)) colMap.set(l, []); colMap.get(l)!.push(colSequence.length); });
+                        colSequence.push({ labels: tgtLabels, level: step.targetLevel });
+                    });
+
+                    // Assign each node to a column
+                    const nodeColMap = new Map<string, number>();
+                    for (const node of result.nodes) {
+                        const labels = node.labels || [];
+                        const level = node.properties?.level as string | undefined;
+                        // Assign to canonical column: match by label, and by level if the column specifies one
+                        let stepIndex = -1;
+                        for (let i = 0; i < colSequence.length; i++) {
+                            const colStep = colSequence[i];
+                            if (colStep.level && colStep.level !== level) continue;
+                            if (colStep.labels.some((l: string) => labels.includes(l))) { stepIndex = i; break; }
+                        }
+                        nodeColMap.set(node.id, stepIndex);
+                    }
+
+                    // Build per-column outgoing/incoming maps
+                    const hasOutgoingToCol = new Map<string, Set<number>>();
+                    const hasIncomingFromCol = new Map<string, Set<number>>();
+                    for (const node of result.nodes) {
+                        hasOutgoingToCol.set(node.id, new Set());
+                        hasIncomingFromCol.set(node.id, new Set());
+                    }
+                    for (const link of result.links) {
+                        const srcId = typeof link.source === 'string' ? link.source : (link.source as any)?.id;
+                        const tgtId = typeof link.target === 'string' ? link.target : (link.target as any)?.id;
+                        const srcCol = srcId ? nodeColMap.get(srcId) : undefined;
+                        const tgtCol = tgtId ? nodeColMap.get(tgtId) : undefined;
+                        if (srcCol !== undefined && tgtCol !== undefined && srcCol >= 0 && tgtCol >= 0) {
+                            hasOutgoingToCol.get(srcId!)?.add(tgtCol);
+                            hasIncomingFromCol.get(tgtId!)?.add(srcCol);
+                        }
+                    }
+
+                    const numCols = colSequence.length;
+                    for (const node of result.nodes) {
+                        const col = nodeColMap.get(node.id) ?? -1;
+                        let diagStatus: string;
+                        if (col < 0) {
+                            // Node doesn't belong to any column in this chain — not applicable
+                            diagStatus = 'connected';
+                        } else {
+                            const isOrphan = col < numCols - 1 && !(hasOutgoingToCol.get(node.id)?.has(col + 1));
+                            const isBastard = col > 0 && !(hasIncomingFromCol.get(node.id)?.has(col - 1));
+                            diagStatus = isOrphan ? 'orphan' : isBastard ? 'bastard' : 'connected';
+                        }
+                        node.properties = { ...node.properties, _diagnosticStatus: diagStatus };
+                    }
+                } else {
+                    // No canonical path — fall back to global incoming/outgoing check
+                    const hasOutgoing = new Set<string>();
+                    const hasIncoming = new Set<string>();
+                    for (const link of result.links) {
+                        const srcId = typeof link.source === 'string' ? link.source : (link.source as any)?.id;
+                        const tgtId = typeof link.target === 'string' ? link.target : (link.target as any)?.id;
+                        if (srcId) hasOutgoing.add(srcId);
+                        if (tgtId) hasIncoming.add(tgtId);
+                    }
+                    for (const node of result.nodes) {
+                        const isSource = hasOutgoing.has(node.id);
+                        const isTarget = hasIncoming.has(node.id);
+                        let diagStatus: string;
+                        if (!isSource && !isTarget) diagStatus = 'orphan';
+                        else if (!isSource && isTarget) diagStatus = 'orphan';
+                        else if (isSource && !isTarget) diagStatus = 'bastard';
+                        else diagStatus = 'connected';
+                        node.properties = { ...node.properties, _diagnosticStatus: diagStatus };
+                    }
+                }
+                const orphanCount = result.nodes.filter(n => n.properties._diagnosticStatus === 'orphan').length;
+                const bastardCount = result.nodes.filter(n => n.properties._diagnosticStatus === 'bastard').length;
+                console.log(`[ExplorerDesk] Diagnostic tagging: ${orphanCount} orphans, ${bastardCount} bastards, chain-aware=${!!chainDef}`);
+            }
+
             return result;
         },
         enabled: !!activeFetchParams,
@@ -508,12 +608,13 @@ export function ExplorerDesk({ year = '2025', quarter = 'All' }: ExplorerDeskPro
         return active;
     }, [selectedChain]);
 
-    // Node color function matching test page: diagnostic status > label color > palette hash
+    // Node color function: diagnostic status > label color > palette hash
     const getNodeColor = useCallback((node: any) => {
         const label = node.labels?.[0] || node.label || '';
-        const status = node.properties?.status || node.nProps?.status;
-        if (status === 'critical') return '#ef4444';
-        if (status === 'orphan' || status === 'bastard') return '#f59e0b';
+        const props = node.properties || node.nProps || {};
+        const diagStatus = props._diagnosticStatus;
+        if (diagStatus === 'orphan') return '#ef4444';    // red — isolated / dead-end
+        if (diagStatus === 'bastard') return '#f59e0b';   // amber — appears from nowhere
         if (LABEL_COLORS[label]) return LABEL_COLORS[label];
         // Hash unknown labels to a contrasting palette color instead of gold
         const FALLBACK_PALETTE = [
@@ -588,19 +689,49 @@ export function ExplorerDesk({ year = '2025', quarter = 'All' }: ExplorerDeskPro
 
                     {/* Graph Layouts (sphere, force, hierarchical, circular) */}
                     {displayData && ['sphere', 'force', 'hierarchical', 'circular'].includes(vizMode) && (
-                        <NeoGraph
-                            data={displayData}
-                            isDark={isDark}
-                            language="en"
-                            year={year}
-                            quarter={quarter}
-                            legendConfig={LEGEND_CONFIG}
-                            nodeColor={getNodeColor}
-                            onNodeClick={setSelectedNode}
-                            layoutMode={vizMode as LayoutMode}
-                            hierarchySource={hierarchySource}
-                            is3D={is3D}
-                        />
+                        <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+                            <NeoGraph
+                                data={displayData}
+                                isDark={isDark}
+                                language="en"
+                                year={year}
+                                quarter={quarter}
+                                legendConfig={LEGEND_CONFIG}
+                                nodeColor={getNodeColor}
+                                onNodeClick={setSelectedNode}
+                                layoutMode={vizMode as LayoutMode}
+                                hierarchySource={hierarchySource}
+                                is3D={is3D}
+                                isDiagnostic={queryType === 'diagnostic'}
+                            />
+                            {queryType === 'diagnostic' && (
+                                <div style={{
+                                    position: 'absolute',
+                                    top: 57,
+                                    right: 12,
+                                    background: isDark ? 'rgba(17,24,39,0.85)' : 'rgba(255,255,255,0.9)',
+                                    borderRadius: 8,
+                                    padding: '8px 14px',
+                                    fontSize: 12,
+                                    fontFamily: 'Inter, sans-serif',
+                                    fontWeight: 500,
+                                    display: 'flex',
+                                    flexDirection: 'row',
+                                    gap: 6,
+                                    zIndex: 10,
+                                    border: `1px solid ${isDark ? '#374151' : '#E5E7EB'}`,
+                                }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                        <span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: '50%', background: '#ef4444' }} />
+                                        <span style={{ color: isDark ? '#F9FAFB' : '#1F2937' }}>Unlinked (dead ends)</span>
+                                    </div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                        <span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: '50%', background: '#f59e0b' }} />
+                                        <span style={{ color: isDark ? '#F9FAFB' : '#1F2937' }}>Unattributed (no source)</span>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
                     )}
 
                     {/* Sankey */}

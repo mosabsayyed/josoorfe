@@ -1,37 +1,49 @@
-.concept-help-popover {
+/* ── Concept Help Click Mode Overlay ── */
+.concept-help-overlay {
   position: absolute;
-  top: 100%;
-  right: 8px;
-  width: 320px;
-  max-height: 420px;
+  inset: 0;
+  z-index: 150;
+  cursor: help;
+}
+
+.concept-help-overlay * {
+  cursor: help !important;
+}
+
+/* ── Floating Response Panel ── */
+.concept-help-panel {
+  width: 300px;
+  max-height: 360px;
   overflow-y: auto;
-  background: var(--glass-bg, rgba(15, 15, 25, 0.95));
-  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+  background: var(--glass-bg, rgba(15, 15, 25, 0.96));
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.12));
   border-radius: 10px;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
-  z-index: 100;
-  padding: 14px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+  padding: 12px;
   backdrop-filter: blur(16px);
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
+  transform: translateY(8px);
 }
 
-[dir="rtl"] .concept-help-popover {
-  right: auto;
-  left: 8px;
+.concept-help-panel * {
+  cursor: default !important;
 }
 
 .concept-help-header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
+  gap: 8px;
 }
 
-.concept-help-title {
+.concept-help-term {
   font-size: 0.8125rem;
-  font-weight: 600;
-  color: var(--text-primary, #e5e7eb);
+  font-weight: 700;
+  color: var(--component-text-accent, #f4bb30);
+  line-height: 1.3;
+  word-break: break-word;
 }
 
 .concept-help-close {
@@ -39,72 +51,28 @@
   border: none;
   color: var(--text-secondary, #9ca3af);
   font-size: 18px;
-  cursor: pointer;
+  cursor: pointer !important;
   padding: 0 2px;
   line-height: 1;
+  flex-shrink: 0;
 }
 
 .concept-help-close:hover {
   color: var(--text-primary, #e5e7eb);
 }
 
-.concept-help-input-row {
-  display: flex;
-  gap: 6px;
-}
-
-.concept-help-input {
-  flex: 1;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 6px;
-  padding: 7px 10px;
-  color: var(--text-primary, #e5e7eb);
-  font-size: 0.8125rem;
-  outline: none;
-}
-
-.concept-help-input::placeholder {
-  color: var(--text-secondary, #6b7280);
-}
-
-.concept-help-input:focus {
-  border-color: rgba(99, 102, 241, 0.5);
-}
-
-.concept-help-submit {
-  background: rgba(99, 102, 241, 0.2);
-  border: 1px solid rgba(99, 102, 241, 0.4);
-  color: #a5b4fc;
-  border-radius: 6px;
-  padding: 7px 12px;
-  font-size: 0.8125rem;
-  font-weight: 500;
-  cursor: pointer;
-  white-space: nowrap;
-}
-
-.concept-help-submit:hover:not(:disabled) {
-  background: rgba(99, 102, 241, 0.3);
-}
-
-.concept-help-submit:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
 .concept-help-loading {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 12px 0;
+  padding: 8px 0;
   color: var(--text-secondary, #9ca3af);
   font-size: 0.8125rem;
 }
 
 .concept-help-spinner {
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
   border: 2px solid rgba(99, 102, 241, 0.2);
   border-top-color: #6366f1;
   border-radius: 50%;
@@ -122,7 +90,7 @@
 }
 
 .concept-help-response {
-  padding: 8px 0 0;
+  padding: 6px 0 0;
   border-top: 1px solid rgba(255, 255, 255, 0.06);
 }
 
@@ -147,5 +115,4 @@
   font-size: 0.75rem;
   padding: 3px 8px;
   border-radius: 4px;
-  cursor: default;
 }

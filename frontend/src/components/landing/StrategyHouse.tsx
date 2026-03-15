@@ -15,9 +15,9 @@ export default function StrategyHouse({ content }: StrategyHouseProps) {
   const { t } = useTranslation();
   const [activeIndex, setActiveIndex] = useState<number>(PEDIMENT_INDICES[0]);
 
-  const elements = content.elements || [];
-  const descs = (t('strategyHouse.elementDescs', { returnObjects: true }) as string[]) || [];
-  const pyramidLabels = (t('strategyHouse.pyramidLabels', { returnObjects: true }) as string[]) || [];
+  const elements = Array.isArray(content.elements) ? content.elements : [];
+  const descs = (() => { const v = t('strategyHouse.elementDescs', { returnObjects: true }); return Array.isArray(v) ? v : []; })();
+  const pyramidLabels = (() => { const v = t('strategyHouse.pyramidLabels', { returnObjects: true }); return Array.isArray(v) ? v : []; })();
 
   return (
     <section className="content-centered" id="strategy-house">

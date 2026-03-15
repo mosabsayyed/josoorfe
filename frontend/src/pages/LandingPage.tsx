@@ -15,6 +15,18 @@ import PublicPageMeta from '../components/common/PublicPageMeta';
 
 const SNAP_SECTIONS = ['hero', 'aitoia', 'platform', 'strategy-house', 'promise', 'beta'];
 
+function toArray<T>(value: unknown): T[] {
+  if (Array.isArray(value)) {
+    return value as T[];
+  }
+
+  if (value && typeof value === 'object') {
+    return Object.values(value as Record<string, T>);
+  }
+
+  return [];
+}
+
 export default function LandingPage() {
   const { language, isRTL } = useLanguage();
   const { t } = useTranslation();
@@ -29,30 +41,30 @@ export default function LandingPage() {
       badge: t('hero.badge'),
       pitchLabel: t('hero.pitchLabel'),
       pitch: t('hero.pitch'),
-      pitchPoints: (t('hero.pitchPoints', { returnObjects: true }) as string[]) || [],
+      pitchPoints: toArray<string>(t('hero.pitchPoints', { returnObjects: true })),
       bestPracticesLabel: t('hero.bestPracticesLabel'),
-      bestPracticesPoints: (t('hero.bestPracticesPoints', { returnObjects: true }) as string[]) || [],
-      intelligence: (t('hero.intelligence', { returnObjects: true }) as { figure: string; label: string }[]) || [],
+      bestPracticesPoints: toArray<string>(t('hero.bestPracticesPoints', { returnObjects: true })),
+      intelligence: toArray<{ figure: string; label: string }>(t('hero.intelligence', { returnObjects: true })),
       intelligenceTitle: t('hero.intelligenceTitle'),
       intelligenceDesc: t('hero.intelligenceDesc'),
-      trust: (t('hero.trust', { returnObjects: true }) as { figure: string; label: string }[]) || [],
+      trust: toArray<{ figure: string; label: string }>(t('hero.trust', { returnObjects: true })),
       trustTitle: t('hero.trustTitle'),
       trustDesc: t('hero.trustDesc'),
-      figures: (t('hero.figures', { returnObjects: true }) as string[]) || [],
+      figures: toArray<string>(t('hero.figures', { returnObjects: true })),
       middleTagline: t('hero.middleTagline'),
     },
     promise: {
       tag: t('promise.tag'),
       title: t('promise.title'),
       subtitle: t('promise.subtitle'),
-      personas: (t('promise.personas', { returnObjects: true }) as Array<{ role: string; before: string; after: string }>),
+      personas: toArray<{ role: string; before: string; after: string }>(t('promise.personas', { returnObjects: true })),
     },
     strategyHouse: {
       tag: t('strategyHouse.tag'),
       title: t('strategyHouse.title'),
       subtitle: t('strategyHouse.subtitle'),
-      elements: (t('strategyHouse.elements', { returnObjects: true }) as string[]),
-      elementDescs: (t('strategyHouse.elementDescs', { returnObjects: true }) as string[]),
+      elements: toArray<string>(t('strategyHouse.elements', { returnObjects: true })),
+      elementDescs: toArray<string>(t('strategyHouse.elementDescs', { returnObjects: true })),
     },
     beta: {
       tag: t('beta.tag'),
@@ -64,7 +76,7 @@ export default function LandingPage() {
         email: t('beta.form.email'),
         org: t('beta.form.org'),
         role: t('beta.form.role'),
-        roleOptions: (t('beta.form.roleOptions', { returnObjects: true }) as string[]),
+        roleOptions: toArray<string>(t('beta.form.roleOptions', { returnObjects: true })),
         submit: t('beta.form.submit'),
       },
     },

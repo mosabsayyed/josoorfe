@@ -7,7 +7,7 @@ interface GraphDataTableProps {
     onNodeClick?: (node: any) => void;
 }
 
-type SortKey = 'id' | 'name' | 'type' | 'level' | 'year' | 'status';
+type SortKey = 'id' | 'name' | 'type' | 'level' | 'year' | 'status' | 'chainState';
 type SortDir = 'asc' | 'desc';
 
 const LABEL_COLORS: Record<string, string> = {
@@ -44,6 +44,10 @@ export function GraphDataTable({ data, isDark, onNodeClick }: GraphDataTableProp
             case 'level': return props.level || '';
             case 'year': return String(props.year || '');
             case 'status': return props.status || '';
+            case 'chainState': {
+                const ds = props._diagnosticStatus;
+                return ds === 'orphan' ? 'Unlinked' : ds === 'bastard' ? 'Unattributed' : 'Healthy';
+            }
         }
     };
 
@@ -56,10 +60,11 @@ export function GraphDataTable({ data, isDark, onNodeClick }: GraphDataTableProp
                 const nodeId = String(props.id ?? '').toLowerCase();
                 const name = (n.name || props.name || '').toLowerCase();
                 const type = (n.labels?.[0] || n.label || '').toLowerCase();
-                return nodeId.includes(q) || name.includes(q) || type.includes(q);
+                const chainState = (props._diagnosticStatus === 'orphan' ? 'unlinked' : props._diagnosticStatus === 'bastard' ? 'unattributed' : 'healthy');
+                return nodeId.includes(q) || name.includes(q) || type.includes(q) || chainState.includes(q);
             });
         }
-        return result.sort((a, b) => {
+        return [...result].sort((a, b) => {
             const aVal = getField(a, sortKey).toLowerCase();
             const bVal = getField(b, sortKey).toLowerCase();
             const cmp = aVal.localeCompare(bVal);
@@ -106,14 +111,14 @@ export function GraphDataTable({ data, isDark, onNodeClick }: GraphDataTableProp
                         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', color: isDark ? '#d1d5db' : '#374151' }}>
                             <thead>
                                 <tr>
-                                    {(['id', 'name', 'type', 'level', 'year', 'status'] as SortKey[]).map(key => (
+                                    {(['id', 'name', 'type', 'level', 'year', 'status', 'chainState'] as SortKey[]).map(key => (
                                         <th key={key} onClick={() => handleSort(key)} style={{
                                             textAlign: 'left', padding: '8px', cursor: 'pointer', userSelect: 'none',
                                             borderBottom: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`,
                                             backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
                                             position: 'sticky', top: 0,
                                         }}>
-                                            {t(`josoor.explorer.table.${key}`, key.charAt(0).toUpperCase() + key.slice(1))}{sortIndicator(key)}
+                                            {t(`josoor.explorer.table.${key}`, key === 'chainState' ? 'Chain State' : key.charAt(0).toUpperCase() + key.slice(1))}{sortIndicator(key)}
                                         </th>
                                     ))}
                                 </tr>
@@ -137,15 +142,25 @@ export function GraphDataTable({ data, isDark, onNodeClick }: GraphDataTableProp
                                                 {n.name || props.name || n.id}
                                             </td>
                                             <td style={{ padding: '6px 8px', borderBottom: `1px solid ${isDark ? '#1f2937' : '#f3f4f6'}` }}>
-                                                <span style={{
-                                                    display: 'inline-block', padding: '1px 6px', borderRadius: '3px', fontSize: '10px',
-                                                    backgroundColor: (LABEL_COLORS[type] || '#6b7280') + '22',
-                                                    color: LABEL_COLORS[type] || '#6b7280', fontWeight: 600,
-                                                }}>{type}</span>
+                                                {type}
                                             </td>
                                             <td style={{ padding: '6px 8px', borderBottom: `1px solid ${isDark ? '#1f2937' : '#f3f4f6'}` }}>{props.level || ''}</td>
                                             <td style={{ padding: '6px 8px', borderBottom: `1px solid ${isDark ? '#1f2937' : '#f3f4f6'}` }}>{props.year || ''}</td>
                                             <td style={{ padding: '6px 8px', borderBottom: `1px solid ${isDark ? '#1f2937' : '#f3f4f6'}` }}>{props.status || ''}</td>
+                                            <td style={{ padding: '6px 8px', borderBottom: `1px solid ${isDark ? '#1f2937' : '#f3f4f6'}` }}>
+                                                {(() => {
+                                                    const ds = props._diagnosticStatus;
+                                                    const label = ds === 'orphan' ? 'Unlinked' : ds === 'bastard' ? 'Unattributed' : 'Healthy';
+                                                    const color = ds === 'orphan' ? '#ef4444' : ds === 'bastard' ? '#f59e0b' : '#10b981';
+                                                    return (
+                                                        <span style={{
+                                                            display: 'inline-block', padding: '1px 6px', borderRadius: '3px', fontSize: '10px',
+                                                            backgroundColor: color + '22',
+                                                            color, fontWeight: 600,
+                                                        }}>{label}</span>
+                                                    );
+                                                })()}
+                                            </td>
                                         </tr>
                                     );
                                 })}

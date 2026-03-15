@@ -28,6 +28,9 @@ interface NeoGraphProps {
   layoutMode?: LayoutMode;
   hierarchySource?: HierarchySource;
   is3D?: boolean;
+
+  // Diagnostic mode — enables orphan/bastard coloring and cluster-by-label force
+  isDiagnostic?: boolean;
 }
 
 // Distinct colors per ontology node type — matches GraphDataTable LABEL_COLORS
@@ -57,6 +60,7 @@ export function NeoGraph({
   layoutMode = 'sphere',
   hierarchySource = 'parent_of',
   is3D: is3DProp = true,
+  isDiagnostic = false,
 }: NeoGraphProps) {
 
   const { t } = useTranslation();
@@ -133,6 +137,69 @@ export function NeoGraph({
 
     return { nodes, links };
   }, [data, layoutMode, hierarchySource]);
+
+  // Diagnostic clustering: pull same-group (label:level) nodes toward shared centroids
+  useEffect(() => {
+    const fg = graphRef.current;
+    if (!fg || !isDiagnostic || !is3DProp) return;
+
+    // Wait a tick for ForceGraph3D to initialise its simulation
+    const timer = setTimeout(() => {
+      const nodes = graphData.nodes as any[];
+      if (!nodes || nodes.length === 0) return;
+
+      // Build group → centroid map
+      const groupCentroids: Record<string, { x: number; y: number; z: number; count: number }> = {};
+      const getGroup = (n: any) => {
+        const label = (n.labels && n.labels[0]) || n.label || 'Unknown';
+        const level = n.properties?.level || n.nProps?.level || '';
+        return `${label}:${level}`;
+      };
+
+      // Assign initial centroid positions evenly spread on a sphere by group index
+      const groups = Array.from(new Set(nodes.map(getGroup)));
+      const goldenAngle = Math.PI * (3 - Math.sqrt(5));
+      groups.forEach((g, i) => {
+        const y = 1 - (i / (groups.length - 1 || 1)) * 2;
+        const r = Math.sqrt(1 - y * y);
+        const theta = goldenAngle * i;
+        const spread = Math.max(180, nodes.length * 1.5);
+        groupCentroids[g] = {
+          x: Math.cos(theta) * r * spread,
+          y: y * spread,
+          z: Math.sin(theta) * r * spread,
+          count: 0,
+        };
+      });
+
+      // Custom clustering force
+      const clusterForce = (alpha: number) => {
+        for (const node of nodes) {
+          const g = getGroup(node);
+          const centroid = groupCentroids[g];
+          if (!centroid) continue;
+          const strength = 0.08 * alpha;
+          node.vx = (node.vx || 0) + (centroid.x - (node.x || 0)) * strength;
+          node.vy = (node.vy || 0) + (centroid.y - (node.y || 0)) * strength;
+          node.vz = (node.vz || 0) + (centroid.z - (node.z || 0)) * strength;
+        }
+      };
+
+      try {
+        fg.d3Force('cluster', clusterForce);
+        fg.d3ReheatSimulation?.();
+      } catch (e) {
+        // Silently ignore if force graph API differs
+      }
+    }, 100);
+
+    return () => {
+      clearTimeout(timer);
+      try {
+        graphRef.current?.d3Force('cluster', null);
+      } catch (_) { /* ignore */ }
+    };
+  }, [isDiagnostic, is3DProp, graphData]);
 
   // Click zoom handler
   const handleNodeClick = (node: any) => {

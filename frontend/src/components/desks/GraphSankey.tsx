@@ -29,6 +29,11 @@ interface Node {
     aggregateMembers?: string[]; // original IDs of grouped nodes
     primaryLabel?: string;
     level?: string;
+    // Diagnostic orphan/bastard fields
+    isOrphan?: boolean;  // node has no outgoing link to the next column
+    isBastard?: boolean; // node has no incoming link from the previous column
+    orphanCount?: number;
+    bastardCount?: number;
 }
 
 interface GraphSankeyProps {
@@ -235,20 +240,19 @@ export function GraphSankey({ data, isDark = true, chain, metadata, isDiagnostic
             const sortId = displayId ? parseFloat(displayId) : NaN;
 
             // Assign Column
+            // Assign to canonical column: match by label, and by level if the column specifies one
             let stepIndex = -1;
-            if (level) {
-                for (let i = 0; i < colSequence.length; i += 1) {
-                    const colStep = colSequence[i];
-                    if (colStep.level !== level) continue;
-                    if (colStep.labels.some(label => labels.includes(label))) {
-                        stepIndex = i;
-                        break;
-                    }
+            for (let i = 0; i < colSequence.length; i += 1) {
+                const colStep = colSequence[i];
+                // If column specifies a level, node must match it; if column has no level, accept any node
+                if (colStep.level && colStep.level !== level) continue;
+                if (!colStep.level && level) {
+                    // Column has no level requirement — match by label only (first match wins)
                 }
-            }
-            if (stepIndex === -1) {
-                const colLabel = labels.find((l: string) => colMap.has(l));
-                stepIndex = colLabel ? colMap.get(colLabel)![0] : -1;
+                if (colStep.labels.some(label => labels.includes(label))) {
+                    stepIndex = i;
+                    break;
+                }
             }
 
             const isBroken = isDiagnostic && props.status === 'critical';
@@ -288,6 +292,44 @@ export function GraphSankey({ data, isDark = true, chain, metadata, isDiagnostic
         // If backend already sent pre-aggregated nodes (v5 format with nProps.count), skip aggregation.
         const isPreAggregated = nodes.some(n => n.properties?.count != null && typeof n.properties.count === 'number');
 
+        // --- Diagnostic: compute orphan/bastard tags on individual nodes BEFORE aggregation ---
+        if (isDiagnostic && !isPreAggregated) {
+            const rawLinksForDiag = data.links || [];
+            // Build a nodeId → stepIndex map from the individual nodes (before aggregation)
+            const nodeStepMap = new Map<string, number>();
+            nodes.forEach(n => nodeStepMap.set(n.id, n.stepIndex));
+
+            // hasOutgoingToCol[nodeId] = set of target stepIndexes this node connects to
+            const hasOutgoingToCol = new Map<string, Set<number>>();
+            // hasIncomingFromCol[nodeId] = set of source stepIndexes this node receives from
+            const hasIncomingFromCol = new Map<string, Set<number>>();
+            nodes.forEach(n => {
+                hasOutgoingToCol.set(n.id, new Set());
+                hasIncomingFromCol.set(n.id, new Set());
+            });
+
+            rawLinksForDiag.forEach((l: any) => {
+                const sId = getSafeId(l.sourceId ?? l.source);
+                const tId = getSafeId(l.targetId ?? l.target);
+                const srcStep = nodeStepMap.get(sId);
+                const tgtStep = nodeStepMap.get(tId);
+                if (srcStep !== undefined && tgtStep !== undefined) {
+                    hasOutgoingToCol.get(sId)?.add(tgtStep);
+                    hasIncomingFromCol.get(tId)?.add(srcStep);
+                }
+            });
+
+            const numCols = columns.length;
+            nodes.forEach(n => {
+                const col = n.stepIndex;
+                if (col < 0) return;
+                // Orphan: has no outgoing link to column N+1
+                n.isOrphan = col < numCols - 1 && !(hasOutgoingToCol.get(n.id)?.has(col + 1));
+                // Bastard: has no incoming link from column N-1
+                n.isBastard = col > 0 && !(hasIncomingFromCol.get(n.id)?.has(col - 1));
+            });
+        }
+
         // Map from original individual node ID → aggregate node ID (used to remap links)
         const individualToAggregateMap = new Map<string, string>();
 
@@ -323,6 +365,8 @@ export function GraphSankey({ data, isDark = true, chain, metadata, isDiagnostic
                     // Pick color from first member (all same label → same color)
                     const hasBroken = members.some(m => m.isBroken);
                     const hasVirtual = members.some(m => m.isVirtual);
+                    const orphanCount = isDiagnostic ? members.filter(m => m.isOrphan).length : 0;
+                    const bastardCount = isDiagnostic ? members.filter(m => m.isBastard).length : 0;
 
                     // Collect sample IDs for tooltip
                     const sampleIds = members
@@ -352,6 +396,8 @@ export function GraphSankey({ data, isDark = true, chain, metadata, isDiagnostic
                         primaryLabel: pLabel,
                         level: lvl || undefined,
                         entityTypeSubHeader: first.entityTypeSubHeader,
+                        orphanCount,
+                        bastardCount,
                     });
                 });
                 nodes = aggregatedNodes;
@@ -457,6 +503,14 @@ export function GraphSankey({ data, isDark = true, chain, metadata, isDiagnostic
         // --- First pass: count connections per node to set height proportional to throughput ---
         // nodeMap is built AFTER column assignment + aggregation so aggregated nodes have column set
         const rawLinks = data.links || [];
+        const parentOfLinks = rawLinks.filter((l: any) => {
+            const rawType = l.rType ?? l.type ?? l.relationship ?? l.relType ?? l.label ?? '';
+            return String(rawType).toUpperCase().includes('PARENT');
+        });
+        if (parentOfLinks.length > 0) {
+            console.log(`[Sankey] ${parentOfLinks.length} PARENT_OF links in data. Columns: ${colSequence.map((c, i) => `${i}:${c.labels.join('|')}(${c.level || 'any'})`).join(', ')}`);
+            console.log(`[Sankey] edgeMap:`, Object.fromEntries(Array.from(edgeMap.entries()).map(([k, v]) => [k, Array.from(v)])));
+        }
         const nodeMap = new Map<string, Node>();
         nodes.forEach(n => nodeMap.set(n.originalId, n));
 
@@ -494,15 +548,28 @@ export function GraphSankey({ data, isDark = true, chain, metadata, isDiagnostic
             const src = resolveNode(sId, linkType);
             const tgt = resolveNode(resolvedTargetId, linkType);
 
+            if (linkType === 'PARENT_OF' && (!src || !tgt)) {
+                console.log(`[Sankey] PARENT_OF skipped: node not found, src=${sId}(${src ? 'found' : 'MISSING'}) tgt=${resolvedTargetId}(${tgt ? 'found' : 'MISSING'})`);
+            }
             if (src && tgt && src.column !== undefined && tgt.column !== undefined) {
                 const leftNode = src.column! <= tgt.column! ? src : tgt;
                 const rightNode = src.column! <= tgt.column! ? tgt : src;
-                if (leftNode.column === rightNode.column) return;
-                if (hasEdgeMap) {
-                    if (rightNode.column! - leftNode.column! !== 1) return;
-                    const allowed = edgeMap.get(`${leftNode.column}->${rightNode.column}`);
-                    if (!allowed || !allowed.has(linkType)) return;
+                if (leftNode.column === rightNode.column) {
+                    if (linkType === 'PARENT_OF') console.log(`[Sankey] PARENT_OF skipped: same column ${leftNode.column}, src=${sId} tgt=${tId}, srcLevel=${src.properties?.level} tgtLevel=${tgt.properties?.level}`);
+                    return;
                 }
+                if (hasEdgeMap) {
+                    if (rightNode.column! - leftNode.column! !== 1) {
+                        if (linkType === 'PARENT_OF') console.log(`[Sankey] PARENT_OF skipped: non-adjacent cols ${leftNode.column}->${rightNode.column}, src=${sId} tgt=${tId}`);
+                        return;
+                    }
+                    const allowed = edgeMap.get(`${leftNode.column}->${rightNode.column}`);
+                    if (!allowed || !allowed.has(linkType)) {
+                        if (linkType === 'PARENT_OF') console.log(`[Sankey] PARENT_OF skipped: type not in edgeMap[${leftNode.column}->${rightNode.column}], allowed=${allowed ? Array.from(allowed).join(',') : 'none'}`);
+                        return;
+                    }
+                }
+                if (linkType === 'PARENT_OF') console.log(`[Sankey] PARENT_OF ACCEPTED: col ${leftNode.column}->${rightNode.column}, src=${sId} tgt=${tId}`);
                 const w = l.rProps?.weight || 1;
                 outCount.set(leftNode.originalId, (outCount.get(leftNode.originalId) || 0) + w);
                 inCount.set(rightNode.originalId, (inCount.get(rightNode.originalId) || 0) + w);
@@ -647,6 +714,33 @@ export function GraphSankey({ data, isDark = true, chain, metadata, isDiagnostic
             <div className="graph-sankey-scroll custom-scrollbar">
                 <svg width="100%" height={Math.max(900, layout.height)} viewBox={`0 0 ${layout.width || 1200} ${Math.max(900, layout.height)}`} style={{ minHeight: '100%' }}>
 
+                    {isDiagnostic && (
+                        <foreignObject x={(layout.width || 1200) - 350} y={55} width={370} height={36}>
+                            <div style={{
+                                display: 'flex',
+                                flexDirection: 'row',
+                                gap: 14,
+                                background: isDark ? 'rgba(17,24,39,0.85)' : 'rgba(255,255,255,0.9)',
+                                borderRadius: 8,
+                                padding: '6px 14px',
+                                border: `1px solid ${isDark ? '#374151' : '#E5E7EB'}`,
+                                fontSize: 12,
+                                fontFamily: 'Inter, sans-serif',
+                                fontWeight: 500,
+                                width: 'fit-content',
+                            }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                    <span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: '50%', background: '#ef4444' }} />
+                                    <span style={{ color: isDark ? '#F9FAFB' : '#1F2937' }}>Unlinked (dead ends)</span>
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                    <span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: '50%', background: '#f59e0b' }} />
+                                    <span style={{ color: isDark ? '#F9FAFB' : '#1F2937' }}>Unattributed (no source)</span>
+                                </div>
+                            </div>
+                        </foreignObject>
+                    )}
+
                     {/* Step Headers — inline with each step group (ping pong) */}
                     {columns.map((col: any, i) => {
                         const groupNodes = layout.nodes.filter(n => n.column === i);
@@ -752,9 +846,19 @@ export function GraphSankey({ data, isDark = true, chain, metadata, isDiagnostic
                                             <div style={{ fontWeight: 600, fontSize: '14px', marginBottom: '4px', color: isDark ? '#F9FAFB' : '#111827' }}>
                                                 {node.nameDisplay}
                                             </div>
-                                            <div style={{ fontSize: '12px', color: '#F4BB30', fontWeight: 600, marginBottom: '8px' }}>
+                                            <div style={{ fontSize: '12px', color: '#F4BB30', fontWeight: 600, marginBottom: '4px' }}>
                                                 {t('josoor.explorer.sankey.nodeCount', { count: node.aggregateCount })}
                                             </div>
+                                            {isDiagnostic && (node.orphanCount || 0) > 0 && (
+                                                <div style={{ fontSize: '12px', color: '#ef4444', fontWeight: 600 }}>
+                                                    Unlinked: {node.orphanCount}
+                                                </div>
+                                            )}
+                                            {isDiagnostic && (node.bastardCount || 0) > 0 && (
+                                                <div style={{ fontSize: '12px', color: '#f59e0b', fontWeight: 600, marginBottom: '8px' }}>
+                                                    Unattributed: {node.bastardCount}
+                                                </div>
+                                            )}
                                             <div style={{ fontSize: '12px', opacity: 0.8, borderTop: `1px solid ${isDark ? '#374151' : '#E5E7EB'}`, paddingTop: '8px' }}>
                                                 <div style={{ fontWeight: '600', marginBottom: '4px' }}>{t('josoor.explorer.sankey.labels')}</div>
                                                 <div style={{ marginLeft: '8px', marginBottom: '8px' }}>{node.labels.join(', ')}</div>
@@ -865,6 +969,38 @@ export function GraphSankey({ data, isDark = true, chain, metadata, isDiagnostic
                                 strokeWidth={node.isBroken ? 1.5 : 0.5}
                                 className="transition-colors hover:brightness-125"
                             />
+                            {isDiagnostic && node.isAggregate && (node.orphanCount || 0) > 0 && (() => {
+                                const count = node.orphanCount!;
+                                const memberCount = node.aggregateCount || 1;
+                                const pct = count / memberCount;
+                                const r = Math.max(4, Math.min(14, pct * 30 + 4));
+                                const cx = node.x! + node.width! - 4;
+                                const cy = node.y! + 4; // top-right
+                                return (
+                                    <g style={{ pointerEvents: 'none' }}>
+                                        <circle cx={cx} cy={cy} r={r} fill="#ef4444" opacity={0.9} />
+                                        <text x={cx} y={cy} fill="white" fontSize="9" fontWeight="700" textAnchor="middle" dominantBaseline="central">
+                                            {count}
+                                        </text>
+                                    </g>
+                                );
+                            })()}
+                            {isDiagnostic && node.isAggregate && (node.bastardCount || 0) > 0 && (() => {
+                                const count = node.bastardCount!;
+                                const memberCount = node.aggregateCount || 1;
+                                const pct = count / memberCount;
+                                const r = Math.max(4, Math.min(14, pct * 30 + 4));
+                                const cx = node.x! + node.width! - 4; // same X as red dot
+                                const cy = node.y! + node.height! - 4; // bottom-right — parallel to red
+                                return (
+                                    <g style={{ pointerEvents: 'none' }}>
+                                        <circle cx={cx} cy={cy} r={r} fill="#f59e0b" opacity={0.9} />
+                                        <text x={cx} y={cy} fill="white" fontSize="9" fontWeight="700" textAnchor="middle" dominantBaseline="central">
+                                            {count}
+                                        </text>
+                                    </g>
+                                );
+                            })()}
                             {(() => {
                                 const nodeIsLeft = node.column! % 2 === 0;
 
@@ -894,8 +1030,20 @@ export function GraphSankey({ data, isDark = true, chain, metadata, isDiagnostic
                                         {(() => {
                                             const pad = 16;
                                             const charWidth = isRTL ? 10 : 8;
-                                            const countSuffix = node.isAggregate && node.aggregateCount ? ` ×${node.aggregateCount}` : '';
-                                            const reserveChars = countSuffix.length;
+                                            // Aggregate nodes: show only count (name already in column header)
+                                            if (node.isAggregate && node.aggregateCount) {
+                                                return (
+                                                    <tspan
+                                                        fill="#F4BB30"
+                                                        fontWeight="700"
+                                                        fontSize="13"
+                                                        dominantBaseline="middle"
+                                                    >
+                                                        ×{node.aggregateCount}
+                                                    </tspan>
+                                                );
+                                            }
+
                                             const maxChars = Math.max(4, Math.floor(((node.width ?? 80) - pad) / charWidth));
 
                                             const wrapText = (text: string, max: number): string[] => {
@@ -912,7 +1060,7 @@ export function GraphSankey({ data, isDark = true, chain, metadata, isDiagnostic
                                                 return result;
                                             };
 
-                                            const lines = wrapText(node.nameDisplay, maxChars - (countSuffix ? reserveChars : 0));
+                                            const lines = wrapText(node.nameDisplay, maxChars);
                                             const lineHeight = 14;
 
                                             return lines.map((line, idx) => (
@@ -925,9 +1073,6 @@ export function GraphSankey({ data, isDark = true, chain, metadata, isDiagnostic
                                                     dominantBaseline="middle"
                                                 >
                                                     {line}
-                                                    {idx === lines.length - 1 && countSuffix && (
-                                                        <tspan fill="#F4BB30" fontWeight="700" dx={isRTL ? (nodeIsLeft ? '-12' : '-16') : (nodeIsLeft ? '6' : '-16')}>{countSuffix.trim()}</tspan>
-                                                    )}
                                                 </tspan>
                                             ));
                                         })()}

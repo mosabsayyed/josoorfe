@@ -17,12 +17,12 @@ export const CANONICAL_PATHS: Record<string, CanonicalPathDef> = {
     'sector_value_chain': {
         name: 'Sector Value Chain',
         steps: [
-            { sourceLabel: 'SectorObjective', relationship: 'REALIZED_VIA', targetLabel: 'SectorPolicyTool' },
-            { sourceLabel: 'SectorPolicyTool', relationship: 'REFERS_TO', targetLabel: 'SectorAdminRecord' },
-            { sourceLabel: 'SectorAdminRecord', relationship: 'APPLIED_ON', targetLabel: ['SectorCitizen', 'SectorGovEntity', 'SectorBusiness'] },
-            { sourceLabel: ['SectorCitizen', 'SectorGovEntity', 'SectorBusiness'], relationship: 'TRIGGERS_EVENT', targetLabel: 'SectorDataTransaction' },
-            { sourceLabel: 'SectorDataTransaction', relationship: 'MEASURED_BY', targetLabel: 'SectorPerformance' },
-            { sourceLabel: 'SectorPerformance', relationship: 'AGGREGATES_TO', targetLabel: 'SectorObjective' }
+            { sourceLabel: 'SectorObjective', sourceLevel: 'L1', relationship: 'REALIZED_VIA', targetLabel: 'SectorPolicyTool', targetLevel: 'L1' },
+            { sourceLabel: 'SectorPolicyTool', sourceLevel: 'L1', relationship: 'REFERS_TO', targetLabel: 'SectorAdminRecord', targetLevel: 'L1' },
+            { sourceLabel: 'SectorAdminRecord', sourceLevel: 'L1', relationship: 'APPLIED_ON', targetLabel: ['SectorCitizen', 'SectorGovEntity', 'SectorBusiness'], targetLevel: 'L1' },
+            { sourceLabel: ['SectorCitizen', 'SectorGovEntity', 'SectorBusiness'], sourceLevel: 'L1', relationship: 'TRIGGERS_EVENT', targetLabel: 'SectorDataTransaction', targetLevel: 'L1' },
+            { sourceLabel: 'SectorDataTransaction', sourceLevel: 'L1', relationship: 'MEASURED_BY', targetLabel: 'SectorPerformance', targetLevel: 'L1' },
+            { sourceLabel: 'SectorPerformance', sourceLevel: 'L1', relationship: 'AGGREGATES_TO', targetLabel: 'SectorObjective', targetLevel: 'L1' }
         ]
     },
     'setting_strategic_initiatives': {
@@ -58,6 +58,8 @@ export const CANONICAL_PATHS: Record<string, CanonicalPathDef> = {
     'capability_to_policy': {
         name: 'Capability to Policy',
         steps: [
+            { sourceLabel: 'EntityCapability', sourceLevel: 'L1', relationship: 'PARENT_OF', targetLabel: 'EntityCapability', targetLevel: 'L2' },
+            { sourceLabel: 'EntityCapability', sourceLevel: 'L2', relationship: 'PARENT_OF', targetLabel: 'EntityCapability', targetLevel: 'L3' },
             { sourceLabel: 'EntityCapability', sourceLevel: 'L3', relationship: 'MONITORED_BY', targetLabel: 'EntityRisk', targetLevel: 'L3' },
             { sourceLabel: 'EntityRisk', sourceLevel: 'L3', relationship: 'PARENT_OF', targetLabel: 'EntityRisk', targetLevel: 'L2' },
             { sourceLabel: 'EntityRisk', sourceLevel: 'L2', relationship: 'INFORMS', targetLabel: 'SectorPolicyTool', targetLevel: 'L2' },
@@ -68,6 +70,8 @@ export const CANONICAL_PATHS: Record<string, CanonicalPathDef> = {
     'capability_to_performance': {
         name: 'Capability to Performance',
         steps: [
+            { sourceLabel: 'EntityCapability', sourceLevel: 'L1', relationship: 'PARENT_OF', targetLabel: 'EntityCapability', targetLevel: 'L2' },
+            { sourceLabel: 'EntityCapability', sourceLevel: 'L2', relationship: 'PARENT_OF', targetLabel: 'EntityCapability', targetLevel: 'L3' },
             { sourceLabel: 'EntityCapability', sourceLevel: 'L3', relationship: 'MONITORED_BY', targetLabel: 'EntityRisk', targetLevel: 'L3' },
             { sourceLabel: 'EntityRisk', sourceLevel: 'L3', relationship: 'PARENT_OF', targetLabel: 'EntityRisk', targetLevel: 'L2' },
             { sourceLabel: 'EntityRisk', sourceLevel: 'L2', relationship: 'INFORMS', targetLabel: 'SectorPerformance', targetLevel: 'L2' },
@@ -78,10 +82,10 @@ export const CANONICAL_PATHS: Record<string, CanonicalPathDef> = {
     'sustainable_operations': {
         name: 'Sustainable Operations',
         steps: [
-            { sourceLabel: 'EntityCultureHealth', relationship: 'MONITORS_FOR', targetLabel: 'EntityOrgUnit' },
-            { sourceLabel: 'EntityOrgUnit', relationship: 'APPLY', targetLabel: 'EntityProcess' },
-            { sourceLabel: 'EntityProcess', relationship: 'AUTOMATION', targetLabel: 'EntityITSystem' },
-            { sourceLabel: 'EntityITSystem', relationship: 'DEPENDS_ON', targetLabel: 'EntityVendor' }
+            { sourceLabel: 'EntityCultureHealth', sourceLevel: 'L3', relationship: 'MONITORS_FOR', targetLabel: 'EntityOrgUnit', targetLevel: 'L3' },
+            { sourceLabel: 'EntityOrgUnit', sourceLevel: 'L3', relationship: 'APPLY', targetLabel: 'EntityProcess', targetLevel: 'L3' },
+            { sourceLabel: 'EntityProcess', sourceLevel: 'L3', relationship: 'AUTOMATION', targetLabel: 'EntityITSystem', targetLevel: 'L3' },
+            { sourceLabel: 'EntityITSystem', sourceLevel: 'L3', relationship: 'DEPENDS_ON', targetLabel: 'EntityVendor', targetLevel: 'L3' }
         ]
     },
 };
