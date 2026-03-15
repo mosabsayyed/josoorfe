@@ -36,7 +36,8 @@ export default function Sparkle({ imageSrc, dotCount = 600, scaleFactor = 0.52 }
       canvas.height = H;
 
       const isRTL = document.documentElement.dir === 'rtl';
-      const scale = Math.min(W / img.width, H / img.height) * scaleFactor;
+      const rawScale = Math.min(W / img.width, H / img.height) * scaleFactor;
+      const scale = Math.min(rawScale, 0.28);
       const iw = img.width * scale;
       const ih = img.height * scale;
       const ox = isRTL ? (W - iw) * 0.99 : (W - iw) * 0.01;
