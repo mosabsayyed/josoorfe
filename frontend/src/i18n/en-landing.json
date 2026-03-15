@@ -150,10 +150,10 @@
     ]
   },
   "visionMemory": {
-    "tag": "Vision 2030 Intelligence",
+    "tag": "Vision 2030 Memory",
     "title": "Complexity As Your Most Valuable Asset",
     "subtitle": "38 official publications. 150+ government entities. Thousands of targets and KPIs — previously distributed across myriad sources, now unified into a single navigable reality.",
-    "description": "We mapped thousands of Vision 2030 targets, KPIs, and policies from publicly available sources across multiple government entities, structuring them into a unified cognitive graph. Traditional dashboards and the relational databases that power them are highly effective at retrieving information, but they are inherently built against the known. They are designed to answer predefined questions, yet offer little when it comes to navigating for the purpose of discovery. In contrast, a cognitive model is built for exploration—empowering leaders to navigate complex cross-sector dependencies and uncover hidden relationships, guided entirely by the bold questions they ask. Consequently, when this methodology is applied within an organization, internal data can be interconnected in the exact same manner alongside the broader context of the Vision. Thus, transforming the complexity of your data into a strategic advantage and laying the foundation for true institutional intelligence.",
+    "description": "We extracted thousands of targets, KPIs, and policies from publicly available Vision 2030 documents and loaded them into a unified knowledge graph that reveals hidden interdependencies across government sectors.\nWhen the same methodology is applied to your entity's data, your internal complexity transforms into a strategic advantage — amplified by the context of the Vision.",
     "statValue": "1,455",
     "statLabel": "Connected Data Points from 38 Official Sources",
     "highlights": [
@@ -166,8 +166,8 @@
         "text": "Intelligently linked to the underlying sectors, entities, and execution policies that drive their success."
       },
       {
-        "bold": "Cross-sector dependencies mapped.",
-        "text": "Trace exactly how a strategic shift in one sector ripples across others, spanning 150+ government entities based on publicly available data."
+        "bold": "Your data × Vision context.",
+        "text": "Link your internal data to the same model to multiply its value and build true institutional intelligence."
       }
     ],
     "convergence": {

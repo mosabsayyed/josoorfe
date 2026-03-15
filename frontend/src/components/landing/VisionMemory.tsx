@@ -27,7 +27,6 @@ export default function VisionMemory() {
   }, []);
 
   const highlights = t('visionMemory.highlights', { returnObjects: true }) as Array<{ bold: string; text: string }>;
-  const mapScaleFactor = 0.65;
 
   return (
     <section className="content-centered" id="vision-memory" ref={sectionRef} style={{
@@ -41,60 +40,76 @@ export default function VisionMemory() {
           display: 'flex',
           flexDirection: isMobile ? 'column' : 'row',
           gap: isMobile ? '2rem' : '3rem',
-          alignItems: 'center',
+          alignItems: 'stretch',
           padding: isMobile ? '2rem 1.25rem' : '3rem',
           opacity: isVisible ? 1 : 0,
           transform: isVisible ? 'translateY(0)' : 'translateY(24px)',
           transition: 'opacity 0.7s ease, transform 0.7s ease',
         }}>
-          {/* Sparkle map layer — above card bg, below text */}
-          {!isMobile && (
-          <div style={{ position: 'absolute', inset: 0, zIndex: 0, borderRadius: '16px', overflow: 'hidden', pointerEvents: 'none' }}>
-            <Sparkle imageSrc="/att/ksa_mpbackgd.png" dotCount={1000} scaleFactor={mapScaleFactor} />
-          </div>
-          )}
-
-          {/* Left: stat + tag */}
+          {/* Map column — 3 cells: tag top, logo middle, stats bottom */}
           <div style={{
             flex: isMobile ? 'none' : '0 0 280px',
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            gap: '12px',
+            justifyContent: 'space-between',
             textAlign: 'center',
             position: 'relative',
-            zIndex: 2,
+            alignSelf: 'stretch',
           }}>
-            <img
-              src="/att/vision2030-logo.png"
-              alt="Vision 2030"
-              style={{
-                width: isMobile ? '80px' : '100px',
-                height: 'auto',
-                opacity: 0.9,
-                marginBottom: '4px',
-              }}
-            />
-            <div className="section-tag" style={{ margin: 0, color: '#fff' }}>
-              {t('visionMemory.tag')}
+            {/* Sparkle map layer — fills this column */}
+            {!isMobile && (
+            <div style={{ position: 'absolute', inset: 0, zIndex: 0, borderRadius: '12px', overflow: 'hidden', pointerEvents: 'none' }}>
+              <Sparkle imageSrc="/att/ksa_mpbackgd.png" dotCount={1000} scaleFactor={0.85} />
             </div>
-            <span style={{
-              fontSize: isMobile ? '56px' : '72px',
-              fontWeight: 800,
-              color: '#F4BB30',
-              lineHeight: 1,
+            )}
+            {/* Cell 1: tag */}
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div className="section-tag" style={{ margin: 0, color: '#fff', fontSize: '18px' }}>
+                {t('visionMemory.tag')}
+              </div>
+            </div>
+
+            {/* Cell 2: Vision logo — fixed center */}
+            <div>
+              <img
+                src="/att/vision2030-logo.png"
+                alt="Vision 2030"
+                style={{
+                  width: isMobile ? '80px' : '100px',
+                  height: 'auto',
+                  opacity: 0.9,
+                }}
+              />
+            </div>
+
+            {/* Cell 3: stats */}
+            <div style={{
+              flex: 1,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'flex-end',
+              gap: '4px',
             }}>
-              {t('visionMemory.statValue')}
-            </span>
-            <span style={{
-              fontSize: isMobile ? '14px' : '15px',
-              fontWeight: 600,
-              color: 'rgba(255, 255, 255, 0.8)',
-              letterSpacing: '0.03em',
-              maxWidth: '220px',
-            }}>
-              {t('visionMemory.statLabel')}
-            </span>
+              <span style={{
+                fontSize: isMobile ? '56px' : '72px',
+                fontWeight: 800,
+                color: '#F4BB30',
+                lineHeight: 1,
+              }}>
+                {t('visionMemory.statValue')}
+              </span>
+              <span style={{
+                fontSize: isMobile ? '14px' : '15px',
+                fontWeight: 600,
+                color: 'rgba(255, 255, 255, 0.8)',
+                letterSpacing: '0.03em',
+                maxWidth: '220px',
+              }}>
+                {t('visionMemory.statLabel')}
+              </span>
+            </div>
           </div>
 
           {/* Right: title + description + highlights */}
@@ -121,6 +136,7 @@ export default function VisionMemory() {
               color: 'var(--component-text-secondary, #D1D5DB)',
               lineHeight: 1.7,
               margin: 0,
+              whiteSpace: 'pre-line',
             }}>
               {t('visionMemory.description')}
             </p>
