@@ -239,7 +239,7 @@ Welcome to the bridge.`,
     },
     footer: {
       tagline: 'Turning complexity into your most valuable asset',
-      copyright: '© 2025 AI Twin Tech. All rights reserved.',
+      copyright: '© 2026 AI Twin Tech. All rights reserved.',
       mission: 'Systems Architect of Cognitive Government'
     }
   },
@@ -468,7 +468,7 @@ Welcome to the bridge.`,
     },
     footer: {
       tagline: 'تحويل التعقيد إلى أقوى أصولك',
-      copyright: '© 2025 AI Twin Tech. جميع الحقوق محفوظة.',
+      copyright: '© 2026 AI Twin Tech. جميع الحقوق محفوظة.',
       mission: 'مهندس أنظمة الحكومة الإدراكية'
     }
   }

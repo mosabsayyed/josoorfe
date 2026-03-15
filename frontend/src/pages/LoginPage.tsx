@@ -373,7 +373,7 @@ export function LoginPage({ language: propLanguage, onLanguageChange, onSkip, on
         </div>
 
         <div className="hero-content" style={{ fontSize: '13px', color: '#9CA3AF' }}>
-          © 2025 AI Twin Tech. All rights reserved.
+          © 2026 AI Twin Tech. All rights reserved.
         </div>
       </motion.div>
 
