@@ -120,6 +120,7 @@ export default function OntologyHome({ onContinueInChat, year, quarter }: Ontolo
   const [showAllIssues, setShowAllIssues] = useState(false);
   const [selectedLine, setSelectedLine] = useState<{ from: string; to: string } | null>(null);
   const [tracePath, setTracePath] = useState<string[]>([]); // drill-down trace stack
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
 
   // AI integration state
   const [aiModalOpen, setAiModalOpen] = useState(false);
@@ -178,16 +179,17 @@ export default function OntologyHome({ onContinueInChat, year, quarter }: Ontolo
   const serializeItem = (inst: NodeInstance, label: string): string => {
     const lines: string[] = [];
     const propsStr = serializeProps(inst.props);
-    lines.push(`- ${inst.id} ${inst.name} [${label}] — Status: ${inst.rag}${inst.rawRag !== inst.rag ? ` (raw: ${inst.rawRag})` : ''} | Impact: ${inst.impact.toFixed(1)} | Urgency: ${inst.urgency.toFixed(2)}`);
+    const statusText = inst.rag === 'red' ? 'Needs Intervention' : inst.rag === 'amber' ? 'At Risk' : inst.rag === 'green' ? 'On Track' : 'No Data';
+    lines.push(`- ${inst.id} ${inst.name} [${label}] (${inst.level}) — Status: ${statusText}${inst.rawRag !== inst.rag ? ` (underlying: ${inst.rawRag})` : ''} | Dependency Count: ${inst.impact} | Urgency: ${inst.urgency.toFixed(2)}`);
     if (propsStr) lines.push(`  Properties: ${propsStr}`);
-    if (inst.upstreamNodes.length > 0) {
-      lines.push(`  Depends on: ${inst.upstreamNodes.map(u => `${u.id} ${u.name} [${u.nodeType}](${u.rag})`).join(', ')}`);
-    }
     if (inst.downstreamNodes.length > 0) {
-      lines.push(`  Affects: ${inst.downstreamNodes.map(d => `${d.id} ${d.name} [${d.nodeType}](${d.rag})`).join(', ')}`);
+      lines.push(`  Root cause (traces down to): ${inst.downstreamNodes.map(d => `${d.id} ${d.name} [${d.nodeType}](${d.rag === 'red' ? 'Needs Intervention' : d.rag === 'amber' ? 'At Risk' : 'On Track'})`).join(', ')}`);
+    }
+    if (inst.upstreamNodes.length > 0) {
+      lines.push(`  Impacts (traces up to): ${inst.upstreamNodes.map(u => `${u.id} ${u.name} [${u.nodeType}](${u.rag === 'red' ? 'Needs Intervention' : u.rag === 'amber' ? 'At Risk' : 'On Track'})`).join(', ')}`);
     }
     if (inst.upstreamReds.length > 0) {
-      lines.push(`  Cascading reds from: ${inst.upstreamReds.map(r => `${r.id} ${r.name} [${r.nodeType}]`).join(', ')}`);
+      lines.push(`  Cascading issues from: ${inst.upstreamReds.map(r => `${r.id} ${r.name} [${r.nodeType}]`).join(', ')}`);
     }
     if (inst.linkedPlans.length > 0) {
       lines.push(`  Mitigation plans: ${inst.linkedPlans.map(p => `${p.name}(${p.status}, ${p.isOnTrack ? 'on-track' : 'off-track'})`).join(', ')}`);
@@ -998,7 +1000,22 @@ export default function OntologyHome({ onContinueInChat, year, quarter }: Ontolo
           const instances: NodeInstance[] = ragState?.nodeDetails[selectedNode] || [];
           const ragColors: Record<RagStatus, string> = { red: '#ef4444', amber: '#f59e0b', green: '#22c55e', default: '#64748b' };
 
-          // Triage sort: weighted combination of impact, urgency, and dependencies
+          // Business status label (never shows raw color names)
+          const statusLabel = (rag: RagStatus): string => {
+            if (rag === 'red') return t('ont_status_needs_intervention', 'Needs Intervention');
+            if (rag === 'amber') return t('ont_status_at_risk', 'At Risk');
+            if (rag === 'green') return t('ont_status_on_track', 'On Track');
+            return t('ont_status_no_data', 'No Data');
+          };
+
+          // Zone 1: Top 3 RED L3 items, sorted by urgency × dependency count (impact)
+          const l3Instances = instances.filter(i => (i.level || i.props?.level) === 'L3');
+          const redL3 = l3Instances.filter(i => i.rag === 'red');
+          const topPriority = redL3
+            .sort((a, b) => (b.urgency * b.impact) - (a.urgency * a.impact))
+            .slice(0, 3);
+
+          // Keep legacy sort for other uses (health bar, stats)
           const triageScore = (inst: NodeInstance) =>
             (inst.impact * 0.35) + (inst.urgency * 0.35) + (inst.downstreamNodes.length * 0.3);
           const sortByImpact = (a: NodeInstance, b: NodeInstance) =>
@@ -1006,7 +1023,6 @@ export default function OntologyHome({ onContinueInChat, year, quarter }: Ontolo
           const reds = instances.filter(i => i.rag === 'red').sort(sortByImpact);
           const ambers = instances.filter(i => i.rag === 'amber').sort(sortByImpact);
           const greens = instances.filter(i => i.rag === 'green' || i.rag === 'default');
-          const topIssues = [...reds, ...ambers].slice(0, 3);
           const counts = { green: greens.length, amber: ambers.length, red: reds.length, total: instances.length };
           const healthPct = counts.total > 0 ? Math.round((counts.green / counts.total) * 100) : 0;
 
@@ -1051,23 +1067,6 @@ export default function OntologyHome({ onContinueInChat, year, quarter }: Ontolo
             if (top.impact > 0) return t('ont_impact_cascade', { name: top.name, impact: top.impact });
             return t('ont_urgent_review', { name: top.name });
           })();
-
-          // Human-readable status for each issue
-          const getIssueContext = (inst: NodeInstance): string => {
-            if (inst.props.execute_status === 'issues') return t('ont_operations_disrupted');
-            if (inst.props.execute_status === 'at-risk') return t('ont_performance_declining');
-            if (inst.props.build_status?.includes('issues')) return t('ont_delivery_delayed');
-            if (inst.props.build_status?.includes('atrisk')) return t('ont_timeline_at_risk');
-            if (inst.props.actual_value != null && inst.props.target != null) {
-              const pct = Math.round((inst.props.actual_value / inst.props.target) * 100);
-              return t('ont_pct_of_target', { pct });
-            }
-            if (inst.props.progress_percentage != null) {
-              const pctVal = Math.round(parseFloat(inst.props.progress_percentage) * 100);
-              return t('ont_pct_progress', { pct: pctVal });
-            }
-            return inst.rag === 'red' ? t('ont_needs_intervention') : t('ont_monitor');
-          };
 
           return (
             <div className="ont-panel-overlay">
@@ -1164,15 +1163,9 @@ export default function OntologyHome({ onContinueInChat, year, quarter }: Ontolo
                 )}
 
                 {/* ── Block 1: Top Issues (standardized for ALL node types) ── */}
+                {/* ── Zone 1: Top Priority — RED L3 items sorted by urgency × dependency count ── */}
                 {(() => {
-                  const allIssues = [...reds, ...ambers];
-                  if (allIssues.length === 0) return null;
-                  const top3 = allIssues.slice(0, 3);
-                  const rest = allIssues.slice(3);
-
-                  // Get upstream/downstream connections that are red/amber for any item
-                  const getUpstreamIssues = (inst: NodeInstance): LinkedNode[] =>
-                    [...inst.upstreamNodes, ...inst.downstreamNodes].filter(n => n.rag === 'red' || n.rag === 'amber');
+                  if (topPriority.length === 0) return null;
 
                   const sectionLabel = isPropagated
                     ? (selectedNode === 'performance'
@@ -1180,95 +1173,82 @@ export default function OntologyHome({ onContinueInChat, year, quarter }: Ontolo
                         : t('ont_items_affected_build'))
                     : t('ont_priority_list');
 
-                  const renderStandardItem = (inst: NodeInstance, idx: number) => {
-                    const upstream = getUpstreamIssues(inst);
-                    return (
-                      <div key={inst.id} style={{
-                        padding: '10px 12px', borderRadius: 8,
-                        background: `${ragColors[inst.rag]}08`,
-                        border: `1px solid ${ragColors[inst.rag]}30`,
-                      }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                          <div style={{
-                            width: 22, height: 22, borderRadius: '50%', flexShrink: 0,
-                            background: `${ragColors[inst.rag]}20`, color: ragColors[inst.rag],
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            fontSize: 11, fontWeight: 700,
-                          }}>
-                            {idx + 1}
-                          </div>
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--component-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                              {inst.id && <span style={{ fontFamily: 'monospace', fontSize: 11, color: 'var(--component-text-secondary)', marginInlineEnd: 4 }}>{inst.id}</span>}
-                              {inst.name}
-                              <span style={{ fontSize: 10, color: 'var(--component-text-secondary)', marginInlineStart: 4 }}>[{nodeLbl}]</span>
-                            </div>
-                            <div style={{ fontSize: 11, color: ragColors[inst.rag], marginTop: 2 }}>
-                              {getIssueContext(inst)}
-                            </div>
-                          </div>
-                        </div>
-                        {upstream.length > 0 && (
-                          <div style={{ marginTop: 6, paddingLeft: 32 }}>
-                            <div style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--component-text-secondary)', marginBottom: 3 }}>
-                              {t('ont_affected_by')}
-                            </div>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                              {upstream.slice(0, 3).map(n => {
-                                const nTypeLbl = NODE_LABEL_KEYS[n.nodeType] ? t(NODE_LABEL_KEYS[n.nodeType]) : n.nodeType;
-                                return (
-                                  <div key={n.id} style={{ fontSize: 10, color: ragColors[n.rag], display: 'flex', alignItems: 'center', gap: 4 }}>
-                                    <span style={{ width: 5, height: 5, borderRadius: '50%', background: ragColors[n.rag], flexShrink: 0 }} />
-                                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{n.id} {n.name}</span>
-                                    <span style={{ color: 'var(--component-text-secondary)', fontSize: 9, flexShrink: 0 }}>[{nTypeLbl}]</span>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        )}
-                        <button
-                          className="ont-ai-strip-btn"
-                          style={{ fontSize: 9, padding: '2px 6px', marginTop: 6, alignSelf: 'flex-start', marginLeft: 32 }}
-                          onClick={(e) => { e.stopPropagation(); handleOntologyAI('micro', inst.id, 'item'); }}
-                          disabled={aiLoading}
-                          title={t('josoor.common.summarize')}
-                        >✦ {t('josoor.common.summarize')}</button>
-                      </div>
-                    );
-                  };
-
                   return (
                     <div style={{ marginBottom: 16 }}>
                       <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--component-text-secondary)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <span>{sectionLabel} ({allIssues.length})</span>
+                        <span>{sectionLabel} ({topPriority.length})</span>
                         <button
                           className="ont-ai-strip-btn"
                           style={{ fontSize: 9, padding: '2px 6px' }}
-                          onClick={(e) => { e.stopPropagation(); handleOntologyAI('micro', selectedNode, 'block1'); }}
+                          onClick={(e) => { e.stopPropagation(); handleOntologyAI('micro', selectedNode!, 'block1'); }}
                           disabled={aiLoading}
                           title={t('ont_analyze_top_priorities')}
                         >✦ {t('ont_analyze')}</button>
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                        {top3.map((inst, i) => renderStandardItem(inst, i))}
-                      </div>
-                      {rest.length > 0 && (
-                        <>
-                          <button
-                            onClick={(e) => { e.stopPropagation(); setShowAllIssues(!showAllIssues); }}
-                            style={{ width: '100%', marginTop: 8, padding: '6px 0', border: 'none', cursor: 'pointer', background: 'none', fontSize: 11, fontWeight: 600, color: 'var(--component-text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}
-                          >
-                            <span style={{ transform: showAllIssues ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', display: 'inline-block' }}>▼</span>
-                            {showAllIssues ? t('ont_hide') : t('ont_more_items', { count: rest.length })}
-                          </button>
-                          {showAllIssues && (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 250, overflowY: 'auto' }}>
-                              {rest.map((inst, i) => renderStandardItem(inst, i + 3))}
+                        {topPriority.map((inst, idx) => {
+                          const upstreamIssues = inst.downstreamNodes.filter(n => n.rag === 'red' || n.rag === 'amber');
+                          return (
+                            <div key={inst.id} style={{
+                              padding: '10px 12px', borderRadius: 8,
+                              background: `${ragColors[inst.rag]}08`,
+                              border: `1px solid ${ragColors[inst.rag]}30`,
+                            }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                <div style={{
+                                  width: 22, height: 22, borderRadius: '50%', flexShrink: 0,
+                                  background: `${ragColors[inst.rag]}20`, color: ragColors[inst.rag],
+                                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                  fontSize: 11, fontWeight: 700,
+                                }}>
+                                  {idx + 1}
+                                </div>
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                  <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--component-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                    {inst.id && <span style={{ fontFamily: 'monospace', fontSize: 11, color: 'var(--component-text-secondary)', marginInlineEnd: 4 }}>{inst.id}</span>}
+                                    {inst.name}
+                                    <span style={{ fontSize: 10, color: 'var(--component-text-secondary)', marginInlineStart: 4 }}>[{nodeLbl}]</span>
+                                  </div>
+                                  <div style={{ fontSize: 11, color: ragColors[inst.rag], marginTop: 2, fontWeight: 600 }}>
+                                    {statusLabel(inst.rag)}
+                                  </div>
+                                  {(inst.urgency > 0 || inst.impact > 0) && (
+                                    <div style={{ fontSize: 10, color: 'var(--component-text-secondary)', marginTop: 2 }}>
+                                      Urgency: {inst.urgency.toFixed(2)} · Dependencies: {inst.impact}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                              {upstreamIssues.length > 0 && (
+                                <div style={{ marginTop: 6, paddingLeft: 32 }}>
+                                  <div style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--component-text-secondary)', marginBottom: 3 }}>
+                                    {t('ont_root_cause', 'Root Cause')}
+                                  </div>
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                                    {upstreamIssues.slice(0, 3).map(n => {
+                                      const nTypeLbl = NODE_LABEL_KEYS[n.nodeType] ? t(NODE_LABEL_KEYS[n.nodeType]) : n.nodeType;
+                                      return (
+                                        <div key={n.id} style={{ fontSize: 10, color: ragColors[n.rag], display: 'flex', alignItems: 'center', gap: 4 }}>
+                                          <span style={{ width: 5, height: 5, borderRadius: '50%', background: ragColors[n.rag], flexShrink: 0 }} />
+                                          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{n.id} {n.name}</span>
+                                          <span style={{ color: 'var(--component-text-secondary)', fontSize: 9, flexShrink: 0 }}>[{nTypeLbl}]</span>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              )}
+                              <button
+                                className="ont-ai-strip-btn"
+                                style={{ fontSize: 9, padding: '2px 6px', marginTop: 6, alignSelf: 'flex-start', marginLeft: 32 }}
+                                onClick={(e) => { e.stopPropagation(); handleOntologyAI('micro', inst.id, 'item'); }}
+                                disabled={aiLoading}
+                                title={t('josoor.common.summarize')}
+                              >✦ {t('josoor.common.summarize')}</button>
                             </div>
-                          )}
-                        </>
-                      )}
+                          );
+                        })}
+                      </div>
                     </div>
                   );
                 })()}
@@ -1309,33 +1289,203 @@ export default function OntologyHome({ onContinueInChat, year, quarter }: Ontolo
                   );
                 })()}
 
-                {/* ── Block 2: All Items (scrollable) ── */}
-                {instances.length > 0 && (
-                  <div data-micro-target="block2" style={{ marginBottom: 16 }}>
-                    <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--component-text-secondary)', marginBottom: 8 }}>
-                      {t('ont_all_items', { count: instances.length })}
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 3, maxHeight: 200, overflowY: 'auto' }}>
-                      {instances.map(inst => (
-                        <div
-                          key={inst.id}
-                          style={{
-                            padding: '6px 10px', borderRadius: 6, display: 'flex', alignItems: 'center', gap: 6,
-                            background: `${ragColors[inst.rag]}08`,
-                            border: `1px solid ${ragColors[inst.rag]}15`,
-                          }}
-                        >
-                          <span style={{ width: 6, height: 6, borderRadius: '50%', background: ragColors[inst.rag], flexShrink: 0 }} />
+                {/* ── Zone 2: All Items — collapsible L1→L2→L3 hierarchy ── */}
+                {instances.length > 0 && (() => {
+                  // Build hierarchy
+                  interface HierarchyNode {
+                    instance: NodeInstance;
+                    children: HierarchyNode[];
+                    worstChildRag: RagStatus;
+                  }
+
+                  const ragRank = (r: RagStatus) => r === 'red' ? 3 : r === 'amber' ? 2 : r === 'green' ? 1 : 0;
+                  const worstRag = (items: NodeInstance[]): RagStatus => {
+                    let worst: RagStatus = 'default';
+                    for (const i of items) if (ragRank(i.rag) > ragRank(worst)) worst = i.rag;
+                    return worst;
+                  };
+
+                  const numSort = (a: NodeInstance, b: NodeInstance) =>
+                    a.id.localeCompare(b.id, undefined, { numeric: true });
+
+                  const l1Insts = instances.filter(i => (i.level || i.props?.level) === 'L1').sort(numSort);
+                  const l2Insts = instances.filter(i => (i.level || i.props?.level) === 'L2');
+                  const l3Insts = instances.filter(i => (i.level || i.props?.level) === 'L3');
+
+                  // Fall back to flat list when no level data
+                  const hasLevels = l1Insts.length > 0 || l2Insts.length > 0 || l3Insts.length > 0;
+
+                  const toggleExpand = (id: string) => {
+                    setExpandedIds(prev => {
+                      const next = new Set(prev);
+                      if (next.has(id)) next.delete(id); else next.add(id);
+                      return next;
+                    });
+                  };
+
+                  if (!hasLevels) {
+                    // Flat fallback
+                    return (
+                      <div data-micro-target="block2" style={{ marginBottom: 16 }}>
+                        <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--component-text-secondary)', marginBottom: 8 }}>
+                          {t('ont_all_items', { count: instances.length })}
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 3, maxHeight: 200, overflowY: 'auto' }}>
+                          {instances.map(inst => (
+                            <div key={inst.id} style={{ padding: '6px 10px', borderRadius: 6, display: 'flex', alignItems: 'center', gap: 6, background: `${ragColors[inst.rag]}08`, border: `1px solid ${ragColors[inst.rag]}15` }}>
+                              <span style={{ width: 6, height: 6, borderRadius: '50%', background: ragColors[inst.rag], flexShrink: 0 }} />
+                              <span style={{ fontSize: 12, color: 'var(--component-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
+                                <span style={{ fontFamily: 'monospace', fontSize: 9, color: 'var(--component-text-secondary)', marginInlineEnd: 3 }}>{inst.id}</span>
+                                {inst.name}
+                                <span style={{ fontSize: 9, color: 'var(--component-text-secondary)', marginInlineStart: 3 }}>[{nodeLbl}]</span>
+                              </span>
+                              <span style={{ fontSize: 9, color: ragColors[inst.rag], flexShrink: 0, fontWeight: 600 }}>{statusLabel(inst.rag)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  // Build hierarchy tree
+                  const tree: HierarchyNode[] = l1Insts.map(l1 => {
+                    const l1Prefix = l1.id.split('.')[0];
+                    const myL2s = l2Insts
+                      .filter(l2 => l2.id.startsWith(l1Prefix + '.') && l2.id.split('.').length === 2)
+                      .sort(numSort);
+                    const l2Nodes: HierarchyNode[] = myL2s.map(l2 => {
+                      const myL3s = l3Insts
+                        .filter(l3 => l3.id.startsWith(l2.id + '.'))
+                        .sort(numSort);
+                      return {
+                        instance: l2,
+                        children: myL3s.map(l3 => ({ instance: l3, children: [], worstChildRag: l3.rag })),
+                        worstChildRag: worstRag(myL3s),
+                      };
+                    });
+                    return {
+                      instance: l1,
+                      children: l2Nodes,
+                      worstChildRag: worstRag([...myL2s, ...l3Insts.filter(l3 => l3.id.startsWith(l1Prefix + '.'))]),
+                    };
+                  });
+
+                  const renderL3Item = (node: HierarchyNode) => {
+                    const inst = node.instance;
+                    const upstreamIssues = inst.downstreamNodes.filter(n => n.rag === 'red' || n.rag === 'amber');
+                    return (
+                      <div key={inst.id} style={{ padding: '8px 10px', borderRadius: 6, background: `${ragColors[inst.rag]}08`, border: `1px solid ${ragColors[inst.rag]}20`, marginBottom: 3 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <span style={{ width: 5, height: 5, borderRadius: '50%', background: ragColors[inst.rag], flexShrink: 0 }} />
                           <span style={{ fontSize: 12, color: 'var(--component-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
                             <span style={{ fontFamily: 'monospace', fontSize: 9, color: 'var(--component-text-secondary)', marginInlineEnd: 3 }}>{inst.id}</span>
                             {inst.name}
                             <span style={{ fontSize: 9, color: 'var(--component-text-secondary)', marginInlineStart: 3 }}>[{nodeLbl}]</span>
                           </span>
+                          <span style={{ fontSize: 9, color: ragColors[inst.rag], flexShrink: 0, fontWeight: 600 }}>{statusLabel(inst.rag)}</span>
                         </div>
-                      ))}
+                        {upstreamIssues.length > 0 && (
+                          <div style={{ marginTop: 4, paddingLeft: 11 }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                              {upstreamIssues.slice(0, 2).map(n => {
+                                const nTypeLbl = NODE_LABEL_KEYS[n.nodeType] ? t(NODE_LABEL_KEYS[n.nodeType]) : n.nodeType;
+                                return (
+                                  <div key={n.id} style={{ fontSize: 9, color: ragColors[n.rag], display: 'flex', alignItems: 'center', gap: 3 }}>
+                                    <span style={{ width: 4, height: 4, borderRadius: '50%', background: ragColors[n.rag], flexShrink: 0 }} />
+                                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{n.id} {n.name} [{nTypeLbl}]</span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+                        <button
+                          className="ont-ai-strip-btn"
+                          style={{ fontSize: 9, padding: '2px 6px', marginTop: 4, marginLeft: 11 }}
+                          onClick={(e) => { e.stopPropagation(); handleOntologyAI('micro', inst.id, 'item'); }}
+                          disabled={aiLoading}
+                          title={t('josoor.common.summarize')}
+                        >✦ {t('josoor.common.summarize')}</button>
+                      </div>
+                    );
+                  };
+
+                  return (
+                    <div data-micro-target="block2" style={{ marginBottom: 16 }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--component-text-secondary)', marginBottom: 8 }}>
+                        {t('ont_all_items', { count: instances.length })}
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 2, maxHeight: 400, overflowY: 'auto' }}>
+                        {tree.map(l1Node => {
+                          const l1Inst = l1Node.instance;
+                          const l1Expanded = expandedIds.has(l1Inst.id);
+                          const l1Rag = l1Node.worstChildRag !== 'default' ? l1Node.worstChildRag : l1Inst.rag;
+                          return (
+                            <div key={l1Inst.id}>
+                              {/* L1 row */}
+                              <div
+                                onClick={() => toggleExpand(l1Inst.id)}
+                                style={{
+                                  padding: '7px 10px', borderRadius: 6, display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer',
+                                  background: `${ragColors[l1Rag]}10`,
+                                  border: `1px solid ${ragColors[l1Rag]}30`,
+                                  fontWeight: 600,
+                                }}
+                              >
+                                <span style={{ width: 7, height: 7, borderRadius: '50%', background: ragColors[l1Rag], flexShrink: 0 }} />
+                                <span style={{ fontSize: 12, color: 'var(--component-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
+                                  <span style={{ fontFamily: 'monospace', fontSize: 9, color: 'var(--component-text-secondary)', marginInlineEnd: 3 }}>{l1Inst.id}</span>
+                                  {l1Inst.name}
+                                  <span style={{ fontSize: 9, color: 'var(--component-text-secondary)', marginInlineStart: 3 }}>[{nodeLbl}]</span>
+                                </span>
+                                <span style={{ fontSize: 9, color: ragColors[l1Rag], flexShrink: 0, fontWeight: 600, marginInlineEnd: 4 }}>{statusLabel(l1Rag)}</span>
+                                <span style={{ fontSize: 10, color: 'var(--component-text-secondary)', flexShrink: 0 }}>{l1Expanded ? '▼' : '▶'}</span>
+                              </div>
+                              {/* L2 rows (when L1 expanded) */}
+                              {l1Expanded && (
+                                <div style={{ paddingLeft: 12, marginTop: 2 }}>
+                                  {l1Node.children.map(l2Node => {
+                                    const l2Inst = l2Node.instance;
+                                    const l2Expanded = expandedIds.has(l2Inst.id);
+                                    const l2Rag = l2Node.worstChildRag !== 'default' ? l2Node.worstChildRag : l2Inst.rag;
+                                    return (
+                                      <div key={l2Inst.id} style={{ marginBottom: 2 }}>
+                                        {/* L2 row */}
+                                        <div
+                                          onClick={() => toggleExpand(l2Inst.id)}
+                                          style={{
+                                            padding: '6px 10px', borderRadius: 6, display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer',
+                                            background: `${ragColors[l2Rag]}08`,
+                                            border: `1px solid ${ragColors[l2Rag]}20`,
+                                          }}
+                                        >
+                                          <span style={{ width: 6, height: 6, borderRadius: '50%', background: ragColors[l2Rag], flexShrink: 0 }} />
+                                          <span style={{ fontSize: 11, color: 'var(--component-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
+                                            <span style={{ fontFamily: 'monospace', fontSize: 9, color: 'var(--component-text-secondary)', marginInlineEnd: 3 }}>{l2Inst.id}</span>
+                                            {l2Inst.name}
+                                            <span style={{ fontSize: 9, color: 'var(--component-text-secondary)', marginInlineStart: 3 }}>[{nodeLbl}]</span>
+                                          </span>
+                                          <span style={{ fontSize: 9, color: ragColors[l2Rag], flexShrink: 0, fontWeight: 600, marginInlineEnd: 4 }}>{statusLabel(l2Rag)}</span>
+                                          <span style={{ fontSize: 10, color: 'var(--component-text-secondary)', flexShrink: 0 }}>{l2Expanded ? '▼' : '▶'}</span>
+                                        </div>
+                                        {/* L3 rows (when L2 expanded) */}
+                                        {l2Expanded && (
+                                          <div style={{ paddingLeft: 12, marginTop: 2 }}>
+                                            {l2Node.children.map(l3Node => renderL3Item(l3Node))}
+                                          </div>
+                                        )}
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  );
+                })()}
 
                 {/* ── Summary Stats ── */}
                 {counts.total > 0 && (

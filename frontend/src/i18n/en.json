@@ -1531,8 +1531,8 @@
   "ont_status_distribution": "STATUS DISTRIBUTION:",
   "ont_distribution_detail": "  On Track: {{green}} | At Risk: {{amber}} | Critical: {{red}}",
   "ont_status_critical": "CRITICAL",
-  "ont_status_at_risk": "AT RISK",
-  "ont_status_on_track": "ON TRACK",
+  "ont_status_at_risk": "At Risk",
+  "ont_status_on_track": "On Track",
   "ont_items_total": "ITEMS ({{count}} total):",
   "ont_and_more": "  ... and {{count}} more",
   "ont_column_prompt": "Based on this data, analyze \"{{colName}}\": what is its current standing? What are the key issues? What dependencies affect it? And what are the actionable recommendations?",
@@ -1600,5 +1600,11 @@
   "ont_item_detail": "Item Detail",
   "ont_micro_landscape_prompt": "In 3-4 short bullets: Why is {{label}} in this state? What is the single biggest risk right now? What should be done first?",
   "ont_micro_block1_prompt": "In 3-4 short bullets: What connects these top issues? Which one, if fixed, would improve the others? What is the recommended sequence of action?",
-  "ont_micro_item_prompt": "In 3-4 short bullets: Why is \"{{name}}\" flagged? What upstream dependencies are causing this? What is the downstream impact if left unresolved? What is the one action to take now?"
+  "ont_micro_item_prompt": "In 3-4 short bullets: Why is \"{{name}}\" flagged? What upstream dependencies are causing this? What is the downstream impact if left unresolved? What is the one action to take now?",
+  "ont_status_needs_intervention": "Needs Intervention",
+  "ont_status_no_data": "No Data",
+  "ont_root_cause": "Root Cause",
+  "ont_dependency_count": "Dependency Count",
+  "ont_top_priority": "Top Priority",
+  "ont_all_items_hierarchy": "All Items"
 }

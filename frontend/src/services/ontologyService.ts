@@ -54,9 +54,10 @@ export interface LinkedPlan {
 export interface NodeInstance {
   id: string;
   name: string;
+  level: string;          // "L1" | "L2" | "L3"
   rag: RagStatus;
   rawRag: RagStatus;      // original RAG before mitigation
-  impact: number;
+  impact: number;         // dependencyCount: Performance/PolicyTool links at L2 via Risk
   urgency: number;        // 0-1 scale: 0=not urgent, 1=urgent NOW
   priority: number;       // impact × urgency
   props: Record<string, any>;
@@ -524,56 +525,78 @@ function parseChainEnvelope(envelope: any): ChainData {
 
 // All data comes from chain API responses — no direct Cypher/graph-server calls
 
-// ── Impact Scoring (upstream fan-out) ──
+// ── Dependency Count (chain-aware: Risk INFORMS Performance/PolicyTool at L2) ──
 
-function computeImpactScores(chains: ChainData[]): Map<string, number> {
-  const upstreamOf = new Map<string, Set<string>>();
-  const nodeLabels = new Map<string, string[]>();
+/**
+ * Dependency count: for any node, trace UP to its parent L2 Capability,
+ * find the corresponding L2 Risk (same ID), then count INFORMS links:
+ * - OPERATE cap (status=active): count linked SectorPerformance nodes
+ * - BUILD cap (status=planned/in_progress): count linked SectorPolicyTool nodes
+ */
+function computeDependencyCount(
+  chains: ChainData[],
+  nodesByType: Map<string, { props: Record<string, any>; labels: string[]; id: string }[]>
+): Map<string, number> {
+  // Build L2 Risk → INFORMS target map from chain links
+  const riskInformsPerf = new Map<string, Set<string>>();   // risk L2 id → perf ids
+  const riskInformsPolicy = new Map<string, Set<string>>(); // risk L2 id → policy ids
+
+  const riskNodes = nodesByType.get('risks') || [];
+  const riskL2Ids = new Set(riskNodes.filter(r => r.props.level === 'L2').map(r => r.id));
 
   for (const chain of chains) {
-    for (const n of chain.nodes) {
-      if (!nodeLabels.has(n.id)) nodeLabels.set(n.id, n.labels);
-    }
     for (const link of chain.links) {
-      if (!upstreamOf.has(link.start)) upstreamOf.set(link.start, new Set());
-      upstreamOf.get(link.start)!.add(link.end);
-    }
-  }
+      if (link.type !== 'INFORMS') continue;
+      if (!riskL2Ids.has(link.start)) continue;
 
-  const impactCache = new Map<string, number>();
-  const kpiLabels = new Set(['SectorPerformance', 'SectorObjective']);
+      // Determine target type from chain nodes
+      const targetNode = chain.nodes.find(n => n.id === link.end);
+      if (!targetNode) continue;
 
-  function bfsImpact(startId: string): number {
-    if (impactCache.has(startId)) return impactCache.get(startId)!;
-    const visited = new Set<string>();
-    const queue = [startId];
-    let impact = 0;
-    while (queue.length > 0) {
-      const current = queue.shift()!;
-      if (visited.has(current)) continue;
-      visited.add(current);
-      const labels = nodeLabels.get(current) || [];
-      if (labels.some(l => kpiLabels.has(l)) && current !== startId) {
-        impact++;
+      if (targetNode.labels.includes('SectorPerformance')) {
+        if (!riskInformsPerf.has(link.start)) riskInformsPerf.set(link.start, new Set());
+        riskInformsPerf.get(link.start)!.add(link.end);
       }
-      const neighbors = upstreamOf.get(current);
-      if (neighbors) {
-        for (const n of neighbors) {
-          if (!visited.has(n)) queue.push(n);
-        }
+      if (targetNode.labels.includes('SectorPolicyTool')) {
+        if (!riskInformsPolicy.has(link.start)) riskInformsPolicy.set(link.start, new Set());
+        riskInformsPolicy.get(link.start)!.add(link.end);
       }
     }
-    impactCache.set(startId, impact);
-    return impact;
   }
 
-  for (const chain of chains) {
-    for (const n of chain.nodes) {
-      bfsImpact(n.id);
+  // Build Capability L2 id → is operate/build map
+  const capNodes = nodesByType.get('capabilities') || [];
+  const capL2Status = new Map<string, string>(); // cap L2 id → status
+  for (const c of capNodes) {
+    if (c.props.level === 'L2') capL2Status.set(c.id, c.props.status || 'active');
+  }
+
+  // For every node: find parent L2 cap ID, find matching L2 risk, count INFORMS targets
+  const result = new Map<string, number>();
+
+  const getL2Prefix = (id: string): string => {
+    // "1.1.1" → "1.1", "1.1" → "1.1", "1.0" → "1.0"
+    const parts = id.split('.');
+    if (parts.length >= 3) return parts.slice(0, 2).join('.');
+    return id;
+  };
+
+  for (const [, instances] of nodesByType) {
+    for (const inst of instances) {
+      const l2Id = getL2Prefix(inst.id);
+      const capStatus = capL2Status.get(l2Id) || 'active';
+      const isOperate = capStatus === 'active';
+
+      const riskL2Id = l2Id; // Risk mirrors Cap ID structure
+      const count = isOperate
+        ? (riskInformsPerf.get(riskL2Id)?.size || 0)
+        : (riskInformsPolicy.get(riskL2Id)?.size || 0);
+
+      result.set(inst.id, count);
     }
   }
 
-  return impactCache;
+  return result;
 }
 
 // ── Urgency Scoring ──
@@ -1362,14 +1385,7 @@ export async function fetchOntologyRagState(
     console.log(`[OntologyService] ${chainNames[i]}: ${chain.nodes.length} nodes, ${chain.links.length} links`, labelCounts);
   }
 
-  // 1. Impact scores (upstream fan-out)
-  const impactScores = computeImpactScores(chains);
-
-  // Find max impact for normalization
-  let maxImpact = 0;
-  for (const score of impactScores.values()) {
-    if (score > maxImpact) maxImpact = score;
-  }
+  // 1. (Impact scores computed after nodesByType is built — see below)
 
   // 2. Group all selected-slice nodes by type (deduplicated)
   const allNodesByType = new Map<string, { props: Record<string, any>; labels: string[]; id: string }[]>();
@@ -1501,6 +1517,15 @@ export async function fetchOntologyRagState(
     }
   }
 
+  // 1b. Impact scores (dependency count via Risk INFORMS chain — requires nodesByType)
+  const impactScores = computeDependencyCount(chains, nodesByType);
+
+  // Find max impact for normalization
+  let maxImpact = 0;
+  for (const score of impactScores.values()) {
+    if (score > maxImpact) maxImpact = score;
+  }
+
   // 3. Downstream exposure: which nodes have upstream reds cascading into them
   const downstreamExposure = computeDownstreamExposure(chains, nodesByType, impactScores);
 
@@ -1629,6 +1654,7 @@ export async function fetchOntologyRagState(
       return {
         id: inst.id,
         name: inst.props.name || inst.props.title || extractLogicalId(inst.id),
+        level: inst.props.level || 'L3',
         rag,
         rawRag,
         impact,
