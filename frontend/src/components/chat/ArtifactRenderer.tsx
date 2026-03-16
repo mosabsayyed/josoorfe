@@ -133,7 +133,11 @@ function ArtifactRendererContent({ artifact, language = 'en', fullHeight = false
     const type = artifact.artifact_type.toUpperCase();
     switch (type) {
       case 'CHART':
-        // Using unified Highcharts renderer (same as Strategy Reports)
+        // Server-rendered chart image (media-mcp) path
+        if ((artifact.content as any)?.url) {
+          return <MediaRenderer url={(artifact.content as any).url} type="image" title={artifact.title} />;
+        }
+        // Legacy fallback: client-side Highcharts rendering
         return <StrategyReportChartRenderer artifact={artifact as ChartArtifact} width="100%" height={fullHeight ? '100%' : '400px'} />;
       case 'TABLE':
         return <TableRenderer artifact={artifact as TableArtifact} language={language} fullHeight={fullHeight} />;

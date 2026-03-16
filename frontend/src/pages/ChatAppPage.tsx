@@ -275,6 +275,20 @@ export default function ChatAppPage() {
     }
   }, [activeConversationId, messages, loadConversations]);
 
+  const handleConvertToPPT = useCallback((artifact: any) => {
+    handleSendMessage(
+      `[SYSTEM: User requested PPTX conversion of the above report "${artifact.title || 'Report'}". Follow the PPTX workflow: propose slide structure, align with user, then generate.]`,
+      { suppress_canvas_auto_open: true }
+    );
+  }, [handleSendMessage]);
+
+  const handleConvertToDocx = useCallback((artifact: any) => {
+    handleSendMessage(
+      `[SYSTEM: User requested DOCX conversion of the above report "${artifact.title || 'Report'}". Follow the DOCX workflow: propose TOC structure, align with user, then generate.]`,
+      { suppress_canvas_auto_open: true }
+    );
+  }, [handleSendMessage]);
+
   // Handlers
   const handleNewChat = useCallback(() => {
     setActiveConversationId(null);
@@ -474,6 +488,8 @@ export default function ChatAppPage() {
             isOpen={isCanvasOpen}
             onClose={() => setIsCanvasOpen(false)}
             initialArtifact={canvasArtifacts[initialCanvasIndex] || null}
+            onConvertToPPT={handleConvertToPPT}
+            onConvertToDocx={handleConvertToDocx}
           />
         </div>
       )}

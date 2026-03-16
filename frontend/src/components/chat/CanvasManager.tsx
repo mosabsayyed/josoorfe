@@ -32,9 +32,11 @@ interface CanvasManagerProps {
   artifacts?: Artifact[];
   initialArtifact?: Artifact | null;
   onClose?: () => void;
+  onConvertToPPT?: (artifact: Artifact) => void;
+  onConvertToDocx?: (artifact: Artifact) => void;
 }
 
-export function CanvasManager({ isOpen = false, conversationId = null, artifacts: propArtifacts, initialArtifact, onClose }: CanvasManagerProps) {
+export function CanvasManager({ isOpen = false, conversationId = null, artifacts: propArtifacts, initialArtifact, onClose, onConvertToPPT, onConvertToDocx }: CanvasManagerProps) {
   const [artifacts, setArtifacts] = useState<Artifact[]>([]);
   const [currentArtifact, setCurrentArtifact] = useState<Artifact | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -438,6 +440,45 @@ export function CanvasManager({ isOpen = false, conversationId = null, artifacts
               >
                 <ArrowDownTrayIcon style={{ width: '18px', height: '18px', color: 'var(--component-text-secondary)' }} />
               </button>
+              {currentArtifact && ['REPORT', 'DOCUMENT', 'HTML'].includes(currentArtifact.artifact_type?.toUpperCase()) && (
+                <>
+                  <div style={{ width: '1px', height: '20px', backgroundColor: 'var(--component-panel-border)', margin: '0 4px' }} />
+                  <button
+                    className="clickable header-button"
+                    onClick={() => onConvertToPPT?.(currentArtifact)}
+                    style={{
+                      padding: '6px 12px',
+                      fontSize: '12px',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: 'var(--component-text-secondary)',
+                    }}
+                    title={language === 'ar' ? 'تحويل إلى عرض تقديمي' : 'Convert to PowerPoint'}
+                  >
+                    PPT
+                  </button>
+                  <button
+                    className="clickable header-button"
+                    onClick={() => onConvertToDocx?.(currentArtifact)}
+                    style={{
+                      padding: '6px 12px',
+                      fontSize: '12px',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: 'var(--component-text-secondary)',
+                    }}
+                    title={language === 'ar' ? 'تحويل إلى مستند' : 'Convert to Word'}
+                  >
+                    DOCX
+                  </button>
+                </>
+              )}
               <div style={{ width: '1px', height: '20px', backgroundColor: 'var(--component-panel-border)', margin: '0 4px' }} />
             </>
           

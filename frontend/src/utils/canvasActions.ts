@@ -148,6 +148,17 @@ export const printArtifact = async (artifact?: any) => {
  * Clean, self-contained HTML that opens in any browser and prints well.
  */
 export const downloadArtifact = async (artifact: any) => {
+  // Direct URL download for FILE artifacts (PPTX, DOCX from media-mcp)
+  if (artifact?.content?.url && (artifact.artifact_type === 'FILE' || artifact.content?.url?.match(/\.(pptx|docx)$/i))) {
+    const link = document.createElement('a');
+    link.href = artifact.content.url;
+    link.download = artifact.content?.filename || artifact.title || 'download';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    return;
+  }
+
   const element = document.getElementById('canvas-content-area');
   if (!element) {
     // Fallback: save artifact JSON
