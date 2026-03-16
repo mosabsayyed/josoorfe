@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLanguage } from '../../contexts/LanguageContext';
 import './ConceptHelpPopover.css';
@@ -12,17 +12,15 @@ export const ConceptHelpOverlay: React.FC<ConceptHelpOverlayProps> = ({ active, 
   const { t } = useTranslation();
   const { language } = useLanguage();
   const isAr = language === 'ar';
-  const [clickPos, setClickPos] = useState<{ x: number; y: number } | null>(null);
   const [term, setTerm] = useState('');
   const [loading, setLoading] = useState(false);
   const [response, setResponse] = useState<{ explanation: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const panelRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   // Reset when deactivated
   useEffect(() => {
     if (!active) {
-      setClickPos(null);
       setTerm('');
       setResponse(null);
       setError(null);
@@ -30,24 +28,30 @@ export const ConceptHelpOverlay: React.FC<ConceptHelpOverlayProps> = ({ active, 
     }
   }, [active]);
 
-  // Escape dismisses response panel
+  // Auto-focus input when activated
+  useEffect(() => {
+    if (active) {
+      setTimeout(() => inputRef.current?.focus(), 100);
+    }
+  }, [active]);
+
+  // Escape clears response or closes
   useEffect(() => {
     if (!active) return;
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        setClickPos(null);
-        setTerm('');
-        setResponse(null);
-        setError(null);
+        if (response || error) {
+          setResponse(null);
+          setError(null);
+        } else {
+          setTerm('');
+        }
       }
     };
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
-  }, [active]);
+  }, [active, response, error]);
 
-  const overlayRef = useRef<HTMLDivElement>(null);
-
-  // Rich app context for each desk type — what it is, what it contains, what it's used for
   const appContext: Record<string, string> = {
     ontology: [
       'The Start Here (Ontology) app visualizes the organizational ontology as an interactive graph.',
@@ -96,63 +100,11 @@ export const ConceptHelpOverlay: React.FC<ConceptHelpOverlayProps> = ({ active, 
     ].join(' '),
   };
 
-  const handleClick = useCallback((e: React.MouseEvent) => {
-    if (panelRef.current?.contains(e.target as Node)) return;
-
-    // Hide overlay to find the real element underneath
-    if (overlayRef.current) overlayRef.current.style.pointerEvents = 'none';
-    const realTarget = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null;
-    if (overlayRef.current) overlayRef.current.style.pointerEvents = '';
-
-    if (!realTarget) return;
-
-    const tagName = realTarget.tagName.toLowerCase();
-    // Skip non-text elements
-    if (['img', 'svg', 'path', 'rect', 'circle', 'canvas', 'video', 'iframe'].includes(tagName)) return;
-    // Skip UI controls — buttons, inputs, selects, nav items
-    if (['button', 'input', 'select', 'option', 'textarea', 'a', 'nav'].includes(tagName)) return;
-    // Skip elements with button/tab/nav roles
-    const role = realTarget.getAttribute('role');
-    if (role && ['button', 'tab', 'menuitem', 'option', 'switch', 'checkbox', 'radio', 'slider', 'navigation', 'link'].includes(role)) return;
-    // Skip if inside a button or interactive control
-    if (realTarget.closest('button, a, select, input, textarea, [role="button"], [role="tab"], [role="menuitem"], [role="slider"], nav')) return;
-
-    // Get the phrase text from the clicked element (not single word)
-    let text = (realTarget.innerText || realTarget.textContent || '').trim();
-    if (!text) return;
-
-    // If too long, get direct text nodes only
-    if (text.length > 120) {
-      const directText = Array.from(realTarget.childNodes)
-        .filter(n => n.nodeType === Node.TEXT_NODE)
-        .map(n => (n.textContent || '').trim())
-        .filter(Boolean)
-        .join(' ');
-      if (directText) text = directText;
-    }
-    text = text.slice(0, 120);
-    // Skip very short text (UI labels like "3D", "EN", "×")
-    if (text.length < 4) return;
-
-    // Gather surrounding context from parent/siblings
-    const parent = realTarget.parentElement;
-    let surroundingContext = '';
-    if (parent) {
-      const parentText = (parent.innerText || '').trim().slice(0, 300);
-      if (parentText && parentText !== text) {
-        surroundingContext = parentText;
-      }
-    }
-
-    e.stopPropagation();
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const query = term.trim();
+    if (!query || query.length < 2 || loading) return;
 
-    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-
-    setClickPos({ x, y });
-    setTerm(text);
     setResponse(null);
     setError(null);
     setLoading(true);
@@ -163,12 +115,9 @@ export const ConceptHelpOverlay: React.FC<ConceptHelpOverlayProps> = ({ active, 
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        term: text,
+        term: query,
         app_name: deskType,
-        app_context: [
-          deskDescription,
-          surroundingContext ? `The term appears in this context: "${surroundingContext}"` : '',
-        ].filter(Boolean).join(' '),
+        app_context: deskDescription,
         language,
       }),
     })
@@ -179,52 +128,39 @@ export const ConceptHelpOverlay: React.FC<ConceptHelpOverlayProps> = ({ active, 
       .then(data => setResponse(data))
       .catch(() => setError(isAr ? 'تعذر الاتصال. حاول مرة أخرى.' : 'Could not connect. Please try again.'))
       .finally(() => setLoading(false));
-  }, [deskType, language, isAr]);
+  };
 
   if (!active) return null;
 
-  // Calculate panel position (keep within bounds)
-  const panelStyle: React.CSSProperties = clickPos ? {
-    position: 'absolute',
-    left: Math.min(clickPos.x, (typeof window !== 'undefined' ? window.innerWidth * 0.5 : 400)) + 'px',
-    top: clickPos.y + 'px',
-    zIndex: 200,
-  } : {};
-
   return (
-    <div
-      ref={overlayRef}
-      className="concept-help-overlay"
-      onClick={handleClick}
-      dir={isAr ? 'rtl' : 'ltr'}
-    >
-      {clickPos && term && (
-        <div className="concept-help-panel" style={panelStyle} ref={panelRef}>
-          <div className="concept-help-header">
-            <span className="concept-help-term">{term}</span>
-            <button className="concept-help-close" onClick={(e) => {
-              e.stopPropagation();
-              setClickPos(null); setTerm(''); setResponse(null); setError(null);
-            }}>&times;</button>
-          </div>
+    <div className="concept-help-search-panel" dir={isAr ? 'rtl' : 'ltr'}>
+      <form onSubmit={handleSubmit} className="concept-help-search-form">
+        <input
+          ref={inputRef}
+          type="text"
+          value={term}
+          onChange={e => setTerm(e.target.value)}
+          placeholder={isAr ? 'اكتب مصطلحاً أو مفهوماً...' : 'Type a term or concept...'}
+          className="concept-help-search-input"
+          autoComplete="off"
+        />
+        <button
+          type="submit"
+          className="concept-help-search-btn"
+          disabled={loading || term.trim().length < 2}
+        >
+          {loading ? '...' : '?'}
+        </button>
+      </form>
 
-          {loading && (
-            <div className="concept-help-loading">
-              <div className="concept-help-spinner" />
-              <span>{t('josoor.common.conceptHelpLoading')}</span>
-            </div>
-          )}
+      {error && <div className="concept-help-error">{error}</div>}
 
-          {error && <div className="concept-help-error">{error}</div>}
-
-          {response && (
-            <div className="concept-help-response">
-              <div
-                className="concept-help-explanation"
-                dangerouslySetInnerHTML={{ __html: response.explanation }}
-              />
-            </div>
-          )}
+      {response && (
+        <div className="concept-help-response">
+          <div
+            className="concept-help-explanation"
+            dangerouslySetInnerHTML={{ __html: response.explanation }}
+          />
         </div>
       )}
     </div>

@@ -161,42 +161,52 @@ export default function OntologyHome({ onContinueInChat, year, quarter }: Ontolo
       });
   }, [year, quarter]);
 
-  // ── AI Query Builders ──
-  const buildExecutiveQuery = useCallback((): string => {
-    if (!ragState) return '';
-    const strip = ragState.stripData || [];
-    const period = `${year || 2026} Q${quarter || '1'}`;
-    const lines: string[] = [
-      t('ont_sector_dashboard_overview'),
-      t('ont_period', { period }),
-      ``,
-      t('ont_status_summary_by_domain'),
-    ];
-    for (const s of strip) {
-      const colName = COLUMN_TITLE_KEYS[s.column] ? t(COLUMN_TITLE_KEYS[s.column]) : s.column;
-      lines.push(t('ont_domain_status', { colName, green: s.green, amber: s.amber, red: s.red }));
-      if (s.narrative) lines.push(`    ${t('ont_summary')}: ${s.narrative}`);
+  // ── Serialization helpers ──
+
+  // Serialize all relevant props from a node (skip noise like embeddings, internal IDs)
+  const serializeProps = (props: Record<string, any>): string => {
+    const skip = new Set(['embedding', 'vector', 'id', 'name', 'title', 'year', 'quarter', 'level']);
+    const parts: string[] = [];
+    for (const [k, v] of Object.entries(props)) {
+      if (skip.has(k) || v == null || v === '' || v === 'null') continue;
+      parts.push(`${k}: ${v}`);
     }
-    const reds: string[] = [];
-    const ambers: string[] = [];
-    for (const [nodeType, instances] of Object.entries(ragState.nodeDetails)) {
-      const label = NODE_LABEL_KEYS[nodeType] ? t(NODE_LABEL_KEYS[nodeType]) : nodeType;
-      for (const inst of instances) {
-        if (inst.rag === 'red' && reds.length < 10) reds.push(`[${inst.id}] ${inst.name} (${label})`);
-        if (inst.rag === 'amber' && ambers.length < 10) ambers.push(`[${inst.id}] ${inst.name} (${label})`);
-      }
+    return parts.join(' | ');
+  };
+
+  // Serialize a single NodeInstance with ALL data
+  const serializeItem = (inst: NodeInstance, label: string): string => {
+    const lines: string[] = [];
+    const propsStr = serializeProps(inst.props);
+    lines.push(`- ${inst.id} ${inst.name} [${label}] — Status: ${inst.rag}${inst.rawRag !== inst.rag ? ` (raw: ${inst.rawRag})` : ''} | Impact: ${inst.impact.toFixed(1)} | Urgency: ${inst.urgency.toFixed(2)}`);
+    if (propsStr) lines.push(`  Properties: ${propsStr}`);
+    if (inst.upstreamNodes.length > 0) {
+      lines.push(`  Depends on: ${inst.upstreamNodes.map(u => `${u.id} ${u.name} [${u.nodeType}](${u.rag})`).join(', ')}`);
     }
-    lines.push(``, t('ont_critical_items'), reds.length ? reds.map(r => `  - ${r}`).join('\n') : t('ont_none'));
-    lines.push(``, t('ont_at_risk_items'), ambers.length ? ambers.map(a => `  - ${a}`).join('\n') : t('ont_none'));
-    if (ragState.lineFlowHealth) {
-      lines.push(``, t('ont_value_chain_integrity'));
-      for (const [key, health] of Object.entries(ragState.lineFlowHealth) as [string, { status: string; orphans: number; bastards: number }][]) {
-        lines.push(t('ont_chain_health', { key, status: health.status, orphans: health.orphans, bastards: health.bastards }));
-      }
+    if (inst.downstreamNodes.length > 0) {
+      lines.push(`  Affects: ${inst.downstreamNodes.map(d => `${d.id} ${d.name} [${d.nodeType}](${d.rag})`).join(', ')}`);
     }
-    lines.push(``, t('ont_executive_prompt'));
+    if (inst.upstreamReds.length > 0) {
+      lines.push(`  Cascading reds from: ${inst.upstreamReds.map(r => `${r.id} ${r.name} [${r.nodeType}]`).join(', ')}`);
+    }
+    if (inst.linkedPlans.length > 0) {
+      lines.push(`  Mitigation plans: ${inst.linkedPlans.map(p => `${p.name}(${p.status}, ${p.isOnTrack ? 'on-track' : 'off-track'})`).join(', ')}`);
+    }
     return lines.join('\n');
-  }, [ragState, t, year, quarter]);
+  };
+
+  // Serialize all items for a node type
+  const serializeNodeType = (nodeType: string, instances: NodeInstance[]): string => {
+    const label = NODE_LABEL_KEYS[nodeType] ? t(NODE_LABEL_KEYS[nodeType]) : nodeType;
+    if (instances.length === 0) return `\n${label}: (none)`;
+    const lines: string[] = [`\n${label} (${instances.length} total):`];
+    for (const inst of instances) {
+      lines.push(serializeItem(inst, label));
+    }
+    return lines.join('\n');
+  };
+
+  // ── AI Query Builders ──
 
   const COLUMN_NODE_MAP: Record<string, string[]> = {
     goals: ['sectorObjectives'],
@@ -206,75 +216,151 @@ export default function OntologyHome({ onContinueInChat, year, quarter }: Ontolo
     velocity: ['projects', 'changeAdoption', 'cultureHealth', 'vendors'],
   };
 
+  const buildExecutiveQuery = useCallback((): string => {
+    if (!ragState) return '';
+    const period = `${year || 2026} Q${quarter || '1'}`;
+    const lines: string[] = [
+      `SECTOR ONTOLOGY — FULL DATA SNAPSHOT`,
+      `Period: ${period}`,
+      ``,
+      `═══ DOMAIN SUMMARY ═══`,
+    ];
+
+    // Strip data per column
+    for (const s of ragState.stripData || []) {
+      const colName = COLUMN_TITLE_KEYS[s.column] ? t(COLUMN_TITLE_KEYS[s.column]) : s.column;
+      lines.push(`${colName}: ${s.green} on-track | ${s.amber} at-risk | ${s.red} critical (total: ${s.total})`);
+      if (s.narrative) lines.push(`  Summary: ${s.narrative}`);
+    }
+
+    // Risk stats
+    if (ragState.riskStats) {
+      const rs = ragState.riskStats;
+      lines.push(``, `═══ RISK BREAKDOWN ═══`);
+      lines.push(`BUILD risks: ${rs.buildRed} red | ${rs.buildAmber} amber | ${rs.buildGreen} green`);
+      lines.push(`OPERATE risks: ${rs.operateRed} red | ${rs.operateAmber} amber | ${rs.operateGreen} green`);
+      lines.push(`Total risks: ${rs.total}`);
+    }
+
+    // Chain health
+    if (ragState.lineDetails) {
+      lines.push(``, `═══ VALUE CHAIN INTEGRITY ═══`);
+      for (const [key, h] of Object.entries(ragState.lineDetails)) {
+        lines.push(`${key}: ${h.rag} | connectivity: ${(h.connectivity * 100).toFixed(0)}% | links: ${h.linkCount} | orphans: ${h.orphanCount} | broken: ${h.bastardCount}`);
+        if (h.disconnectedFrom.length > 0) lines.push(`  Disconnected sources: ${h.disconnectedFrom.map(d => d.name).join(', ')}`);
+        if (h.disconnectedTo.length > 0) lines.push(`  Disconnected targets: ${h.disconnectedTo.map(d => d.name).join(', ')}`);
+      }
+    }
+
+    // ALL items by type with ALL properties
+    lines.push(``, `═══ COMPLETE ITEM DATA ═══`);
+    for (const [nodeType, instances] of Object.entries(ragState.nodeDetails)) {
+      lines.push(serializeNodeType(nodeType, instances));
+    }
+
+    lines.push(``, t('ont_executive_prompt'));
+    return lines.join('\n');
+  }, [ragState, t, year, quarter]);
+
   const buildColumnQuery = useCallback((columnKey: string): string => {
     if (!ragState) return '';
     const strip = ragState.stripData?.find(s => s.column === columnKey);
     const colName = COLUMN_TITLE_KEYS[columnKey] ? t(COLUMN_TITLE_KEYS[columnKey]) : columnKey;
     const period = `${year || 2026} Q${quarter || '1'}`;
     const lines: string[] = [
-      t('ont_sector_analysis', { colName }),
-      t('ont_period', { period }),
+      `${colName} — FULL DOMAIN DATA`,
+      `Period: ${period}`,
       ``,
     ];
+
     if (strip) {
-      lines.push(t('ont_status_distribution'));
-      lines.push(t('ont_distribution_detail', { green: strip.green, amber: strip.amber, red: strip.red }));
-      if (strip.narrative) lines.push(`  ${t('ont_summary')}: ${strip.narrative}`);
+      lines.push(`Status distribution: ${strip.green} on-track | ${strip.amber} at-risk | ${strip.red} critical (total: ${strip.total})`);
+      if (strip.narrative) lines.push(`Summary: ${strip.narrative}`);
     }
+
+    // ALL items in this column with ALL properties
     const nodeTypes = COLUMN_NODE_MAP[columnKey] || [];
-    const items: string[] = [];
+    lines.push(``, `═══ ALL ITEMS ═══`);
     for (const nt of nodeTypes) {
       const instances = ragState.nodeDetails[nt] || [];
-      const label = NODE_LABEL_KEYS[nt] ? t(NODE_LABEL_KEYS[nt]) : nt;
-      for (const inst of instances) {
-        const status = inst.rag === 'red' ? t('ont_status_critical') : inst.rag === 'amber' ? t('ont_status_at_risk') : t('ont_status_on_track');
-        items.push(`  - [${inst.id}] ${inst.name} (${label}) — ${status}`);
+      lines.push(serializeNodeType(nt, instances));
+    }
+
+    // Related chain health for this column
+    if (ragState.lineDetails) {
+      const relevantChains: Record<string, string[]> = {
+        goals: ['setting_strategic_initiatives', 'setting_strategic_priorities', 'sector_value_chain'],
+        sector: ['sector_value_chain'],
+        health: ['capability_to_policy', 'capability_to_performance'],
+        capacity: ['setting_strategic_initiatives', 'setting_strategic_priorities', 'change_to_capability', 'sustainable_operations'],
+        velocity: ['setting_strategic_initiatives', 'change_to_capability', 'sustainable_operations'],
+      };
+      const chains = relevantChains[columnKey] || [];
+      if (chains.length > 0) {
+        lines.push(``, `═══ RELATED CHAIN HEALTH ═══`);
+        for (const key of chains) {
+          const h = ragState.lineDetails[key];
+          if (h) {
+            lines.push(`${key}: ${h.rag} | connectivity: ${(h.connectivity * 100).toFixed(0)}% | orphans: ${h.orphanCount} | broken: ${h.bastardCount}`);
+          }
+        }
       }
     }
-    if (items.length) {
-      lines.push(``, t('ont_items_total', { count: items.length }), ...items.slice(0, 30));
-      if (items.length > 30) lines.push(t('ont_and_more', { count: items.length - 30 }));
-    }
+
     lines.push(``, t('ont_column_prompt', { colName }));
     return lines.join('\n');
   }, [ragState, t, year, quarter]);
 
   const buildMicroQuery = useCallback((target: string, scope: 'landscape' | 'block1' | 'item'): string => {
     if (!ragState) return '';
+
     if (scope === 'landscape') {
-      const nodeRag = ragState.nodeRag[target] ?? 'default';
-      const count = ragState.nodeDetails[target]?.length ?? 0;
       const instances = ragState.nodeDetails[target] || [];
-      const redCount = instances.filter(i => i.rag === 'red').length;
-      const amberCount = instances.filter(i => i.rag === 'amber').length;
       const label = NODE_LABEL_KEYS[target] ? t(NODE_LABEL_KEYS[target]) : target;
-      return t('ont_micro_category', { label, status: nodeRag, count, redCount, amberCount })
-        + '\n\n' + t('ont_micro_landscape_prompt', { label });
+      const lines: string[] = [
+        `${label} — FULL CATEGORY DATA`,
+        `Overall status: ${ragState.nodeRag[target] ?? 'default'} | Total: ${instances.length} | Red: ${instances.filter(i => i.rag === 'red').length} | Amber: ${instances.filter(i => i.rag === 'amber').length} | Green: ${instances.filter(i => i.rag === 'green').length}`,
+        ``,
+        `═══ ALL ITEMS ═══`,
+      ];
+      for (const inst of instances) {
+        lines.push(serializeItem(inst, label));
+      }
+      lines.push(``, t('ont_micro_landscape_prompt', { label }));
+      return lines.join('\n');
     }
+
     if (scope === 'block1') {
       const instances = ragState.nodeDetails[target] || [];
-      const top3 = instances.filter(i => i.rag === 'red' || i.rag === 'amber').slice(0, 3);
+      const issues = instances.filter(i => i.rag === 'red' || i.rag === 'amber');
       const label = NODE_LABEL_KEYS[target] ? t(NODE_LABEL_KEYS[target]) : target;
-      const items = top3.map(i => `${i.name}(${i.rag})`).join(', ');
-      return t('ont_micro_top_issues', { label, items })
-        + '\n\n' + t('ont_micro_block1_prompt');
+      const lines: string[] = [
+        `${label} — TOP ISSUES (${issues.length} red/amber items)`,
+        ``,
+      ];
+      for (const inst of issues) {
+        lines.push(serializeItem(inst, label));
+      }
+      lines.push(``, t('ont_micro_block1_prompt'));
+      return lines.join('\n');
     }
+
     // scope === 'item'
     let inst: NodeInstance | undefined;
-    for (const insts of Object.values(ragState.nodeDetails)) {
+    let instType = '';
+    for (const [nodeType, insts] of Object.entries(ragState.nodeDetails)) {
       inst = insts.find(i => i.id === target);
-      if (inst) break;
+      if (inst) { instType = nodeType; break; }
     }
-    if (!inst) return t('ont_micro_item', { target });
-    const upLinks = inst.upstreamNodes.slice(0, 3).map(u => `${u.name}(${u.rag})`).join(', ');
-    const downLinks = inst.downstreamNodes.slice(0, 3).map(d => `${d.name}(${d.rag})`).join(', ');
-    return t('ont_micro_item_detail', {
-      name: inst.name,
-      id: inst.id,
-      rag: inst.rag,
-      upLinks: upLinks || t('ont_micro_none'),
-      downLinks: downLinks || t('ont_micro_none'),
-    }) + '\n\n' + t('ont_micro_item_prompt', { name: inst.name });
+    if (!inst) return `Item ${target} not found in current data.`;
+    const label = NODE_LABEL_KEYS[instType] ? t(NODE_LABEL_KEYS[instType]) : instType;
+    const lines: string[] = [
+      `${inst.name} — FULL ITEM DATA`,
+      ``,
+      serializeItem(inst, label),
+    ];
+    lines.push(``, t('ont_micro_item_prompt', { name: inst.name }));
+    return lines.join('\n');
   }, [ragState, t]);
 
   // Professional column titles (not internal keys) — maps to i18n keys (ont_col_*)
@@ -298,10 +384,6 @@ export default function OntologyHome({ onContinueInChat, year, quarter }: Ontolo
 
     if (!query) return;
 
-    // Exit help mode after a micro click
-    if (tier === 'micro') {
-      if (onHelpToggle) onHelpToggle(); else setMicroHelpModeInternal(false);
-    }
 
     // Resolve title for micro tooltip
     const microScope = scope || 'landscape';
@@ -312,12 +394,16 @@ export default function OntologyHome({ onContinueInChat, year, quarter }: Ontolo
       } else if (microScope === 'block1') {
         microTitle = t('ont_top_issues');
       } else {
-        // single item — find its name
+        // single item — find its id + name + type
         let itemName = context;
         if (ragState) {
-          for (const insts of Object.values(ragState.nodeDetails)) {
+          for (const [nodeType, insts] of Object.entries(ragState.nodeDetails)) {
             const found = insts.find(i => i.id === context);
-            if (found) { itemName = found.name; break; }
+            if (found) {
+              const typeLbl = NODE_LABEL_KEYS[nodeType] ? t(NODE_LABEL_KEYS[nodeType]) : nodeType;
+              itemName = `${found.id} ${found.name} [${typeLbl}]`;
+              break;
+            }
           }
         }
         microTitle = itemName;
@@ -1112,11 +1198,10 @@ export default function OntologyHome({ onContinueInChat, year, quarter }: Ontolo
                             {idx + 1}
                           </div>
                           <div style={{ flex: 1, minWidth: 0 }}>
-                            {inst.id && (
-                              <div style={{ fontSize: 10, color: 'var(--component-text-secondary)', fontFamily: 'monospace' }}>{inst.id}</div>
-                            )}
                             <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--component-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {inst.id && <span style={{ fontFamily: 'monospace', fontSize: 11, color: 'var(--component-text-secondary)', marginInlineEnd: 4 }}>{inst.id}</span>}
                               {inst.name}
+                              <span style={{ fontSize: 10, color: 'var(--component-text-secondary)', marginInlineStart: 4 }}>[{nodeLbl}]</span>
                             </div>
                             <div style={{ fontSize: 11, color: ragColors[inst.rag], marginTop: 2 }}>
                               {getIssueContext(inst)}
@@ -1134,8 +1219,8 @@ export default function OntologyHome({ onContinueInChat, year, quarter }: Ontolo
                                 return (
                                   <div key={n.id} style={{ fontSize: 10, color: ragColors[n.rag], display: 'flex', alignItems: 'center', gap: 4 }}>
                                     <span style={{ width: 5, height: 5, borderRadius: '50%', background: ragColors[n.rag], flexShrink: 0 }} />
-                                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{n.name}</span>
-                                    <span style={{ color: 'var(--component-text-secondary)', fontSize: 9, flexShrink: 0 }}>({nTypeLbl})</span>
+                                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{n.id} {n.name}</span>
+                                    <span style={{ color: 'var(--component-text-secondary)', fontSize: 9, flexShrink: 0 }}>[{nTypeLbl}]</span>
                                   </div>
                                 );
                               })}
@@ -1241,11 +1326,10 @@ export default function OntologyHome({ onContinueInChat, year, quarter }: Ontolo
                           }}
                         >
                           <span style={{ width: 6, height: 6, borderRadius: '50%', background: ragColors[inst.rag], flexShrink: 0 }} />
-                          <span style={{ fontSize: 9, color: 'var(--component-text-secondary)', fontFamily: 'monospace', flexShrink: 0 }}>
-                            {inst.id}
-                          </span>
                           <span style={{ fontSize: 12, color: 'var(--component-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
+                            <span style={{ fontFamily: 'monospace', fontSize: 9, color: 'var(--component-text-secondary)', marginInlineEnd: 3 }}>{inst.id}</span>
                             {inst.name}
+                            <span style={{ fontSize: 9, color: 'var(--component-text-secondary)', marginInlineStart: 3 }}>[{nodeLbl}]</span>
                           </span>
                         </div>
                       ))}

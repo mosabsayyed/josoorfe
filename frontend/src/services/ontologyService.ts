@@ -1410,7 +1410,15 @@ export async function fetchOntologyRagState(
   // Cumulative node types: once a node appears in year X, it persists in all future years
   // unless a newer version (same base ID) exists. Dedup by base ID keeping most recent.
   // Measurement nodes: exact year/quarter match only.
-  const CUMULATIVE_TYPES = new Set(['capabilities', 'risks', 'policyTools', 'orgUnits', 'itSystems', 'processes', 'performance', 'vendors', 'projects']);
+  // All node types are cumulative: carry forward until replaced by a newer version.
+  // Include all with year <= selected, dedup by base ID keeping most recent.
+  // RiskPlan has no year/quarter — always passes through.
+  const CUMULATIVE_TYPES = new Set([
+    'capabilities', 'policyTools', 'orgUnits', 'itSystems', 'processes',
+    'sectorObjectives', 'performance', 'risks', 'projects',
+    'changeAdoption', 'cultureHealth', 'vendors',
+    'adminRecords', 'dataTransactions', 'riskPlans',
+  ]);
 
   // node.id is the short string id (e.g. "1.0"). Dedup key for cumulative = n.id (within type bucket).
   const nodesByType = new Map<string, { props: Record<string, any>; labels: string[]; id: string }[]>();
@@ -1524,6 +1532,8 @@ export async function fetchOntologyRagState(
       const businessFrom = flipped ? link.end : link.start;  // provider/enabler
       const businessTo = flipped ? link.start : link.end;     // dependent/consumer
 
+      // Skip self-references
+      if (businessFrom === businessTo) continue;
       if (!directDownstream.has(businessFrom)) directDownstream.set(businessFrom, new Set());
       directDownstream.get(businessFrom)!.add(businessTo);
       if (!directUpstream.has(businessTo)) directUpstream.set(businessTo, new Set());
@@ -1585,24 +1595,24 @@ export async function fetchOntologyRagState(
       const ragOrder = (r: RagStatus) => r === 'red' ? 0 : r === 'amber' ? 1 : 2;
       const sortLinked = (a: LinkedNode, b: LinkedNode) => ragOrder(a.rag) - ragOrder(b.rag);
 
-      // Direct downstream linked nodes (I affect these)
+      // Direct downstream linked nodes (I affect these) — exclude same-type
       const targets = directDownstream.get(inst.id);
       const downstreamNodes: LinkedNode[] = [];
       if (targets) {
         for (const targetId of targets) {
           const info = nodeInfoById.get(targetId);
-          if (info) downstreamNodes.push({ id: targetId, ...info });
+          if (info && info.nodeType !== nodeKey) downstreamNodes.push({ id: targetId, ...info });
         }
       }
       downstreamNodes.sort(sortLinked);
 
-      // Direct upstream linked nodes (these affect me)
+      // Direct upstream linked nodes (these affect me) — exclude same-type
       const sources = directUpstream.get(inst.id);
       const upstreamNodes: LinkedNode[] = [];
       if (sources) {
         for (const srcId of sources) {
           const info = nodeInfoById.get(srcId);
-          if (info) upstreamNodes.push({ id: srcId, ...info });
+          if (info && info.nodeType !== nodeKey) upstreamNodes.push({ id: srcId, ...info });
         }
       }
       upstreamNodes.sort(sortLinked);

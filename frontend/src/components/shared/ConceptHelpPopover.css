@@ -1,88 +1,84 @@
-/* ── Concept Help Click Mode Overlay ── */
-.concept-help-overlay {
+/* ── Concept Help Search Panel ── */
+.concept-help-search-panel {
   position: absolute;
-  inset: 0;
-  z-index: 150;
-  cursor: help;
-}
-
-.concept-help-overlay * {
-  cursor: help !important;
-}
-
-/* ── Floating Response Panel ── */
-.concept-help-panel {
-  width: 300px;
-  max-height: 360px;
-  overflow-y: auto;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 200;
+  width: 360px;
+  max-width: calc(100vw - 32px);
   background: var(--glass-bg, rgba(15, 15, 25, 0.96));
   border: 1px solid var(--border-color, rgba(255, 255, 255, 0.12));
-  border-radius: 10px;
+  border-radius: 12px;
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
   padding: 12px;
   backdrop-filter: blur(16px);
   display: flex;
   flex-direction: column;
   gap: 8px;
-  transform: translateY(8px);
 }
 
-.concept-help-panel * {
-  cursor: default !important;
+.concept-help-search-panel,
+.concept-help-search-panel * {
+  font-family: 'Tajawal', 'Inter', sans-serif;
 }
 
-.concept-help-header {
+.concept-help-search-panel h1,
+.concept-help-search-panel h2,
+.concept-help-search-panel h3 {
+  font-family: 'Cairo', 'Inter', sans-serif;
+}
+
+.concept-help-search-form {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
   gap: 8px;
-}
-
-.concept-help-term {
-  font-size: 0.8125rem;
-  font-weight: 700;
-  color: var(--component-text-accent, #f4bb30);
-  line-height: 1.3;
-  word-break: break-word;
-}
-
-.concept-help-close {
-  background: none;
-  border: none;
-  color: var(--text-secondary, #9ca3af);
-  font-size: 18px;
-  cursor: pointer !important;
-  padding: 0 2px;
-  line-height: 1;
-  flex-shrink: 0;
-}
-
-.concept-help-close:hover {
-  color: var(--text-primary, #e5e7eb);
-}
-
-.concept-help-loading {
-  display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 0;
+}
+
+.concept-help-search-input {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 0.875rem;
+  color: var(--text-primary, #e5e7eb);
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.concept-help-search-input::placeholder {
   color: var(--text-secondary, #9ca3af);
-  font-size: 0.8125rem;
 }
 
-.concept-help-spinner {
-  width: 14px;
-  height: 14px;
-  border: 2px solid rgba(99, 102, 241, 0.2);
-  border-top-color: #6366f1;
-  border-radius: 50%;
-  animation: concept-help-spin 0.8s linear infinite;
+.concept-help-search-input:focus {
+  border-color: var(--component-text-accent, #f4bb30);
 }
 
-@keyframes concept-help-spin {
-  to { transform: rotate(360deg); }
+.concept-help-search-btn {
+  background: var(--component-text-accent, #f4bb30);
+  color: #000;
+  border: none;
+  border-radius: 8px;
+  width: 36px;
+  height: 36px;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: opacity 0.2s;
 }
 
+.concept-help-search-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.concept-help-search-btn:not(:disabled):hover {
+  opacity: 0.85;
+}
+
+/* ── Response ── */
 .concept-help-error {
   color: #f87171;
   font-size: 0.8125rem;
@@ -92,27 +88,68 @@
 .concept-help-response {
   padding: 6px 0 0;
   border-top: 1px solid rgba(255, 255, 255, 0.06);
+  max-height: 300px;
+  overflow-y: auto;
 }
 
 .concept-help-explanation {
   color: var(--text-primary, #e5e7eb);
   font-size: 0.8125rem;
   line-height: 1.6;
-  margin: 0 0 8px;
-  white-space: pre-wrap;
+  margin: 0;
 }
 
-.concept-help-sources {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
+.concept-help-explanation h1,
+.concept-help-explanation h2,
+.concept-help-explanation h3 {
+  color: var(--component-text-accent, #f4bb30);
+  font-size: 0.875rem;
+  font-weight: 700;
+  margin: 8px 0 4px;
 }
 
-.concept-help-source-tag {
-  background: rgba(99, 102, 241, 0.12);
-  border: 1px solid rgba(99, 102, 241, 0.25);
-  color: #a5b4fc;
+.concept-help-explanation h1:first-child,
+.concept-help-explanation h2:first-child,
+.concept-help-explanation h3:first-child {
+  margin-top: 0;
+}
+
+.concept-help-explanation p {
+  margin: 4px 0;
+}
+
+.concept-help-explanation strong,
+.concept-help-explanation b {
+  color: var(--component-text-accent, #f4bb30);
+  font-weight: 600;
+}
+
+.concept-help-explanation ul,
+.concept-help-explanation ol {
+  margin: 4px 0;
+  padding-inline-start: 18px;
+}
+
+.concept-help-explanation li {
+  margin: 2px 0;
+}
+
+.concept-help-explanation code {
+  background: rgba(255, 255, 255, 0.08);
+  padding: 1px 4px;
+  border-radius: 3px;
   font-size: 0.75rem;
-  padding: 3px 8px;
-  border-radius: 4px;
+}
+
+.concept-help-explanation a {
+  color: var(--component-text-accent, #f4bb30);
+  text-decoration: underline;
+}
+
+.concept-help-explanation blockquote {
+  border-inline-start: 2px solid var(--component-text-accent, #f4bb30);
+  padding-inline-start: 10px;
+  margin: 6px 0;
+  color: var(--text-secondary, #9ca3af);
+  font-style: italic;
 }

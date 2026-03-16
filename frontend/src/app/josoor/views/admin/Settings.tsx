@@ -16,7 +16,8 @@ import { adminService } from '../../../../services/adminService';
 import './Settings.css';
 
 export default function AdminSettings() {
-    const { token } = useAuth();
+    const { token, user } = useAuth();
+    const isViewer = user?.role === 'viewer';
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [saveLoading, setSaveLoading] = useState(false);
@@ -217,6 +218,12 @@ export default function AdminSettings() {
                 </div>
             )}
 
+            {isViewer && (
+                <div style={{ padding: '8px 12px', background: 'rgba(244, 187, 48, 0.1)', border: '1px solid rgba(244, 187, 48, 0.3)', borderRadius: '6px', marginBottom: '16px', fontSize: '13px', color: '#F4BB30' }}>
+                    View-only mode — settings cannot be modified with this account.
+                </div>
+            )}
+            <fieldset disabled={isViewer} style={{ border: 'none', padding: 0, margin: 0, opacity: isViewer ? 0.7 : 1 }}>
             <div className="settings-layout">
                 {/* LEFT COLUMN - Provider Configuration */}
                 <div className="settings-column">
@@ -338,7 +345,7 @@ export default function AdminSettings() {
                                     <button
                                         className="btn-primary"
                                         onClick={saveProvider}
-                                        disabled={saveLoading || testLoading}
+                                        disabled={saveLoading || testLoading || isViewer}
                                     >
                                         {saveLoading ? <RefreshCw className="spinning icon-sm" /> : <Check className="icon-sm" />}
                                         Save Provider
@@ -347,7 +354,7 @@ export default function AdminSettings() {
                                     <button
                                         className="btn-secondary"
                                         onClick={testProvider}
-                                        disabled={saveLoading || testLoading}
+                                        disabled={saveLoading || testLoading || isViewer}
                                     >
                                         {testLoading ? <RefreshCw className="spinning icon-sm" /> : <AlertCircle className="icon-sm" />}
                                         Test Connection
@@ -357,7 +364,7 @@ export default function AdminSettings() {
                                         <button
                                             className="btn-secondary"
                                             onClick={activateProvider}
-                                            disabled={saveLoading || testLoading}
+                                            disabled={saveLoading || testLoading || isViewer}
                                         >
                                             Set as Active
                                         </button>
@@ -456,7 +463,7 @@ export default function AdminSettings() {
                         <button
                             className="btn-primary"
                             onClick={saveSystemSettings}
-                            disabled={saveLoading}
+                            disabled={saveLoading || isViewer}
                         >
                             {saveLoading ? <RefreshCw className="spinning icon-sm" /> : <SettingsIcon className="icon-sm" />}
                             Save System Settings
@@ -464,6 +471,7 @@ export default function AdminSettings() {
                     </div>
                 </div>
             </div>
+            </fieldset>
         </div>
     );
 }

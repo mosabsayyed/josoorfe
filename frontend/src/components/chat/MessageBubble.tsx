@@ -49,6 +49,14 @@ export function MessageBubble({
 
   const isRTL = language === 'ar';
 
+  // Detect if message content is Arabic by checking for Arabic Unicode range
+  const contentIsArabic = useMemo(() => {
+    const text = message.content || '';
+    const arabicChars = (text.match(/[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF]/g) || []).length;
+    const latinChars = (text.match(/[a-zA-Z]/g) || []).length;
+    return arabicChars > latinChars;
+  }, [message.content]);
+
   const handleCopy = () => {
     if (onCopy) onCopy();
     navigator.clipboard.writeText(message.content);
@@ -388,7 +396,7 @@ export function MessageBubble({
             <div className="compaction-indicator-line"></div>
           </div>
         )}
-        <div className={`message-bubble ${isUser ? 'message-bubble--user' : 'message-bubble--bot'} clickable`} dir={language === 'ar' ? 'rtl' : 'ltr'}>
+        <div className={`message-bubble ${isUser ? 'message-bubble--user' : 'message-bubble--bot'} clickable`} dir={contentIsArabic ? 'rtl' : 'ltr'}>
           <div className="message-bubble-inner">
             {/* Thinking Process (Reasoning) */}
             {!isUser && message.metadata?.memory_process?.thought_trace && (
