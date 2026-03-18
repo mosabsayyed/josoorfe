@@ -42,6 +42,9 @@ export interface LinkedNode {
   name: string;
   nodeType: string;
   rag: RagStatus;
+  level?: string;              // "L1" | "L2" | "L3"
+  mode?: 'BUILD' | 'OPERATE';  // for capabilities: active=OPERATE, else=BUILD
+  relationship?: string;       // relationship type used to reach this node
 }
 
 export interface LinkedPlan {
@@ -49,6 +52,14 @@ export interface LinkedPlan {
   name: string;
   status: string;         // on-track, delayed, overdue, etc.
   isOnTrack: boolean;
+}
+
+export interface RootCauseStep {
+  id: string;
+  name: string;
+  nodeType: string;   // e.g. 'risks', 'capabilities', 'orgUnits'
+  rag: RagStatus;
+  relationship: string;  // e.g. 'MONITORED_BY', 'ROLE_GAPS'
 }
 
 export interface NodeInstance {
@@ -65,6 +76,9 @@ export interface NodeInstance {
   upstreamNodes: LinkedNode[];        // ALL nodes that feed INTO this one (direct links)
   downstreamNodes: LinkedNode[];      // ALL nodes this one feeds INTO (direct links)
   linkedPlans: LinkedPlan[];          // mitigation/intervention plans (RiskPlan)
+  rootCause: RootCauseStep[];         // chain of nodes causing this item's distress
+  chainNext: LinkedNode[];            // immediate chain connections at this node's level (from CONNECTION_PAIRS)
+  axisPaths?: { label: string; chainNext: LinkedNode[] }[];
 }
 
 export interface LineHealthDetail {
@@ -1597,6 +1611,9 @@ export async function fetchOntologyRagState(
   }
 
   // Lookup: nodeId → { name, nodeType, rag }
+  // NOTE: IDs are NOT unique across types (e.g. Risk "3.2" and Cap "3.2" share the same id).
+  // This map is only used by up/downstream linked-node display (which is fine, collisions
+  // rarely affect display). Root cause uses the type-aware structures below.
   const nodeInfoById = new Map<string, { name: string; nodeType: string; rag: RagStatus }>();
   for (const [nodeType, instances] of nodesByType) {
     for (const inst of instances) {
@@ -1607,6 +1624,388 @@ export async function fetchOntologyRagState(
       });
     }
   }
+
+  // ── Type-aware structures for root cause tracing ──────────────────────────
+  // Key: "nodeType:nodeId"  (e.g. "risks:3.2", "capabilities:3.2")
+  // This avoids ID collisions across node types.
+
+  // Resolve a raw chain node id to its nodeType key using a node lookup built
+  // from all chain nodes (not just the filtered nodesByType subset, so that we
+  // can resolve intermediate nodes even if they were filtered by year).
+  const labelToKey = LABEL_TO_NODE_KEY; // already declared above
+
+  // Build: compositeKey → { name, nodeType, rag, props }
+  type TypedNodeInfo = { name: string; nodeType: string; rag: RagStatus; props: Record<string, any> };
+  const typedNodeInfo = new Map<string, TypedNodeInfo>();
+  for (const [nodeType, instances] of nodesByType) {
+    for (const inst of instances) {
+      const key = `${nodeType}:${inst.id}`;
+      typedNodeInfo.set(key, {
+        name: inst.props.name || inst.props.title || extractLogicalId(inst.id),
+        nodeType,
+        rag: getNodeInstanceRag(inst.props, inst.labels),
+        props: inst.props,
+      });
+    }
+  }
+
+  // Build type-aware adjacency in both directions.
+  // Key: "fromType:fromId"  →  array of { nodeType, nodeId, relType }
+  type TypedEdge = { nodeType: string; nodeId: string; relType: string };
+  const typedForward = new Map<string, TypedEdge[]>();  // Neo4j start → end
+  const typedReverse = new Map<string, TypedEdge[]>();  // Neo4j end  → start
+
+  const addTypedEdge = (
+    map: Map<string, TypedEdge[]>,
+    fromType: string, fromId: string,
+    toType: string, toId: string,
+    relType: string
+  ) => {
+    const k = `${fromType}:${fromId}`;
+    if (!map.has(k)) map.set(k, []);
+    map.get(k)!.push({ nodeType: toType, nodeId: toId, relType });
+  };
+
+  // Known relationship type → expected start/end node labels.
+  // Used to disambiguate when multiple node types share the same business ID.
+  const REL_EXPECTED_LABELS: Record<string, { start: string; end: string }> = {
+    MONITORED_BY:    { start: 'EntityCapability',  end: 'EntityRisk' },
+    ROLE_GAPS:       { start: 'EntityCapability',  end: 'EntityOrgUnit' },
+    KNOWLEDGE_GAPS:  { start: 'EntityCapability',  end: 'EntityProcess' },
+    AUTOMATION_GAPS: { start: 'EntityCapability',  end: 'EntityITSystem' },
+    GAPS_SCOPE:      { start: '',                  end: 'EntityProject' },
+    ADOPTION_RISKS:  { start: 'EntityProject',     end: 'EntityChangeAdoption' },
+    DEPENDS_ON:      { start: 'EntityITSystem',    end: 'EntityVendor' },
+    INFORMS:         { start: 'EntityRisk',        end: '' },
+    SETS_PRIORITIES: { start: 'SectorPolicyTool',  end: 'EntityCapability' },
+    SETS_TARGETS:    { start: 'SectorPerformance', end: 'EntityCapability' },
+    REALIZED_VIA:    { start: 'SectorObjective',   end: 'SectorPolicyTool' },
+    CASCADED_VIA:    { start: 'SectorObjective',   end: 'SectorPerformance' },
+    REFERS_TO:       { start: 'SectorPolicyTool',       end: 'SectorAdminRecord' },
+    APPLIED_ON:      { start: 'SectorAdminRecord',     end: '' },
+    TRIGGERS_EVENT:  { start: '',                       end: 'SectorDataTransaction' },
+    MEASURED_BY:     { start: 'SectorDataTransaction',  end: 'SectorPerformance' },
+    MONITORS_FOR:    { start: 'EntityCultureHealth',    end: 'EntityOrgUnit' },
+    APPLY:           { start: 'EntityOrgUnit',          end: 'EntityProcess' },
+    AUTOMATION:      { start: 'EntityProcess',          end: 'EntityITSystem' },
+    HAS_PLAN:        { start: 'EntityRisk',             end: 'RiskPlan' },
+  };
+
+  for (const chain of chains) {
+    // Multi-map: id → ALL chain nodes with that id (handles id collision across types)
+    const chainNodesById = new Map<string, ChainNode[]>();
+    for (const cn of chain.nodes) {
+      if (!chainNodesById.has(cn.id)) chainNodesById.set(cn.id, []);
+      chainNodesById.get(cn.id)!.push(cn);
+    }
+
+    // Resolve raw id → nodeType key, using preferredLabel to disambiguate collisions
+    const resolveInChain = (rawId: string, preferredLabel: string): string | null => {
+      const candidates = chainNodesById.get(rawId);
+      if (!candidates || candidates.length === 0) return null;
+      // If preferred label specified, try to match it first
+      if (preferredLabel) {
+        for (const cn of candidates) {
+          if (cn.labels.includes(preferredLabel)) return labelToKey[preferredLabel] || null;
+        }
+      }
+      // Fallback: first candidate with a known label
+      for (const cn of candidates) {
+        for (const lbl of cn.labels) {
+          if (labelToKey[lbl]) return labelToKey[lbl];
+        }
+      }
+      return null;
+    };
+
+    for (const link of chain.links) {
+      const relHint = REL_EXPECTED_LABELS[link.type];
+      const startType = resolveInChain(link.start, relHint?.start || '');
+      const endType = resolveInChain(link.end, relHint?.end || '');
+      if (!startType || !endType) continue;
+      // Skip true self-references (same type AND same id), not cross-type same-id
+      if (startType === endType && link.start === link.end) continue;
+      addTypedEdge(typedForward, startType, link.start, endType, link.end, link.type);
+      addTypedEdge(typedReverse, endType, link.end, startType, link.start, link.type);
+    }
+  }
+
+  // ── Bottom-up RAG rollup ──────────────────────────────────────────────
+  // PolicyTools/Performance inherit worst RAG from connected Risks.
+  // Objectives inherit worst RAG from connected PolicyTools + Performance.
+  // This reflects reality: objectives are measured end-of-year, so during the
+  // year their status comes from what's happening below (risks, capabilities).
+  const ragRankRollup = (r: RagStatus) => r === 'red' ? 3 : r === 'amber' ? 2 : r === 'green' ? 1 : 0;
+  const worstOf = (a: RagStatus, b: RagStatus): RagStatus => ragRankRollup(a) >= ragRankRollup(b) ? a : b;
+
+  // Step 1: PolicyTools and Performance inherit from connected Risks
+  let step1Count = 0;
+  let step1Changed = 0;
+  for (const [key, info] of typedNodeInfo) {
+    if (info.nodeType !== 'policyTools' && info.nodeType !== 'performance') continue;
+    step1Count++;
+    // Risk INFORMS PolicyTool/Performance (Neo4j: Risk→target), so use typedReverse to find Risks
+    const riskEdges = (typedReverse.get(key) || []).filter(e => e.nodeType === 'risks');
+    let worst = info.rag;
+    for (const e of riskEdges) {
+      const riskInfo = typedNodeInfo.get(`risks:${e.nodeId}`);
+      if (riskInfo) worst = worstOf(worst, riskInfo.rag);
+    }
+    if (worst !== info.rag) {
+      step1Changed++;
+      info.rag = worst;
+    }
+  }
+  console.log(`[ROLLUP-S1] PolicyTools+Perf: ${step1Count} checked, ${step1Changed} changed. Red risks in typedNodeInfo:`, [...typedNodeInfo.values()].filter(i => i.nodeType === 'risks' && i.rag === 'red').length);
+
+  // Step 2: Objectives inherit from connected PolicyTools + Performance
+  for (const [key, info] of typedNodeInfo) {
+    if (info.nodeType !== 'sectorObjectives') continue;
+    // Obj → PolicyTool (REALIZED_VIA), Obj → Performance (CASCADED_VIA) via typedForward
+    const childEdges = (typedForward.get(key) || []).filter(
+      e => e.nodeType === 'policyTools' || e.nodeType === 'performance'
+    );
+    let worst = info.rag;
+    for (const e of childEdges) {
+      const childInfo = typedNodeInfo.get(`${e.nodeType}:${e.nodeId}`);
+      if (childInfo) worst = worstOf(worst, childInfo.rag);
+    }
+    console.log(`[ROLLUP] Obj ${key}: own=${info.rag}, childEdges=${childEdges.length}, worstChild=${worst}`);
+    if (worst !== info.rag) info.rag = worst;
+  }
+
+  // Step 3: AdminRecords inherit from connected Stakeholders
+  for (const [key, info] of typedNodeInfo) {
+    if (info.nodeType !== 'adminRecords') continue;
+    const stakeholderEdges = (typedForward.get(key) || []).filter(
+      e => e.nodeType === 'citizen' || e.nodeType === 'businessUp' || e.nodeType === 'govEntity'
+    );
+    let worst = info.rag;
+    for (const e of stakeholderEdges) {
+      const sInfo = typedNodeInfo.get(`${e.nodeType}:${e.nodeId}`);
+      if (sInfo) worst = worstOf(worst, sInfo.rag);
+    }
+    if (worst !== info.rag) info.rag = worst;
+  }
+
+  // Step 4: CultureHealth affects OrgUnit
+  for (const [key, info] of typedNodeInfo) {
+    if (info.nodeType !== 'orgUnits') continue;
+    const cultureEdges = (typedReverse.get(key) || []).filter(e => e.nodeType === 'cultureHealth');
+    let worst = info.rag;
+    for (const e of cultureEdges) {
+      const cInfo = typedNodeInfo.get(`cultureHealth:${e.nodeId}`);
+      if (cInfo) worst = worstOf(worst, cInfo.rag);
+    }
+    if (worst !== info.rag) info.rag = worst;
+  }
+
+  // Helper: pick the worst-RAG TypedEdge target that is in typedNodeInfo
+  const ragPriority = (r: RagStatus) => r === 'red' ? 0 : r === 'amber' ? 1 : 2;
+
+  const pickWorst = (
+    edges: TypedEdge[],
+    visited: Set<string>
+  ): { edge: TypedEdge; info: TypedNodeInfo } | null => {
+    let best: { edge: TypedEdge; info: TypedNodeInfo } | null = null;
+    for (const e of edges) {
+      const compositeKey = `${e.nodeType}:${e.nodeId}`;
+      if (visited.has(compositeKey)) continue;
+      const info = typedNodeInfo.get(compositeKey);
+      if (!info) continue;
+      if (info.rag !== 'red' && info.rag !== 'amber') continue;
+      if (best === null || ragPriority(info.rag) < ragPriority(best.info.rag)) {
+        best = { edge: e, info };
+      }
+    }
+    return best;
+  };
+
+  // computeRootCauseForNode — explicit chain-aware trace
+  //
+  // Each node type enters the trace at its position in the chain:
+  //   Obj/Policy/Perf → find Risk → find Cap → OrgUnit/Process/IT → ...
+  //   Risk            → find Cap → OrgUnit/Process/IT → ...
+  //   Capability      → OrgUnit/Process/IT → ...
+  //   OrgUnit/Process/IT → Project (BUILD) or Vendor (OPERATE via IT)
+  //   Project         → ChangeAdoption
+  //
+  // OPERATE (cap status=active): Cap → OrgUnit/Process/IT → IT → Vendor
+  // BUILD (cap status=planned/in_progress): Cap → OrgUnit/Process/IT → Project → ChangeAdoption
+  //
+  const computeRootCauseForNode = (startId: string, startNodeType: string): RootCauseStep[] => {
+    const steps: RootCauseStep[] = [];
+    const visited = new Set<string>([`${startNodeType}:${startId}`]);
+
+    // Helper: trace from Cap onward (shared by all paths that reach a Capability)
+    const traceFromCap = (capId: string, capInfo: TypedNodeInfo) => {
+      const capStatus = capInfo.props.status || '';
+      const isOperate = capStatus === 'active';
+      const gapRelTypes = new Set(['ROLE_GAPS', 'KNOWLEDGE_GAPS', 'AUTOMATION_GAPS']);
+      const gapEdges = (typedForward.get(`capabilities:${capId}`) || []).filter(
+        e => gapRelTypes.has(e.relType)
+      );
+      const gapResult = pickWorst(gapEdges, visited);
+      if (!gapResult) return;
+
+      const { edge: gapEdge, info: gapInfo } = gapResult;
+      steps.push({ id: gapEdge.nodeId, name: gapInfo.name, nodeType: gapInfo.nodeType, rag: gapInfo.rag, relationship: gapEdge.relType });
+      visited.add(`${gapInfo.nodeType}:${gapEdge.nodeId}`);
+      if (steps.length >= 5) return;
+
+      if (isOperate) {
+        // OPERATE: optionally IT → Vendor
+        if (gapInfo.nodeType === 'itSystems') {
+          const depEdges = (typedForward.get(`itSystems:${gapEdge.nodeId}`) || []).filter(
+            e => e.relType === 'DEPENDS_ON' && e.nodeType === 'vendors'
+          );
+          const depResult = pickWorst(depEdges, visited);
+          if (depResult) {
+            steps.push({ id: depResult.edge.nodeId, name: depResult.info.name, nodeType: 'vendors', rag: depResult.info.rag, relationship: 'DEPENDS_ON' });
+          }
+        }
+      } else {
+        // BUILD: OrgUnit/Process/IT → Project (GAPS_SCOPE) → ChangeAdoption (ADOPTION_RISKS)
+        const projEdges = (typedForward.get(`${gapInfo.nodeType}:${gapEdge.nodeId}`) || []).filter(
+          e => e.relType === 'GAPS_SCOPE' && e.nodeType === 'projects'
+        );
+        const projResult = pickWorst(projEdges, visited);
+        if (projResult) {
+          steps.push({ id: projResult.edge.nodeId, name: projResult.info.name, nodeType: 'projects', rag: projResult.info.rag, relationship: 'GAPS_SCOPE' });
+          visited.add(`projects:${projResult.edge.nodeId}`);
+          if (steps.length < 5) {
+            const isLate = projResult.info.props.status === 'overdue' || projResult.info.props.status === 'delayed';
+            if (projResult.info.rag === 'red' && !isLate) {
+              const adoptEdges = (typedForward.get(`projects:${projResult.edge.nodeId}`) || []).filter(
+                e => e.relType === 'ADOPTION_RISKS' && e.nodeType === 'changeAdoption'
+              );
+              const adoptResult = pickWorst(adoptEdges, visited);
+              if (adoptResult) {
+                steps.push({ id: adoptResult.edge.nodeId, name: adoptResult.info.name, nodeType: 'changeAdoption', rag: adoptResult.info.rag, relationship: 'ADOPTION_RISKS' });
+              }
+            }
+          }
+        }
+      }
+    };
+
+    // ── Entry point depends on starting node type ──────────────────────────
+
+    // Capability: go directly to OrgUnit/Process/IT
+    if (startNodeType === 'capabilities') {
+      const capInfo = typedNodeInfo.get(`capabilities:${startId}`);
+      if (capInfo) traceFromCap(startId, capInfo);
+      return steps;
+    }
+
+    // OrgUnit/Process/IT: go to Project (BUILD) or Vendor (OPERATE via IT)
+    if (['orgUnits', 'processes', 'itSystems'].includes(startNodeType)) {
+      // Try Project via GAPS_SCOPE
+      const projEdges = (typedForward.get(`${startNodeType}:${startId}`) || []).filter(
+        e => e.relType === 'GAPS_SCOPE' && e.nodeType === 'projects'
+      );
+      const projResult = pickWorst(projEdges, visited);
+      if (projResult) {
+        steps.push({ id: projResult.edge.nodeId, name: projResult.info.name, nodeType: 'projects', rag: projResult.info.rag, relationship: 'GAPS_SCOPE' });
+        visited.add(`projects:${projResult.edge.nodeId}`);
+      }
+      // If IT, also try Vendor via DEPENDS_ON
+      if (startNodeType === 'itSystems') {
+        const depEdges = (typedForward.get(`itSystems:${startId}`) || []).filter(
+          e => e.relType === 'DEPENDS_ON' && e.nodeType === 'vendors'
+        );
+        const depResult = pickWorst(depEdges, visited);
+        if (depResult) {
+          steps.push({ id: depResult.edge.nodeId, name: depResult.info.name, nodeType: 'vendors', rag: depResult.info.rag, relationship: 'DEPENDS_ON' });
+        }
+      }
+      return steps;
+    }
+
+    // Project: go to ChangeAdoption
+    if (startNodeType === 'projects') {
+      const adoptEdges = (typedForward.get(`projects:${startId}`) || []).filter(
+        e => e.relType === 'ADOPTION_RISKS' && e.nodeType === 'changeAdoption'
+      );
+      const adoptResult = pickWorst(adoptEdges, visited);
+      if (adoptResult) {
+        steps.push({ id: adoptResult.edge.nodeId, name: adoptResult.info.name, nodeType: 'changeAdoption', rag: adoptResult.info.rag, relationship: 'ADOPTION_RISKS' });
+      }
+      return steps;
+    }
+
+    // ── Helper: from a given node, find Risk then Cap then traceFromCap ──
+    const traceFromRisk = (riskId: string) => {
+      if (steps.length >= 5) return;
+      // Risk → Capability via MONITORED_BY (Neo4j: Cap→Risk, use typedReverse)
+      const capEdges = (typedReverse.get(`risks:${riskId}`) || []).filter(
+        e => e.nodeType === 'capabilities' && e.relType === 'MONITORED_BY'
+      );
+      const capResult = pickWorst(capEdges, visited);
+      if (!capResult) return;
+      steps.push({ id: capResult.edge.nodeId, name: capResult.info.name, nodeType: 'capabilities', rag: capResult.info.rag, relationship: 'MONITORED_BY' });
+      visited.add(`capabilities:${capResult.edge.nodeId}`);
+      if (steps.length < 5) traceFromCap(capResult.edge.nodeId, capResult.info);
+    };
+
+    const findRiskFrom = (nodeType: string, nodeId: string): { edge: TypedEdge; info: TypedNodeInfo } | null => {
+      // Risk INFORMS PolicyTool/Performance (Neo4j: Risk→target), so from target use typedReverse
+      const allEdges = [
+        ...(typedReverse.get(`${nodeType}:${nodeId}`) || []),
+        ...(typedForward.get(`${nodeType}:${nodeId}`) || []),
+      ].filter(e => e.nodeType === 'risks');
+      return pickWorst(allEdges, visited);
+    };
+
+    // ── Objectives: Obj → PolicyTool (REALIZED_VIA) or Performance (CASCADED_VIA) → Risk → Cap → ...
+    if (startNodeType === 'sectorObjectives') {
+      // Find connected PolicyTool or Performance
+      const linkedEdges = (typedForward.get(`sectorObjectives:${startId}`) || []).filter(
+        e => e.nodeType === 'policyTools' || e.nodeType === 'performance'
+      );
+      const linked = pickWorst(linkedEdges, visited);
+      if (linked) {
+        steps.push({ id: linked.edge.nodeId, name: linked.info.name, nodeType: linked.info.nodeType, rag: linked.info.rag, relationship: linked.edge.relType });
+        visited.add(`${linked.info.nodeType}:${linked.edge.nodeId}`);
+        if (steps.length < 5) {
+          const risk = findRiskFrom(linked.info.nodeType, linked.edge.nodeId);
+          if (risk) {
+            steps.push({ id: risk.edge.nodeId, name: risk.info.name, nodeType: 'risks', rag: risk.info.rag, relationship: risk.edge.relType });
+            visited.add(`risks:${risk.edge.nodeId}`);
+            traceFromRisk(risk.edge.nodeId);
+          }
+        }
+      }
+      return steps;
+    }
+
+    // ── PolicyTool / Performance: find Risk → Cap → ...
+    if (startNodeType === 'policyTools' || startNodeType === 'performance') {
+      const risk = findRiskFrom(startNodeType, startId);
+      if (risk) {
+        steps.push({ id: risk.edge.nodeId, name: risk.info.name, nodeType: 'risks', rag: risk.info.rag, relationship: risk.edge.relType });
+        visited.add(`risks:${risk.edge.nodeId}`);
+        traceFromRisk(risk.edge.nodeId);
+      }
+      return steps;
+    }
+
+    // ── Risk: find Cap → traceFromCap
+    if (startNodeType === 'risks') {
+      traceFromRisk(startId);
+      return steps;
+    }
+
+    // ── Any remaining types: try to find Risk directly, then trace
+    const risk = findRiskFrom(startNodeType, startId);
+    if (risk) {
+      steps.push({ id: risk.edge.nodeId, name: risk.info.name, nodeType: 'risks', rag: risk.info.rag, relationship: risk.edge.relType });
+      visited.add(`risks:${risk.edge.nodeId}`);
+      traceFromRisk(risk.edge.nodeId);
+    }
+    return steps;
+  };
+
 
   // 7. Per-node instance details for side panel
   const nodeDetails: Record<string, NodeInstance[]> = {};
@@ -1651,10 +2050,175 @@ export async function fetchOntologyRagState(
         rag = 'amber';
       }
 
+      // Apply bottom-up rollup: use rolled-up RAG from typedNodeInfo if worse
+      const rolledUp = typedNodeInfo.get(`${nodeKey}:${inst.id}`);
+      if (nodeKey === 'sectorObjectives') {
+        console.log(`[ROLLUP-APPLY] Obj ${inst.id}: rawRag=${rawRag}, rag=${rag}, rolledUp=${rolledUp?.rag || 'NOT FOUND'}, key=${nodeKey}:${inst.id}`);
+      }
+      if (rolledUp && ragRankRollup(rolledUp.rag) > ragRankRollup(rag)) {
+        rag = rolledUp.rag;
+      }
+
+      // Root cause: trace explicit chain path for red/amber items
+      const rootCause: RootCauseStep[] = (rag === 'red' || rag === 'amber')
+        ? computeRootCauseForNode(inst.id, nodeKey)
+        : [];
+
+      // Compute chainNext
+      const chainNextResult: LinkedNode[] = (() => {
+          const ROOT_CAUSE_CHAIN: Record<string, { targetType: string; relType: string; dir: 'forward' | 'reverse' }[]> = {
+            // ── VERTICAL: root cause trace (top-down planning) ──
+            sectorObjectives: [
+              { targetType: 'policyTools', relType: 'REALIZED_VIA', dir: 'forward' },
+              { targetType: 'performance', relType: 'CASCADED_VIA', dir: 'forward' },
+            ],
+            policyTools: [
+              { targetType: 'risks', relType: 'INFORMS', dir: 'reverse' },
+              // HORIZONTAL: sector value chain
+              { targetType: 'adminRecords', relType: 'REFERS_TO', dir: 'forward' },
+            ],
+            performance: [
+              { targetType: 'risks', relType: 'INFORMS', dir: 'reverse' },
+            ],
+            risks: [
+              { targetType: 'capabilities', relType: 'MONITORED_BY', dir: 'reverse' },
+            ],
+            capabilities: [
+              { targetType: 'orgUnits', relType: 'ROLE_GAPS', dir: 'forward' },
+              { targetType: 'processes', relType: 'KNOWLEDGE_GAPS', dir: 'forward' },
+              { targetType: 'itSystems', relType: 'AUTOMATION_GAPS', dir: 'forward' },
+            ],
+            // HORIZONTAL: entity health chain
+            cultureHealth: [
+              { targetType: 'orgUnits', relType: 'MONITORS_FOR', dir: 'forward' },
+            ],
+            orgUnits: [
+              { targetType: 'projects', relType: 'GAPS_SCOPE', dir: 'forward' },
+              { targetType: 'processes', relType: 'APPLY', dir: 'forward' },
+            ],
+            processes: [
+              { targetType: 'projects', relType: 'GAPS_SCOPE', dir: 'forward' },
+              { targetType: 'itSystems', relType: 'AUTOMATION', dir: 'forward' },
+            ],
+            itSystems: [
+              { targetType: 'projects', relType: 'GAPS_SCOPE', dir: 'forward' },
+              { targetType: 'vendors', relType: 'DEPENDS_ON', dir: 'forward' },
+            ],
+            projects: [
+              { targetType: 'changeAdoption', relType: 'ADOPTION_RISKS', dir: 'forward' },
+            ],
+            // HORIZONTAL: sector value chain (through stakeholders)
+            adminRecords: [
+              { targetType: 'citizen', relType: 'APPLIED_ON', dir: 'forward' },
+              { targetType: 'businessUp', relType: 'APPLIED_ON', dir: 'forward' },
+              { targetType: 'govEntity', relType: 'APPLIED_ON', dir: 'forward' },
+            ],
+            citizen: [
+              { targetType: 'dataTransactions', relType: 'TRIGGERS_EVENT', dir: 'forward' },
+            ],
+            businessUp: [
+              { targetType: 'dataTransactions', relType: 'TRIGGERS_EVENT', dir: 'forward' },
+            ],
+            govEntity: [
+              { targetType: 'dataTransactions', relType: 'TRIGGERS_EVENT', dir: 'forward' },
+            ],
+            dataTransactions: [
+              { targetType: 'performance', relType: 'MEASURED_BY', dir: 'forward' },
+            ],
+          };
+          const hops = ROOT_CAUSE_CHAIN[nodeKey];
+          if (!hops) return [];
+          const result: LinkedNode[] = [];
+          const compositeKey = `${nodeKey}:${inst.id}`;
+          for (const hop of hops) {
+            const edgeMap = hop.dir === 'forward' ? typedForward : typedReverse;
+            const edges = (edgeMap.get(compositeKey) || []).filter(
+              e => e.nodeType === hop.targetType && e.relType === hop.relType
+            );
+            for (const e of edges) {
+              const info = typedNodeInfo.get(`${e.nodeType}:${e.nodeId}`);
+              if (!info) continue;
+              const targetLevel = info.props.level || (() => {
+                const parts = e.nodeId.split('.');
+                if (parts.length >= 3) return 'L3';
+                if (parts.length === 2 && parts[1] === '0') return 'L1';
+                if (parts.length === 2) return 'L2';
+                return 'L1';
+              })();
+              const mode = e.nodeType === 'capabilities'
+                ? (info.props.status === 'active' ? 'OPERATE' as const : 'BUILD' as const)
+                : undefined;
+              result.push({
+                id: e.nodeId,
+                name: info.name,
+                nodeType: e.nodeType,
+                rag: info.rag,
+                level: targetLevel,
+                mode,
+                relationship: e.relType,
+              });
+            }
+          }
+          // Deduplicate by nodeType:nodeId (same link can appear from multiple chains)
+          const seen = new Set<string>();
+          const deduped = result.filter(ln => {
+            const k = `${ln.nodeType}:${ln.id}`;
+            if (seen.has(k)) return false;
+            seen.add(k);
+            return true;
+          });
+          // Sort: reds first, then ambers, then greens
+          const ragOrd = (r: RagStatus) => r === 'red' ? 0 : r === 'amber' ? 1 : 2;
+          deduped.sort((a, b) => ragOrd(a.rag) - ragOrd(b.rag));
+          return deduped;
+        })();
+
+      // Compute axisPaths for dual-axis node types
+      const axisPaths = (() => {
+        const DUAL_AXIS: Record<string, { label: string; types: string[] }[]> = {
+          policyTools: [
+            { label: 'Risk Path', types: ['risks'] },
+            { label: 'Value Chain', types: ['adminRecords'] },
+          ],
+          orgUnits: [
+            { label: 'Projects', types: ['projects'] },
+            { label: 'Operations', types: ['processes'] },
+          ],
+          processes: [
+            { label: 'Projects', types: ['projects'] },
+            { label: 'Systems', types: ['itSystems'] },
+          ],
+          itSystems: [
+            { label: 'Projects', types: ['projects'] },
+            { label: 'Vendors', types: ['vendors'] },
+          ],
+          sectorObjectives: [
+            { label: 'Strategic Initiatives', types: ['policyTools'] },
+            { label: 'Strategic Priorities', types: ['performance'] },
+          ],
+          performance: [
+            { label: 'Risk Path', types: ['risks'] },
+          ],
+        };
+        const axes = DUAL_AXIS[nodeKey];
+        if (!axes || chainNextResult.length === 0) return undefined;
+        const paths = axes.map(axis => ({
+          label: axis.label,
+          chainNext: chainNextResult.filter(ln => axis.types.includes(ln.nodeType)),
+        })).filter(p => p.chainNext.length > 0);
+        return paths.length > 0 ? paths : undefined;
+      })();
+
       return {
         id: inst.id,
         name: inst.props.name || inst.props.title || extractLogicalId(inst.id),
-        level: inst.props.level || 'L3',
+        level: inst.props.level || (() => {
+          const parts = inst.id.split('.');
+          if (parts.length >= 3) return 'L3';
+          if (parts.length === 2 && parts[1] === '0') return 'L1';
+          if (parts.length === 2) return 'L2';
+          return 'L1';
+        })(),
         rag,
         rawRag,
         impact,
@@ -1665,7 +2229,18 @@ export async function fetchOntologyRagState(
         upstreamNodes,
         downstreamNodes,
         linkedPlans,
+        rootCause,
+        chainNext: chainNextResult,
+        axisPaths,
       };
+    }).sort((a, b) => {
+      // DEBUG: log first item per type to verify chainNext and axisPaths
+      // (moved after sort — logged below)
+      const ragOrd = (r: RagStatus) => r === 'red' ? 0 : r === 'amber' ? 1 : r === 'green' ? 2 : 3;
+      const ragDiff = ragOrd(a.rag) - ragOrd(b.rag);
+      if (ragDiff !== 0) return ragDiff;
+      if (b.urgency !== a.urgency) return b.urgency - a.urgency;
+      return b.impact - a.impact;
     });
   }
 

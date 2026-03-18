@@ -8,7 +8,6 @@ import { useQuery } from '@tanstack/react-query';
 import { graphService } from '../services/graphService';
 import { ChatContainer } from '../components/chat';
 import { CanvasManager } from '../components/chat/CanvasManager';
-const DevChatPanel = React.lazy(() => import('../components/devchat/DevChatPanel'));
 import { chatService } from '../services/chatService';
 import { fetchChainCached, injectChainCache } from '../services/chainsService';
 import { fetchSectorGraphData } from '../services/neo4jMcpService';
@@ -20,6 +19,9 @@ import type { ConversationSummary, Message as APIMessage } from '../types/api';
 import type { InterventionContext } from '../components/desks/PlanningDesk';
 import './JosoorDesktopPage.css';
 import { ConceptHelpOverlay } from '../components/shared/ConceptHelpPopover';
+import DesktopOnboarding from '../components/common/DesktopOnboarding';
+
+const DevChatPanel = React.lazy(() => import('../components/devchat/DevChatPanel'));
 
 // Lazy desk components — aliases match desktop app IDs
 const ObserveApp = React.lazy(() => import('../components/desks/SectorDesk').then(m => ({ default: m.SectorDesk })));
@@ -155,6 +157,21 @@ export default function JosoorDesktopPage() {
   const [focusCapId, setFocusCapId] = useState<string | null>(null);
   const [conceptHelpWindowId, setConceptHelpWindowId] = useState<string | null>(null);
   const [showAbout, setShowAbout] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+
+  // Check onboarding on mount
+  useEffect(() => {
+    const hasSeenTour = localStorage.getItem('jos-desktop-tour-v1');
+    if (!hasSeenTour) {
+      // Small delay to let icons render and positions settle
+      setTimeout(() => setShowOnboarding(true), 2000);
+    }
+  }, []);
+
+  const handleCloseOnboarding = useCallback(() => {
+    setShowOnboarding(false);
+    localStorage.setItem('jos-desktop-tour-v1', 'true');
+  }, []);
 
   // ── Desktop icon positions (draggable) ──
   const ICON_W = 120;
@@ -163,25 +180,51 @@ export default function JosoorDesktopPage() {
   const PAD_Y = 24;
 
   const buildDefaultPositions = useCallback(() => {
+    const winW = typeof window !== 'undefined' ? window.innerWidth : 1200;
+    const winH = typeof window !== 'undefined' ? window.innerHeight - 58 : 800; // 58 is taskbar height
+    
+    const leftColX = PAD_X + 20;
+    const cw = ICON_W + 40; // slightly wider column spacing
+    const ch = ICON_H + 20; // cell height
+    
+    const col0 = leftColX;
+    const col1 = leftColX + cw;
+    const col2 = leftColX + cw * 2;
+    const col3 = leftColX + cw * 3;
+
+    const row0 = PAD_Y;
+    const row1 = PAD_Y + ch;
+    const row2 = PAD_Y + ch * 2;
+    const row3 = PAD_Y + ch * 3;
+
     const positions: Record<string, { x: number; y: number }> = {};
-    // Main apps: grid from top-left, flowing top-to-bottom then left-to-right
-    const cols = Math.floor((window.innerWidth - PAD_X * 2 - 200) / ICON_W); // reserve space for utility column
-    MAIN_APPS.forEach((app, i) => {
-      const col = Math.floor(i / Math.max(1, Math.floor((window.innerHeight - 58 - PAD_Y * 2) / ICON_H)));
-      const row = i % Math.max(1, Math.floor((window.innerHeight - 58 - PAD_Y * 2) / ICON_H));
-      positions[app.id] = { x: PAD_X + col * ICON_W, y: PAD_Y + row * ICON_H };
-    });
-    // Utility apps: top-right, vertical stack
-    const rightX = window.innerWidth - PAD_X - ICON_W;
-    UTILITY_APPS.forEach((app, i) => {
-      positions[app.id] = { x: rightX, y: PAD_Y + i * ICON_H };
-    });
+
+    // Column 0: Home base
+    positions['home'] = { x: col0, y: row0 };
+    
+    // Column 1: Core Action Loop (Group 1)
+    positions['observe'] = { x: col1, y: row0 };
+    positions['decide'] = { x: col1, y: row1 };
+    positions['deliver'] = { x: col1, y: row2 };
+
+    // Column 2: Feedback & Intelligence
+    positions['signals'] = { x: col2, y: row0 };
+    positions['reporting'] = { x: col2, y: row1 };
+    positions['chat'] = { x: col2, y: row2 };
+    positions['tutorials'] = { x: col2, y: row3 };
+
+    // Column 3: System & Context
+    positions['calendar'] = { x: col3, y: row0 };
+    positions['folder'] = { x: col3, y: row1 };
+    positions['settings'] = { x: col3, y: row2 };
+    positions['observability'] = { x: col3, y: row3 };
+
     return positions;
   }, []);
 
   const [iconPositions, setIconPositions] = useState<Record<string, { x: number; y: number }>>(() => {
     try {
-      const saved = localStorage.getItem('jos-icon-positions');
+      const saved = localStorage.getItem('jos-desktop-layout-v3');
       if (saved) return JSON.parse(saved);
     } catch { /* ignore */ }
     return buildDefaultPositions();
@@ -189,7 +232,7 @@ export default function JosoorDesktopPage() {
 
   // Persist icon positions
   useEffect(() => {
-    localStorage.setItem('jos-icon-positions', JSON.stringify(iconPositions));
+    localStorage.setItem('jos-desktop-layout-v3', JSON.stringify(iconPositions));
   }, [iconPositions]);
 
   const handleIconDragStart = useCallback((e: React.MouseEvent, appId: string) => {
@@ -205,7 +248,11 @@ export default function JosoorDesktopPage() {
       // Dead-zone: only start dragging after 5px movement
       if (!dragging && Math.abs(dx) < 5 && Math.abs(dy) < 5) return;
       dragging = true;
-      const newX = Math.max(0, Math.min(window.innerWidth - ICON_W, pos.x + dx));
+      
+      // If Arabic (RTL), physical right movement (+dx) means the logical LTR position moves left (-dx)
+      const logicalDx = isAr ? -dx : dx;
+
+      const newX = Math.max(0, Math.min(window.innerWidth - ICON_W, pos.x + logicalDx));
       const newY = Math.max(0, Math.min(window.innerHeight - 58 - ICON_H, pos.y + dy));
       setIconPositions(prev => ({ ...prev, [appId]: { x: newX, y: newY } }));
     };
@@ -215,7 +262,7 @@ export default function JosoorDesktopPage() {
     };
     document.addEventListener('mousemove', handleMove);
     document.addEventListener('mouseup', handleUp);
-  }, [iconPositions]);
+  }, [iconPositions, isAr]);
 
   // Clock
   const [clock, setClock] = useState('');
@@ -452,7 +499,7 @@ export default function JosoorDesktopPage() {
     load();
   }, [activeConversationId]);
 
-  const handleSendMessage = useCallback(async (messageText: string) => {
+  const handleSendMessage = useCallback(async (messageText: string, options?: { suppress_canvas_auto_open?: boolean }) => {
     const tempMsg: APIMessage = { id: Date.now(), role: 'user', content: messageText, created_at: new Date().toISOString(), metadata: {} };
     setMessages(prev => [...prev, tempMsg]);
     setIsLoading(true);
@@ -466,6 +513,12 @@ export default function JosoorDesktopPage() {
       const answer = response.llm_payload?.answer || response.message || response.answer || '';
       const assistantMsg: APIMessage = { id: Date.now() + 1, role: 'assistant', content: answer, created_at: new Date().toISOString(), metadata: response };
       setMessages(prev => [...prev.filter(m => m.id !== tempMsg.id), { ...tempMsg, id: Date.now() - 1 }, assistantMsg]);
+
+      if (response.artifacts && response.artifacts.length > 0 && !options?.suppress_canvas_auto_open) {
+        setCanvasArtifacts(response.artifacts);
+        setIsCanvasOpen(true);
+      }
+
       if (response.conversation_id) setActiveConversationId(response.conversation_id);
       loadConversations();
     } catch (err) {
@@ -474,7 +527,25 @@ export default function JosoorDesktopPage() {
     } finally { setIsLoading(false); }
   }, [activeConversationId, selectedPersona, isPersonaLocked, loadConversations, language, isAr]);
 
-  const handleOpenArtifact = useCallback((artifact: any) => { setCanvasArtifacts([artifact]); setIsCanvasOpen(true); }, []);
+  const handleOpenArtifact = useCallback((artifact: any, allArtifacts?: any[]) => {
+    const list = allArtifacts && allArtifacts.length > 0 ? allArtifacts : [artifact];
+    setCanvasArtifacts(list);
+    setIsCanvasOpen(true);
+  }, []);
+
+  const handleConvertToPPT = useCallback((artifact: any) => {
+    handleSendMessage(
+      `[SYSTEM: User requested PPTX conversion of the above report "${artifact.title || 'Report'}". Follow the PPTX workflow: propose slide structure, align with user, then generate.]`,
+      { suppress_canvas_auto_open: true }
+    );
+  }, [handleSendMessage]);
+
+  const handleConvertToDocx = useCallback((artifact: any) => {
+    handleSendMessage(
+      `[SYSTEM: User requested DOCX conversion of the above report "${artifact.title || 'Report'}". Follow the DOCX workflow: propose TOC structure, align with user, then generate.]`,
+      { suppress_canvas_auto_open: true }
+    );
+  }, [handleSendMessage]);
 
   useEffect(() => { if (activeConversationId === null) { setSelectedPersona('vision_expert'); setIsPersonaLocked(false); } }, [activeConversationId]);
 
@@ -769,11 +840,17 @@ export default function JosoorDesktopPage() {
 
       {/* Desktop icons area */}
       <div className="jos-icon-area" onClick={handleDesktopClick}>
+
         {APPS.map(app => {
-          const pos = iconPositions[app.id] || { x: 0, y: 0 };
+          const rawPos = iconPositions[app.id] || { x: 0, y: 0 };
+          const pos = {
+            x: isAr ? window.innerWidth - rawPos.x - ICON_W : rawPos.x,
+            y: rawPos.y
+          };
           return (
             <div
               key={app.id}
+              id={`jos-icon-${app.id}`}
               className={`jos-icon ${selectedIcon === app.id ? 'jos-icon-selected' : ''}`}
               style={{ position: 'absolute', left: pos.x, top: pos.y }}
               onClick={(e) => { e.stopPropagation(); setSelectedIcon(app.id); }}
@@ -790,6 +867,12 @@ export default function JosoorDesktopPage() {
           );
         })}
       </div>
+
+      <DesktopOnboarding 
+        isOpen={showOnboarding} 
+        onClose={handleCloseOnboarding} 
+        language={isAr ? 'ar' : 'en'} 
+      />
 
       {/* Windows */}
       {windows.map(win => {
@@ -826,6 +909,13 @@ export default function JosoorDesktopPage() {
           <button className="jos-taskbar-action" onClick={handlePrint} title={isAr ? 'طباعة' : 'Print'}><img className="jos-taskbar-action-icon" src="/icons/print.svg" alt="Print" /></button>
           <button className="jos-taskbar-action" onClick={handleExportPDF} title={isAr ? 'حفظ PDF' : 'Save PDF'}><img className="jos-taskbar-action-icon" src="/icons/save.svg" alt="Save" /></button>
           <span className="jos-taskbar-sep" />
+          <button
+            className="jos-taskbar-action"
+            onClick={() => setShowOnboarding(true)}
+            title={isAr ? 'جولة تعريفية' : 'Tour'}
+          >
+            <strong style={{ fontSize: '18px', fontWeight: 600 }}>?</strong>
+          </button>
           <button
             className="jos-taskbar-action jos-taskbar-lang"
             onClick={() => setLanguage(isAr ? 'en' : 'ar')}
@@ -954,6 +1044,8 @@ export default function JosoorDesktopPage() {
             artifacts={canvasArtifacts}
             isOpen={isCanvasOpen}
             onClose={() => setIsCanvasOpen(false)}
+            onConvertToPPT={handleConvertToPPT}
+            onConvertToDocx={handleConvertToDocx}
           />
         </div>
       )}

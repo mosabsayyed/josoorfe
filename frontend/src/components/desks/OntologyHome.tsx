@@ -1,7 +1,7 @@
 import './OntologyHome.css';
 import { Fragment, useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { fetchOntologyRagState, type OntologyRagState, type NodeInstance, type LoadingStep, type LineHealthDetail, type UpstreamRedSource, type LinkedNode } from '../../services/ontologyService';
+import { fetchOntologyRagState, type OntologyRagState, type NodeInstance, type LoadingStep, type LineHealthDetail, type UpstreamRedSource, type LinkedNode, type RootCauseStep } from '../../services/ontologyService';
 import { chatService } from '../../services/chatService';
 import StrategyReportModal from './sector/StrategyReportModal';
 import type { Artifact } from '../../types/api';
@@ -121,6 +121,7 @@ export default function OntologyHome({ onContinueInChat, year, quarter }: Ontolo
   const [selectedLine, setSelectedLine] = useState<{ from: string; to: string } | null>(null);
   const [tracePath, setTracePath] = useState<string[]>([]); // drill-down trace stack
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+  const [detailItemId, setDetailItemId] = useState<string | null>(null);
 
   // AI integration state
   const [aiModalOpen, setAiModalOpen] = useState(false);
@@ -164,15 +165,122 @@ export default function OntologyHome({ onContinueInChat, year, quarter }: Ontolo
 
   // ── Serialization helpers ──
 
+  const QUERY_MAX_BYTES_BY_TIER: Record<'executive' | 'column' | 'micro', number> = {
+    executive: 120_000,
+    column: 80_000,
+    micro: 40_000,
+  };
+
+  const MAX_ITEMS_BY_TIER: Record<'executive' | 'column' | 'micro', number> = {
+    executive: 18,
+    column: 12,
+    micro: 10,
+  };
+
   // Serialize all relevant props from a node (skip noise like embeddings, internal IDs)
   const serializeProps = (props: Record<string, any>): string => {
     const skip = new Set(['embedding', 'vector', 'id', 'name', 'title', 'year', 'quarter', 'level']);
     const parts: string[] = [];
     for (const [k, v] of Object.entries(props)) {
       if (skip.has(k) || v == null || v === '' || v === 'null') continue;
-      parts.push(`${k}: ${v}`);
+      let valueText = '';
+      if (typeof v === 'string') {
+        valueText = v.length > 120 ? `${v.slice(0, 120)}...` : v;
+      } else if (Array.isArray(v)) {
+        valueText = `[${v.length} items]`;
+      } else if (typeof v === 'object') {
+        valueText = '[object]';
+      } else {
+        valueText = String(v);
+      }
+      parts.push(`${k}: ${valueText}`);
     }
     return parts.join(' | ');
+  };
+
+  const ragWeight = (rag: RagStatus) => (rag === 'red' ? 0 : rag === 'amber' ? 1 : rag === 'green' ? 2 : 3);
+
+  const pickPriorityItems = (instances: NodeInstance[], maxItems: number): NodeInstance[] => {
+    return [...instances]
+      .sort((a, b) => {
+        const ragDiff = ragWeight(a.rag) - ragWeight(b.rag);
+        if (ragDiff !== 0) return ragDiff;
+        const urgencyDiff = (b.urgency || 0) - (a.urgency || 0);
+        if (urgencyDiff !== 0) return urgencyDiff;
+        return (b.impact || 0) - (a.impact || 0);
+      })
+      .slice(0, maxItems);
+  };
+
+  const boundQuerySize = (query: string, tier: 'executive' | 'column' | 'micro'): string => {
+    const maxBytes = QUERY_MAX_BYTES_BY_TIER[tier];
+    const encoder = new TextEncoder();
+    if (encoder.encode(query).length <= maxBytes) return query;
+
+    const lines = query.split('\n');
+    const reserve = 260;
+    const budget = Math.max(0, maxBytes - reserve);
+
+    const lineCost = (line: string) => encoder.encode(`${line}\n`).length;
+
+    const isCritical = (line: string) => {
+      const lower = line.toLowerCase();
+      return (
+        line.startsWith('SECTOR ONTOLOGY') ||
+        line.startsWith('Period:') ||
+        line.startsWith('═══') ||
+        lower.includes('top issues') ||
+        lower.includes('status: needs intervention') ||
+        lower.includes('status: at risk') ||
+        lower.includes('root cause chain:') ||
+        lower.includes('cascading issues from:') ||
+        lower.includes('mitigation plans:') ||
+        lower.includes('connectivity:')
+      );
+    };
+
+    // Keep first 6 lines (context header) and last 2 lines (instruction tail) when possible.
+    const firstIdx = new Set<number>();
+    for (let i = 0; i < Math.min(6, lines.length); i++) firstIdx.add(i);
+
+    const tailStart = Math.max(0, lines.length - 2);
+    const tailIdx = new Set<number>();
+    for (let i = tailStart; i < lines.length; i++) tailIdx.add(i);
+
+    const criticalIdx = new Set<number>();
+    for (let i = 0; i < lines.length; i++) {
+      if (isCritical(lines[i])) criticalIdx.add(i);
+    }
+
+    const selectedIdx = new Set<number>();
+    let used = 0;
+    const tryAdd = (i: number) => {
+      if (selectedIdx.has(i)) return;
+      const cost = lineCost(lines[i]);
+      if (used + cost <= budget) {
+        selectedIdx.add(i);
+        used += cost;
+      }
+    };
+
+    // 1) Required framing.
+    for (const i of firstIdx) tryAdd(i);
+    for (const i of tailIdx) tryAdd(i);
+
+    // 2) Critical lines (risk/root cause/integrity).
+    for (const i of [...criticalIdx].sort((a, b) => a - b)) tryAdd(i);
+
+    // 3) Fill remaining budget with earliest remaining lines to preserve narrative flow.
+    for (let i = 0; i < lines.length; i++) tryAdd(i);
+
+    const selectedOrdered = [...selectedIdx].sort((a, b) => a - b);
+    const omittedLineCount = Math.max(0, lines.length - selectedOrdered.length);
+    const kept = selectedOrdered.map(i => lines[i]);
+
+    kept.push('');
+    kept.push(`[TRUNCATED: prompt compacted to ${maxBytes} bytes for ${tier} mode; omitted ${omittedLineCount} lower-priority lines while preserving headers/instructions and critical risk lines]`);
+
+    return kept.join('\n');
   };
 
   // Serialize a single NodeInstance with ALL data
@@ -182,8 +290,8 @@ export default function OntologyHome({ onContinueInChat, year, quarter }: Ontolo
     const statusText = inst.rag === 'red' ? 'Needs Intervention' : inst.rag === 'amber' ? 'At Risk' : inst.rag === 'green' ? 'On Track' : 'No Data';
     lines.push(`- ${inst.id} ${inst.name} [${label}] (${inst.level}) — Status: ${statusText}${inst.rawRag !== inst.rag ? ` (underlying: ${inst.rawRag})` : ''} | Dependency Count: ${inst.impact} | Urgency: ${inst.urgency.toFixed(2)}`);
     if (propsStr) lines.push(`  Properties: ${propsStr}`);
-    if (inst.downstreamNodes.length > 0) {
-      lines.push(`  Root cause (traces down to): ${inst.downstreamNodes.map(d => `${d.id} ${d.name} [${d.nodeType}](${d.rag === 'red' ? 'Needs Intervention' : d.rag === 'amber' ? 'At Risk' : 'On Track'})`).join(', ')}`);
+    if (inst.rootCause && inst.rootCause.length > 0) {
+      lines.push(`  Root cause chain: ${inst.rootCause.map(r => `${r.id} ${r.name} [${r.nodeType}](${r.rag === 'red' ? 'Needs Intervention' : r.rag === 'amber' ? 'At Risk' : 'On Track'}) via ${r.relationship}`).join(' → ')}`);
     }
     if (inst.upstreamNodes.length > 0) {
       lines.push(`  Impacts (traces up to): ${inst.upstreamNodes.map(u => `${u.id} ${u.name} [${u.nodeType}](${u.rag === 'red' ? 'Needs Intervention' : u.rag === 'amber' ? 'At Risk' : 'On Track'})`).join(', ')}`);
@@ -198,12 +306,16 @@ export default function OntologyHome({ onContinueInChat, year, quarter }: Ontolo
   };
 
   // Serialize all items for a node type
-  const serializeNodeType = (nodeType: string, instances: NodeInstance[]): string => {
+  const serializeNodeType = (nodeType: string, instances: NodeInstance[], maxItems: number): string => {
     const label = NODE_LABEL_KEYS[nodeType] ? t(NODE_LABEL_KEYS[nodeType]) : nodeType;
     if (instances.length === 0) return `\n${label}: (none)`;
-    const lines: string[] = [`\n${label} (${instances.length} total):`];
-    for (const inst of instances) {
+    const selected = pickPriorityItems(instances, maxItems);
+    const lines: string[] = [`\n${label} (${instances.length} total, ${selected.length} included):`];
+    for (const inst of selected) {
       lines.push(serializeItem(inst, label));
+    }
+    if (instances.length > selected.length) {
+      lines.push(`  ... ${instances.length - selected.length} additional items omitted for payload control`);
     }
     return lines.join('\n');
   };
@@ -257,7 +369,7 @@ export default function OntologyHome({ onContinueInChat, year, quarter }: Ontolo
     // ALL items by type with ALL properties
     lines.push(``, `═══ COMPLETE ITEM DATA ═══`);
     for (const [nodeType, instances] of Object.entries(ragState.nodeDetails)) {
-      lines.push(serializeNodeType(nodeType, instances));
+      lines.push(serializeNodeType(nodeType, instances, MAX_ITEMS_BY_TIER.executive));
     }
 
     lines.push(``, t('ont_executive_prompt'));
@@ -285,7 +397,7 @@ export default function OntologyHome({ onContinueInChat, year, quarter }: Ontolo
     lines.push(``, `═══ ALL ITEMS ═══`);
     for (const nt of nodeTypes) {
       const instances = ragState.nodeDetails[nt] || [];
-      lines.push(serializeNodeType(nt, instances));
+      lines.push(serializeNodeType(nt, instances, MAX_ITEMS_BY_TIER.column));
     }
 
     // Related chain health for this column
@@ -319,14 +431,18 @@ export default function OntologyHome({ onContinueInChat, year, quarter }: Ontolo
     if (scope === 'landscape') {
       const instances = ragState.nodeDetails[target] || [];
       const label = NODE_LABEL_KEYS[target] ? t(NODE_LABEL_KEYS[target]) : target;
+      const selectedInstances = pickPriorityItems(instances, MAX_ITEMS_BY_TIER.micro);
       const lines: string[] = [
         `${label} — FULL CATEGORY DATA`,
         `Overall status: ${ragState.nodeRag[target] ?? 'default'} | Total: ${instances.length} | Red: ${instances.filter(i => i.rag === 'red').length} | Amber: ${instances.filter(i => i.rag === 'amber').length} | Green: ${instances.filter(i => i.rag === 'green').length}`,
         ``,
-        `═══ ALL ITEMS ═══`,
+        `═══ PRIORITIZED ITEMS ═══`,
       ];
-      for (const inst of instances) {
+      for (const inst of selectedInstances) {
         lines.push(serializeItem(inst, label));
+      }
+      if (instances.length > selectedInstances.length) {
+        lines.push(`... ${instances.length - selectedInstances.length} additional items omitted for payload control`);
       }
       lines.push(``, t('ont_micro_landscape_prompt', { label }));
       return lines.join('\n');
@@ -334,7 +450,7 @@ export default function OntologyHome({ onContinueInChat, year, quarter }: Ontolo
 
     if (scope === 'block1') {
       const instances = ragState.nodeDetails[target] || [];
-      const issues = instances.filter(i => i.rag === 'red' || i.rag === 'amber');
+      const issues = pickPriorityItems(instances.filter(i => i.rag === 'red' || i.rag === 'amber'), MAX_ITEMS_BY_TIER.micro);
       const label = NODE_LABEL_KEYS[target] ? t(NODE_LABEL_KEYS[target]) : target;
       const lines: string[] = [
         `${label} — TOP ISSUES (${issues.length} red/amber items)`,
@@ -380,9 +496,11 @@ export default function OntologyHome({ onContinueInChat, year, quarter }: Ontolo
     scope?: 'landscape' | 'block1' | 'item'
   ) => {
     const promptKeyMap = { executive: 'ontology_executive' as const, column: 'ontology_column' as const, micro: 'ontology_micro' as const };
-    const query = tier === 'executive' ? buildExecutiveQuery()
+    const rawQuery = tier === 'executive' ? buildExecutiveQuery()
       : tier === 'column' ? buildColumnQuery(context)
       : buildMicroQuery(context, scope || 'landscape');
+
+    const query = boundQuerySize(rawQuery, tier);
 
     if (!query) return;
 
@@ -1008,13 +1126,6 @@ export default function OntologyHome({ onContinueInChat, year, quarter }: Ontolo
             return t('ont_status_no_data', 'No Data');
           };
 
-          // Zone 1: Top 3 RED L3 items, sorted by urgency × dependency count (impact)
-          const l3Instances = instances.filter(i => (i.level || i.props?.level) === 'L3');
-          const redL3 = l3Instances.filter(i => i.rag === 'red');
-          const topPriority = redL3
-            .sort((a, b) => (b.urgency * b.impact) - (a.urgency * a.impact))
-            .slice(0, 3);
-
           // Keep legacy sort for other uses (health bar, stats)
           const triageScore = (inst: NodeInstance) =>
             (inst.impact * 0.35) + (inst.urgency * 0.35) + (inst.downstreamNodes.length * 0.3);
@@ -1162,96 +1273,7 @@ export default function OntologyHome({ onContinueInChat, year, quarter }: Ontolo
                   </div>
                 )}
 
-                {/* ── Block 1: Top Issues (standardized for ALL node types) ── */}
-                {/* ── Zone 1: Top Priority — RED L3 items sorted by urgency × dependency count ── */}
-                {(() => {
-                  if (topPriority.length === 0) return null;
-
-                  const sectionLabel = isPropagated
-                    ? (selectedNode === 'performance'
-                        ? t('ont_items_affected_operate')
-                        : t('ont_items_affected_build'))
-                    : t('ont_priority_list');
-
-                  return (
-                    <div style={{ marginBottom: 16 }}>
-                      <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--component-text-secondary)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <span>{sectionLabel} ({topPriority.length})</span>
-                        <button
-                          className="ont-ai-strip-btn"
-                          style={{ fontSize: 9, padding: '2px 6px' }}
-                          onClick={(e) => { e.stopPropagation(); handleOntologyAI('micro', selectedNode!, 'block1'); }}
-                          disabled={aiLoading}
-                          title={t('ont_analyze_top_priorities')}
-                        >✦ {t('ont_analyze')}</button>
-                      </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                        {topPriority.map((inst, idx) => {
-                          const upstreamIssues = inst.downstreamNodes.filter(n => n.rag === 'red' || n.rag === 'amber');
-                          return (
-                            <div key={inst.id} style={{
-                              padding: '10px 12px', borderRadius: 8,
-                              background: `${ragColors[inst.rag]}08`,
-                              border: `1px solid ${ragColors[inst.rag]}30`,
-                            }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                <div style={{
-                                  width: 22, height: 22, borderRadius: '50%', flexShrink: 0,
-                                  background: `${ragColors[inst.rag]}20`, color: ragColors[inst.rag],
-                                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                  fontSize: 11, fontWeight: 700,
-                                }}>
-                                  {idx + 1}
-                                </div>
-                                <div style={{ flex: 1, minWidth: 0 }}>
-                                  <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--component-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                    {inst.id && <span style={{ fontFamily: 'monospace', fontSize: 11, color: 'var(--component-text-secondary)', marginInlineEnd: 4 }}>{inst.id}</span>}
-                                    {inst.name}
-                                    <span style={{ fontSize: 10, color: 'var(--component-text-secondary)', marginInlineStart: 4 }}>[{nodeLbl}]</span>
-                                  </div>
-                                  <div style={{ fontSize: 11, color: ragColors[inst.rag], marginTop: 2, fontWeight: 600 }}>
-                                    {statusLabel(inst.rag)}
-                                  </div>
-                                  {(inst.urgency > 0 || inst.impact > 0) && (
-                                    <div style={{ fontSize: 10, color: 'var(--component-text-secondary)', marginTop: 2 }}>
-                                      Urgency: {inst.urgency.toFixed(2)} · Dependencies: {inst.impact}
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                              {upstreamIssues.length > 0 && (
-                                <div style={{ marginTop: 6, paddingLeft: 32 }}>
-                                  <div style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--component-text-secondary)', marginBottom: 3 }}>
-                                    {t('ont_root_cause', 'Root Cause')}
-                                  </div>
-                                  <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                                    {upstreamIssues.slice(0, 3).map(n => {
-                                      const nTypeLbl = NODE_LABEL_KEYS[n.nodeType] ? t(NODE_LABEL_KEYS[n.nodeType]) : n.nodeType;
-                                      return (
-                                        <div key={n.id} style={{ fontSize: 10, color: ragColors[n.rag], display: 'flex', alignItems: 'center', gap: 4 }}>
-                                          <span style={{ width: 5, height: 5, borderRadius: '50%', background: ragColors[n.rag], flexShrink: 0 }} />
-                                          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{n.id} {n.name}</span>
-                                          <span style={{ color: 'var(--component-text-secondary)', fontSize: 9, flexShrink: 0 }}>[{nTypeLbl}]</span>
-                                        </div>
-                                      );
-                                    })}
-                                  </div>
-                                </div>
-                              )}
-                              <button
-                                className="ont-ai-strip-btn"
-                                style={{ fontSize: 9, padding: '2px 6px', marginTop: 6, alignSelf: 'flex-start', marginLeft: 32 }}
-                                onClick={(e) => { e.stopPropagation(); handleOntologyAI('micro', inst.id, 'item'); }}
-                                disabled={aiLoading}
-                                title={t('josoor.common.summarize')}
-                              >✦ {t('josoor.common.summarize')}</button>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  );
-                })()}
+                {/* ── Block 1: Top Issues now merged into Zone 2 (pre-sorted by RAG) ── */}
                 {selectedNode === 'risks' && ragState?.riskStats && (() => {
                   const rs = ragState.riskStats;
                   const sections = [
@@ -1308,12 +1330,134 @@ export default function OntologyHome({ onContinueInChat, year, quarter }: Ontolo
                   const numSort = (a: NodeInstance, b: NodeInstance) =>
                     a.id.localeCompare(b.id, undefined, { numeric: true });
 
+                  // Every node type gets aggregated axis blocks at TOP showing cross-type connections
+                  const DUAL_AXIS: Record<string, { label: string; types: string[] }[]> = {
+                    sectorObjectives: [
+                      { label: 'STRATEGIC INITIATIVES', types: ['policyTools'] },
+                      { label: 'STRATEGIC PRIORITIES', types: ['performance'] },
+                    ],
+                    policyTools: [
+                      { label: 'RISK PATH', types: ['risks'] },
+                      { label: 'VALUE CHAIN', types: ['adminRecords'] },
+                    ],
+                    adminRecords: [
+                      { label: 'STAKEHOLDERS', types: ['govEntity', 'businessUp', 'citizen'] },
+                      { label: 'TRANSACTIONS', types: ['dataTransactions'] },
+                    ],
+                    dataTransactions: [
+                      { label: 'PERFORMANCE', types: ['performance'] },
+                    ],
+                    performance: [
+                      { label: 'RISK PATH', types: ['risks'] },
+                    ],
+                    risks: [
+                      { label: 'CAPABILITIES', types: ['capabilities'] },
+                      { label: 'RISK PLANS', types: ['riskPlans'] },
+                    ],
+                    capabilities: [
+                      { label: 'FOOTPRINT', types: ['orgUnits', 'processes', 'itSystems'] },
+                    ],
+                    orgUnits: [
+                      { label: 'PROJECTS', types: ['projects'] },
+                      { label: 'OPERATIONS', types: ['processes'] },
+                    ],
+                    processes: [
+                      { label: 'SYSTEMS', types: ['itSystems'] },
+                      { label: 'PROJECTS', types: ['projects'] },
+                    ],
+                    itSystems: [
+                      { label: 'VENDORS', types: ['vendors'] },
+                      { label: 'PROJECTS', types: ['projects'] },
+                    ],
+                    vendors: [
+                      { label: 'IT SYSTEMS', types: ['itSystems'] },
+                    ],
+                    projects: [
+                      { label: 'ADOPTION', types: ['changeAdoption'] },
+                    ],
+                    changeAdoption: [
+                      { label: 'PROJECTS', types: ['projects'] },
+                    ],
+                    cultureHealth: [
+                      { label: 'ORG UNITS', types: ['orgUnits'] },
+                    ],
+                    riskPlans: [
+                      { label: 'RISKS', types: ['risks'] },
+                    ],
+                  };
+                  const AXIS_NODE_TYPES = new Set(Object.keys(DUAL_AXIS));
+
+                  // Reusable chain link row renderer
+                  const renderChainLinkRow = (link: LinkedNode) => {
+                    const linkTypeLbl = NODE_LABEL_KEYS[link.nodeType] ? t(NODE_LABEL_KEYS[link.nodeType]) : link.nodeType;
+                    return (
+                      <div key={`${link.nodeType}:${link.id}`} style={{ marginTop: 2 }}>
+                        <div style={{
+                          padding: '5px 8px', borderRadius: 6, display: 'flex', alignItems: 'center', gap: 5,
+                          background: `${ragColors[link.rag]}06`,
+                          border: `1px dashed ${ragColors[link.rag]}25`,
+                        }}>
+                          <span style={{ fontSize: 8, color: 'var(--component-text-secondary)' }}>→</span>
+                          <span style={{ width: 5, height: 5, borderRadius: '50%', background: ragColors[link.rag], flexShrink: 0 }} />
+                          <span style={{ fontSize: 11, color: 'var(--component-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
+                            <span style={{ fontFamily: 'monospace', fontSize: 9, color: 'var(--component-text-secondary)', marginInlineEnd: 3 }}>{link.id}</span>
+                            {link.name}
+                            <span style={{ fontSize: 9, color: 'var(--component-text-secondary)', marginInlineStart: 3 }}>[{linkTypeLbl}]</span>
+                            {link.level && <span style={{ fontSize: 8, color: 'var(--component-text-secondary)', marginInlineStart: 3 }}>{link.level}</span>}
+                            {link.mode && <span style={{ fontSize: 8, fontWeight: 600, marginInlineStart: 3, color: link.mode === 'OPERATE' ? 'var(--color-green)' : 'var(--color-amber)' }}>{link.mode}</span>}
+                          </span>
+                          <span style={{ fontSize: 9, color: ragColors[link.rag], flexShrink: 0, fontWeight: 600 }}>{statusLabel(link.rag)}</span>
+                          <span
+                            onClick={(e) => { e.stopPropagation(); setSelectedNode(link.nodeType); setExpandedIds(new Set([link.id])); }}
+                            style={{ fontSize: 11, cursor: 'pointer', color: 'var(--component-text-secondary)', flexShrink: 0, padding: '0 2px', lineHeight: 1 }}
+                            title="Go to node"
+                          >›</span>
+                          <span
+                            onClick={(e) => { e.stopPropagation(); setSelectedNode(link.nodeType); setExpandedIds(new Set([link.id])); setDetailItemId(link.id); }}
+                            style={{ fontSize: 13, cursor: 'pointer', color: 'var(--component-text-secondary)', flexShrink: 0, padding: '0 2px', lineHeight: 1 }}
+                            title="Open detail card"
+                          >+</span>
+                        </div>
+                      </div>
+                    );
+                  };
+
+                  // Render chain links from CONNECTION_PAIRS (chainNext field) — used for non-axis nodes
+                  const renderChainLinks = (inst: NodeInstance, _depth: number) => {
+                    if (!inst.chainNext || inst.chainNext.length === 0) return null;
+                    // If instance has axisPaths, group chain links by axis label
+                    if (inst.axisPaths && inst.axisPaths.length > 0) {
+                      return (
+                        <>
+                          {inst.axisPaths.map((axis, axIdx) => (
+                            <div key={`ax-${axIdx}`} style={{ marginTop: axIdx > 0 ? 6 : 2 }}>
+                              <div style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--component-text-secondary)', marginBottom: 2, borderBottom: '1px solid var(--component-border)', paddingBottom: 2 }}>
+                                {axis.label} ({axis.chainNext.length})
+                              </div>
+                              {axis.chainNext.map((link: LinkedNode) => renderChainLinkRow(link))}
+                            </div>
+                          ))}
+                        </>
+                      );
+                    }
+                    return (
+                      <>
+                        {inst.chainNext.map((link: LinkedNode) => renderChainLinkRow(link))}
+                      </>
+                    );
+                  };
+
+                  const nodeKey = selectedNode ?? '';
+                  const isAxisNode = AXIS_NODE_TYPES.has(nodeKey);
+                  const isCapabilities = nodeKey === 'capabilities';
+
                   const l1Insts = instances.filter(i => (i.level || i.props?.level) === 'L1').sort(numSort);
                   const l2Insts = instances.filter(i => (i.level || i.props?.level) === 'L2');
                   const l3Insts = instances.filter(i => (i.level || i.props?.level) === 'L3');
 
-                  // Fall back to flat list when no level data
-                  const hasLevels = l1Insts.length > 0 || l2Insts.length > 0 || l3Insts.length > 0;
+                  // Use hierarchy only when L1 nodes exist to form the tree root
+                  // If all items are L3 (default) with no L1 parents, tree would be empty — use flat list
+                  const hasHierarchy = l1Insts.length > 0;
 
                   const toggleExpand = (id: string) => {
                     setExpandedIds(prev => {
@@ -1323,8 +1467,264 @@ export default function OntologyHome({ onContinueInChat, year, quarter }: Ontolo
                     });
                   };
 
-                  if (!hasLevels) {
-                    // Flat fallback
+                  // Build hierarchy tree from a subset of instances
+                  const buildTree = (instSubset: NodeInstance[]): HierarchyNode[] => {
+                    const subL1 = instSubset.filter(i => (i.level || i.props?.level) === 'L1').sort(numSort);
+                    const subL2 = instSubset.filter(i => (i.level || i.props?.level) === 'L2');
+                    const subL3 = instSubset.filter(i => (i.level || i.props?.level) === 'L3');
+                    return subL1.map(l1 => {
+                      const l1Prefix = l1.id.split('.')[0];
+                      const myL2s = subL2
+                        .filter(l2 => l2.id.startsWith(l1Prefix + '.') && l2.id.split('.').length === 2)
+                        .sort(numSort);
+                      const l2Nodes: HierarchyNode[] = myL2s.map(l2 => {
+                        const myL3s = subL3.filter(l3 => l3.id.startsWith(l2.id + '.')).sort(numSort);
+                        return {
+                          instance: l2,
+                          children: myL3s.map(l3 => ({ instance: l3, children: [], worstChildRag: l3.rag })),
+                          worstChildRag: worstRag(myL3s),
+                        };
+                      });
+                      return {
+                        instance: l1,
+                        children: l2Nodes,
+                        worstChildRag: worstRag([...myL2s, ...subL3.filter(l3 => l3.id.startsWith(l1Prefix + '.'))]),
+                      };
+                    });
+                  };
+
+                  const renderL3Item = (node: HierarchyNode, showChainLinks: boolean) => {
+                    const inst = node.instance;
+                    return (
+                      <div key={inst.id} style={{ padding: '8px 10px', borderRadius: 6, background: `${ragColors[inst.rag]}08`, border: `1px solid ${ragColors[inst.rag]}20`, marginBottom: 3 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <span style={{ width: 5, height: 5, borderRadius: '50%', background: ragColors[inst.rag], flexShrink: 0 }} />
+                          <span style={{ fontSize: 12, color: 'var(--component-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
+                            <span style={{ fontFamily: 'monospace', fontSize: 9, color: 'var(--component-text-secondary)', marginInlineEnd: 3 }}>{inst.id}</span>
+                            {inst.name}
+                            <span style={{ fontSize: 9, color: 'var(--component-text-secondary)', marginInlineStart: 3 }}>[{nodeLbl}]</span>
+                          </span>
+                          <span style={{ fontSize: 9, color: ragColors[inst.rag], flexShrink: 0, fontWeight: 600 }}>{statusLabel(inst.rag)}</span>
+                        </div>
+                        {inst.rootCause && inst.rootCause.length > 0 && (
+                          <div style={{ marginTop: 4, paddingLeft: 11 }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                              {inst.rootCause.slice(0, 2).map((step: RootCauseStep, stepIdx: number) => {
+                                const nTypeLbl = NODE_LABEL_KEYS[step.nodeType] ? t(NODE_LABEL_KEYS[step.nodeType]) : step.nodeType;
+                                return (
+                                  <div key={`${step.id}-${stepIdx}`} style={{ fontSize: 9, color: ragColors[step.rag], display: 'flex', alignItems: 'center', gap: 3 }}>
+                                    {stepIdx > 0 && <span style={{ color: 'var(--component-text-secondary)', fontSize: 7 }}>→</span>}
+                                    <span style={{ width: 4, height: 4, borderRadius: '50%', background: ragColors[step.rag], flexShrink: 0 }} />
+                                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{step.id} {step.name} [{nTypeLbl}]</span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+                        <button
+                          className="ont-ai-strip-btn"
+                          style={{ fontSize: 9, padding: '2px 6px', marginTop: 4, marginLeft: 11 }}
+                          onClick={(e) => { e.stopPropagation(); handleOntologyAI('micro', inst.id, 'item'); }}
+                          disabled={aiLoading}
+                          title={t('josoor.common.summarize')}
+                        >✦ {t('josoor.common.summarize')}</button>
+                        {/* Chain links only for non-axis nodes */}
+                        {showChainLinks && (
+                          <div style={{ marginTop: 4, paddingLeft: 11 }}>
+                            {renderChainLinks(inst, 0)}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  };
+
+                  // Render a hierarchy tree for a given set of instances
+                  const renderHierarchyTree = (instSubset: NodeInstance[], showChainLinks: boolean) => {
+                    const subHasHierarchy = instSubset.some(i => (i.level || i.props?.level) === 'L1');
+                    if (!subHasHierarchy && instSubset.length > 0) {
+                      // Derive synthetic L1/L2 groups from ID structure (e.g., "12.3.2" → L1="12", L2="12.3")
+                      const l1Groups = new Map<string, { items: Map<string, NodeInstance[]>; allItems: NodeInstance[] }>();
+                      for (const inst of instSubset) {
+                        const parts = inst.id.split('.');
+                        const l1Key = parts[0] || inst.id;
+                        const l2Key = parts.length >= 2 ? `${parts[0]}.${parts[1]}` : l1Key;
+                        if (!l1Groups.has(l1Key)) l1Groups.set(l1Key, { items: new Map(), allItems: [] });
+                        const group = l1Groups.get(l1Key)!;
+                        group.allItems.push(inst);
+                        if (!group.items.has(l2Key)) group.items.set(l2Key, []);
+                        group.items.get(l2Key)!.push(inst);
+                      }
+                      // Sort L1 groups: worst RAG first
+                      const sortedL1Keys = [...l1Groups.keys()].sort((a, b) => {
+                        const aWorst = worstRag(l1Groups.get(a)!.allItems);
+                        const bWorst = worstRag(l1Groups.get(b)!.allItems);
+                        return ragRank(bWorst) - ragRank(aWorst);
+                      });
+                      return (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                          {sortedL1Keys.map(l1Key => {
+                            const group = l1Groups.get(l1Key)!;
+                            const l1Rag = worstRag(group.allItems);
+                            const l1Expanded = expandedIds.has(`synth:${l1Key}`);
+                            const l1Name = group.allItems[0]?.name || l1Key;
+                            const hasL2Sub = group.items.size > 1;
+                            return (
+                              <div key={`synth:${l1Key}`}>
+                                <div
+                                  onClick={() => toggleExpand(`synth:${l1Key}`)}
+                                  style={{
+                                    padding: '7px 10px', borderRadius: 6, display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer',
+                                    background: `${ragColors[l1Rag]}10`, border: `1px solid ${ragColors[l1Rag]}30`, fontWeight: 600,
+                                  }}
+                                >
+                                  <span style={{ width: 7, height: 7, borderRadius: '50%', background: ragColors[l1Rag], flexShrink: 0 }} />
+                                  <span style={{ fontSize: 12, color: 'var(--component-text-primary)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                    <span style={{ fontFamily: 'monospace', fontSize: 9, color: 'var(--component-text-secondary)', marginInlineEnd: 3 }}>{l1Key}.0</span>
+                                    {l1Name}
+                                    <span style={{ fontSize: 9, color: 'var(--component-text-secondary)', marginInlineStart: 3 }}>({group.allItems.length})</span>
+                                  </span>
+                                  <span style={{ fontSize: 9, color: ragColors[l1Rag], flexShrink: 0, fontWeight: 600, marginInlineEnd: 4 }}>{statusLabel(l1Rag)}</span>
+                                  <span style={{ fontSize: 10, color: 'var(--component-text-secondary)', flexShrink: 0 }}>{l1Expanded ? '▼' : '▶'}</span>
+                                </div>
+                                {l1Expanded && (
+                                  <div style={{ paddingLeft: 12, marginTop: 2 }}>
+                                    {hasL2Sub ? (
+                                      [...group.items.entries()]
+                                        .sort(([, a], [, b]) => ragRank(worstRag(b)) - ragRank(worstRag(a)))
+                                        .map(([l2Key, l2Items]) => {
+                                          const l2Rag = worstRag(l2Items);
+                                          const l2Expanded = expandedIds.has(`synth:${l2Key}`);
+                                          return (
+                                            <div key={`synth:${l2Key}`} style={{ marginBottom: 2 }}>
+                                              <div
+                                                onClick={() => toggleExpand(`synth:${l2Key}`)}
+                                                style={{
+                                                  padding: '6px 10px', borderRadius: 6, display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer',
+                                                  background: `${ragColors[l2Rag]}08`, border: `1px solid ${ragColors[l2Rag]}20`,
+                                                }}
+                                              >
+                                                <span style={{ width: 6, height: 6, borderRadius: '50%', background: ragColors[l2Rag], flexShrink: 0 }} />
+                                                <span style={{ fontSize: 11, color: 'var(--component-text-primary)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                  <span style={{ fontFamily: 'monospace', fontSize: 9, color: 'var(--component-text-secondary)', marginInlineEnd: 3 }}>{l2Key}</span>
+                                                  {l2Items[0]?.name || l2Key}
+                                                  <span style={{ fontSize: 9, color: 'var(--component-text-secondary)', marginInlineStart: 3 }}>({l2Items.length})</span>
+                                                </span>
+                                                <span style={{ fontSize: 9, color: ragColors[l2Rag], flexShrink: 0, fontWeight: 600, marginInlineEnd: 4 }}>{statusLabel(l2Rag)}</span>
+                                                <span style={{ fontSize: 10, color: 'var(--component-text-secondary)', flexShrink: 0 }}>{l2Expanded ? '▼' : '▶'}</span>
+                                              </div>
+                                              {l2Expanded && (
+                                                <div style={{ paddingLeft: 12, marginTop: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                                                  {l2Items.sort((a, b) => ragRank(b.rag) - ragRank(a.rag)).map(inst => (
+                                                    <div key={inst.id} style={{ padding: '5px 8px', borderRadius: 6, display: 'flex', alignItems: 'center', gap: 5, background: `${ragColors[inst.rag]}08`, border: `1px solid ${ragColors[inst.rag]}15` }}>
+                                                      <span style={{ width: 5, height: 5, borderRadius: '50%', background: ragColors[inst.rag], flexShrink: 0 }} />
+                                                      <span style={{ fontSize: 11, color: 'var(--component-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
+                                                        <span style={{ fontFamily: 'monospace', fontSize: 9, color: 'var(--component-text-secondary)', marginInlineEnd: 3 }}>{inst.id}</span>
+                                                        {inst.name}
+                                                        <span style={{ fontSize: 9, color: 'var(--component-text-secondary)', marginInlineStart: 3 }}>[{nodeLbl}]</span>
+                                                      </span>
+                                                      <span style={{ fontSize: 9, color: ragColors[inst.rag], flexShrink: 0, fontWeight: 600 }}>{statusLabel(inst.rag)}</span>
+                                                    </div>
+                                                  ))}
+                                                </div>
+                                              )}
+                                            </div>
+                                          );
+                                        })
+                                    ) : (
+                                      group.allItems.sort((a, b) => ragRank(b.rag) - ragRank(a.rag)).map(inst => (
+                                        <div key={inst.id} style={{ padding: '5px 8px', borderRadius: 6, display: 'flex', alignItems: 'center', gap: 5, background: `${ragColors[inst.rag]}08`, border: `1px solid ${ragColors[inst.rag]}15`, marginBottom: 2 }}>
+                                          <span style={{ width: 5, height: 5, borderRadius: '50%', background: ragColors[inst.rag], flexShrink: 0 }} />
+                                          <span style={{ fontSize: 11, color: 'var(--component-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
+                                            <span style={{ fontFamily: 'monospace', fontSize: 9, color: 'var(--component-text-secondary)', marginInlineEnd: 3 }}>{inst.id}</span>
+                                            {inst.name}
+                                            <span style={{ fontSize: 9, color: 'var(--component-text-secondary)', marginInlineStart: 3 }}>[{nodeLbl}]</span>
+                                          </span>
+                                          <span style={{ fontSize: 9, color: ragColors[inst.rag], flexShrink: 0, fontWeight: 600 }}>{statusLabel(inst.rag)}</span>
+                                        </div>
+                                      ))
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      );
+                    }
+                    const subTree = buildTree(instSubset);
+                    return (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                        {subTree.map(l1Node => {
+                          const l1Inst = l1Node.instance;
+                          const l1Expanded = expandedIds.has(l1Inst.id);
+                          const l1Rag = l1Node.worstChildRag !== 'default' ? l1Node.worstChildRag : l1Inst.rag;
+                          return (
+                            <div key={l1Inst.id}>
+                              <div
+                                onClick={() => toggleExpand(l1Inst.id)}
+                                style={{
+                                  padding: '7px 10px', borderRadius: 6, display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer',
+                                  background: `${ragColors[l1Rag]}10`,
+                                  border: `1px solid ${ragColors[l1Rag]}30`,
+                                  fontWeight: 600,
+                                }}
+                              >
+                                <span style={{ width: 7, height: 7, borderRadius: '50%', background: ragColors[l1Rag], flexShrink: 0 }} />
+                                <span style={{ fontSize: 12, color: 'var(--component-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
+                                  <span style={{ fontFamily: 'monospace', fontSize: 9, color: 'var(--component-text-secondary)', marginInlineEnd: 3 }}>{l1Inst.id}</span>
+                                  {l1Inst.name}
+                                  <span style={{ fontSize: 9, color: 'var(--component-text-secondary)', marginInlineStart: 3 }}>[{nodeLbl}]</span>
+                                </span>
+                                <span style={{ fontSize: 9, color: ragColors[l1Rag], flexShrink: 0, fontWeight: 600, marginInlineEnd: 4 }}>{statusLabel(l1Rag)}</span>
+                                <span style={{ fontSize: 10, color: 'var(--component-text-secondary)', flexShrink: 0 }}>{l1Expanded ? '▼' : '▶'}</span>
+                              </div>
+                              {l1Expanded && (
+                                <div style={{ paddingLeft: 12, marginTop: 2 }}>
+                                  {l1Node.children.map(l2Node => {
+                                    const l2Inst = l2Node.instance;
+                                    const l2Expanded = expandedIds.has(l2Inst.id);
+                                    const l2Rag = l2Node.worstChildRag !== 'default' ? l2Node.worstChildRag : l2Inst.rag;
+                                    return (
+                                      <div key={l2Inst.id} style={{ marginBottom: 2 }}>
+                                        <div
+                                          onClick={() => toggleExpand(l2Inst.id)}
+                                          style={{
+                                            padding: '6px 10px', borderRadius: 6, display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer',
+                                            background: `${ragColors[l2Rag]}08`,
+                                            border: `1px solid ${ragColors[l2Rag]}20`,
+                                          }}
+                                        >
+                                          <span style={{ width: 6, height: 6, borderRadius: '50%', background: ragColors[l2Rag], flexShrink: 0 }} />
+                                          <span style={{ fontSize: 11, color: 'var(--component-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
+                                            <span style={{ fontFamily: 'monospace', fontSize: 9, color: 'var(--component-text-secondary)', marginInlineEnd: 3 }}>{l2Inst.id}</span>
+                                            {l2Inst.name}
+                                            <span style={{ fontSize: 9, color: 'var(--component-text-secondary)', marginInlineStart: 3 }}>[{nodeLbl}]</span>
+                                          </span>
+                                          <span style={{ fontSize: 9, color: ragColors[l2Rag], flexShrink: 0, fontWeight: 600, marginInlineEnd: 4 }}>{statusLabel(l2Rag)}</span>
+                                          <span style={{ fontSize: 10, color: 'var(--component-text-secondary)', flexShrink: 0 }}>{l2Expanded ? '▼' : '▶'}</span>
+                                        </div>
+                                        {l2Expanded && (
+                                          <div style={{ paddingLeft: 12, marginTop: 2 }}>
+                                            {l2Node.children.map(l3Node => renderL3Item(l3Node, showChainLinks))}
+                                            {showChainLinks && renderChainLinks(l2Inst, 0)}
+                                          </div>
+                                        )}
+                                      </div>
+                                    );
+                                  })}
+                                  {showChainLinks && renderChainLinks(l1Inst, 0)}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    );
+                  };
+
+                  if (!hasHierarchy && !isAxisNode && !isCapabilities) {
+                    // Flat fallback for non-axis, non-capability, non-hierarchical nodes
                     return (
                       <div data-micro-target="block2" style={{ marginBottom: 16 }}>
                         <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--component-text-secondary)', marginBottom: 8 }}>
@@ -1347,68 +1747,140 @@ export default function OntologyHome({ onContinueInChat, year, quarter }: Ontolo
                     );
                   }
 
-                  // Build hierarchy tree
-                  const tree: HierarchyNode[] = l1Insts.map(l1 => {
-                    const l1Prefix = l1.id.split('.')[0];
-                    const myL2s = l2Insts
-                      .filter(l2 => l2.id.startsWith(l1Prefix + '.') && l2.id.split('.').length === 2)
-                      .sort(numSort);
-                    const l2Nodes: HierarchyNode[] = myL2s.map(l2 => {
-                      const myL3s = l3Insts
-                        .filter(l3 => l3.id.startsWith(l2.id + '.'))
-                        .sort(numSort);
-                      return {
-                        instance: l2,
-                        children: myL3s.map(l3 => ({ instance: l3, children: [], worstChildRag: l3.rag })),
-                        worstChildRag: worstRag(myL3s),
-                      };
-                    });
-                    return {
-                      instance: l1,
-                      children: l2Nodes,
-                      worstChildRag: worstRag([...myL2s, ...l3Insts.filter(l3 => l3.id.startsWith(l1Prefix + '.'))]),
-                    };
-                  });
+                  // ── CAPABILITIES: BUILD vs OPERATE split ──
+                  if (isCapabilities) {
+                    const buildInsts = instances.filter(i => i.props?.status !== 'active');
+                    const operateInsts = instances.filter(i => i.props?.status === 'active');
+                    const buildCounts = { r: buildInsts.filter(i => i.rag === 'red').length, a: buildInsts.filter(i => i.rag === 'amber').length, g: buildInsts.filter(i => i.rag === 'green').length };
+                    const opCounts = { r: operateInsts.filter(i => i.rag === 'red').length, a: operateInsts.filter(i => i.rag === 'amber').length, g: operateInsts.filter(i => i.rag === 'green').length };
 
-                  const renderL3Item = (node: HierarchyNode) => {
-                    const inst = node.instance;
-                    const upstreamIssues = inst.downstreamNodes.filter(n => n.rag === 'red' || n.rag === 'amber');
-                    return (
-                      <div key={inst.id} style={{ padding: '8px 10px', borderRadius: 6, background: `${ragColors[inst.rag]}08`, border: `1px solid ${ragColors[inst.rag]}20`, marginBottom: 3 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <span style={{ width: 5, height: 5, borderRadius: '50%', background: ragColors[inst.rag], flexShrink: 0 }} />
-                          <span style={{ fontSize: 12, color: 'var(--component-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
-                            <span style={{ fontFamily: 'monospace', fontSize: 9, color: 'var(--component-text-secondary)', marginInlineEnd: 3 }}>{inst.id}</span>
-                            {inst.name}
-                            <span style={{ fontSize: 9, color: 'var(--component-text-secondary)', marginInlineStart: 3 }}>[{nodeLbl}]</span>
-                          </span>
-                          <span style={{ fontSize: 9, color: ragColors[inst.rag], flexShrink: 0, fontWeight: 600 }}>{statusLabel(inst.rag)}</span>
+                    const renderRagBar = (r: number, a: number, g: number) => {
+                      const total = r + a + g;
+                      if (total === 0) return null;
+                      return (
+                        <div style={{ display: 'flex', height: 4, borderRadius: 2, overflow: 'hidden', width: 60, marginLeft: 6 }}>
+                          {g > 0 && <div style={{ flex: g, background: '#22c55e' }} />}
+                          {a > 0 && <div style={{ flex: a, background: '#f59e0b' }} />}
+                          {r > 0 && <div style={{ flex: r, background: '#ef4444' }} />}
                         </div>
-                        {upstreamIssues.length > 0 && (
-                          <div style={{ marginTop: 4, paddingLeft: 11 }}>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                              {upstreamIssues.slice(0, 2).map(n => {
-                                const nTypeLbl = NODE_LABEL_KEYS[n.nodeType] ? t(NODE_LABEL_KEYS[n.nodeType]) : n.nodeType;
+                      );
+                    };
+
+                    return (
+                      <div data-micro-target="block2" style={{ marginBottom: 16 }}>
+                        <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--component-text-secondary)', marginBottom: 8 }}>
+                          {t('ont_all_items', { count: instances.length })}
+                        </div>
+                        {/* BUILD section */}
+                        {buildInsts.length > 0 && (
+                          <div style={{ marginBottom: 12 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6, paddingBottom: 4, borderBottom: '1px solid var(--component-border)' }}>
+                              <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#f59e0b' }}>BUILD</span>
+                              <span style={{ fontSize: 10, color: 'var(--component-text-secondary)' }}>({buildInsts.length})</span>
+                              {renderRagBar(buildCounts.r, buildCounts.a, buildCounts.g)}
+                            </div>
+                            <div style={{ maxHeight: 300, overflowY: 'auto' }}>
+                              {renderHierarchyTree(buildInsts, false)}
+                            </div>
+                          </div>
+                        )}
+                        {/* OPERATE section */}
+                        {operateInsts.length > 0 && (
+                          <div style={{ marginBottom: 12 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6, paddingBottom: 4, borderBottom: '1px solid var(--component-border)' }}>
+                              <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#22c55e' }}>OPERATE</span>
+                              <span style={{ fontSize: 10, color: 'var(--component-text-secondary)' }}>({operateInsts.length})</span>
+                              {renderRagBar(opCounts.r, opCounts.a, opCounts.g)}
+                            </div>
+                            <div style={{ maxHeight: 300, overflowY: 'auto' }}>
+                              {renderHierarchyTree(operateInsts, false)}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  }
+
+                  // ── AXIS NODES: aggregated axis blocks at top + hierarchy tree below ──
+                  if (isAxisNode) {
+                    const axisConfig = DUAL_AXIS[nodeKey] ?? [];
+
+                    // Group chainNext by axis AND by parent instance
+                    const axisBlocks = axisConfig.map((axis, axIdx) => {
+                      const groups: { parent: NodeInstance; links: LinkedNode[] }[] = [];
+                      for (const inst of instances) {
+                        if (!inst.chainNext) continue;
+                        const matching = inst.chainNext.filter(link => axis.types.includes(link.nodeType));
+                        if (matching.length > 0) {
+                          matching.sort((a, b) => {
+                            const diff = ragRank(b.rag) - ragRank(a.rag);
+                            return diff !== 0 ? diff : a.id.localeCompare(b.id, undefined, { numeric: true });
+                          });
+                          groups.push({ parent: inst, links: matching });
+                        }
+                      }
+                      // Sort parent groups: worst RAG first (based on worst child link)
+                      groups.sort((a, b) => {
+                        const aWorst = Math.max(...a.links.map(l => ragRank(l.rag)));
+                        const bWorst = Math.max(...b.links.map(l => ragRank(l.rag)));
+                        return bWorst - aWorst;
+                      });
+                      const totalLinks = groups.reduce((sum, g) => sum + g.links.length, 0);
+                      return { axis, axIdx, groups, totalLinks };
+                    }).filter(b => b.groups.length > 0);
+
+                    return (
+                      <div data-micro-target="block2" style={{ marginBottom: 16 }}>
+                        <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--component-text-secondary)', marginBottom: 8 }}>
+                          {t('ont_all_items', { count: instances.length })}
+                        </div>
+                        {/* Axis blocks: each shows parent → children */}
+                        {axisBlocks.map(({ axis, axIdx, groups, totalLinks }) => (
+                          <div key={`axis-block-${axIdx}`} style={{ marginBottom: 10 }}>
+                            <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--component-text-secondary)', marginBottom: 4, borderBottom: '1px solid var(--component-border)', paddingBottom: 3 }}>
+                              {axis.label} ({totalLinks})
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 2, maxHeight: 300, overflowY: 'auto' }}>
+                              {groups.map(({ parent, links }) => {
+                                const parentExpKey = `axis:${axIdx}:${parent.id}`;
+                                const parentExpanded = expandedIds.has(parentExpKey);
+                                const parentWorstRag = links.reduce((w, l) => ragRank(l.rag) > ragRank(w) ? l.rag : w, 'default' as RagStatus);
                                 return (
-                                  <div key={n.id} style={{ fontSize: 9, color: ragColors[n.rag], display: 'flex', alignItems: 'center', gap: 3 }}>
-                                    <span style={{ width: 4, height: 4, borderRadius: '50%', background: ragColors[n.rag], flexShrink: 0 }} />
-                                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{n.id} {n.name} [{nTypeLbl}]</span>
+                                  <div key={parentExpKey}>
+                                    <div
+                                      onClick={() => toggleExpand(parentExpKey)}
+                                      style={{
+                                        padding: '6px 10px', borderRadius: 6, display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer',
+                                        background: `${ragColors[parentWorstRag]}08`, border: `1px solid ${ragColors[parentWorstRag]}20`,
+                                      }}
+                                    >
+                                      <span style={{ width: 6, height: 6, borderRadius: '50%', background: ragColors[parent.rag], flexShrink: 0 }} />
+                                      <span style={{ fontSize: 11, color: 'var(--component-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
+                                        <span style={{ fontFamily: 'monospace', fontSize: 9, color: 'var(--component-text-secondary)', marginInlineEnd: 3 }}>{parent.id}</span>
+                                        {parent.name}
+                                        <span style={{ fontSize: 9, color: 'var(--component-text-secondary)', marginInlineStart: 3 }}>[{nodeLbl}]</span>
+                                        <span style={{ fontSize: 9, color: 'var(--component-text-secondary)', marginInlineStart: 3 }}>({links.length})</span>
+                                      </span>
+                                      <span style={{ fontSize: 9, color: ragColors[parent.rag], flexShrink: 0, fontWeight: 600, marginInlineEnd: 4 }}>{statusLabel(parent.rag)}</span>
+                                      <span style={{ fontSize: 10, color: 'var(--component-text-secondary)', flexShrink: 0 }}>{parentExpanded ? '▼' : '▶'}</span>
+                                    </div>
+                                    {parentExpanded && (
+                                      <div style={{ paddingLeft: 16, marginTop: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                                        {links.map(link => renderChainLinkRow(link))}
+                                      </div>
+                                    )}
                                   </div>
                                 );
                               })}
                             </div>
                           </div>
-                        )}
-                        <button
-                          className="ont-ai-strip-btn"
-                          style={{ fontSize: 9, padding: '2px 6px', marginTop: 4, marginLeft: 11 }}
-                          onClick={(e) => { e.stopPropagation(); handleOntologyAI('micro', inst.id, 'item'); }}
-                          disabled={aiLoading}
-                          title={t('josoor.common.summarize')}
-                        >✦ {t('josoor.common.summarize')}</button>
+                        ))}
                       </div>
                     );
-                  };
+                  }
+
+                  // ── NON-AXIS, NON-CAPABILITY: standard hierarchy with per-item chain links ──
+                  const tree = buildTree(instances);
 
                   return (
                     <div data-micro-target="block2" style={{ marginBottom: 16 }}>
@@ -1416,72 +1888,7 @@ export default function OntologyHome({ onContinueInChat, year, quarter }: Ontolo
                         {t('ont_all_items', { count: instances.length })}
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 2, maxHeight: 400, overflowY: 'auto' }}>
-                        {tree.map(l1Node => {
-                          const l1Inst = l1Node.instance;
-                          const l1Expanded = expandedIds.has(l1Inst.id);
-                          const l1Rag = l1Node.worstChildRag !== 'default' ? l1Node.worstChildRag : l1Inst.rag;
-                          return (
-                            <div key={l1Inst.id}>
-                              {/* L1 row */}
-                              <div
-                                onClick={() => toggleExpand(l1Inst.id)}
-                                style={{
-                                  padding: '7px 10px', borderRadius: 6, display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer',
-                                  background: `${ragColors[l1Rag]}10`,
-                                  border: `1px solid ${ragColors[l1Rag]}30`,
-                                  fontWeight: 600,
-                                }}
-                              >
-                                <span style={{ width: 7, height: 7, borderRadius: '50%', background: ragColors[l1Rag], flexShrink: 0 }} />
-                                <span style={{ fontSize: 12, color: 'var(--component-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
-                                  <span style={{ fontFamily: 'monospace', fontSize: 9, color: 'var(--component-text-secondary)', marginInlineEnd: 3 }}>{l1Inst.id}</span>
-                                  {l1Inst.name}
-                                  <span style={{ fontSize: 9, color: 'var(--component-text-secondary)', marginInlineStart: 3 }}>[{nodeLbl}]</span>
-                                </span>
-                                <span style={{ fontSize: 9, color: ragColors[l1Rag], flexShrink: 0, fontWeight: 600, marginInlineEnd: 4 }}>{statusLabel(l1Rag)}</span>
-                                <span style={{ fontSize: 10, color: 'var(--component-text-secondary)', flexShrink: 0 }}>{l1Expanded ? '▼' : '▶'}</span>
-                              </div>
-                              {/* L2 rows (when L1 expanded) */}
-                              {l1Expanded && (
-                                <div style={{ paddingLeft: 12, marginTop: 2 }}>
-                                  {l1Node.children.map(l2Node => {
-                                    const l2Inst = l2Node.instance;
-                                    const l2Expanded = expandedIds.has(l2Inst.id);
-                                    const l2Rag = l2Node.worstChildRag !== 'default' ? l2Node.worstChildRag : l2Inst.rag;
-                                    return (
-                                      <div key={l2Inst.id} style={{ marginBottom: 2 }}>
-                                        {/* L2 row */}
-                                        <div
-                                          onClick={() => toggleExpand(l2Inst.id)}
-                                          style={{
-                                            padding: '6px 10px', borderRadius: 6, display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer',
-                                            background: `${ragColors[l2Rag]}08`,
-                                            border: `1px solid ${ragColors[l2Rag]}20`,
-                                          }}
-                                        >
-                                          <span style={{ width: 6, height: 6, borderRadius: '50%', background: ragColors[l2Rag], flexShrink: 0 }} />
-                                          <span style={{ fontSize: 11, color: 'var(--component-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
-                                            <span style={{ fontFamily: 'monospace', fontSize: 9, color: 'var(--component-text-secondary)', marginInlineEnd: 3 }}>{l2Inst.id}</span>
-                                            {l2Inst.name}
-                                            <span style={{ fontSize: 9, color: 'var(--component-text-secondary)', marginInlineStart: 3 }}>[{nodeLbl}]</span>
-                                          </span>
-                                          <span style={{ fontSize: 9, color: ragColors[l2Rag], flexShrink: 0, fontWeight: 600, marginInlineEnd: 4 }}>{statusLabel(l2Rag)}</span>
-                                          <span style={{ fontSize: 10, color: 'var(--component-text-secondary)', flexShrink: 0 }}>{l2Expanded ? '▼' : '▶'}</span>
-                                        </div>
-                                        {/* L3 rows (when L2 expanded) */}
-                                        {l2Expanded && (
-                                          <div style={{ paddingLeft: 12, marginTop: 2 }}>
-                                            {l2Node.children.map(l3Node => renderL3Item(l3Node))}
-                                          </div>
-                                        )}
-                                      </div>
-                                    );
-                                  })}
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })}
+                        {renderHierarchyTree(instances, true)}
                       </div>
                     </div>
                   );
@@ -1506,6 +1913,84 @@ export default function OntologyHome({ onContinueInChat, year, quarter }: Ontolo
                   </div>
                 )}
 
+
+                {/* ── Detail Card (opened via + button) ── */}
+                {detailItemId && (() => {
+                  const detailInst = instances.find(i => i.id === detailItemId);
+                  if (!detailInst) return null;
+                  const detailTypeLbl = nodeLbl;
+                  return (
+                    <div style={{ marginBottom: 16, padding: 12, borderRadius: 8, background: 'var(--component-bg-secondary)', border: `2px solid ${ragColors[detailInst.rag]}40` }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <span style={{ width: 8, height: 8, borderRadius: '50%', background: ragColors[detailInst.rag] }} />
+                          <span style={{ fontSize: 13, fontWeight: 700 }}>{detailInst.id} {detailInst.name} [{detailTypeLbl}]</span>
+                        </div>
+                        <span onClick={() => setDetailItemId(null)} style={{ cursor: 'pointer', fontSize: 14, color: 'var(--component-text-secondary)' }}>✕</span>
+                      </div>
+                      <div style={{ fontSize: 11, color: 'var(--component-text-secondary)', display: 'flex', gap: 12, marginBottom: 8 }}>
+                        <span>Status: <b style={{ color: ragColors[detailInst.rag] }}>{statusLabel(detailInst.rag)}</b></span>
+                        <span>Level: {detailInst.level}</span>
+                        <span>Urgency: {(detailInst.urgency * 100).toFixed(0)}%</span>
+                        <span>Impact: {detailInst.impact}</span>
+                      </div>
+                      {detailInst.rootCause && detailInst.rootCause.length > 0 && (
+                        <div style={{ marginBottom: 8 }}>
+                          <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', color: 'var(--component-text-secondary)', marginBottom: 4 }}>{t('ont_root_cause')}</div>
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                            {detailInst.rootCause.map((step, idx) => {
+                              const stepLbl = NODE_LABEL_KEYS[step.nodeType] ? t(NODE_LABEL_KEYS[step.nodeType]) : step.nodeType;
+                              return (
+                                <span key={idx} style={{ fontSize: 10, color: ragColors[step.rag], display: 'flex', alignItems: 'center', gap: 2 }}>
+                                  {idx > 0 && <span style={{ color: 'var(--component-text-secondary)' }}>→</span>}
+                                  <span style={{ width: 4, height: 4, borderRadius: '50%', background: ragColors[step.rag] }} />
+                                  {step.id} {step.name} [{stepLbl}]
+                                </span>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                      {detailInst.chainNext && detailInst.chainNext.length > 0 && (
+                        <div style={{ marginBottom: 8 }}>
+                          <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', color: 'var(--component-text-secondary)', marginBottom: 4 }}>Chain Links</div>
+                          {detailInst.chainNext.map((ln, idx) => {
+                            const lnLbl = NODE_LABEL_KEYS[ln.nodeType] ? t(NODE_LABEL_KEYS[ln.nodeType]) : ln.nodeType;
+                            return (
+                              <div key={idx} style={{ fontSize: 10, display: 'flex', alignItems: 'center', gap: 4, marginBottom: 2 }}>
+                                <span style={{ width: 4, height: 4, borderRadius: '50%', background: ragColors[ln.rag] }} />
+                                <span style={{ color: ragColors[ln.rag] }}>{ln.id} {ln.name} [{lnLbl}]</span>
+                                {ln.mode && <span style={{ fontSize: 8, fontWeight: 600, color: ln.mode === 'OPERATE' ? 'var(--color-green)' : 'var(--color-amber)' }}>{ln.mode}</span>}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                      {detailInst.upstreamNodes.length > 0 && (
+                        <div style={{ marginBottom: 8 }}>
+                          <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', color: 'var(--component-text-secondary)', marginBottom: 4 }}>Upstream ({detailInst.upstreamNodes.length})</div>
+                          {detailInst.upstreamNodes.slice(0, 5).map((u, idx) => (
+                            <div key={idx} style={{ fontSize: 10, display: 'flex', alignItems: 'center', gap: 3, marginBottom: 1 }}>
+                              <span style={{ width: 3, height: 3, borderRadius: '50%', background: ragColors[u.rag] }} />
+                              <span>{u.id} {u.name} [{u.nodeType}]</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {detailInst.downstreamNodes.length > 0 && (
+                        <div>
+                          <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', color: 'var(--component-text-secondary)', marginBottom: 4 }}>Downstream ({detailInst.downstreamNodes.length})</div>
+                          {detailInst.downstreamNodes.slice(0, 5).map((d, idx) => (
+                            <div key={idx} style={{ fontSize: 10, display: 'flex', alignItems: 'center', gap: 3, marginBottom: 1 }}>
+                              <span style={{ width: 3, height: 3, borderRadius: '50%', background: ragColors[d.rag] }} />
+                              <span>{d.id} {d.name} [{d.nodeType}]</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
 
                 {instances.length === 0 && (
                   <p style={{ fontSize: 13, color: 'var(--component-text-secondary)', textAlign: 'center', padding: 20 }}>

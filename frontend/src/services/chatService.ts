@@ -49,7 +49,8 @@ function processMessagePayload(message: any, existingArtifacts: any[] = []): any
     console.log('[processMessagePayload] Step 6 - NO ui- tags found in cleanAnswer');
     
     // CRITICAL FIX: If datasets exist but no tags, create auto-artifacts
-    if (datasets && Object.keys(datasets).length > 0) {
+    // IMPORTANT: never override/compete with backend-provided artifacts.
+    if ((!existingArtifacts || existingArtifacts.length === 0) && datasets && Object.keys(datasets).length > 0) {
       console.log('[processMessagePayload] Auto-creating artifacts from datasets without tags');
       newArtifacts = Object.entries(datasets).map(([id, dataset]: [string, any]) => ({
         id: dataset.id || id,
@@ -232,6 +233,15 @@ class ChatService {
   private adaptChartArtifact(artifact: any): any {
 
     const content = artifact.content || {};
+
+    // Media-mcp chart path: keep server-rendered image URL artifacts untouched.
+    if (content.url) {
+      return {
+        ...artifact,
+        artifact_type: artifact.artifact_type || 'CHART',
+        content,
+      };
+    }
 
     // TRUST THE BACKEND: If config exists, use it.
     // Handle case where config is at root (LLM output) or inside content

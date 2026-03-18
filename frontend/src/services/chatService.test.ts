@@ -46,4 +46,46 @@ describe('chatService.getConversations', () => {
     const options = (global.fetch as jest.Mock).mock.calls[0][1];
     expect(options.headers['Authorization']).toBe('Bearer test-token');
   });
+
+  it('preserves media-mcp chart URL artifacts in adaptArtifacts', async () => {
+    const response: any = {
+      artifacts: [
+        {
+          artifact_type: 'CHART',
+          title: 'Revenue Trend',
+          content: {
+            url: 'https://example.supabase.co/storage/v1/object/public/media/user_1/2026-03-16/chart.png',
+            file_id: 'abc123',
+          },
+        },
+      ],
+    };
+
+    const adapted = chatService.adaptArtifacts(response);
+    expect(adapted.artifacts).toHaveLength(1);
+    expect(adapted.artifacts[0].artifact_type).toBe('CHART');
+    expect(adapted.artifacts[0].content.url).toContain('/media/');
+    expect(adapted.artifacts[0].content.file_id).toBe('abc123');
+  });
+
+  it('does not transform FILE artifacts in adaptArtifacts', async () => {
+    const response: any = {
+      artifacts: [
+        {
+          artifact_type: 'FILE',
+          title: 'Brief.pptx',
+          content: {
+            url: 'https://example.supabase.co/storage/v1/object/public/media/user_1/2026-03-16/brief.pptx',
+            filename: 'Brief.pptx',
+            type: 'pptx',
+          },
+        },
+      ],
+    };
+
+    const adapted = chatService.adaptArtifacts(response);
+    expect(adapted.artifacts[0].artifact_type).toBe('FILE');
+    expect(adapted.artifacts[0].content.filename).toBe('Brief.pptx');
+    expect(adapted.artifacts[0].content.url).toMatch(/\.pptx$/);
+  });
 });

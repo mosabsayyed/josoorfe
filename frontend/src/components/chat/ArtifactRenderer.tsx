@@ -23,7 +23,6 @@ import {
   TableHeader,
   TableRow,
 } from '../ui/table';
-import { StrategyReportChartRenderer } from '../desks/sector/StrategyReportChartRenderer';
 import type {
   Artifact,
   ChartArtifact,
@@ -133,12 +132,15 @@ function ArtifactRendererContent({ artifact, language = 'en', fullHeight = false
     const type = artifact.artifact_type.toUpperCase();
     switch (type) {
       case 'CHART':
-        // Server-rendered chart image (media-mcp) path
+        // Media-mcp path only: CHART must provide a server-generated image URL.
         if ((artifact.content as any)?.url) {
           return <MediaRenderer url={(artifact.content as any).url} type="image" title={artifact.title} />;
         }
-        // Legacy fallback: client-side Highcharts rendering
-        return <StrategyReportChartRenderer artifact={artifact as ChartArtifact} width="100%" height={fullHeight ? '100%' : '400px'} />;
+        return (
+          <div style={{ padding: 20, color: 'var(--component-color-danger)', textAlign: 'center' }}>
+            Chart URL is missing. Regenerate the report to render chart images.
+          </div>
+        );
       case 'TABLE':
         return <TableRenderer artifact={artifact as TableArtifact} language={language} fullHeight={fullHeight} />;
       case 'REPORT':

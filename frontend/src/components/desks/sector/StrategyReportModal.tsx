@@ -207,8 +207,8 @@ const StrategyReportModal: React.FC<StrategyReportModalProps> = ({
                                 {/* Strip inline font/size styles from LLM output to let CSS control typography */}
                                 {(htmlContent.replace(/\s*font-family\s*:[^;"'}]+;?/gi, '').replace(/\s*font-size\s*:[^;"'}]+;?/gi, '')).split(/(<ui-chart[^>]*>|<ui-table[^>]*>)/g).map((part, index) => {
                                     // Check if this part is a chart or table tag
-                                    const chartMatch = part.match(/<ui-chart[^>]*id=["']([^"']+)["'][^>]*>/);
-                                    const tableMatch = part.match(/<ui-table[^>]*id=["']([^"']+)["'][^>]*>/);
+                                    const chartMatch = part.match(/<ui-chart[^>]*(?:data-id|id)=["']([^"']+)["'][^>]*>/);
+                                    const tableMatch = part.match(/<ui-table[^>]*(?:data-id|id)=["']([^"']+)["'][^>]*>/);
 
                                     if (chartMatch) {
                                         const chartId = chartMatch[1];

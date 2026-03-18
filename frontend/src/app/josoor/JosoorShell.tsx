@@ -262,10 +262,25 @@ export default function JosoorShell() {
         loadConversations();
     }, [activeConversationId, handleNewChat, loadConversations]);
 
-    const handleOpenArtifact = useCallback((artifact: any) => {
-        setCanvasArtifacts([artifact]);
+    const handleOpenArtifact = useCallback((artifact: any, allArtifacts?: any[]) => {
+        const list = allArtifacts && allArtifacts.length > 0 ? allArtifacts : [artifact];
+        setCanvasArtifacts(list);
         setIsCanvasOpen(true);
     }, []);
+
+    const handleConvertToPPT = useCallback((artifact: any) => {
+        handleSendMessage(
+            `[SYSTEM: User requested PPTX conversion of the above report "${artifact.title || 'Report'}". Follow the PPTX workflow: propose slide structure, align with user, then generate.]`,
+            { suppress_canvas_auto_open: true }
+        );
+    }, [handleSendMessage]);
+
+    const handleConvertToDocx = useCallback((artifact: any) => {
+        handleSendMessage(
+            `[SYSTEM: User requested DOCX conversion of the above report "${artifact.title || 'Report'}". Follow the DOCX workflow: propose TOC structure, align with user, then generate.]`,
+            { suppress_canvas_auto_open: true }
+        );
+    }, [handleSendMessage]);
 
     const handleIntervene = useCallback((ctx: InterventionContext) => {
         setInterventionContext(ctx);
@@ -421,6 +436,8 @@ export default function JosoorShell() {
 
                             isOpen={isCanvasOpen}
                             onClose={() => setIsCanvasOpen(false)}
+                            onConvertToPPT={handleConvertToPPT}
+                            onConvertToDocx={handleConvertToDocx}
                         />
                     </div>
                 )
