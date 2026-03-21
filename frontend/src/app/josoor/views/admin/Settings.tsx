@@ -371,6 +371,7 @@ export default function AdminSettings() {
                                             value={providerDraft.token_param || 'max_tokens'}
                                             onChange={(e) => updateProviderField('token_param', e.target.value)}
                                             className="form-select"
+                                            disabled={isViewer}
                                         >
                                             <option value="max_tokens">max_tokens</option>
                                             <option value="max_completion_tokens">max_completion_tokens</option>
@@ -383,6 +384,7 @@ export default function AdminSettings() {
                                             value={providerDraft.api_path || 'chat_completions'}
                                             onChange={(e) => updateProviderField('api_path', e.target.value)}
                                             className="form-select"
+                                            disabled={isViewer}
                                         >
                                             <option value="chat_completions">Chat Completions</option>
                                             <option value="responses_groq">Responses API (Groq — server-side MCP)</option>
@@ -397,6 +399,7 @@ export default function AdminSettings() {
                                             value={providerDraft.tool_choice_initial || 'auto'}
                                             onChange={(e) => updateProviderField('tool_choice_initial', e.target.value)}
                                             className="form-select"
+                                            disabled={isViewer}
                                         >
                                             <option value="auto">auto</option>
                                             <option value="required">required</option>
@@ -410,6 +413,7 @@ export default function AdminSettings() {
                                             value={providerDraft.tool_choice_loop || 'auto'}
                                             onChange={(e) => updateProviderField('tool_choice_loop', e.target.value)}
                                             className="form-select"
+                                            disabled={isViewer}
                                         >
                                             <option value="auto">auto</option>
                                             <option value="required">required</option>
@@ -424,6 +428,7 @@ export default function AdminSettings() {
                                             type="checkbox"
                                             checked={providerDraft.reasoning_enabled || false}
                                             onChange={(e) => updateProviderField('reasoning_enabled', e.target.checked)}
+                                            disabled={isViewer}
                                         />
                                         <span>Reasoning Enabled</span>
                                     </label>
@@ -437,6 +442,7 @@ export default function AdminSettings() {
                                                 value={providerDraft.reasoning_effort || 'medium'}
                                                 onChange={(e) => updateProviderField('reasoning_effort', e.target.value)}
                                                 className="form-select"
+                                                disabled={isViewer}
                                             >
                                                 <option value="low">low</option>
                                                 <option value="medium">medium</option>
