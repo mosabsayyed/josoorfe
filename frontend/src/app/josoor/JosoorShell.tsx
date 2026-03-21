@@ -61,6 +61,7 @@ export default function JosoorShell() {
     const [streamingMessage, setStreamingMessage] = useState<APIMessage | null>(null);
     const [selectedPersona, setSelectedPersona] = useState<string | null>('vision_expert');
     const [isPersonaLocked, setIsPersonaLocked] = useState(false);
+    const [activeWorkflowKey, setActiveWorkflowKey] = useState<string | null>(null);
 
     // Active View State
     const [activeView, setActiveView] = useState<JosoorView>('home');
@@ -194,7 +195,7 @@ export default function JosoorShell() {
     }, [activeConversationId]);
 
     // Handle Send Message (Copied from ChatAppPage)
-    const handleSendMessage = useCallback(async (messageText: string, options?: { suppress_canvas_auto_open?: boolean }) => {
+    const handleSendMessage = useCallback(async (messageText: string, options?: { suppress_canvas_auto_open?: boolean; workflow_key?: string }) => {
         const tempId = `temp-${Date.now()}`;
         const tempMsg: APIMessage = {
             id: parseInt(tempId) || Date.now(),
@@ -208,10 +209,17 @@ export default function JosoorShell() {
         setIsLoading(true);
 
         try {
+            // Sticky workflow_key: set on conversion start, persists for all follow-up messages
+            const effectiveWorkflowKey = options?.workflow_key || activeWorkflowKey;
+            if (options?.workflow_key && options.workflow_key !== activeWorkflowKey) {
+                setActiveWorkflowKey(options.workflow_key);
+            }
+
             const basics: any = {
                 query: messageText,
                 conversation_id: activeConversationId && activeConversationId > 0 ? activeConversationId : undefined,
                 ...(selectedPersona && { prompt_key: selectedPersona }),
+                ...(effectiveWorkflowKey && { workflow_key: effectiveWorkflowKey }),
                 language,
             };
 
@@ -241,6 +249,7 @@ export default function JosoorShell() {
     }, [activeConversationId, selectedPersona, isPersonaLocked, loadConversations, t]);
 
     const handleNewChat = useCallback(() => {
+        setActiveWorkflowKey(null);
         setActiveConversationId(null);
         setMessages([]);
         setCanvasArtifacts([]);
@@ -248,6 +257,7 @@ export default function JosoorShell() {
     }, []);
 
     const handleSelectConversation = useCallback((id: number) => {
+        setActiveWorkflowKey(null);
         setActiveConversationId(id);
         setActiveView('chat');
     }, []);
@@ -271,14 +281,14 @@ export default function JosoorShell() {
     const handleConvertToPPT = useCallback((artifact: any) => {
         handleSendMessage(
             `[SYSTEM: User requested PPTX conversion of the above report "${artifact.title || 'Report'}". Follow the PPTX workflow: propose slide structure, align with user, then generate.]`,
-            { suppress_canvas_auto_open: true }
+            { suppress_canvas_auto_open: true, workflow_key: 'pptx_progressive_workflow' }
         );
     }, [handleSendMessage]);
 
     const handleConvertToDocx = useCallback((artifact: any) => {
         handleSendMessage(
             `[SYSTEM: User requested DOCX conversion of the above report "${artifact.title || 'Report'}". Follow the DOCX workflow: propose TOC structure, align with user, then generate.]`,
-            { suppress_canvas_auto_open: true }
+            { suppress_canvas_auto_open: true, workflow_key: 'docx_workflow' }
         );
     }, [handleSendMessage]);
 
