@@ -291,14 +291,14 @@ export default function ChatAppPage() {
 
   const handleConvertToPPT = useCallback((artifact: any) => {
     handleSendMessage(
-      `[SYSTEM: User requested PPTX conversion of the above report "${artifact.title || 'Report'}". Follow the PPTX workflow: propose slide structure, align with user, then generate.]`,
+      `Convert the above report to PowerPoint`,
       { suppress_canvas_auto_open: true, workflow_key: 'pptx_progressive_workflow' }
     );
   }, [handleSendMessage]);
 
   const handleConvertToDocx = useCallback((artifact: any) => {
     handleSendMessage(
-      `[SYSTEM: User requested DOCX conversion of the above report "${artifact.title || 'Report'}". Follow the DOCX workflow: propose TOC structure, align with user, then generate.]`,
+      `Convert the above report to Word document`,
       { suppress_canvas_auto_open: true, workflow_key: 'docx_workflow' }
     );
   }, [handleSendMessage]);
