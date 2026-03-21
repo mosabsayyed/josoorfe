@@ -153,6 +153,7 @@ export default function JosoorDesktopPage() {
   const [streamingMessage] = useState<APIMessage | null>(null);
   const [selectedPersona, setSelectedPersona] = useState<string | null>('vision_expert');
   const [isPersonaLocked, setIsPersonaLocked] = useState(false);
+  const [activeWorkflowKey, setActiveWorkflowKey] = useState<string | null>(null);
   const [interventionContext, setInterventionContext] = useState<InterventionContext | null>(null);
   const [focusCapId, setFocusCapId] = useState<string | null>(null);
   const [conceptHelpWindowId, setConceptHelpWindowId] = useState<string | null>(null);
@@ -499,15 +500,21 @@ export default function JosoorDesktopPage() {
     load();
   }, [activeConversationId]);
 
-  const handleSendMessage = useCallback(async (messageText: string, options?: { suppress_canvas_auto_open?: boolean }) => {
+  const handleSendMessage = useCallback(async (messageText: string, options?: { suppress_canvas_auto_open?: boolean; workflow_key?: string }) => {
     const tempMsg: APIMessage = { id: Date.now(), role: 'user', content: messageText, created_at: new Date().toISOString(), metadata: {} };
     setMessages(prev => [...prev, tempMsg]);
     setIsLoading(true);
     try {
+      const effectiveWorkflowKey = options?.workflow_key || activeWorkflowKey;
+      if (options?.workflow_key && options.workflow_key !== activeWorkflowKey) {
+        setActiveWorkflowKey(options.workflow_key);
+      }
       const response = await chatService.sendMessage({
         query: messageText,
         conversation_id: activeConversationId && activeConversationId > 0 ? activeConversationId : undefined,
-        ...(selectedPersona && { prompt_key: selectedPersona }), language,
+        ...(selectedPersona && { prompt_key: selectedPersona }),
+        ...(effectiveWorkflowKey && { workflow_key: effectiveWorkflowKey }),
+        language,
       });
       if (selectedPersona && !isPersonaLocked) setIsPersonaLocked(true);
       const answer = response.llm_payload?.answer || response.message || response.answer || '';
@@ -535,15 +542,15 @@ export default function JosoorDesktopPage() {
 
   const handleConvertToPPT = useCallback((artifact: any) => {
     handleSendMessage(
-      `[SYSTEM: User requested PPTX conversion of the above report "${artifact.title || 'Report'}". Follow the PPTX workflow: propose slide structure, align with user, then generate.]`,
-      { suppress_canvas_auto_open: true }
+      `Convert the above report to PowerPoint`,
+      { suppress_canvas_auto_open: true, workflow_key: 'pptx_progressive_workflow' }
     );
   }, [handleSendMessage]);
 
   const handleConvertToDocx = useCallback((artifact: any) => {
     handleSendMessage(
-      `[SYSTEM: User requested DOCX conversion of the above report "${artifact.title || 'Report'}". Follow the DOCX workflow: propose TOC structure, align with user, then generate.]`,
-      { suppress_canvas_auto_open: true }
+      `Convert the above report to Word document`,
+      { suppress_canvas_auto_open: true, workflow_key: 'docx_workflow' }
     );
   }, [handleSendMessage]);
 
