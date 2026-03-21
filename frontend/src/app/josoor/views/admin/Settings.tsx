@@ -34,16 +34,17 @@ export default function AdminSettings() {
 
 
     // Load providers
-    const loadProviders = async () => {
+    const loadProviders = async (preserveSelection = false) => {
         try {
             const data = await adminService.getProviders();
             setProviders(data);
-            setProviders(data);
-            const active = data.find((p: any) => p.is_active);
-            if (active) {
-                setSelectedProviderId(active.id);
-            } else if (data.length > 0) {
-                setSelectedProviderId(data[0].id);
+            if (!preserveSelection) {
+                const active = data.find((p: any) => p.is_active);
+                if (active) {
+                    setSelectedProviderId(active.id);
+                } else if (data.length > 0) {
+                    setSelectedProviderId(data[0].id);
+                }
             }
         } catch (err: any) {
             console.error('Failed to load providers:', err);
@@ -124,7 +125,7 @@ export default function AdminSettings() {
             const { id, is_active, ...editableFields } = providerDraft;
             await adminService.updateProvider(selectedProviderId, editableFields);
             await loadProviderDetail(selectedProviderId);
-            await loadProviders();
+            await loadProviders(true);
         } catch (err: any) {
             setError(err.message || 'Failed to save provider');
         } finally {
