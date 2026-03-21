@@ -61,6 +61,7 @@ export default function ChatAppPage() {
   const [streamingMessage, setStreamingMessage] = useState<APIMessage | null>(null);
   const [initialCanvasIndex, setInitialCanvasIndex] = useState(0);
   const [activeWorkflowKey, setActiveWorkflowKey] = useState<string | null>(null);
+  const [activePromptKey, setActivePromptKey] = useState<string | null>(null);
 
   // Desks State
   const [year, setYear] = useState('2025');
@@ -170,7 +171,7 @@ export default function ChatAppPage() {
 
 
   // SEND MESSAGE
-  const handleSendMessage = useCallback(async (messageText: string, options?: { suppress_canvas_auto_open?: boolean; workflow_key?: string }) => {
+  const handleSendMessage = useCallback(async (messageText: string, options?: { suppress_canvas_auto_open?: boolean; workflow_key?: string; prompt_key?: string }) => {
     const tempId = `temp-${Date.now()}`;
     const tempMsg: APIMessage = {
       id: parseInt(tempId) || Date.now(),
@@ -184,16 +185,21 @@ export default function ChatAppPage() {
     setIsLoading(true);
 
     try {
-      // Sticky workflow_key: set on conversion start, persists for all follow-up messages
+      // Sticky keys: set on first use, persist for all follow-up messages in same conversation
       const effectiveWorkflowKey = options?.workflow_key || activeWorkflowKey;
+      const effectivePromptKey = options?.prompt_key || activePromptKey;
       if (options?.workflow_key && options.workflow_key !== activeWorkflowKey) {
         setActiveWorkflowKey(options.workflow_key);
+      }
+      if (options?.prompt_key && options.prompt_key !== activePromptKey) {
+        setActivePromptKey(options.prompt_key);
       }
 
       const basics: any = {
         query: messageText,
         conversation_id: activeConversationId && activeConversationId > 0 ? activeConversationId : undefined,
         ...(effectiveWorkflowKey && { workflow_key: effectiveWorkflowKey }),
+        ...(effectivePromptKey && { prompt_key: effectivePromptKey }),
       };
 
       if (authService.isGuestMode()) {
@@ -300,6 +306,7 @@ export default function ChatAppPage() {
   // Handlers
   const handleNewChat = useCallback(() => {
     setActiveWorkflowKey(null);
+    setActivePromptKey(null);
     setActiveConversationId(null);
     setMessages([]);
     setCanvasArtifacts([]);
@@ -308,6 +315,7 @@ export default function ChatAppPage() {
 
   const handleSelectConversation = useCallback((id: number) => {
     setActiveWorkflowKey(null);
+    setActivePromptKey(null);
     setActiveConversationId(id);
     if (location.pathname.includes('/desk')) navigate('/chat');
   }, [location.pathname, navigate]);
