@@ -96,7 +96,8 @@ export default function AdminSettings() {
         if (key === 'api_path') {
             const suffixMap: Record<string, string> = {
                 chat_completions: '/chat/completions',
-                responses: '/responses',
+                responses_groq: '/responses',
+                responses_gpt: '/responses',
                 gemini: '/interactions',
             };
             const currentPath = providerDraft.endpoint_path_template || '/v1/chat/completions';
@@ -383,9 +384,10 @@ export default function AdminSettings() {
                                             onChange={(e) => updateProviderField('api_path', e.target.value)}
                                             className="form-select"
                                         >
-                                            <option value="chat_completions">chat_completions</option>
-                                            <option value="responses">responses</option>
-                                            <option value="gemini">gemini</option>
+                                            <option value="chat_completions">Chat Completions</option>
+                                            <option value="responses_groq">Responses API (Groq — server-side MCP)</option>
+                                            <option value="responses_gpt">Responses API (OpenAI — client-side tools)</option>
+                                            <option value="gemini">Gemini Native</option>
                                         </select>
                                     </div>
 
