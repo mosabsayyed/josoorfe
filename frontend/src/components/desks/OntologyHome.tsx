@@ -100,6 +100,9 @@ const NODE_LABEL_KEYS: Record<string, string> = {
   vendors:          'ont_node_vendors',
   projects:         'ont_node_projects',
   changeAdoption:   'ont_node_changeAdoption',
+  businessUp:       'ont_node_businessUp',
+  citizen:          'ont_node_citizen',
+  govEntity:        'ont_node_govEntity',
 };
 
 
@@ -166,8 +169,8 @@ export default function OntologyHome({ onContinueInChat, year, quarter }: Ontolo
   // ── Serialization helpers ──
 
   const QUERY_MAX_BYTES_BY_TIER: Record<'executive' | 'column' | 'micro', number> = {
-    executive: 120_000,
-    column: 80_000,
+    executive: 200_000,
+    column: 120_000,
     micro: 40_000,
   };
 
@@ -288,16 +291,17 @@ export default function OntologyHome({ onContinueInChat, year, quarter }: Ontolo
     const lines: string[] = [];
     const propsStr = serializeProps(inst.props);
     const statusText = inst.rag === 'red' ? 'Needs Intervention' : inst.rag === 'amber' ? 'At Risk' : inst.rag === 'green' ? 'On Track' : 'No Data';
-    lines.push(`- ${inst.id} ${inst.name} [${label}] (${inst.level}) — Status: ${statusText}${inst.rawRag !== inst.rag ? ` (underlying: ${inst.rawRag})` : ''} | Dependency Count: ${inst.impact} | Urgency: ${inst.urgency.toFixed(2)}`);
+    const rawStatusText = inst.rawRag === 'red' ? 'Needs Intervention' : inst.rawRag === 'amber' ? 'At Risk' : inst.rawRag === 'green' ? 'On Track' : 'Unknown';
+    lines.push(`- ${inst.id} ${inst.name} [${label}] (${inst.level}) — Status: ${statusText}${inst.rawRag !== inst.rag ? ` (before mitigation: ${rawStatusText})` : ''} | Dependency Count: ${inst.impact} | Urgency: ${inst.urgency.toFixed(2)}`);
     if (propsStr) lines.push(`  Properties: ${propsStr}`);
     if (inst.rootCause && inst.rootCause.length > 0) {
-      lines.push(`  Root cause chain: ${inst.rootCause.map(r => `${r.id} ${r.name} [${r.nodeType}](${r.rag === 'red' ? 'Needs Intervention' : r.rag === 'amber' ? 'At Risk' : 'On Track'}) via ${r.relationship}`).join(' → ')}`);
+      lines.push(`  Root cause chain: ${inst.rootCause.map(r => `${r.id} ${r.name} [${translateNodeType(r.nodeType)}](${r.rag === 'red' ? 'Needs Intervention' : r.rag === 'amber' ? 'At Risk' : 'On Track'}) via ${r.relationship}`).join(' → ')}`);
     }
     if (inst.upstreamNodes.length > 0) {
-      lines.push(`  Impacts (traces up to): ${inst.upstreamNodes.map(u => `${u.id} ${u.name} [${u.nodeType}](${u.rag === 'red' ? 'Needs Intervention' : u.rag === 'amber' ? 'At Risk' : 'On Track'})`).join(', ')}`);
+      lines.push(`  Impacts (traces up to): ${inst.upstreamNodes.map(u => `${u.id} ${u.name} [${translateNodeType(u.nodeType)}](${u.rag === 'red' ? 'Needs Intervention' : u.rag === 'amber' ? 'At Risk' : 'On Track'})`).join(', ')}`);
     }
     if (inst.upstreamReds.length > 0) {
-      lines.push(`  Cascading issues from: ${inst.upstreamReds.map(r => `${r.id} ${r.name} [${r.nodeType}]`).join(', ')}`);
+      lines.push(`  Cascading issues from: ${inst.upstreamReds.map(r => `${r.id} ${r.name} [${translateNodeType(r.nodeType)}]`).join(', ')}`);
     }
     if (inst.linkedPlans.length > 0) {
       lines.push(`  Mitigation plans: ${inst.linkedPlans.map(p => `${p.name}(${p.status}, ${p.isOnTrack ? 'on-track' : 'off-track'})`).join(', ')}`);
@@ -324,55 +328,48 @@ export default function OntologyHome({ onContinueInChat, year, quarter }: Ontolo
 
   const COLUMN_NODE_MAP: Record<string, string[]> = {
     goals: ['sectorObjectives'],
-    sector: ['policyTools', 'adminRecords', 'dataTransactions'],
+    sector: ['policyTools', 'adminRecords', 'dataTransactions', 'businessUp', 'citizen', 'govEntity'],
     health: ['performance', 'risks'],
     capacity: ['capabilities', 'orgUnits', 'processes', 'itSystems'],
     velocity: ['projects', 'changeAdoption', 'cultureHealth', 'vendors'],
   };
 
+  const translateNodeType = (nodeType: string): string => {
+    if (NODE_LABEL_KEYS[nodeType]) return t(NODE_LABEL_KEYS[nodeType]);
+    return nodeType;
+  };
+
+  const translateLineKey = (key: string): string => {
+    const parts = key.split('->');
+    if (parts.length === 2) {
+      const from = NODE_LABEL_KEYS[parts[0]] ? t(NODE_LABEL_KEYS[parts[0]]) : parts[0];
+      const to = NODE_LABEL_KEYS[parts[1]] ? t(NODE_LABEL_KEYS[parts[1]]) : parts[1];
+      return `${from} → ${to}`;
+    }
+    return key;
+  };
+
   const buildExecutiveQuery = useCallback((): string => {
-    if (!ragState) return '';
     const period = `${year || 2026} Q${quarter || '1'}`;
     const lines: string[] = [
-      `SECTOR ONTOLOGY — FULL DATA SNAPSHOT`,
-      `Period: ${period}`,
+      `Reporting Period: ${period}`,
       ``,
-      `═══ DOMAIN SUMMARY ═══`,
     ];
 
-    // Strip data per column
-    for (const s of ragState.stripData || []) {
-      const colName = COLUMN_TITLE_KEYS[s.column] ? t(COLUMN_TITLE_KEYS[s.column]) : s.column;
-      lines.push(`${colName}: ${s.green} on-track | ${s.amber} at-risk | ${s.red} critical (total: ${s.total})`);
-      if (s.narrative) lines.push(`  Summary: ${s.narrative}`);
-    }
-
-    // Risk stats
-    if (ragState.riskStats) {
-      const rs = ragState.riskStats;
-      lines.push(``, `═══ RISK BREAKDOWN ═══`);
-      lines.push(`BUILD risks: ${rs.buildRed} red | ${rs.buildAmber} amber | ${rs.buildGreen} green`);
-      lines.push(`OPERATE risks: ${rs.operateRed} red | ${rs.operateAmber} amber | ${rs.operateGreen} green`);
-      lines.push(`Total risks: ${rs.total}`);
-    }
-
-    // Chain health
-    if (ragState.lineDetails) {
-      lines.push(``, `═══ VALUE CHAIN INTEGRITY ═══`);
-      for (const [key, h] of Object.entries(ragState.lineDetails)) {
-        lines.push(`${key}: ${h.rag} | connectivity: ${(h.connectivity * 100).toFixed(0)}% | links: ${h.linkCount} | orphans: ${h.orphanCount} | broken: ${h.bastardCount}`);
-        if (h.disconnectedFrom.length > 0) lines.push(`  Disconnected sources: ${h.disconnectedFrom.map(d => d.name).join(', ')}`);
-        if (h.disconnectedTo.length > 0) lines.push(`  Disconnected targets: ${h.disconnectedTo.map(d => d.name).join(', ')}`);
+    // Send top risk IDs for targeted chain investigation
+    if (ragState?.nodeDetails?.risks) {
+      const topRisks = pickPriorityItems(ragState.nodeDetails.risks, 5);
+      if (topRisks.length > 0) {
+        lines.push(`Top risks to investigate (use these IDs with capability_to_policy and capability_to_performance chain tools):`);
+        for (const r of topRisks) {
+          const statusText = r.rag === 'red' ? 'Needs Intervention' : r.rag === 'amber' ? 'At Risk' : 'On Track';
+          lines.push(`- ${r.id} ${r.name} (${statusText}, urgency: ${r.urgency.toFixed(2)}, dependencies: ${r.impact})`);
+        }
+        lines.push(``);
       }
     }
 
-    // ALL items by type with ALL properties
-    lines.push(``, `═══ COMPLETE ITEM DATA ═══`);
-    for (const [nodeType, instances] of Object.entries(ragState.nodeDetails)) {
-      lines.push(serializeNodeType(nodeType, instances, MAX_ITEMS_BY_TIER.executive));
-    }
-
-    lines.push(``, t('ont_executive_prompt'));
+    lines.push(t('ont_executive_prompt'));
     return lines.join('\n');
   }, [ragState, t, year, quarter]);
 
@@ -388,7 +385,7 @@ export default function OntologyHome({ onContinueInChat, year, quarter }: Ontolo
     ];
 
     if (strip) {
-      lines.push(`Status distribution: ${strip.green} on-track | ${strip.amber} at-risk | ${strip.red} critical (total: ${strip.total})`);
+      lines.push(`Status distribution: ${strip.green} On Track | ${strip.amber} At Risk | ${strip.red} Needs Intervention (total: ${strip.total})`);
       if (strip.narrative) lines.push(`Summary: ${strip.narrative}`);
     }
 
@@ -415,7 +412,9 @@ export default function OntologyHome({ onContinueInChat, year, quarter }: Ontolo
         for (const key of chains) {
           const h = ragState.lineDetails[key];
           if (h) {
-            lines.push(`${key}: ${h.rag} | connectivity: ${(h.connectivity * 100).toFixed(0)}% | orphans: ${h.orphanCount} | broken: ${h.bastardCount}`);
+            const translatedKey = translateLineKey(key);
+            const statusText = h.rag === 'red' ? 'Needs Intervention' : h.rag === 'amber' ? 'At Risk' : h.rag === 'green' ? 'On Track' : h.rag;
+            lines.push(`${translatedKey}: ${statusText} | connectivity: ${(h.connectivity * 100).toFixed(0)}% | orphans: ${h.orphanCount} | broken: ${h.bastardCount}`);
           }
         }
       }
@@ -434,7 +433,7 @@ export default function OntologyHome({ onContinueInChat, year, quarter }: Ontolo
       const selectedInstances = pickPriorityItems(instances, MAX_ITEMS_BY_TIER.micro);
       const lines: string[] = [
         `${label} — FULL CATEGORY DATA`,
-        `Overall status: ${ragState.nodeRag[target] ?? 'default'} | Total: ${instances.length} | Red: ${instances.filter(i => i.rag === 'red').length} | Amber: ${instances.filter(i => i.rag === 'amber').length} | Green: ${instances.filter(i => i.rag === 'green').length}`,
+        `Overall status: ${ragState.nodeRag[target] ?? 'default'} | Total: ${instances.length} | Needs Intervention: ${instances.filter(i => i.rag === 'red').length} | At Risk: ${instances.filter(i => i.rag === 'amber').length} | On Track: ${instances.filter(i => i.rag === 'green').length}`,
         ``,
         `═══ PRIORITIZED ITEMS ═══`,
       ];
@@ -453,7 +452,7 @@ export default function OntologyHome({ onContinueInChat, year, quarter }: Ontolo
       const issues = pickPriorityItems(instances.filter(i => i.rag === 'red' || i.rag === 'amber'), MAX_ITEMS_BY_TIER.micro);
       const label = NODE_LABEL_KEYS[target] ? t(NODE_LABEL_KEYS[target]) : target;
       const lines: string[] = [
-        `${label} — TOP ISSUES (${issues.length} red/amber items)`,
+        `${label} — TOP ISSUES (${issues.length} items needing attention)`,
         ``,
       ];
       for (const inst of issues) {

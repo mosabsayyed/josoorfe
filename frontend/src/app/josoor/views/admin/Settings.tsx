@@ -341,6 +341,91 @@ export default function AdminSettings() {
                                     </label>
                                 </div>
 
+                                <div className="section-divider">
+                                    <span className="section-divider-label">Call Behavior</span>
+                                </div>
+
+                                <div className="form-grid">
+                                    <div className="form-group">
+                                        <label>Token Parameter</label>
+                                        <select
+                                            value={providerDraft.token_param || 'max_tokens'}
+                                            onChange={(e) => updateProviderField('token_param', e.target.value)}
+                                            className="form-select"
+                                        >
+                                            <option value="max_tokens">max_tokens</option>
+                                            <option value="max_completion_tokens">max_completion_tokens</option>
+                                        </select>
+                                    </div>
+
+                                    <div className="form-group">
+                                        <label>API Path</label>
+                                        <select
+                                            value={providerDraft.api_path || 'chat_completions'}
+                                            onChange={(e) => updateProviderField('api_path', e.target.value)}
+                                            className="form-select"
+                                        >
+                                            <option value="chat_completions">chat_completions</option>
+                                            <option value="responses">responses</option>
+                                            <option value="gemini">gemini</option>
+                                        </select>
+                                    </div>
+
+                                    <div className="form-group">
+                                        <label>Tool Choice (Initial)</label>
+                                        <select
+                                            value={providerDraft.tool_choice_initial || 'auto'}
+                                            onChange={(e) => updateProviderField('tool_choice_initial', e.target.value)}
+                                            className="form-select"
+                                        >
+                                            <option value="auto">auto</option>
+                                            <option value="required">required</option>
+                                            <option value="none">none</option>
+                                        </select>
+                                    </div>
+
+                                    <div className="form-group">
+                                        <label>Tool Choice (Loop)</label>
+                                        <select
+                                            value={providerDraft.tool_choice_loop || 'auto'}
+                                            onChange={(e) => updateProviderField('tool_choice_loop', e.target.value)}
+                                            className="form-select"
+                                        >
+                                            <option value="auto">auto</option>
+                                            <option value="required">required</option>
+                                            <option value="none">none</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div className="capabilities-grid">
+                                    <label className="checkbox-label">
+                                        <input
+                                            type="checkbox"
+                                            checked={providerDraft.reasoning_enabled || false}
+                                            onChange={(e) => updateProviderField('reasoning_enabled', e.target.checked)}
+                                        />
+                                        <span>Reasoning Enabled</span>
+                                    </label>
+                                </div>
+
+                                {providerDraft.reasoning_enabled && (
+                                    <div className="form-grid">
+                                        <div className="form-group">
+                                            <label>Reasoning Effort</label>
+                                            <select
+                                                value={providerDraft.reasoning_effort || 'medium'}
+                                                onChange={(e) => updateProviderField('reasoning_effort', e.target.value)}
+                                                className="form-select"
+                                            >
+                                                <option value="low">low</option>
+                                                <option value="medium">medium</option>
+                                                <option value="high">high</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                )}
+
                                 <div className="action-row">
                                     <button
                                         className="btn-primary"
