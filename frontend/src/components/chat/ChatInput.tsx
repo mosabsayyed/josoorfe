@@ -10,7 +10,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Send, Paperclip, X, FileText, Image as ImageIcon } from 'lucide-react';
+import { Send, Paperclip, X, FileText, Image as ImageIcon, Plus, Presentation, FileOutput } from 'lucide-react';
 import '../../styles/chat.css';
 
 interface AttachedFile {
@@ -20,7 +20,7 @@ interface AttachedFile {
 }
 
 interface ChatInputProps {
-  onSend: (message: string, fileIds?: string[]) => void;
+  onSend: (message: string, fileIds?: string[], options?: { workflow_key?: string }) => void;
   disabled?: boolean;
   placeholder?: string;
   language?: 'en' | 'ar';
@@ -64,6 +64,8 @@ export function ChatInput({
   const { t } = useTranslation();
   const [message, setMessage] = useState('');
   const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
+  const [showCreateMenu, setShowCreateMenu] = useState(false);
+  const createMenuRef = useRef<HTMLDivElement>(null);
   const [uploading, setUploading] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -192,6 +194,24 @@ export function ChatInput({
     }
   };
 
+  const handleCreate = (type: 'pptx' | 'docx') => {
+    setShowCreateMenu(false);
+    const msg = type === 'pptx' ? 'Convert to PowerPoint' : 'Convert to Word document';
+    const wk = type === 'pptx' ? 'pptx_progressive_workflow' : 'docx_workflow';
+    onSend(msg, undefined, { workflow_key: wk });
+  };
+
+  // Close create menu on click outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (createMenuRef.current && !createMenuRef.current.contains(e.target as Node)) {
+        setShowCreateMenu(false);
+      }
+    };
+    if (showCreateMenu) document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showCreateMenu]);
+
   const canSend = (message.trim().length > 0 || attachedFiles.length > 0) && !disabled && !uploading;
 
   const formatFileSize = (bytes: number): string => {
@@ -309,7 +329,7 @@ export function ChatInput({
             style={{ display: 'none' }}
           />
 
-          {/* Attachment Button - NOW FUNCTIONAL */}
+          {/* Attachment Button */}
           <button
             className={`chat-attach-button clickable ${disabled || uploading ? 'disabled' : ''}`}
             onClick={() => fileInputRef.current?.click()}
@@ -318,6 +338,51 @@ export function ChatInput({
           >
             <Paperclip className="chat-attach-icon" />
           </button>
+
+          {/* Create Menu (PPT / DOCX) */}
+          <div ref={createMenuRef} style={{ position: 'relative' }}>
+            <button
+              className={`chat-attach-button clickable ${disabled ? 'disabled' : ''}`}
+              onClick={() => setShowCreateMenu(!showCreateMenu)}
+              disabled={disabled}
+              title="Create document"
+            >
+              <Plus className="chat-attach-icon" />
+            </button>
+            {showCreateMenu && (
+              <div style={{
+                position: 'absolute', bottom: '100%', left: 0, marginBottom: '8px',
+                background: 'var(--component-bg, #1a1a2e)', border: '1px solid var(--border-color, #2d2d44)',
+                borderRadius: '8px', padding: '4px', zIndex: 100, minWidth: '180px',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
+              }}>
+                <button
+                  onClick={() => handleCreate('pptx')}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '8px', width: '100%',
+                    padding: '8px 12px', background: 'none', border: 'none', color: 'var(--text-primary, #e0e0e0)',
+                    borderRadius: '6px', cursor: 'pointer', fontSize: '13px'
+                  }}
+                  onMouseEnter={e => (e.currentTarget.style.background = 'var(--hover-bg, #2d2d44)')}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+                >
+                  <Presentation size={16} /> Create PowerPoint
+                </button>
+                <button
+                  onClick={() => handleCreate('docx')}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '8px', width: '100%',
+                    padding: '8px 12px', background: 'none', border: 'none', color: 'var(--text-primary, #e0e0e0)',
+                    borderRadius: '6px', cursor: 'pointer', fontSize: '13px'
+                  }}
+                  onMouseEnter={e => (e.currentTarget.style.background = 'var(--hover-bg, #2d2d44)')}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+                >
+                  <FileOutput size={16} /> Create Word Document
+                </button>
+              </div>
+            )}
+          </div>
 
           {/* Textarea */}
           <div className="chat-input-wrapper clickable">

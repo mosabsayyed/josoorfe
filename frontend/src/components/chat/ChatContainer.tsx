@@ -27,7 +27,7 @@ interface ChatContainerProps {
   conversationId: number | null;
   conversationTitle?: string;
   messages: APIMessage[];
-  onSendMessage: (message: string) => void;
+  onSendMessage: (message: string, options?: { workflow_key?: string }) => void;
   isLoading?: boolean;
   language?: 'en' | 'ar';
   onToggleSidebar?: () => void;
@@ -298,7 +298,7 @@ export const ChatContainer = memo(function ChatContainer({
                 />
               )}
               <ChatInput
-                onSend={onSendMessage}
+                onSend={(msg, _fileIds, opts) => onSendMessage(msg, opts)}
                 disabled={isLoading}
                 language={effectiveLanguage}
               />
