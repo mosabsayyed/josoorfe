@@ -169,7 +169,7 @@ export default function ChatAppPage() {
 
 
   // SEND MESSAGE
-  const handleSendMessage = useCallback(async (messageText: string, options?: { suppress_canvas_auto_open?: boolean }) => {
+  const handleSendMessage = useCallback(async (messageText: string, options?: { suppress_canvas_auto_open?: boolean; workflow_key?: string }) => {
     const tempId = `temp-${Date.now()}`;
     const tempMsg: APIMessage = {
       id: parseInt(tempId) || Date.now(),
@@ -186,6 +186,7 @@ export default function ChatAppPage() {
       const basics: any = {
         query: messageText,
         conversation_id: activeConversationId && activeConversationId > 0 ? activeConversationId : undefined,
+        ...(options?.workflow_key && { workflow_key: options.workflow_key }),
       };
 
       if (authService.isGuestMode()) {
@@ -278,14 +279,14 @@ export default function ChatAppPage() {
   const handleConvertToPPT = useCallback((artifact: any) => {
     handleSendMessage(
       `[SYSTEM: User requested PPTX conversion of the above report "${artifact.title || 'Report'}". Follow the PPTX workflow: propose slide structure, align with user, then generate.]`,
-      { suppress_canvas_auto_open: true }
+      { suppress_canvas_auto_open: true, workflow_key: 'pptx_progressive_workflow' }
     );
   }, [handleSendMessage]);
 
   const handleConvertToDocx = useCallback((artifact: any) => {
     handleSendMessage(
       `[SYSTEM: User requested DOCX conversion of the above report "${artifact.title || 'Report'}". Follow the DOCX workflow: propose TOC structure, align with user, then generate.]`,
-      { suppress_canvas_auto_open: true }
+      { suppress_canvas_auto_open: true, workflow_key: 'docx_workflow' }
     );
   }, [handleSendMessage]);
 
