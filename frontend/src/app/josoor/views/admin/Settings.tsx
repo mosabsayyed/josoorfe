@@ -90,7 +90,25 @@ export default function AdminSettings() {
     }, [selectedProviderId]);
 
     const updateProviderField = (key: string, value: any) => {
-        setProviderDraft({ ...providerDraft, [key]: value });
+        const updates: any = { [key]: value };
+
+        // Auto-sync endpoint_path_template suffix when api_path changes
+        if (key === 'api_path') {
+            const suffixMap: Record<string, string> = {
+                chat_completions: '/chat/completions',
+                responses: '/responses',
+                gemini: '/interactions',
+            };
+            const currentPath = providerDraft.endpoint_path_template || '/v1/chat/completions';
+            // Strip old suffix to get prefix (e.g. "/v1", "/openai/v1")
+            let prefix = currentPath;
+            for (const s of ['/chat/completions', '/responses', '/completions', '/interactions']) {
+                if (prefix.endsWith(s)) { prefix = prefix.slice(0, -s.length); break; }
+            }
+            updates.endpoint_path_template = prefix + (suffixMap[value] || '/chat/completions');
+        }
+
+        setProviderDraft({ ...providerDraft, ...updates });
     };
 
     const updateSystemField = (key: string, value: any) => {
